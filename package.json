@@ -1,0 +1,14 @@
+{
+  "name": "jpig-solution",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names \"API,WEB\" --prefix-colors \"yellow,cyan\" \"npm run dev --prefix Api\" \"npm run dev --prefix Admin.Web\"",
+    "dev:api": "npm run dev --prefix Api",
+    "dev:web": "npm run dev --prefix Admin.Web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
+

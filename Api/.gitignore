@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.env
+*.env.local
+
+# Prisma
+prisma/migrations/
+
+# Logs
+logs/
+*.log
+
+# Uploaded files
+uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+

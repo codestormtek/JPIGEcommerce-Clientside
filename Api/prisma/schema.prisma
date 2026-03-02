@@ -1,0 +1,1286 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+model SiteUser {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  firstName    String?
+  lastName     String?
+  emailAddress String  @unique
+  phoneNumber  String?
+  passwordHash String
+  isActive     Boolean @default(true)
+  role         String  @default("user") // user|admin
+
+  contactPreference     UserContactPreference?
+  userAddresses         UserAddress[]
+  shoppingCarts         ShoppingCart[]
+  orders                ShopOrder[]
+  paymentMethodTokens   PaymentMethodToken[]
+  reviews               UserReview[]
+  notifications         UserNotification[]
+  notificationSubs      NotificationSubscription[]
+  promotionUsages       PromotionUsage[]
+  auditLogs             AuditLog[]
+  contentPosts          ContentPost[]
+  subscriberLinks       Subscriber[]
+  orderStatusChanges    OrderStatusHistory[]
+  actorEvents           Event[]
+  refreshTokens         RefreshToken[]
+  passwordResetTokens   PasswordResetToken[]
+  uploadedFiles         StoredFile[]         @relation("UploadedFiles")
+  exportJobs            ExportJob[]          @relation("RequestedExports")
+  dashboards            Dashboard[]          @relation("OwnedDashboards")
+
+  @@map("site_users")
+}
+
+model UserContactPreference {
+  userId            String   @id
+  user              SiteUser @relation(fields: [userId], references: [id])
+
+  optInEmail        Boolean  @default(true)
+  optInSms          Boolean  @default(false)
+  smsPhone          String?
+  preferredLanguage String?
+  timezone          String?
+  updatedAt         DateTime @updatedAt
+
+  @@map("user_contact_preferences")
+}
+
+model UserAddress {
+  id        String   @id @default(uuid())
+  userId    String
+  user      SiteUser @relation(fields: [userId], references: [id])
+  addressId String
+  address   Address  @relation(fields: [addressId], references: [id])
+  label     String?
+  isDefault Boolean  @default(false)
+
+  @@map("user_addresses")
+}
+
+model UserReview {
+  id          String     @id @default(uuid())
+  userId      String
+  user        SiteUser   @relation(fields: [userId], references: [id])
+  productId   String
+  product     Product    @relation(fields: [productId], references: [id])
+  orderLineId String?
+  orderLine   OrderLine? @relation(fields: [orderLineId], references: [id])
+  ratingValue Int
+  comment     String?
+  isApproved  Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+
+  @@map("user_reviews")
+}
+
+model UserNotification {
+  id        String    @id @default(uuid())
+  userId    String
+  user      SiteUser  @relation(fields: [userId], references: [id])
+  eventId   String?
+  event     Event?    @relation(fields: [eventId], references: [id])
+  title     String
+  message   String?
+  url       String?
+  isRead    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  @@map("user_notifications")
+}
+
+// ─── Geography ────────────────────────────────────────────────────────────────
+
+model Country {
+  id          String    @id @default(uuid())
+  countryName String
+  iso2        String?
+  addresses   Address[]
+
+  @@map("countries")
+}
+
+model Address {
+  id           String        @id @default(uuid())
+  unitNumber   String?
+  streetNumber String?
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  region       String?
+  postalCode   String
+  countryId    String
+  country      Country       @relation(fields: [countryId], references: [id])
+  userAddresses UserAddress[]
+  locations    Location[]
+
+  @@map("addresses")
+}
+
+
+
+// ─── Catalog ──────────────────────────────────────────────────────────────────
+
+model Brand {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  name        String
+  description String?
+  products    Product[]
+
+  @@map("brands")
+}
+
+model ProductCategory {
+  id               String               @id @default(uuid())
+  name             String
+  imageUrl         String?
+  parentCategoryId String?
+  parentCategory   ProductCategory?     @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id])
+  children         ProductCategory[]    @relation("CategoryHierarchy")
+  productMaps      ProductCategoryMap[]
+  promotionCategories PromotionCategory[]
+
+  @@map("product_categories")
+}
+
+model Product {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  name        String
+  description String?
+  price       Decimal
+  quantity    Int
+  brandId     String?
+  brand       Brand?   @relation(fields: [brandId], references: [id])
+
+  attributes       ProductAttribute[]
+  items            ProductItem[]
+  categoryMaps     ProductCategoryMap[]
+  media            ProductMedia[]
+  reviews          UserReview[]
+  promotionProducts PromotionProduct[]
+  menuItemMaps     MenuItemProductMap[]
+
+  @@map("products")
+}
+
+model ProductAttribute {
+  id        String                  @id @default(uuid())
+  productId String
+  product   Product                 @relation(fields: [productId], references: [id])
+  name      String
+  values    ProductAttributeValue[]
+
+  @@map("product_attributes")
+}
+
+model ProductAttributeValue {
+  id                 String           @id @default(uuid())
+  productAttributeId String
+  productAttribute   ProductAttribute @relation(fields: [productAttributeId], references: [id])
+  value              String
+  priceAdjustment    Decimal?
+
+  @@map("product_attribute_values")
+}
+
+model Variation {
+  id      String            @id @default(uuid())
+  name    String
+  options VariationOption[]
+
+  @@map("variations")
+}
+
+model VariationOption {
+  id          String    @id @default(uuid())
+  variationId String
+  variation   Variation @relation(fields: [variationId], references: [id])
+  value       String
+
+  productItemOptions ProductItemOption[]
+  cartItemOptions    CartItemOption[]
+  orderLineOptions   OrderLineOption[]
+
+  @@map("variation_options")
+}
+
+model ProductItem {
+  id         String  @id @default(uuid())
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+  sku        String  @unique
+  barcode    String?
+  price      Decimal
+  qtyInStock Int
+  weight     Decimal?
+  length     Decimal?
+  width      Decimal?
+  height     Decimal?
+  isPublished Boolean @default(true)
+
+  options      ProductItemOption[]
+  cartItems    ShoppingCartItem[]
+  orderLines   OrderLine[]
+  menuItemMaps MenuItemProductMap[]
+
+  @@map("product_items")
+}
+
+model ProductItemOption {
+  productItemId     String
+  productItem       ProductItem     @relation(fields: [productItemId], references: [id])
+  variationOptionId String
+  variationOption   VariationOption @relation(fields: [variationOptionId], references: [id])
+
+  @@id([productItemId, variationOptionId])
+  @@map("product_item_options")
+}
+
+model ProductCategoryMap {
+  productId    String
+  product      Product         @relation(fields: [productId], references: [id])
+  categoryId   String
+  category     ProductCategory @relation(fields: [categoryId], references: [id])
+  displayOrder Int             @default(0)
+  isPrimary    Boolean         @default(false)
+
+  @@id([productId, categoryId])
+  @@map("product_category_maps")
+}
+
+model ProductMedia {
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id])
+  mediaAssetId String
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id])
+  sortOrder    Int        @default(0)
+  isPrimary    Boolean    @default(false)
+
+  @@id([productId, mediaAssetId])
+  @@map("product_media")
+}
+
+
+// ─── Media ────────────────────────────────────────────────────────────────────
+
+model MediaAsset {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  url       String
+  altText   String?
+  mediaType String  @default("image") // image|video
+
+  metadata           MediaAssetMetadata?
+  productMedia       ProductMedia[]
+  menuItems          MenuItem[]
+  contentPosts       ContentPost[]
+  contentPostMedia   ContentPostMedia[]
+  scheduleEventMedia ScheduleEventMedia[]
+
+  @@map("media_assets")
+}
+
+model MediaAssetMetadata {
+  mediaAssetId   String     @id
+  mediaAsset     MediaAsset @relation(fields: [mediaAssetId], references: [id])
+  mimeType       String?
+  fileSizeBytes  BigInt?
+  widthPx        Int?
+  heightPx       Int?
+  checksumSha256 String?
+  createdAt      DateTime   @default(now())
+
+  @@map("media_asset_metadata")
+}
+
+// ─── Cart ─────────────────────────────────────────────────────────────────────
+
+model ShoppingCart {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  userId String
+  user   SiteUser @relation(fields: [userId], references: [id])
+  status String   @default("active")
+  items  ShoppingCartItem[]
+
+  @@map("shopping_carts")
+}
+
+model ShoppingCartItem {
+  id                String       @id @default(uuid())
+  cartId            String
+  cart              ShoppingCart @relation(fields: [cartId], references: [id])
+  productItemId     String
+  productItem       ProductItem  @relation(fields: [productItemId], references: [id])
+  qty               Int
+  unitPriceSnapshot Decimal
+  options           CartItemOption[]
+
+  @@map("shopping_cart_items")
+}
+
+model CartItemOption {
+  cartItemId        String
+  cartItem          ShoppingCartItem @relation(fields: [cartItemId], references: [id])
+  variationOptionId String
+  variationOption   VariationOption  @relation(fields: [variationOptionId], references: [id])
+
+  @@id([cartItemId, variationOptionId])
+  @@map("cart_item_options")
+}
+
+// ─── Orders ───────────────────────────────────────────────────────────────────
+
+model ShippingMethod {
+  id     String      @id @default(uuid())
+  name   String
+  price  Decimal
+  orders ShopOrder[]
+
+  @@map("shipping_methods")
+}
+
+model OrderStatus {
+  id           String               @id @default(uuid())
+  status       String               @unique
+  orders       ShopOrder[]
+  oldHistories OrderStatusHistory[] @relation("OldStatus")
+  newHistories OrderStatusHistory[] @relation("NewStatus")
+
+  @@map("order_statuses")
+}
+
+model ShopOrder {
+  id                     String          @id @default(uuid())
+  userId                 String
+  user                   SiteUser        @relation(fields: [userId], references: [id])
+  orderDate              DateTime
+  orderStatusId          String
+  orderStatus            OrderStatus     @relation(fields: [orderStatusId], references: [id])
+  shippingMethodId       String?
+  shippingMethod         ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
+  currency               String          @default("USD")
+  subtotal               Decimal
+  discountTotal          Decimal
+  taxTotal               Decimal
+  shippingTotal          Decimal
+  grandTotal             Decimal
+  orderType              String          @default("retail") // retail|catering
+  fulfillmentType        String?
+  requestedFulfillmentAt DateTime?
+  eventName              String?
+  headcount              Int?
+  specialInstructions    String?
+
+  lines                   OrderLine[]
+  addresses               OrderAddress[]
+  statusHistory           OrderStatusHistory[]
+  payments                Payment[]
+  shipment                Shipment?
+  cateringDeliveryAddress CateringDeliveryAddress?
+  promotionUsages         PromotionUsage[]
+
+  @@map("shop_orders")
+}
+
+
+model OrderLine {
+  id                  String      @id @default(uuid())
+  orderId             String
+  order               ShopOrder   @relation(fields: [orderId], references: [id])
+  productItemId       String
+  productItem         ProductItem @relation(fields: [productItemId], references: [id])
+  qty                 Int
+  unitPriceSnapshot   Decimal
+  lineTotal           Decimal
+  skuSnapshot         String
+  productNameSnapshot String
+
+  options       OrderLineOption[]
+  catering      OrderLineCatering?
+  menuOptions   OrderLineMenuOption[]
+  reviews       UserReview[]
+  shipmentItems ShipmentItem[]
+
+  @@map("order_lines")
+}
+
+model OrderLineCatering {
+  orderLineId  String    @id
+  orderLine    OrderLine @relation(fields: [orderLineId], references: [id])
+  pricingModel String
+  servingsQty  Int?
+  notes        String?
+
+  @@map("order_line_catering")
+}
+
+model OrderLineOption {
+  orderLineId       String
+  orderLine         OrderLine       @relation(fields: [orderLineId], references: [id])
+  variationOptionId String
+  variationOption   VariationOption @relation(fields: [variationOptionId], references: [id])
+
+  @@id([orderLineId, variationOptionId])
+  @@map("order_line_options")
+}
+
+model OrderLineMenuOption {
+  orderLineId        String
+  orderLine          OrderLine  @relation(fields: [orderLineId], references: [id])
+  menuOptionId       String
+  menuOption         MenuOption @relation(fields: [menuOptionId], references: [id])
+  qty                Int        @default(1)
+  priceDeltaSnapshot Decimal
+
+  @@id([orderLineId, menuOptionId])
+  @@map("order_line_menu_options")
+}
+
+model OrderAddress {
+  id           String    @id @default(uuid())
+  orderId      String
+  order        ShopOrder @relation(fields: [orderId], references: [id])
+  addressType  String // shipping|billing
+  fullName     String?
+  phone        String?
+  email        String?
+  unitNumber   String?
+  streetNumber String?
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  region       String?
+  postalCode   String
+  countryName  String
+  countryIso2  String?
+
+  @@map("order_addresses")
+}
+
+model CateringDeliveryAddress {
+  orderId      String    @id
+  order        ShopOrder @relation(fields: [orderId], references: [id])
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  region       String?
+  postalCode   String
+  countryName  String
+  instructions String?
+
+  @@map("catering_delivery_addresses")
+}
+
+model OrderStatusHistory {
+  id              String       @id @default(uuid())
+  orderId         String
+  order           ShopOrder    @relation(fields: [orderId], references: [id])
+  oldStatusId     String?
+  oldStatus       OrderStatus? @relation("OldStatus", fields: [oldStatusId], references: [id])
+  newStatusId     String
+  newStatus       OrderStatus  @relation("NewStatus", fields: [newStatusId], references: [id])
+  changedAt       DateTime
+  changedByUserId String?
+  changedByUser   SiteUser?    @relation(fields: [changedByUserId], references: [id])
+
+  @@map("order_status_history")
+}
+
+model Payment {
+  id                   String              @id @default(uuid())
+  orderId              String
+  order                ShopOrder           @relation(fields: [orderId], references: [id])
+  paymentMethodTokenId String?
+  paymentMethodToken   PaymentMethodToken? @relation(fields: [paymentMethodTokenId], references: [id])
+  provider             String
+  amount               Decimal
+  status               String // authorized|captured|failed|refunded
+  providerTxnId        String?
+  createdAt            DateTime            @default(now())
+  authorizedAt         DateTime?
+  capturedAt           DateTime?
+
+  @@map("payments")
+}
+
+model PaymentMethodToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      SiteUser  @relation(fields: [userId], references: [id])
+  provider  String
+  token     String
+  brand     String?
+  last4     String?
+  expMonth  Int?
+  expYear   Int?
+  isDefault Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  payments  Payment[]
+
+  @@map("payment_method_tokens")
+}
+
+model Shipment {
+  id             String    @id @default(uuid())
+  orderId        String    @unique
+  order          ShopOrder @relation(fields: [orderId], references: [id])
+  carrier        String?
+  trackingNumber String?
+  status         String    @default("pending") // pending|shipped|delivered|cancelled
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+  items          ShipmentItem[]
+
+  @@map("shipments")
+}
+
+model ShipmentItem {
+  shipmentId  String
+  shipment    Shipment  @relation(fields: [shipmentId], references: [id])
+  orderLineId String
+  orderLine   OrderLine @relation(fields: [orderLineId], references: [id])
+  qty         Int
+
+  @@id([shipmentId, orderLineId])
+  @@map("shipment_items")
+}
+
+
+// ─── Promotions ───────────────────────────────────────────────────────────────
+
+model Promotion {
+  id            String    @id @default(uuid())
+  name          String
+  description   String?
+  promotionType String // percent|fixed|free_shipping
+  discountRate  Decimal?
+  minSubtotal   Decimal?
+  stackable     Boolean   @default(false)
+  startDate     DateTime?
+  endDate       DateTime?
+  isActive      Boolean   @default(true)
+
+  coupons    Coupon[]
+  categories PromotionCategory[]
+  products   PromotionProduct[]
+  usages     PromotionUsage[]
+
+  @@map("promotions")
+}
+
+model Coupon {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  code           String    @unique
+  discountAmount Decimal
+  percentage     Decimal?
+  expirationDate DateTime?
+  usageLimit     Int?
+  timesUsed      Int       @default(0)
+  promotionId    String?
+  promotion      Promotion? @relation(fields: [promotionId], references: [id])
+
+  @@map("coupons")
+}
+
+model PromotionCategory {
+  promotionId String
+  promotion   Promotion       @relation(fields: [promotionId], references: [id])
+  categoryId  String
+  category    ProductCategory @relation(fields: [categoryId], references: [id])
+
+  @@id([promotionId, categoryId])
+  @@map("promotion_categories")
+}
+
+model PromotionProduct {
+  promotionId String
+  promotion   Promotion @relation(fields: [promotionId], references: [id])
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+
+  @@id([promotionId, productId])
+  @@map("promotion_products")
+}
+
+model PromotionUsage {
+  id          String    @id @default(uuid())
+  promotionId String
+  promotion   Promotion @relation(fields: [promotionId], references: [id])
+  orderId     String
+  order       ShopOrder @relation(fields: [orderId], references: [id])
+  userId      String
+  user        SiteUser  @relation(fields: [userId], references: [id])
+  usedAt      DateTime
+
+  @@map("promotion_usages")
+}
+
+// ─── Menus (Catering) ─────────────────────────────────────────────────────────
+
+model Menu {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  name        String
+  menuType    String  @default("catering") // catering|truck|event
+  description String?
+  isActive    Boolean @default(true)
+  startDate   DateTime? @db.Date
+  endDate     DateTime? @db.Date
+
+  sections       MenuSection[]
+  scheduleEvents ScheduleEvent[]
+
+  @@map("menus")
+}
+
+model MenuSection {
+  id           String    @id @default(uuid())
+  menuId       String
+  menu         Menu      @relation(fields: [menuId], references: [id])
+  name         String
+  displayOrder Int       @default(0)
+  items        MenuSectionItem[]
+
+  @@map("menu_sections")
+}
+
+model MenuItem {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  name            String
+  description     String?
+  isActive        Boolean    @default(true)
+  pricingModel    String // each|per_person|tray|market
+  basePrice       Decimal?
+  mediaAssetId    String?
+  mediaAsset      MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+  prepTimeMinutes Int?
+
+  optionGroups MenuOptionGroup[]
+  sections     MenuSectionItem[]
+  productMaps  MenuItemProductMap[]
+
+  @@map("menu_items")
+}
+
+model MenuSectionItem {
+  menuSectionId String
+  menuSection   MenuSection @relation(fields: [menuSectionId], references: [id])
+  menuItemId    String
+  menuItem      MenuItem    @relation(fields: [menuItemId], references: [id])
+  displayOrder  Int         @default(0)
+  priceOverride Decimal?
+
+  @@id([menuSectionId, menuItemId])
+  @@map("menu_section_items")
+}
+
+model MenuOptionGroup {
+  id           String     @id @default(uuid())
+  menuItemId   String
+  menuItem     MenuItem   @relation(fields: [menuItemId], references: [id])
+  name         String
+  minSelect    Int        @default(0)
+  maxSelect    Int        @default(1)
+  isRequired   Boolean    @default(false)
+  displayOrder Int        @default(0)
+  options      MenuOption[]
+
+  @@map("menu_option_groups")
+}
+
+model MenuOption {
+  id            String          @id @default(uuid())
+  optionGroupId String
+  optionGroup   MenuOptionGroup @relation(fields: [optionGroupId], references: [id])
+  name          String
+  priceDelta    Decimal
+  isActive      Boolean         @default(true)
+  displayOrder  Int             @default(0)
+  orderLineMenuOptions OrderLineMenuOption[]
+
+  @@map("menu_options")
+}
+
+model MenuItemProductMap {
+  menuItemId    String
+  menuItem      MenuItem    @relation(fields: [menuItemId], references: [id])
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id])
+  productItemId String
+  productItem   ProductItem @relation(fields: [productItemId], references: [id])
+  isPrimary     Boolean     @default(true)
+
+  @@id([menuItemId, productItemId])
+  @@map("menu_item_product_maps")
+}
+
+
+// ─── Locations & Schedule ─────────────────────────────────────────────────────
+
+model Location {
+  id        String   @id @default(uuid())
+  name      String
+  addressId String?
+  address   Address? @relation(fields: [addressId], references: [id])
+  lat       Decimal?
+  lng       Decimal?
+  notes     String?
+  isActive  Boolean  @default(true)
+
+  events                  ScheduleEvent[]
+  subscriberSubscriptions SubscriberSubscription[]
+
+  @@map("locations")
+}
+
+model ScheduleEvent {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  locationId  String
+  location    Location  @relation(fields: [locationId], references: [id])
+  menuId      String?
+  menu        Menu?     @relation(fields: [menuId], references: [id])
+  title       String
+  eventType   String // truck_stop|catering|festival|private
+  status      String    @default("scheduled") // scheduled|cancelled|completed
+  startTime   DateTime
+  endTime     DateTime?
+  description String?
+  isPublic    Boolean   @default(true)
+
+  media ScheduleEventMedia[]
+
+  @@map("schedule_events")
+}
+
+model ScheduleEventMedia {
+  eventId      String
+  event        ScheduleEvent @relation(fields: [eventId], references: [id])
+  mediaAssetId String
+  mediaAsset   MediaAsset    @relation(fields: [mediaAssetId], references: [id])
+  sortOrder    Int           @default(0)
+
+  @@id([eventId, mediaAssetId])
+  @@map("schedule_event_media")
+}
+
+model TruckPresence {
+  id       String              @id @default(uuid())
+  name     String
+  isActive Boolean             @default(true)
+  pings    TruckLocationPing[]
+
+  @@map("truck_presences")
+}
+
+model TruckLocationPing {
+  id              String        @id @default(uuid())
+  truckPresenceId String
+  truckPresence   TruckPresence @relation(fields: [truckPresenceId], references: [id])
+  lat             Decimal
+  lng             Decimal
+  accuracyMeters  Int?
+  capturedAt      DateTime
+  source          String? // mobile_app|admin
+
+  @@map("truck_location_pings")
+}
+
+// ─── Events & Audit ───────────────────────────────────────────────────────────
+
+model Event {
+  id          String    @id @default(uuid())
+  eventType   String
+  occurredAt  DateTime
+  actorUserId String?
+  actorUser   SiteUser? @relation(fields: [actorUserId], references: [id])
+  entityType  String?
+  entityId    String?
+  dataJson    String?
+
+  notifications UserNotification[]
+
+  @@map("events")
+}
+
+model AuditLog {
+  id         String    @id @default(uuid())
+  userId     String?
+  user       SiteUser? @relation(fields: [userId], references: [id])
+  action     String
+  entityType String?
+  entityId   String?
+  beforeJson String?
+  afterJson  String?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+
+  @@map("audit_logs")
+}
+
+// ─── Content (Blog / News) ────────────────────────────────────────────────────
+
+model ContentPost {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  authorUserId         String
+  authorUser           SiteUser    @relation(fields: [authorUserId], references: [id])
+  postType             String // blog|news
+  title                String
+  slug                 String      @unique
+  excerpt              String?
+  bodyHtml             String
+  status               String // draft|scheduled|published|archived
+  featuredMediaAssetId String?
+  featuredMediaAsset   MediaAsset? @relation(fields: [featuredMediaAssetId], references: [id])
+  publishedAt          DateTime?
+
+  categories ContentPostCategory[]
+  tags       ContentPostTag[]
+  media      ContentPostMedia[]
+
+  @@map("content_posts")
+}
+
+model ContentCategory {
+  id    String                @id @default(uuid())
+  name  String
+  slug  String                @unique
+  posts ContentPostCategory[]
+
+  @@map("content_categories")
+}
+
+model ContentTag {
+  id    String           @id @default(uuid())
+  name  String
+  slug  String           @unique
+  posts ContentPostTag[]
+
+  @@map("content_tags")
+}
+
+model ContentPostCategory {
+  postId     String
+  post       ContentPost     @relation(fields: [postId], references: [id])
+  categoryId String
+  category   ContentCategory @relation(fields: [categoryId], references: [id])
+
+  @@id([postId, categoryId])
+  @@map("content_post_categories")
+}
+
+model ContentPostTag {
+  postId String
+  post   ContentPost @relation(fields: [postId], references: [id])
+  tagId  String
+  tag    ContentTag  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId])
+  @@map("content_post_tags")
+}
+
+model ContentPostMedia {
+  postId       String
+  post         ContentPost @relation(fields: [postId], references: [id])
+  mediaAssetId String
+  mediaAsset   MediaAsset  @relation(fields: [mediaAssetId], references: [id])
+  sortOrder    Int         @default(0)
+
+  @@id([postId, mediaAssetId])
+  @@map("content_post_media")
+}
+
+
+// ─── Subscribers & Messaging ──────────────────────────────────────────────────
+
+model Subscriber {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  userId      String?
+  user        SiteUser? @relation(fields: [userId], references: [id])
+  email       String?
+  phone       String?
+  zip         String?
+  optInEmail  Boolean   @default(false)
+  optInSms    Boolean   @default(false)
+  confirmedAt DateTime?
+
+  subscriptions SubscriberSubscription[]
+
+  @@map("subscribers")
+}
+
+model SubscriberSubscription {
+  id             String     @id @default(uuid())
+  createdAt      DateTime   @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean    @default(false)
+
+  subscriberId     String
+  subscriber       Subscriber @relation(fields: [subscriberId], references: [id])
+  subscriptionType String // sales|truck_schedule|menu_updates|news
+  locationId       String?
+  location         Location?  @relation(fields: [locationId], references: [id])
+  radiusMiles      Int?
+  isEnabled        Boolean    @default(true)
+
+  @@map("subscriber_subscriptions")
+}
+
+model NotificationSubscription {
+  id        String    @id @default(uuid())
+  userId    String?
+  user      SiteUser? @relation(fields: [userId], references: [id])
+  channel   String // inapp|email|sms
+  eventType String
+  isEnabled Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  @@map("notification_subscriptions")
+}
+
+model MessageTemplate {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventKey  String // ORDER_PLACED, ORDER_SHIPPED, USER_REGISTERED, PASSWORD_RESET, etc.
+  channel   String // email | sms
+  audience  String @default("customer") // customer | admin
+  locale    String @default("en")
+
+  isActive  Boolean @default(true)
+  name      String // human-readable label for the admin UI
+
+  subject         String? // Handlebars template — email only
+  bodyHtml        String? // Handlebars template — email HTML
+  bodyText        String  // Handlebars template — plain text (SMS body or email fallback)
+  variablesSchema String? // JSON string documenting expected payload shape
+
+  @@unique([eventKey, channel, audience, locale])
+  @@map("message_templates")
+}
+
+model MessageOutbox {
+  id                String    @id @default(uuid())
+  channel           String // email|sms
+  toAddress         String
+  templateKey       String
+  subject           String?
+  bodyHtml          String? // rendered HTML body (email)
+  bodyText          String? // rendered plain-text body
+  payloadJson       String  // original variables payload (for audit/replay)
+  status            String    @default("queued") // queued|sending|sent|failed
+  provider          String?
+  providerMessageId String?
+  createdAt         DateTime  @default(now())
+  sentAt            DateTime?
+  lastError         String?
+
+  deliveryLogs MessageDeliveryLog[]
+
+  @@map("message_outbox")
+}
+
+model MessageDeliveryLog {
+  id           String        @id @default(uuid())
+  outboxId     String
+  outbox       MessageOutbox @relation(fields: [outboxId], references: [id])
+  attempt      Int
+  status       String
+  responseJson String?
+  createdAt    DateTime      @default(now())
+
+  @@map("message_delivery_logs")
+}
+
+// ─── Recipes (Internal) ───────────────────────────────────────────────────────
+
+model Recipe {
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  name            String
+  description     String?
+  isActive        Boolean  @default(true)
+  prepTimeMinutes Int?
+  cookTimeMinutes Int?
+  servings        Int?
+  category        String?
+  tags            String?
+
+  ingredients RecipeIngredient[]
+  steps       RecipeStep[]
+  notes       RecipeNote[]
+
+  @@map("recipes")
+}
+
+model RecipeIngredient {
+  id             String  @id @default(uuid())
+  recipeId       String
+  recipe         Recipe  @relation(fields: [recipeId], references: [id])
+  ingredientName String
+  quantity       Decimal
+  unit           String  @default("each")
+  sortOrder      Int     @default(0)
+
+  @@map("recipe_ingredients")
+}
+
+model RecipeStep {
+  id          String @id @default(uuid())
+  recipeId    String
+  recipe      Recipe @relation(fields: [recipeId], references: [id])
+  stepNumber  Int
+  instruction String
+
+  @@map("recipe_steps")
+}
+
+model RecipeNote {
+  id        String   @id @default(uuid())
+  recipeId  String
+  recipe    Recipe   @relation(fields: [recipeId], references: [id])
+  note      String
+  createdAt DateTime @default(now())
+
+  @@map("recipe_notes")
+}
+
+
+// ─── Auth Tokens ──────────────────────────────────────────────────────────────
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  userId      String
+  user        SiteUser  @relation(fields: [userId], references: [id])
+  tokenHash   String    @unique          // SHA-256 of the opaque token sent to client
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  userAgent   String?
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      SiteUser  @relation(fields: [userId], references: [id])
+  tokenHash String    @unique           // SHA-256 of the opaque token sent via email
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ─── File Storage ─────────────────────────────────────────────────────────────
+
+model StoredFile {
+  id               String           @id @default(uuid())
+  originalName     String
+  mimeType         String
+  sizeBytes        BigInt
+  storageProvider  String           @default("local") // local|s3
+  storageKey       String           // relative path from uploads root or S3 object key
+  uploadedByUserId String?
+  uploadedBy       SiteUser?        @relation("UploadedFiles", fields: [uploadedByUserId], references: [id])
+  createdAt        DateTime         @default(now())
+  isDeleted        Boolean          @default(false)
+  entityLinks      EntityFileLink[]
+
+  @@map("stored_files")
+}
+
+model EntityFileLink {
+  id           String     @id @default(uuid())
+  fileId       String
+  file         StoredFile @relation(fields: [fileId], references: [id])
+  entityType   String     // product|order|user|recipe|content
+  entityId     String
+  tag          String?    // photo|invoice|document|label
+  displayOrder Int        @default(0)
+  createdAt    DateTime   @default(now())
+
+  @@index([entityType, entityId])
+  @@map("entity_file_links")
+}
+
+// ─── Export Jobs ──────────────────────────────────────────────────────────────
+
+model ExportJob {
+  id                String    @id @default(uuid())
+  resource          String    // orders|products|users|promotions
+  format            String    // csv|xlsx|pdf|txt
+  status            String    @default("queued") // queued|processing|done|failed
+  requestedByUserId String?
+  requestedBy       SiteUser? @relation("RequestedExports", fields: [requestedByUserId], references: [id])
+  filtersJson       String?
+  rowCount          Int?
+  storageKey        String?
+  errorMessage      String?
+  createdAt         DateTime  @default(now())
+  completedAt       DateTime?
+
+  @@map("export_jobs")
+}
+
+// ─── Dashboard & Metrics ──────────────────────────────────────────────────────
+
+enum DashboardScope {
+  USER   // personal (owned by one admin)
+  STORE  // shared across the store
+  GLOBAL // shared across the org
+}
+
+enum WidgetType {
+  KPI
+  TIMESERIES
+  PIE
+  BAR
+  TABLE
+}
+
+enum MetricSource {
+  LIVE      // computed from transactional tables
+  DAILY     // read from MetricDaily aggregates
+  AUTO      // pick best source based on range/metric
+}
+
+model Dashboard {
+  id          String         @id @default(uuid())
+  name        String
+  scope       DashboardScope @default(USER)
+  ownerUserId String?
+  ownerUser   SiteUser?      @relation("OwnedDashboards", fields: [ownerUserId], references: [id])
+  isDefault   Boolean        @default(false)
+  isActive    Boolean        @default(true)
+  widgets     DashboardWidget[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([ownerUserId])
+  @@index([scope, isDefault])
+  @@map("dashboards")
+}
+
+model DashboardWidget {
+  id          String       @id @default(uuid())
+  dashboardId String
+  dashboard   Dashboard    @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  title       String
+  type        WidgetType
+  // Grid layout (react-grid-layout / gridstack style)
+  x           Int          @default(0)
+  y           Int          @default(0)
+  w           Int          @default(4)
+  h           Int          @default(2)
+  // Data source
+  metricKey   String?
+  source      MetricSource @default(AUTO)
+  // Arbitrary widget config: filters, groupBy, chart options, etc.
+  configJson  Json         @default("{}")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([dashboardId])
+  @@index([metricKey])
+  @@map("dashboard_widgets")
+}
+
+model MetricDaily {
+  id          String   @id @default(uuid())
+  // Midnight UTC of the day this metric represents
+  metricDate  DateTime
+  metricKey   String   // gross_sales | net_sales | orders_count | discount_total | tax_total | shipping_total | refund_total | new_customers
+  valueNumber Decimal  @db.Decimal(18, 4)
+  // Optional dimensions (extend later)
+  currency    String?  // "USD"
+  channel     String?  // "online" | "pos"
+  createdAt   DateTime @default(now())
+
+  @@unique([metricDate, metricKey, currency, channel])
+  @@index([metricDate])
+  @@index([metricKey, metricDate])
+  @@map("metric_daily")
+}
