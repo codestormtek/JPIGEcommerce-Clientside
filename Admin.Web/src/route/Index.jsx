@@ -89,6 +89,7 @@ import AdminRecipeList from "@/pages/pre-built/recipes/AdminRecipeList";
 import AdminMenuList from "@/pages/pre-built/menus/AdminMenuList";
 import AdminMenuBuilder from "@/pages/pre-built/menus/AdminMenuBuilder";
 import AdminAuditLogList from "@/pages/pre-built/audit-logs/AdminAuditLogList";
+import AdminMessageTemplateList from "@/pages/pre-built/message-templates/AdminMessageTemplateList";
 import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
 import MediaManager from "@/pages/pre-built/media/MediaManager";
 import KycListRegular from "@/pages/pre-built/kyc-list-regular/KycListRegular";
@@ -192,6 +193,7 @@ const Pages = () => {
               <Route path="admin/audit-logs" element={<AdminAuditLogList />}></Route>
               <Route path="media" element={<MediaManager />}></Route>
               <Route path="orders" element={<AdminOrderList />}></Route>
+              <Route path="templates" element={<AdminMessageTemplateList />}></Route>
 
               <Route path="kyc-list-regular" element={<KycListRegular />}></Route>
               <Route path="kyc-details-regular/:kycId" element={<KycDetailsRegular />}></Route>
