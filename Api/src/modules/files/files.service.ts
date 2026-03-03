@@ -30,13 +30,14 @@ export async function uploadFile(
   const dd = String(now.getDate()).padStart(2, '0');
   const storageKey = `files/${yyyy}/${mm}/${dd}/${randomUUID()}${ext}`;
 
-  saveFile(storageKey, file.buffer);
+  await saveFile(storageKey, file.buffer);
 
   const stored = await repo.createStoredFile({
     originalName: file.originalname,
     mimeType: file.mimetype,
     sizeBytes: BigInt(file.size),
     storageKey,
+    storageProvider: 'r2',
     uploadedByUserId,
   });
 
@@ -56,15 +57,15 @@ export async function getFileById(id: string) {
 
 export async function downloadFile(id: string) {
   const file = await getFileById(id);
-  if (!storageKeyExists(file.storageKey)) {
+  if (!await storageKeyExists(file.storageKey)) {
     throw ApiError.notFound('File content');
   }
-  return { file, stream: readFileStream(file.storageKey) };
+  return { file, stream: await readFileStream(file.storageKey) };
 }
 
 export async function deleteFile(id: string, ctx?: AuditContext) {
   const file = await getFileById(id);
-  deleteStoredFile(file.storageKey);
+  await deleteStoredFile(file.storageKey);
   await repo.softDeleteStoredFile(id);
   logAudit({ action: AuditAction.FILE_DELETED, entityType: 'StoredFile', entityId: id, ctx });
 }

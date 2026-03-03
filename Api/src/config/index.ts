@@ -53,6 +53,18 @@ export const config = {
     maxFileSizeMb: parseInt(process.env.MAX_UPLOAD_SIZE_MB ?? '25', 10),
   },
 
+  storage: {
+    provider: process.env.STORAGE_PROVIDER ?? 'r2', // 'local' | 'r2'
+    r2: {
+      endpoint: process.env.R2_ENDPOINT ?? `https://${process.env.R2_ACCOUNT_ID ?? ''}.r2.cloudflarestorage.com`,
+      accountId: process.env.R2_ACCOUNT_ID ?? '',
+      accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',
+      bucket: process.env.R2_BUCKET ?? '',
+      publicBaseUrl: (process.env.R2_PUBLIC_BASE_URL ?? '').replace(/\/$/, ''),
+    },
+  },
+
   exports: {
     maxRows: parseInt(process.env.EXPORT_MAX_ROWS ?? '50000', 10),
   },

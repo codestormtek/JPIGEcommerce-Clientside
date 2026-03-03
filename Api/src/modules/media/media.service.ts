@@ -1,7 +1,7 @@
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { ApiError } from '../../utils/apiError';
-import { saveFile } from '../../lib/storage';
+import { saveFile, getPublicUrl } from '../../lib/storage';
 import { ListMediaInput, CreateMediaInput, UpdateMediaInput, MEDIA_FOLDERS, MediaFolder } from './media.schema';
 import * as repo from './media.repository';
 
@@ -49,8 +49,8 @@ export async function uploadMediaFile(file: Express.Multer.File, folder: MediaFo
   const ext = path.extname(file.originalname) || '.jpg';
   const now = new Date();
   const storageKey = `${folder}/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${randomUUID()}${ext}`;
-  saveFile(storageKey, file.buffer);
-  const url = `/uploads/${storageKey}`;
+  await saveFile(storageKey, file.buffer);
+  const url = getPublicUrl(storageKey);
   const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
   return repo.createMedia({
     url,

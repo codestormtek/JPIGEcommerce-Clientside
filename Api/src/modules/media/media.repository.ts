@@ -1,5 +1,6 @@
 import prisma from '../../lib/prisma';
 import { ListMediaInput, CreateMediaInput, UpdateMediaInput, MediaFolder } from './media.schema';
+import { getFolderPrefix } from '../../lib/storage';
 
 // ─── BigInt serialization ─────────────────────────────────────────────────────
 // Prisma maps BIGINT columns to JS BigInt.  JSON.stringify cannot handle BigInt,
@@ -22,16 +23,16 @@ function serializeAsset<T extends WithMetadata>(asset: T): T {
   };
 }
 
-/** Maps every folder key to the URL prefix used when files are stored on disk. */
+/** Maps every folder key to the URL prefix for the active storage provider. */
 const FOLDER_PREFIXES: Record<MediaFolder, string> = {
-  products:   '/uploads/products/',
-  avatars:    '/uploads/avatars/',
-  carousel:   '/uploads/carousel/',
-  blog:       '/uploads/blog/',
-  news:       '/uploads/news/',
-  topics:     '/uploads/topics/',
-  categories: '/uploads/categories/',
-  media:      '/uploads/media/',
+  products:   getFolderPrefix('products'),
+  avatars:    getFolderPrefix('avatars'),
+  carousel:   getFolderPrefix('carousel'),
+  blog:       getFolderPrefix('blog'),
+  news:       getFolderPrefix('news'),
+  topics:     getFolderPrefix('topics'),
+  categories: getFolderPrefix('categories'),
+  media:      getFolderPrefix('media'),
 };
 
 const mediaInclude = { metadata: true } as const;

@@ -8,6 +8,7 @@ export interface CreateStoredFileData {
   mimeType: string;
   sizeBytes: bigint;
   storageKey: string;
+  storageProvider?: string;
   uploadedByUserId?: string;
 }
 
