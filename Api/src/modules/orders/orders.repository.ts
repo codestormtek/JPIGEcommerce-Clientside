@@ -9,6 +9,8 @@ const orderInclude = {
   orderStatus: true,
   shippingMethod: true,
   addresses: true,
+  user: { select: { id: true, firstName: true, lastName: true, emailAddress: true } },
+  shipment: true,
   lines: {
     include: {
       productItem: { include: { product: true } },
@@ -170,5 +172,31 @@ export async function findAllStatuses() {
 
 export async function findAllShippingMethods() {
   return prisma.shippingMethod.findMany({ orderBy: { name: 'asc' } });
+}
+
+// ─── Outbox ───────────────────────────────────────────────────────────────────
+
+export async function createOutboxEmail(data: {
+  toAddress: string;
+  subject: string;
+  bodyHtml: string;
+  bodyText: string;
+  payloadJson: string;
+  providerMessageId?: string | null;
+}) {
+  return prisma.messageOutbox.create({
+    data: {
+      channel: 'email',
+      templateKey: 'invoice',
+      status: data.providerMessageId ? 'sent' : 'queued',
+      toAddress: data.toAddress,
+      subject: data.subject,
+      bodyHtml: data.bodyHtml,
+      bodyText: data.bodyText,
+      payloadJson: data.payloadJson,
+      providerMessageId: data.providerMessageId ?? null,
+      sentAt: data.providerMessageId ? new Date() : null,
+    },
+  });
 }
 

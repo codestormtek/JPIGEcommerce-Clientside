@@ -1,6 +1,5 @@
 import React from "react";
-import LogoSmall from "@/images/logo-small.png";
-import LogoDark from "@/images/logo-dark-small.png";
+const LOGO_URL = "/uploads/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png";
 import SimpleBar from "simplebar-react";
 import classNames from "classnames";
 import { DropdownMenu, DropdownToggle, UncontrolledDropdown } from "reactstrap";
@@ -100,8 +99,8 @@ const Appbar = () => {
     <div className={appSidebarClass}>
       <div className="nk-apps-brand">
         <Link to="/" className="logo-link">
-          <img className="logo-light logo-img" src={LogoSmall} alt="logo" />
-          <img className="logo-dark logo-img" src={LogoDark} alt="logo-dark" />
+          <img className="logo-light logo-img" src={LOGO_URL} alt="The Jiggling Pig, LLC" />
+          <img className="logo-dark logo-img" src={LOGO_URL} alt="The Jiggling Pig, LLC" />
         </Link>
       </div>
       <div className="nk-sidebar-element">

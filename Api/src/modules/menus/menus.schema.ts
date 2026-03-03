@@ -22,6 +22,8 @@ export const createMenuSchema = z.object({
   isActive: z.boolean().default(true),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
+  layout: z.enum(['1col', '2col']).default('2col'),
+  theme: z.enum(['default', 'dark', 'light', 'warm', 'cool']).default('default'),
 });
 
 export type CreateMenuInput = z.infer<typeof createMenuSchema>;
@@ -29,10 +31,19 @@ export type CreateMenuInput = z.infer<typeof createMenuSchema>;
 export const updateMenuSchema = createMenuSchema.partial();
 export type UpdateMenuInput = z.infer<typeof updateMenuSchema>;
 
+// ─── Publish Menu ─────────────────────────────────────────────────────────────
+
+export const publishMenuSchema = z.object({
+  publishedBy: z.string().optional(),
+});
+
+export type PublishMenuInput = z.infer<typeof publishMenuSchema>;
+
 // ─── Sections ─────────────────────────────────────────────────────────────────
 
 export const createSectionSchema = z.object({
   name: z.string().min(1, 'Section name is required'),
+  icon: z.string().optional(),
   displayOrder: z.number().int().nonnegative().default(0),
 });
 
@@ -40,6 +51,17 @@ export type CreateSectionInput = z.infer<typeof createSectionSchema>;
 
 export const updateSectionSchema = createSectionSchema.partial();
 export type UpdateSectionInput = z.infer<typeof updateSectionSchema>;
+
+// ─── Reorder section items ────────────────────────────────────────────────────
+
+export const reorderSectionItemsSchema = z.object({
+  items: z.array(z.object({
+    menuItemId: z.string().uuid(),
+    displayOrder: z.number().int().nonnegative(),
+  })),
+});
+
+export type ReorderSectionItemsInput = z.infer<typeof reorderSectionItemsSchema>;
 
 // ─── Section Item assignment ──────────────────────────────────────────────────
 
@@ -50,6 +72,15 @@ export const addSectionItemSchema = z.object({
 });
 
 export type AddSectionItemInput = z.infer<typeof addSectionItemSchema>;
+
+// ─── Update section item ──────────────────────────────────────────────────────
+
+export const updateSectionItemSchema = z.object({
+  priceOverride: z.number().nonnegative().nullable().optional(),
+  displayOrder: z.number().int().nonnegative().optional(),
+});
+
+export type UpdateSectionItemInput = z.infer<typeof updateSectionItemSchema>;
 
 // ─── Menu Items ───────────────────────────────────────────────────────────────
 
@@ -78,4 +109,5 @@ export type CreateMenuItemInput = z.infer<typeof createMenuItemSchema>;
 
 export const updateMenuItemSchema = createMenuItemSchema.partial();
 export type UpdateMenuItemInput = z.infer<typeof updateMenuItemSchema>;
+
 

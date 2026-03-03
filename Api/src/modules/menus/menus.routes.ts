@@ -6,9 +6,12 @@ import {
   listMenusSchema,
   createMenuSchema,
   updateMenuSchema,
+  publishMenuSchema,
   createSectionSchema,
   updateSectionSchema,
   addSectionItemSchema,
+  updateSectionItemSchema,
+  reorderSectionItemsSchema,
   listMenuItemsSchema,
   createMenuItemSchema,
   updateMenuItemSchema,
@@ -42,6 +45,12 @@ menusRouter.get('/', validate(listMenusSchema, 'query'), asyncHandler(ctrl.listM
 // POST   /api/v1/menus                — create menu (admin)
 menusRouter.post('/', authenticate, authorize('admin'), validate(createMenuSchema), asyncHandler(ctrl.createMenu));
 
+// GET    /api/v1/menus/:id/builder    — load builder payload (admin)  ← must be before /:id
+menusRouter.get('/:id/builder', authenticate, authorize('admin'), asyncHandler(ctrl.getMenuBuilder));
+
+// POST   /api/v1/menus/:id/publish    — publish menu snapshot (admin)
+menusRouter.post('/:id/publish', authenticate, authorize('admin'), validate(publishMenuSchema), asyncHandler(ctrl.publishMenu));
+
 // GET    /api/v1/menus/:id            — get menu with sections (public)
 menusRouter.get('/:id', asyncHandler(ctrl.getMenuById));
 
@@ -67,6 +76,13 @@ menusRouter.delete('/:id/sections/:sectionId', authenticate, authorize('admin'),
 // POST   /api/v1/menus/:id/sections/:sectionId/items
 menusRouter.post('/:id/sections/:sectionId/items', authenticate, authorize('admin'), validate(addSectionItemSchema), asyncHandler(ctrl.addItemToSection));
 
+// PATCH  /api/v1/menus/:id/sections/:sectionId/items/:menuItemId
+menusRouter.patch('/:id/sections/:sectionId/items/:menuItemId', authenticate, authorize('admin'), validate(updateSectionItemSchema), asyncHandler(ctrl.updateSectionItem));
+
+// PUT    /api/v1/menus/:id/sections/:sectionId/items/reorder
+menusRouter.put('/:id/sections/:sectionId/items/reorder', authenticate, authorize('admin'), validate(reorderSectionItemsSchema), asyncHandler(ctrl.reorderSectionItems));
+
 // DELETE /api/v1/menus/:id/sections/:sectionId/items/:menuItemId
 menusRouter.delete('/:id/sections/:sectionId/items/:menuItemId', authenticate, authorize('admin'), asyncHandler(ctrl.removeItemFromSection));
+
 

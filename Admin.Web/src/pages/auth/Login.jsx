@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import Logo from "@/images/logo.png";
-import LogoDark from "@/images/logo-dark.png";
 import Head from "@/layout/head/Head";
 import AuthFooter from "./AuthFooter";
 import {
@@ -38,8 +36,8 @@ const Login = () => {
       <Block className="nk-block-middle nk-auth-body  wide-xs">
         <div className="brand-logo pb-4 text-center">
           <Link to={"/"} className="logo-link">
-            <img className="logo-light logo-img logo-img-lg" src={Logo} alt="logo" />
-            <img className="logo-dark logo-img logo-img-lg" src={LogoDark} alt="logo-dark" />
+            <img className="logo-light logo-img logo-img-lg" src="/uploads/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png" alt="The Jiggling Pig, LLC" />
+            <img className="logo-dark logo-img logo-img-lg" src="/uploads/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png" alt="The Jiggling Pig, LLC" />
           </Link>
         </div>
 

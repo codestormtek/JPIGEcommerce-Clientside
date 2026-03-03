@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Dropzone from "react-dropzone";
-import { Modal, ModalBody, Spinner, Badge } from "reactstrap";
+import { Modal, ModalBody, Spinner, Badge, UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem } from "reactstrap";
 import Head from "@/layout/head/Head";
 import ContentAlt from "@/layout/content/ContentAlt";
 import { Icon, Button, PaginationComponent } from "@/components/Component";
@@ -185,22 +185,26 @@ const MediaManager = () => {
           </div>
         </div>
 
-        {/* ── Horizontal folder nav ────────────────────────────────────── */}
-        <div style={{ overflowX: "auto", borderBottom: "1px solid #dbdfea" }}>
-          <ul className="nav nav-tabs nav-tabs-s2 border-0 flex-nowrap px-4 pt-1">
-            {FOLDERS.map(({ label, icon, folder }) => (
-              <li className="nav-item" key={label}>
-                <a
-                  href="#folder"
-                  className={`nav-link d-flex align-items-center gap-1${activeFolder === folder ? " active" : ""}`}
-                  onClick={(e) => { e.preventDefault(); setActiveFolder(folder); setPage(1); }}
-                >
-                  <Icon name={icon} />
-                  <span className="ms-1">{label}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
+        {/* ── Folder dropdown ──────────────────────────────────────────── */}
+        <div className="px-4 py-2" style={{ borderBottom: "1px solid #dbdfea" }}>
+          <UncontrolledDropdown>
+            <DropdownToggle tag="a" className="btn btn-white btn-outline-light d-flex align-items-center gap-2" style={{ width: "fit-content" }}>
+              <Icon name={FOLDERS.find((f) => f.folder === activeFolder)?.icon ?? "folder"} />
+              <span>{FOLDERS.find((f) => f.folder === activeFolder)?.label ?? "All Files"}</span>
+              <Icon name="chevron-down" />
+            </DropdownToggle>
+            <DropdownMenu>
+              <ul className="link-list-opt no-bdr">
+                {FOLDERS.map(({ label, icon, folder }) => (
+                  <li key={label} className={activeFolder === folder ? "active" : ""}>
+                    <DropdownItem onClick={() => { setActiveFolder(folder); setPage(1); }}>
+                      <Icon name={icon} /><span>{label}</span>
+                    </DropdownItem>
+                  </li>
+                ))}
+              </ul>
+            </DropdownMenu>
+          </UncontrolledDropdown>
         </div>
 
         {/* ── Content area ─────────────────────────────────────────────── */}

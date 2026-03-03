@@ -61,3 +61,11 @@ export const updateOrderStatusSchema = z.object({
 
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
 
+// ─── Email invoice (admin) ────────────────────────────────────────────────────
+
+export const emailInvoiceSchema = z.object({
+  emailTo: z.string().email('Invalid email address'),
+});
+
+export type EmailInvoiceInput = z.infer<typeof emailInvoiceSchema>;
+

@@ -1,5 +1,7 @@
 import { ApiError } from '../../utils/apiError';
 import { ListOrdersInput, PlaceOrderInput, UpdateOrderStatusInput } from './orders.schema';
+import { sendEmail } from '../../lib/mailer';
+import { config } from '../../config';
 import * as repo from './orders.repository';
 import * as userRepo from '../users/users.repository';
 import * as paymentRepo from '../payments/payments.repository';
@@ -238,5 +240,111 @@ export async function getAdminInvoice(orderId: string) {
   const order = await repo.findOrderById(orderId);
   if (!order) throw ApiError.notFound('Order');
   return buildInvoice(order);
+}
+
+export async function emailInvoice(orderId: string, emailTo: string) {
+  const order = await repo.findOrderById(orderId);
+  if (!order) throw ApiError.notFound('Order');
+
+  const shortId = order.id.slice(-8).toUpperCase();
+  const customer = [order.user?.firstName, order.user?.lastName].filter(Boolean).join(' ') || 'Customer';
+  const fmtPrice = (p: unknown) => `$${Number(p ?? 0).toFixed(2)}`;
+  const subject = `Invoice #${shortId} — The Jiggling Pig, LLC`;
+
+  const lineRows = (order.lines ?? [])
+    .map(
+      (l) => `
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${l.productNameSnapshot || '—'}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;color:#8094ae;">${l.skuSnapshot || '—'}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${fmtPrice(l.unitPriceSnapshot)}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${l.qty}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${fmtPrice(l.lineTotal)}</td>
+      </tr>`,
+    )
+    .join('');
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${subject}</title></head>
+<body style="margin:0;padding:0;background:#f5f6fa;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f6fa;padding:40px 0;">
+    <tr><td align="center">
+      <table width="620" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <!-- Header -->
+        <tr><td style="background:#1c2b46;padding:32px;text-align:center;">
+          <img src="https://thejugglingpig.com/uploads/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
+               alt="The Jiggling Pig" height="60" style="max-height:60px;" />
+          <p style="color:#fff;margin:8px 0 0;font-size:18px;font-weight:bold;">The Jiggling Pig, LLC</p>
+        </td></tr>
+        <!-- Invoice meta -->
+        <tr><td style="padding:32px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="vertical-align:top;">
+                <p style="margin:0;font-size:11px;text-transform:uppercase;color:#8094ae;letter-spacing:1px;">Invoice To</p>
+                <p style="margin:4px 0 0;font-size:16px;font-weight:bold;color:#1c2b46;">${customer}</p>
+                <p style="margin:4px 0 0;color:#526484;">${emailTo}</p>
+              </td>
+              <td style="vertical-align:top;text-align:right;">
+                <p style="margin:0;font-size:22px;font-weight:bold;color:#1c2b46;">Invoice</p>
+                <p style="margin:4px 0 0;color:#526484;">Invoice #${shortId}</p>
+                <p style="margin:4px 0 0;color:#526484;">${new Date(order.orderDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+        <!-- Line items -->
+        <tr><td style="padding:0 32px 32px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+            <thead>
+              <tr style="background:#f5f6fa;">
+                <th style="padding:10px 8px;text-align:left;font-size:12px;color:#8094ae;text-transform:uppercase;">Description</th>
+                <th style="padding:10px 8px;text-align:left;font-size:12px;color:#8094ae;text-transform:uppercase;">SKU</th>
+                <th style="padding:10px 8px;text-align:left;font-size:12px;color:#8094ae;text-transform:uppercase;">Unit Price</th>
+                <th style="padding:10px 8px;text-align:left;font-size:12px;color:#8094ae;text-transform:uppercase;">Qty</th>
+                <th style="padding:10px 8px;text-align:left;font-size:12px;color:#8094ae;text-transform:uppercase;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>${lineRows}</tbody>
+          </table>
+          <!-- Totals -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">
+            <tr><td colspan="3"></td><td style="padding:6px 8px;color:#526484;">Subtotal</td><td style="padding:6px 8px;text-align:right;">${fmtPrice(order.subtotal)}</td></tr>
+            ${Number(order.discountTotal) > 0 ? `<tr><td colspan="3"></td><td style="padding:6px 8px;color:#526484;">Discount</td><td style="padding:6px 8px;text-align:right;color:#e85347;">-${fmtPrice(order.discountTotal)}</td></tr>` : ''}
+            <tr><td colspan="3"></td><td style="padding:6px 8px;color:#526484;">Tax</td><td style="padding:6px 8px;text-align:right;">${fmtPrice(order.taxTotal)}</td></tr>
+            ${Number(order.shippingTotal) > 0 ? `<tr><td colspan="3"></td><td style="padding:6px 8px;color:#526484;">Shipping</td><td style="padding:6px 8px;text-align:right;">${fmtPrice(order.shippingTotal)}</td></tr>` : ''}
+            <tr style="border-top:2px solid #1c2b46;">
+              <td colspan="3"></td>
+              <td style="padding:10px 8px;font-weight:bold;color:#1c2b46;">Grand Total</td>
+              <td style="padding:10px 8px;text-align:right;font-weight:bold;color:#1c2b46;font-size:16px;">${fmtPrice(order.grandTotal)}</td>
+            </tr>
+          </table>
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="background:#f5f6fa;padding:24px;text-align:center;color:#8094ae;font-size:12px;">
+          <p style="margin:0;">Invoice was created on a computer and is valid without the signature and seal.</p>
+          <p style="margin:8px 0 0;">&copy; ${new Date().getFullYear()} The Jiggling Pig, LLC. All Rights Reserved.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  const text = `Invoice #${shortId} — The Jiggling Pig, LLC\nTo: ${customer} <${emailTo}>\nGrand Total: ${fmtPrice(order.grandTotal)}`;
+
+  const providerMessageId = await sendEmail({ to: emailTo, subject, html, text });
+
+  await repo.createOutboxEmail({
+    toAddress: emailTo,
+    subject,
+    bodyHtml: html,
+    bodyText: text,
+    payloadJson: JSON.stringify({ orderId, shortId }),
+    providerMessageId,
+  });
+
+  return { sent: true, to: emailTo };
 }
 

@@ -39,3 +39,7 @@ export async function findAuditLogById(id: string) {
   return prisma.auditLog.findUnique({ where: { id }, include: auditLogInclude });
 }
 
+export async function deleteAuditLog(id: string) {
+  return prisma.auditLog.delete({ where: { id } });
+}
+

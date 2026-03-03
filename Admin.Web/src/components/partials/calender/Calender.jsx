@@ -27,7 +27,7 @@ const EventView = (event) => {
   );
 };
 
-const CalenderApp = ({ events, onDelete, onEdit }) => {
+const CalenderApp = ({ events, onDelete, onEdit, onDateClick }) => {
   const [modalState, updateModal] = useState(false);
   const [mockEvents, updateEvents] = useState(events);
   const [event, updateEvent] = useState({});
@@ -77,6 +77,10 @@ const CalenderApp = ({ events, onDelete, onEdit }) => {
     toggle();
   };
 
+  const handleDateClick = (info) => {
+    if (onDateClick) onDateClick(info.date, info.allDay);
+  };
+
   useEffect(() => {
     reset(event)
   }, [event]);
@@ -87,6 +91,7 @@ const CalenderApp = ({ events, onDelete, onEdit }) => {
         plugins={[dayGridPlugin, timeGridPlugin, listPlugin, bootstrapPlugin]}
         events={mockEvents}
         eventClick={(info) => handleEventClick(info)}
+        dateClick={(info) => handleDateClick(info)}
         initialView="dayGridMonth"
         headerToolbar={{
           left: "title prev,next",

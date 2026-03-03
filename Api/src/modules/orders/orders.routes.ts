@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validate.middleware';
 import { asyncHandler } from '../../utils/asyncHandler';
-import { listOrdersSchema, placeOrderSchema, updateOrderStatusSchema } from './orders.schema';
+import { listOrdersSchema, placeOrderSchema, updateOrderStatusSchema, emailInvoiceSchema } from './orders.schema';
 import * as ctrl from './orders.controller';
 
 export const ordersRouter = Router();
@@ -49,6 +49,15 @@ ordersRouter.patch(
   authorize('admin'),
   validate(updateOrderStatusSchema),
   asyncHandler(ctrl.updateOrderStatus),
+);
+
+// POST   /api/v1/orders/admin/:id/email-invoice
+ordersRouter.post(
+  '/admin/:id/email-invoice',
+  authenticate,
+  authorize('admin'),
+  validate(emailInvoiceSchema),
+  asyncHandler(ctrl.emailInvoice),
 );
 
 // ─── User routes ──────────────────────────────────────────────────────────────

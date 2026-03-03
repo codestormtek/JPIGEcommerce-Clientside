@@ -12,3 +12,9 @@ export async function getAuditLogById(id: string) {
   return log;
 }
 
+export async function deleteAuditLog(id: string) {
+  const log = await repo.findAuditLogById(id);
+  if (!log) throw ApiError.notFound('Audit log');
+  return repo.deleteAuditLog(id);
+}
+

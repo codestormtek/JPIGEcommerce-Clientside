@@ -36,11 +36,15 @@ const Header = ({ fixed, className }) => {
           </div>
           <div className="nk-header-app-name">
             <div className="nk-header-app-logo">
-              <Icon name="dashlite" className="bg-purple-dim"></Icon>
+              <img
+                src="/uploads/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
+                alt="The Jiggling Pig"
+                style={{ height: 32, objectFit: "contain" }}
+              />
             </div>
             <div className="nk-header-app-info">
-              <span className="sub-text">DashLite</span>
-              <span className="lead-text">Dashboard</span>
+              <span className="sub-text">The Jiggling Pig</span>
+              <span className="lead-text">Admin</span>
             </div>
           </div>
           <div className="nk-header-menu is-light">

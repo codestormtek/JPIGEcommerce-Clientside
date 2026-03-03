@@ -86,6 +86,10 @@ import AdminProductList from "@/pages/pre-built/products/AdminProductList";
 import AdminBrandList from "@/pages/pre-built/products/AdminBrandList";
 import AdminCategoryList from "@/pages/pre-built/products/AdminCategoryList";
 import AdminRecipeList from "@/pages/pre-built/recipes/AdminRecipeList";
+import AdminMenuList from "@/pages/pre-built/menus/AdminMenuList";
+import AdminMenuBuilder from "@/pages/pre-built/menus/AdminMenuBuilder";
+import AdminAuditLogList from "@/pages/pre-built/audit-logs/AdminAuditLogList";
+import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
 import MediaManager from "@/pages/pre-built/media/MediaManager";
 import KycListRegular from "@/pages/pre-built/kyc-list-regular/KycListRegular";
 import KycDetailsRegular from "@/pages/pre-built/kyc-list-regular/kycDetailsRegular";
@@ -183,7 +187,11 @@ const Pages = () => {
               <Route path="categories" element={<AdminCategoryList />}></Route>
               <Route path="recipes" element={<AdminRecipeList />}></Route>
               <Route path="recipes/create" element={<AdminRecipeList />}></Route>
+              <Route path="menus" element={<AdminMenuList />}></Route>
+              <Route path="menus/:menuId/builder" element={<AdminMenuBuilder />}></Route>
+              <Route path="admin/audit-logs" element={<AdminAuditLogList />}></Route>
               <Route path="media" element={<MediaManager />}></Route>
+              <Route path="orders" element={<AdminOrderList />}></Route>
 
               <Route path="kyc-list-regular" element={<KycListRegular />}></Route>
               <Route path="kyc-details-regular/:kycId" element={<KycDetailsRegular />}></Route>
@@ -288,6 +296,7 @@ const Pages = () => {
               </Route>
               <Route element={<LayoutApp app={{icon:"calendar", theme:"bg-success-dim", text: "Calendar"}} />}>
                 <Route path="app-calender" element={<Calender />}></Route>
+                <Route path="schedule" element={<Calender />}></Route>
               </Route>
               <Route element={<LayoutApp app={{icon:"inbox", theme:"bg-primary-dim", text: "Mailbox"}} />}>
                 <Route path="app-inbox" element={<Inbox />}></Route>

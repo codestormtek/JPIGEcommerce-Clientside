@@ -57,6 +57,11 @@ export const config = {
     maxRows: parseInt(process.env.EXPORT_MAX_ROWS ?? '50000', 10),
   },
 
+  resend: {
+    apiKey: process.env.RESEND_API_KEY ?? '',
+    from: process.env.RESEND_FROM ?? 'invoices@thejugglingpig.com',
+  },
+
 
 } as const;
 

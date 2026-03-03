@@ -1,8 +1,9 @@
 import { ApiError } from '../../utils/apiError';
 import {
   ListMenusInput, CreateMenuInput, UpdateMenuInput,
-  CreateSectionInput, UpdateSectionInput, AddSectionItemInput,
+  CreateSectionInput, UpdateSectionInput, AddSectionItemInput, UpdateSectionItemInput,
   ListMenuItemsInput, CreateMenuItemInput, UpdateMenuItemInput,
+  PublishMenuInput, ReorderSectionItemsInput,
 } from './menus.schema';
 import * as repo from './menus.repository';
 
@@ -30,6 +31,17 @@ export async function updateMenu(id: string, input: UpdateMenuInput) {
 export async function deleteMenu(id: string) {
   await getMenuById(id);
   return repo.softDeleteMenu(id);
+}
+
+export async function getMenuBuilder(id: string) {
+  const menu = await repo.findMenuBuilder(id);
+  if (!menu) throw ApiError.notFound('Menu');
+  return menu;
+}
+
+export async function publishMenu(id: string, input: PublishMenuInput) {
+  await getMenuById(id);
+  return repo.publishMenu(id, input);
 }
 
 // ─── Sections ─────────────────────────────────────────────────────────────────
@@ -67,6 +79,18 @@ export async function removeItemFromSection(sectionId: string, menuItemId: strin
   const section = await repo.findSectionById(sectionId);
   if (!section) throw ApiError.notFound('Menu section');
   return repo.removeItemFromSection(sectionId, menuItemId);
+}
+
+export async function updateSectionItem(sectionId: string, menuItemId: string, input: UpdateSectionItemInput) {
+  const section = await repo.findSectionById(sectionId);
+  if (!section) throw ApiError.notFound('Menu section');
+  return repo.updateSectionItem(sectionId, menuItemId, input);
+}
+
+export async function reorderSectionItems(sectionId: string, input: ReorderSectionItemsInput) {
+  const section = await repo.findSectionById(sectionId);
+  if (!section) throw ApiError.notFound('Menu section');
+  return repo.reorderSectionItems(sectionId, input);
 }
 
 // ─── Menu Items ───────────────────────────────────────────────────────────────

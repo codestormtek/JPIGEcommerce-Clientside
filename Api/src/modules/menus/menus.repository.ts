@@ -1,8 +1,9 @@
 import prisma from '../../lib/prisma';
 import {
   ListMenusInput, CreateMenuInput, UpdateMenuInput,
-  CreateSectionInput, UpdateSectionInput, AddSectionItemInput,
+  CreateSectionInput, UpdateSectionInput, AddSectionItemInput, UpdateSectionItemInput,
   ListMenuItemsInput, CreateMenuItemInput, UpdateMenuItemInput,
+  PublishMenuInput, ReorderSectionItemsInput,
 } from './menus.schema';
 
 const menuInclude = {
@@ -57,6 +58,66 @@ export async function softDeleteMenu(id: string) {
   return prisma.menu.update({ where: { id }, data: { isDeleted: true } });
 }
 
+// ─── Builder payload ──────────────────────────────────────────────────────────
+
+const builderInclude = {
+  sections: {
+    where: { menu: { isDeleted: false } },
+    orderBy: { displayOrder: 'asc' as const },
+    include: {
+      items: {
+        orderBy: { displayOrder: 'asc' as const },
+        include: {
+          menuItem: {
+            include: {
+              mediaAsset: { select: { id: true, url: true, altText: true } },
+              optionGroups: {
+                orderBy: { displayOrder: 'asc' as const },
+                include: { options: { orderBy: { displayOrder: 'asc' as const } } },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+export async function findMenuBuilder(id: string) {
+  return prisma.menu.findFirst({
+    where: { id, isDeleted: false },
+    include: builderInclude,
+  });
+}
+
+// ─── Publish ──────────────────────────────────────────────────────────────────
+
+export async function publishMenu(id: string, input: PublishMenuInput) {
+  // Count existing versions for this menu to derive next version number
+  const versionCount = await prisma.menuVersion.count({ where: { menuId: id } });
+  const nextVersion = versionCount + 1;
+
+  // Load full snapshot before publishing
+  const snapshot = await findMenuBuilder(id);
+
+  const [updated] = await prisma.$transaction([
+    prisma.menu.update({
+      where: { id },
+      data: { isPublished: true, publishedAt: new Date() },
+      include: builderInclude,
+    }),
+    prisma.menuVersion.create({
+      data: {
+        menuId: id,
+        version: nextVersion,
+        snapshot: snapshot as object,
+        publishedBy: input.publishedBy,
+      },
+    }),
+  ]);
+  return updated;
+}
+
 // ─── Sections ─────────────────────────────────────────────────────────────────
 
 export async function findSectionById(id: string) {
@@ -97,6 +158,28 @@ export async function addItemToSection(sectionId: string, input: AddSectionItemI
 
 export async function removeItemFromSection(sectionId: string, menuItemId: string) {
   return prisma.menuSectionItem.delete({ where: { menuSectionId_menuItemId: { menuSectionId: sectionId, menuItemId } } });
+}
+
+export async function updateSectionItem(sectionId: string, menuItemId: string, input: UpdateSectionItemInput) {
+  return prisma.menuSectionItem.update({
+    where: { menuSectionId_menuItemId: { menuSectionId: sectionId, menuItemId } },
+    data: {
+      priceOverride: input.priceOverride !== undefined ? input.priceOverride : undefined,
+      displayOrder: input.displayOrder,
+    },
+    include: { menuItem: true },
+  });
+}
+
+export async function reorderSectionItems(sectionId: string, input: ReorderSectionItemsInput) {
+  await prisma.$transaction(
+    input.items.map(({ menuItemId, displayOrder }) =>
+      prisma.menuSectionItem.update({
+        where: { menuSectionId_menuItemId: { menuSectionId: sectionId, menuItemId } },
+        data: { displayOrder },
+      }),
+    ),
+  );
 }
 
 // ─── Menu Items ───────────────────────────────────────────────────────────────

@@ -2,8 +2,9 @@ import { Request, Response } from 'express';
 import { sendSuccess, sendCreated, sendNoContent, sendPaginated } from '../../utils/apiResponse';
 import {
   ListMenusInput, CreateMenuInput, UpdateMenuInput,
-  CreateSectionInput, UpdateSectionInput, AddSectionItemInput,
+  CreateSectionInput, UpdateSectionInput, AddSectionItemInput, UpdateSectionItemInput,
   ListMenuItemsInput, CreateMenuItemInput, UpdateMenuItemInput,
+  PublishMenuInput, ReorderSectionItemsInput,
 } from './menus.schema';
 import * as service from './menus.service';
 
@@ -34,6 +35,16 @@ export async function deleteMenu(req: Request, res: Response): Promise<void> {
   sendNoContent(res);
 }
 
+export async function getMenuBuilder(req: Request, res: Response): Promise<void> {
+  const menu = await service.getMenuBuilder(req.params['id'] as string);
+  sendSuccess(res, menu);
+}
+
+export async function publishMenu(req: Request, res: Response): Promise<void> {
+  const menu = await service.publishMenu(req.params['id'] as string, req.body as PublishMenuInput);
+  sendSuccess(res, menu, 'Menu published');
+}
+
 // ─── Sections ─────────────────────────────────────────────────────────────────
 
 export async function addSection(req: Request, res: Response): Promise<void> {
@@ -60,6 +71,20 @@ export async function addItemToSection(req: Request, res: Response): Promise<voi
 
 export async function removeItemFromSection(req: Request, res: Response): Promise<void> {
   await service.removeItemFromSection(req.params['sectionId'] as string, req.params['menuItemId'] as string);
+  sendNoContent(res);
+}
+
+export async function updateSectionItem(req: Request, res: Response): Promise<void> {
+  const item = await service.updateSectionItem(
+    req.params['sectionId'] as string,
+    req.params['menuItemId'] as string,
+    req.body as UpdateSectionItemInput,
+  );
+  sendSuccess(res, item, 'Section item updated');
+}
+
+export async function reorderSectionItems(req: Request, res: Response): Promise<void> {
+  await service.reorderSectionItems(req.params['sectionId'] as string, req.body as ReorderSectionItemsInput);
   sendNoContent(res);
 }
 

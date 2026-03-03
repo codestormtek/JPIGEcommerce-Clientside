@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../types';
 import { sendSuccess, sendCreated, sendPaginated } from '../../utils/apiResponse';
-import { ListOrdersInput, PlaceOrderInput, UpdateOrderStatusInput } from './orders.schema';
+import { ListOrdersInput, PlaceOrderInput, UpdateOrderStatusInput, EmailInvoiceInput } from './orders.schema';
 import { ctxFromRequest } from '../../utils/auditLogger';
 import * as service from './orders.service';
 
@@ -63,6 +63,14 @@ export async function getAdminInvoice(req: AuthRequest, res: Response): Promise<
   const orderId = req.params['id'] as string;
   const invoice = await service.getAdminInvoice(orderId);
   sendSuccess(res, invoice);
+}
+
+// POST /api/v1/orders/admin/:id/email-invoice
+export async function emailInvoice(req: AuthRequest, res: Response): Promise<void> {
+  const orderId = req.params['id'] as string;
+  const { emailTo } = req.body as EmailInvoiceInput;
+  const result = await service.emailInvoice(orderId, emailTo);
+  sendSuccess(res, result, `Invoice emailed to ${emailTo}`);
 }
 
 // ─── Lookups ──────────────────────────────────────────────────────────────────

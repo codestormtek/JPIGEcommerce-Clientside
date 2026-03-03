@@ -8,7 +8,7 @@ const Footer = () => {
         <div className="nk-footer-wrap">
           <div className="nk-footer-copyright">
             {" "}
-            &copy; 2025 DashLite. Template by <a href="https://softnio.com">Softnio</a>
+            &copy; 2026 The Jiggling Pig, LLC. All Rights Reserved.
           </div>
           <div className="nk-footer-links">
             <ul className="nav nav-sm">

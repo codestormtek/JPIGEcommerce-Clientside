@@ -3,7 +3,7 @@ import ContentAlt from "@/layout/content/ContentAlt";
 import Head from "@/layout/head/Head";
 import CalenderApp from "@/components/partials/calender/Calender";
 import DatePicker from "react-datepicker";
-import { Modal, ModalBody,  ModalHeader, Button } from "reactstrap";
+import { Modal, ModalBody, ModalHeader, Button, Spinner } from "reactstrap";
 import {
   Block,
   BlockBetween,
@@ -16,13 +16,46 @@ import {
   Row,
   RSelect,
 } from "@/components/Component";
-import { eventOptions, events } from "@/components/partials/calender/CalenderData";
 import { useForm } from "react-hook-form";
-import { setDateForPicker } from "@/utils/Utils";
+import { apiGet, apiPost, apiPatch, apiDelete } from "@/utils/apiClient";
+
+// ─── Event type → FullCalendar CSS class mapping ─────────────────────────────
+const EVENT_TYPE_OPTIONS = [
+  { value: "truck_stop", label: "🚚 Truck Stop", className: "fc-event-primary" },
+  { value: "catering",   label: "🍽 Catering",   className: "fc-event-success" },
+  { value: "festival",   label: "🎪 Festival",   className: "fc-event-warning" },
+  { value: "private",    label: "🔒 Private",    className: "fc-event-danger"  },
+];
+
+const CLASS_TO_TYPE = Object.fromEntries(EVENT_TYPE_OPTIONS.map((o) => [o.className, o]));
+
+/** Merge a DatePicker date + a DatePicker time into one ISO string for the API */
+const combineDT = (date, time) => {
+  const d = new Date(date);
+  const t = new Date(time);
+  d.setHours(t.getHours(), t.getMinutes(), 0, 0);
+  return d.toISOString();
+};
+
+/** Map a raw API ScheduleEvent → FullCalendar event shape */
+const toCalEvent = (e) => {
+  const opt = EVENT_TYPE_OPTIONS.find((o) => o.value === e.eventType) ?? EVENT_TYPE_OPTIONS[0];
+  return {
+    id: e.id,
+    title: e.title,
+    start: e.startTime,
+    end: e.endTime ?? undefined,
+    description: e.description ?? "",
+    className: opt.className,
+    type: { value: opt.className, label: opt.label },
+  };
+};
 
 const Calender = () => {
   const [modal, setModal] = useState(false);
-  const [mockEvents, updateEvent] = useState(events);
+  const [events, setEvents] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -30,16 +63,12 @@ const Calender = () => {
     startTime: new Date(),
     endTime: new Date(),
     endDate: new Date(),
-    theme:{
-      value: "fc-event-primary",
-      label: "Company",
-    }
+    eventType: EVENT_TYPE_OPTIONS[0],
+    locationId: null,
   });
-  const [theme, settheme] = useState("");
-  const toggle = () => {
-    setModal(!modal);
-  };
   const { reset, register, handleSubmit, formState: { errors } } = useForm();
+
+  const toggle = () => setModal((m) => !m);
 
   const resetForm = () => {
     setFormData({
@@ -49,10 +78,8 @@ const Calender = () => {
       startTime: new Date(),
       endTime: new Date(),
       endDate: new Date(),
-      theme:{
-        value: "fc-event-primary",
-        label: "Company",
-      }
+      eventType: EVENT_TYPE_OPTIONS[0],
+      locationId: null,
     });
   };
 
@@ -60,40 +87,90 @@ const Calender = () => {
     setModal(false);
     resetForm();
   };
-  const handleFormSubmit = (form) => {
-    let newEvent = {
-      id: "default-event-id-" + Math.floor(Math.random() * 9999999),
-      title: formData.title,
-      start: setDateForPicker(formData.startDate),
-      end: setDateForPicker(formData.endDate),
-      description: formData.description,
-      className: theme.value,
-      type: theme,
-    };
-    updateEvent([...mockEvents, newEvent]);
-    settheme({
-      value: "fc-event-primary",
-      label: "Company",
-    });
-    toggle();
-    resetForm();
-  };
 
-  const editEvent = (formData) => {
-    let newEvents = mockEvents;
-    const index = newEvents.findIndex((item) => item.id === formData.id);
-    events[index] = formData;
-    updateEvent([...events]);
-  };
+  // ── Load events + locations on mount ────────────────────────────────────────
+  useEffect(() => {
+    apiGet("/locations/events?limit=100").then((res) => {
+      setEvents((res?.data ?? []).map(toCalEvent));
+    }).catch((err) => console.error("Failed to load events", err));
 
-  const deleteEvent = (id) => {
-    let filteredEvents = mockEvents.filter((item) => item.id !== id);
-    updateEvent(filteredEvents);
-  };
+    apiGet("/locations?limit=100").then((res) => {
+      setLocations((res?.data ?? []).map((l) => ({ value: l.id, label: l.name })));
+    }).catch((err) => console.error("Failed to load locations", err));
+  }, []);
 
   useEffect(() => {
-    reset(formData)
+    reset(formData);
   }, [formData]);
+
+  // ── Create event ─────────────────────────────────────────────────────────────
+  const handleFormSubmit = async () => {
+    if (!formData.locationId) return;
+    setSaving(true);
+    try {
+      const payload = {
+        locationId: formData.locationId.value,
+        title: formData.title,
+        eventType: formData.eventType?.value ?? "truck_stop",
+        startTime: combineDT(formData.startDate, formData.startTime),
+        endTime: combineDT(formData.endDate, formData.endTime),
+        description: formData.description,
+        isPublic: true,
+      };
+      const res = await apiPost("/locations/events", payload);
+      const newEv = toCalEvent(res?.data ?? res);
+      setEvents((prev) => [...prev, newEv]);
+      toggle();
+      resetForm();
+    } catch (err) {
+      console.error("Failed to create event", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Edit event (called by inner CalenderApp after inline edit) ───────────────
+  const editEvent = async (ev) => {
+    try {
+      const typeOpt = CLASS_TO_TYPE[ev.className];
+      const res = await apiPatch(`/locations/events/${ev.id}`, {
+        title: ev.title,
+        description: ev.description,
+        ...(typeOpt ? { eventType: typeOpt.value } : {}),
+      });
+      const updated = toCalEvent(res?.data ?? res);
+      setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+    } catch (err) {
+      console.error("Failed to update event", err);
+    }
+  };
+
+  // ── Date cell click → pre-fill form and open "Add Event" modal ──────────────
+  const handleDateClick = (date, allDay) => {
+    const start = new Date(date);
+    // For all-day clicks use midnight; for time-grid clicks use the exact slot
+    const startTime = allDay ? (() => { const t = new Date(); t.setSeconds(0, 0); return t; })() : start;
+    const end = new Date(start);
+    end.setHours(end.getHours() + 1);
+    setFormData((prev) => ({
+      ...prev,
+      startDate: start,
+      startTime,
+      endDate: end,
+      endTime: end,
+    }));
+    setModal(true);
+  };
+
+  // ── Delete event ─────────────────────────────────────────────────────────────
+  const deleteEvent = async (id) => {
+    try {
+      await apiDelete(`/locations/events/${id}`);
+      setEvents((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      console.error("Failed to delete event", err);
+    }
+  };
 
   return (
     <React.Fragment>
@@ -117,7 +194,7 @@ const Calender = () => {
           </PreviewAltCard>
 
           <PreviewAltCard className="mt-0">
-            <CalenderApp events={mockEvents} onDelete={deleteEvent} onEdit={editEvent} />
+            <CalenderApp events={events} onDelete={deleteEvent} onEdit={editEvent} onDateClick={handleDateClick} />
           </PreviewAltCard>
         </Block>
       </ContentAlt>
@@ -224,21 +301,39 @@ const Calender = () => {
               </Col>
               <Col size="12">
                 <div className="form-group">
-                  <label className="form-label">Event Category</label>
+                  <label className="form-label">Event Type</label>
                   <div className="form-control-wrap">
                     <RSelect
-                      options={eventOptions}
-                      value={formData.theme}
-                      onChange={(selected) => setFormData({ ...formData, theme: selected })}
+                      options={EVENT_TYPE_OPTIONS}
+                      value={formData.eventType}
+                      onChange={(selected) => setFormData({ ...formData, eventType: selected })}
                     />
+                  </div>
+                </div>
+              </Col>
+              <Col size="12">
+                <div className="form-group">
+                  <label className="form-label">
+                    Location <span className="text-danger">*</span>
+                  </label>
+                  <div className="form-control-wrap">
+                    <RSelect
+                      options={locations}
+                      value={formData.locationId}
+                      placeholder="Select a location…"
+                      onChange={(selected) => setFormData({ ...formData, locationId: selected })}
+                    />
+                    {!formData.locationId && saving && (
+                      <p className="invalid">Please select a location</p>
+                    )}
                   </div>
                 </div>
               </Col>
               <Col size="12">
                 <ul className="d-flex justify-content-between gx-4 mt-1">
                   <li>
-                    <Button type="submit" color="primary">
-                      Add Event
+                    <Button type="submit" color="primary" disabled={saving}>
+                      {saving ? <Spinner size="sm" /> : "Add Event"}
                     </Button>
                   </li>
                   <li>

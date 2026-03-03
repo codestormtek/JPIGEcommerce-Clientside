@@ -16,3 +16,6 @@ auditLogsRouter.get('/', validate(listAuditLogsSchema, 'query'), asyncHandler(ct
 // GET /api/v1/audit-logs/:id
 auditLogsRouter.get('/:id', asyncHandler(ctrl.getAuditLogById));
 
+// DELETE /api/v1/audit-logs/:id
+auditLogsRouter.delete('/:id', asyncHandler(ctrl.deleteAuditLog));
+

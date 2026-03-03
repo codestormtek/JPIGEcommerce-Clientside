@@ -11,7 +11,7 @@ import {
 } from "@/components/Component";
 import Content from "@/layout/content/Content";
 import Head from "@/layout/head/Head";
-import LogoDark from "@/images/logo-dark.png";
+const LOGO_URL = "/uploads/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png";
 import { invoiceData } from "./Invoice";
 import { useParams, Link } from "react-router-dom";
 
@@ -77,7 +77,7 @@ const InvoiceDetails = () => {
               </div>
               <div className="invoice-wrap">
                 <div className="invoice-brand text-center">
-                  <img src={LogoDark} alt="" />
+                  <img src={LOGO_URL} alt="The Jiggling Pig, LLC" style={{ maxHeight: 80, objectFit: "contain" }} />
                 </div>
 
                 <div className="invoice-head">

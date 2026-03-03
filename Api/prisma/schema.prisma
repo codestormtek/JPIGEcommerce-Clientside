@@ -678,8 +678,17 @@ model Menu {
   startDate   DateTime? @db.Date
   endDate     DateTime? @db.Date
 
+  // Builder design controls
+  layout      String  @default("2col")    // 1col|2col
+  theme       String  @default("default") // default|dark|light|warm|cool
+
+  // Publish workflow
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+
   sections       MenuSection[]
   scheduleEvents ScheduleEvent[]
+  versions       MenuVersion[]
 
   @@map("menus")
 }
@@ -689,6 +698,7 @@ model MenuSection {
   menuId       String
   menu         Menu      @relation(fields: [menuId], references: [id])
   name         String
+  icon         String?   // optional icon identifier (e.g. "bowl", "leaf", "cup")
   displayOrder Int       @default(0)
   items        MenuSectionItem[]
 
@@ -769,6 +779,19 @@ model MenuItemProductMap {
 
   @@id([menuItemId, productItemId])
   @@map("menu_item_product_maps")
+}
+
+model MenuVersion {
+  id          String   @id @default(uuid())
+  menuId      String
+  menu        Menu     @relation(fields: [menuId], references: [id])
+  version     Int
+  snapshot    Json     // full denormalized menu payload at time of publish
+  publishedAt DateTime @default(now())
+  publishedBy String?
+
+  @@unique([menuId, version])
+  @@map("menu_versions")
 }
 
 
