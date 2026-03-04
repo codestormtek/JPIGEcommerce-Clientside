@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "scss": "npm run scss:public && npm run scss:dashboard",
+    "scss:public": "sass public/assets/scss/style.scss public/assets/css/style.css --load-path=public/assets/scss",
+    "scss:dashboard": "sass public-dashboard/assets/scss/style.scss public-dashboard/assets/css/style.css --load-path=public-dashboard/assets/scss"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -29,6 +32,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "sass": "^1.69.0",
     "typescript": "^5"
   }
 }

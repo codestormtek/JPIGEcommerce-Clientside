@@ -228,8 +228,8 @@
             font-size: 14px;
             padding: 8px 16px !important;
             background: transparent;
-            color: #629D23;
-            border: 1px solid #629D23;
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
             // @media #{$extra-device} {
             //     padding: 9px 10px !important;
             //     font-size: 11px;
@@ -302,9 +302,9 @@
             }
         }
         .cart-counter-action .rts-btn {
-            background: #629d23;
-            color: #629D23;
-            border: 1px solid #629D23;
+            background: #f47920;
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
             width: 100%;
             max-width: 100%;
             display: flex;
@@ -313,8 +313,8 @@
             transition: .3s;
             &:hover{
                 background: var(--color-heading-1);
-                color: #629D23;
-                border: 1px solid #2c3c28;
+                color: var(--color-primary);
+                border: 1px solid var(--color-secondary);
             }
             .btn-text{
                 color: #fff;
@@ -704,8 +704,8 @@
     //     color: #74787C;
     // }
     .single-shopping-card-one.deals-of-day .cart-counter-action .rts-btn.disable-select{
-        background: #afe971;
-        border-color: #afe971;
+        background: #f47920;
+        border-color: #f47920;
         transition: .3s;
         .btn-text{
             color: #2C3C28;

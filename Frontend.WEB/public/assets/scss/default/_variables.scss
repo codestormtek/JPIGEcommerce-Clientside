@@ -1,21 +1,23 @@
 :root {
 
-    // themes color
-    --color-primary: #629D23;
+    // Jiggling Pig / thejigglingpig.com color scheme
+    // Primary/accent: #f47920 (replaces all green); Dark: #2c2c2c
+    --color-primary: #f47920;
     --color-secondary: #1F1F25;
-    
-    // body color
+    --color-accent: #f47920;
+
+    // body color (aligned with jigpig muted grays)
     --color-body: #6E777D;
 
-    // title color
-    --color-heading-1: #2C3C28;
+    // title color (matches jigpig #2c2c2c)
+    --color-heading-1: #2c2c2c;
 
     --color-white:#fff;
 
-    // notify Colors
-    --color-success: #3EB75E;
+    // notify Colors (success = brand orange, no green)
+    --color-success: #f47920;
     --color-danger: #DC2626;
-    --color-warning: #FF8F3C;
+    --color-warning: #f47920;
     --color-info: #1BA2DB;
     
 

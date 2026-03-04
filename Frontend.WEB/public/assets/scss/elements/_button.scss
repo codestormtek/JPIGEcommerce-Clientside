@@ -13,7 +13,7 @@
         border: none !important;
     }
     &.btn-primary{
-        background: #629D23;
+        background: var(--color-primary);
         border-radius: 6px;
         display: block;
         max-width: max-content;
@@ -48,7 +48,7 @@
             transition: transform 0.6s 0.125s cubic-bezier(0.1, 0.75, 0.25, 1);
         }
         &:hover{
-            background: #2c3c28;
+            background: var(--color-secondary);
             .btn-text{
                 transition-delay: 0.1s;
                 transform: translateX(0);

@@ -98,7 +98,7 @@
                 border: none;
             }
             .icon{
-                background: #629D23;
+                background: var(--color-primary);
                 height: 60px;
                 width: 60px;
                 border-radius: 50%;
@@ -118,7 +118,7 @@
                     height: 60px;
                     width: 60px;
                     border-radius: 50%;
-                    background: #629D23;
+                    background: var(--color-primary);
                     content: '';
                     position: absolute;
                     left: 50%;

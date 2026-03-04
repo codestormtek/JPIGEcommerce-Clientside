@@ -1,6 +1,6 @@
 .offer-area-main-wrapper{
     padding: 35px 40px;
-    background: #2B4226;
+    background: #f47920;
     border-radius: 6px;
     position: relative;
     overflow: hidden;
@@ -55,8 +55,8 @@
             padding: 12px 25px;
             &:hover{
                 background: var(--color-heading-1);
-                color: #629D23;
-                border: 1px solid #2c3c28;
+color: var(--color-primary);
+    border: 1px solid var(--color-secondary);
             }
         }
         .title{
