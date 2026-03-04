@@ -8,7 +8,7 @@ const postInclude = {
   tags: { include: { tag: true } },
   media: { include: { mediaAsset: true }, orderBy: { sortOrder: 'asc' as const } },
   featuredMediaAsset: true,
-  authorUser: { select: { id: true, username: true, email: true } },
+  authorUser: { select: { id: true, firstName: true, lastName: true, emailAddress: true } },
 } as const;
 
 // ─── Posts ────────────────────────────────────────────────────────────────────

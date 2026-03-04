@@ -216,6 +216,13 @@ const menu = [
     link: "/exports",
   },
 
+  { heading: "Tools" },
+  {
+    icon: "check-circle",
+    text: "Checklists",
+    link: "/checklists",
+  },
+
   { heading: "System" },
   {
     icon: "user-add",

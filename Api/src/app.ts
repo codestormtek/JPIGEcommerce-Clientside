@@ -29,6 +29,8 @@ import { exportsRouter } from './modules/exports/exports.routes';
 import { dashboardsRouter } from './modules/dashboards/dashboards.routes';
 import { metricsRouter } from './modules/metrics/metrics.routes';
 import { messageTemplatesRouter } from './modules/message-templates/message-templates.routes';
+import { inventoryRouter } from './modules/inventory/inventory.routes';
+import { checklistsRouter } from './modules/checklists/checklists.routes';
 
 const app = express();
 
@@ -92,6 +94,8 @@ app.use(`${API}/exports`, exportsRouter);
 app.use(`${API}/admin/dashboards`, dashboardsRouter);
 app.use(`${API}/admin/metrics`, metricsRouter);
 app.use(`${API}/message-templates`, messageTemplatesRouter);
+app.use(`${API}/inventory`, inventoryRouter);
+app.use(`${API}/checklists`, checklistsRouter);
 
 // ─── 404 + Global error handler ───────────────────────────────────────────────
 app.use(notFoundHandler);

@@ -432,7 +432,7 @@ const AdminMenuBuilder = () => {
               <div
                 style={{
                   position: "sticky", top: 80, maxHeight: "calc(100vh - 120px)",
-                  overflowY: "auto", paddingRight: 4,
+                  overflowY: "auto", paddingRight: 10,
                 }}
               >
 
@@ -549,32 +549,51 @@ const AdminMenuBuilder = () => {
                     {sections.map((sec) => (
                       <div
                         key={sec.id}
-                        className="d-flex align-items-center justify-content-between mb-2 px-2 py-1 rounded"
+                        className="d-flex align-items-center justify-content-between gap-2 mb-2 px-2 py-2 rounded"
                         style={{ background: "#f8f9fa", border: "1px solid #e9ecef" }}
                       >
-                        <span className="small fw-semibold">
+                        <span className="small fw-semibold flex-grow-1 text-truncate">
                           {ICON_MAP[sec.icon] && <span className="me-1">{ICON_MAP[sec.icon]}</span>}
                           {sec.name}
                         </span>
-                        <button type="button" className="btn btn-icon btn-sm btn-outline-danger" style={{ width: 22, height: 22 }}
-                          onClick={() => deleteSection(sec.id)}>
+                        <button
+                          type="button"
+                          className="btn btn-icon btn-sm btn-outline-danger flex-shrink-0"
+                          style={{ minWidth: 36, minHeight: 36, width: 36, height: 36 }}
+                          onClick={() => deleteSection(sec.id)}
+                          title="Remove section"
+                        >
                           <Icon name="cross" />
                         </button>
                       </div>
                     ))}
 
                     {/* Add section */}
-                    <div className="mt-2 d-flex gap-1">
-                      <select className="form-select form-select-sm" style={{ width: 40, flexShrink: 0 }} value={newSecIcon} onChange={(e) => setNewSecIcon(e.target.value)}>
+                    <div className="mt-3 d-flex align-items-center gap-2 flex-wrap">
+                      <select
+                        className="form-select form-select-sm flex-shrink-0"
+                        style={{ width: 56 }}
+                        value={newSecIcon}
+                        onChange={(e) => setNewSecIcon(e.target.value)}
+                      >
                         {SECTION_ICONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                       </select>
                       <input
-                        className="form-control form-control-sm" placeholder="Section name…"
+                        className="form-control form-control-sm flex-grow-1"
+                        style={{ minWidth: 120 }}
+                        placeholder="Section name…"
                         value={newSecName}
                         onChange={(e) => setNewSecName(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && addSection()}
                       />
-                      <button type="button" className="btn btn-sm btn-outline-success flex-shrink-0" onClick={addSection} disabled={addingSection}>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-success flex-shrink-0 d-flex align-items-center justify-content-center"
+                        style={{ minWidth: 40, minHeight: 38 }}
+                        onClick={addSection}
+                        disabled={addingSection}
+                        title="Add section"
+                      >
                         {addingSection ? <Spinner size="sm" /> : <Icon name="plus" />}
                       </button>
                     </div>
@@ -593,83 +612,107 @@ const AdminMenuBuilder = () => {
                     {items.map((item) => (
                       <div
                         key={item._uid}
-                        className="mb-3 p-2 rounded"
-                        style={{ border: "1px solid #e9ecef", background: "#fff" }}
+                        className="mb-4 p-3 rounded"
+                        style={{ border: "1px solid #e9ecef", background: "#fff", overflow: "visible" }}
                       >
-                        {/* Name + price row */}
-                        <div className="d-flex gap-1 mb-1">
-                          <input
-                            className="form-control form-control-sm fw-semibold"
-                            placeholder="Item name"
-                            value={item.name}
-                            onChange={(e) => updateItemField(item._uid, "name", e.target.value)}
-                            onBlur={() => item.name.trim() && saveItem(item)}
-                          />
-                          <input
-                            type="number" min="0" step="0.01"
-                            className="form-control form-control-sm text-end"
-                            style={{ width: 72 }}
-                            placeholder="0.00"
-                            value={item.basePrice}
-                            onChange={(e) => updateItemField(item._uid, "basePrice", e.target.value)}
-                            onBlur={() => item.name.trim() && saveItem(item)}
-                          />
-                          <button type="button" className="btn btn-icon btn-sm btn-outline-danger flex-shrink-0"
-                            onClick={() => deleteItem(item)}>
-                            <Icon name="trash" />
-                          </button>
-                        </div>
-
-                        {/* Description */}
-                        <textarea
-                          className="form-control form-control-sm mb-1"
-                          rows={2} placeholder="Short description…"
-                          value={item.description}
-                          onChange={(e) => updateItemField(item._uid, "description", e.target.value)}
-                          onBlur={() => item.name.trim() && saveItem(item)}
-                        />
-
-                        {/* Category + Photo row */}
-                        <div className="d-flex gap-1 align-items-center">
+                        {/* Section (category) — own row at top */}
+                        <div className="mb-2">
+                          <label className="form-label form-label-sm text-muted mb-1 d-block" style={{ fontSize: "0.65rem", letterSpacing: "0.05em" }}>
+                            SECTION
+                          </label>
                           <select
-                            className="form-select form-select-sm flex-grow-1"
+                            className="form-select form-select-sm"
                             value={item.sectionId ?? ""}
                             onChange={(e) => changeSection(item, e.target.value || null)}
                           >
                             <option value="">— No section —</option>
                             {sections.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                           </select>
+                        </div>
 
-                          {/* Photo button */}
+                        {/* Name + price + delete — clear row */}
+                        <div className="d-flex align-items-center gap-2 mb-2">
+                          <input
+                            className="form-control form-control-sm fw-semibold flex-grow-1"
+                            style={{ minWidth: 0 }}
+                            placeholder="Item name"
+                            value={item.name}
+                            onChange={(e) => updateItemField(item._uid, "name", e.target.value)}
+                            onBlur={() => item.name.trim() && saveItem(item)}
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="form-control form-control-sm text-end flex-shrink-0"
+                            style={{ width: 80 }}
+                            placeholder="0.00"
+                            value={item.basePrice}
+                            onChange={(e) => updateItemField(item._uid, "basePrice", e.target.value)}
+                            onBlur={() => item.name.trim() && saveItem(item)}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-icon btn-sm btn-outline-danger flex-shrink-0"
+                            style={{ minWidth: 36, minHeight: 36, width: 36, height: 36 }}
+                            onClick={() => deleteItem(item)}
+                            title="Remove item"
+                          >
+                            <Icon name="trash" />
+                          </button>
+                        </div>
+
+                        {/* Description — own row */}
+                        <textarea
+                          className="form-control form-control-sm mb-3"
+                          rows={2}
+                          placeholder="Short description…"
+                          value={item.description}
+                          onChange={(e) => updateItemField(item._uid, "description", e.target.value)}
+                          onBlur={() => item.name.trim() && saveItem(item)}
+                        />
+
+                        {/* Add Photo — own row, no overlap with name */}
+                        <div className="d-flex align-items-center gap-2">
                           <input
                             ref={(el) => { if (el) fileRefs.current[item._uid] = el; }}
-                            type="file" accept="image/*" className="d-none"
+                            type="file"
+                            accept="image/*"
+                            className="d-none"
                             onChange={(e) => onPhotoChange(item, e.target.files?.[0])}
                           />
                           <button
                             type="button"
-                            className="btn btn-sm btn-outline-secondary flex-shrink-0 d-flex align-items-center gap-1"
+                            className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2 px-3 py-2"
+                            style={{ minHeight: 38, fontSize: "0.8125rem" }}
                             onClick={() => pickPhoto(item)}
                             disabled={uploadingItem === item._uid}
-                            style={{ fontSize: "0.7rem", whiteSpace: "nowrap" }}
+                            title={item.mediaUrl ? "Change photo" : "Add photo"}
                           >
-                            {uploadingItem === item._uid
-                              ? <Spinner size="sm" />
-                              : <><Icon name={item.mediaUrl ? "reload" : "img"} />{item.mediaUrl ? "Change" : "Add Photo"}</>
-                            }
+                            {uploadingItem === item._uid ? (
+                              <Spinner size="sm" />
+                            ) : (
+                              <>
+                                <Icon name={item.mediaUrl ? "reload" : "img"} className="flex-shrink-0" />
+                                <span className="text-nowrap">{item.mediaUrl ? "Change" : "Add Photo"}</span>
+                              </>
+                            )}
                           </button>
                         </div>
 
                         {/* Photo preview thumbnail */}
                         {item.mediaUrl && (
-                          <img src={item.mediaUrl} alt={item.name}
-                            style={{ width: "100%", height: 72, objectFit: "cover", borderRadius: 6, marginTop: 6 }}
+                          <img
+                            src={item.mediaUrl}
+                            alt={item.name}
+                            className="mt-2"
+                            style={{ width: "100%", height: 72, objectFit: "cover", borderRadius: 6 }}
                           />
                         )}
                       </div>
                     ))}
 
-                    <button type="button" className="btn btn-sm btn-outline-success w-100 mt-1" onClick={addItem}>
+                    <button type="button" className="btn btn-sm btn-outline-success w-100 mt-3 d-flex align-items-center justify-content-center gap-2 py-2" onClick={addItem}>
                       <Icon name="plus" /><span>Add New Food Item</span>
                     </button>
                   </div>

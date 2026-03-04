@@ -90,6 +90,9 @@ import AdminMenuList from "@/pages/pre-built/menus/AdminMenuList";
 import AdminMenuBuilder from "@/pages/pre-built/menus/AdminMenuBuilder";
 import AdminAuditLogList from "@/pages/pre-built/audit-logs/AdminAuditLogList";
 import AdminMessageTemplateList from "@/pages/pre-built/message-templates/AdminMessageTemplateList";
+import AdminBlogList from "@/pages/pre-built/blog/AdminBlogList";
+import AdminInventoryList from "@/pages/pre-built/inventory/AdminInventoryList";
+import AdminChecklistManager from "@/pages/pre-built/checklists/AdminChecklistManager";
 import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
 import MediaManager from "@/pages/pre-built/media/MediaManager";
 import KycListRegular from "@/pages/pre-built/kyc-list-regular/KycListRegular";
@@ -194,6 +197,10 @@ const Pages = () => {
               <Route path="media" element={<MediaManager />}></Route>
               <Route path="orders" element={<AdminOrderList />}></Route>
               <Route path="templates" element={<AdminMessageTemplateList />}></Route>
+              <Route path="blog" element={<AdminBlogList />}></Route>
+              <Route path="blog/create" element={<AdminBlogList />}></Route>
+              <Route path="inventory" element={<AdminInventoryList />}></Route>
+              <Route path="checklists" element={<AdminChecklistManager />}></Route>
 
               <Route path="kyc-list-regular" element={<KycListRegular />}></Route>
               <Route path="kyc-details-regular/:kycId" element={<KycDetailsRegular />}></Route>

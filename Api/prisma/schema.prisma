@@ -44,6 +44,7 @@ model SiteUser {
   uploadedFiles         StoredFile[]         @relation("UploadedFiles")
   exportJobs            ExportJob[]          @relation("RequestedExports")
   dashboards            Dashboard[]          @relation("OwnedDashboards")
+  checklists            Checklist[]
 
   @@map("site_users")
 }
@@ -1307,3 +1308,32 @@ model MetricDaily {
   @@index([metricKey, metricDate])
   @@map("metric_daily")
 }
+
+// ─── Checklists ───────────────────────────────────────────────────────────────
+
+model Checklist {
+  id        String   @id @default(uuid())
+  userId    String
+  user      SiteUser @relation(fields: [userId], references: [id])
+  name      String   @default("Untitled List")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks     ChecklistTask[]
+
+  @@map("checklists")
+}
+
+model ChecklistTask {
+  id          String    @id @default(uuid())
+  checklistId String
+  checklist   Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  text        String    @default("")
+  done        Boolean   @default(false)
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([checklistId, position])
+  @@map("checklist_tasks")
+}
+

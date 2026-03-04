@@ -575,8 +575,8 @@ const AdminProductList = () => {
                   {/* New indicator */}
                   <DataTableRow size="md">
                     {isNewProduct(product)
-                      ? <Badge className="badge-sm badge-dim" color="info">New</Badge>
-                      : <span className="text-soft">—</span>
+                      ? <Icon name="check-circle-fill" className="text-success" style={{ fontSize: 18 }} />
+                      : <Icon name="minus-circle" className="text-light" style={{ fontSize: 18 }} />
                     }
                   </DataTableRow>
                   {/* Categories */}
@@ -782,7 +782,7 @@ const AdminProductList = () => {
                   <div className="d-flex flex-wrap gap-3 mb-3">
                     {productImages.map((m) => (
                       <div key={m.mediaAssetId} style={{ position: "relative" }}>
-                        <img src={m.mediaAsset?.url} alt="" style={{ width: 100, height: 100, objectFit: "cover", borderRadius: 6, border: "1px solid #e5e9f2" }} />
+                        <img src={m.mediaAsset?.url} alt="" style={{ width: 120, height: 160, objectFit: "contain", borderRadius: 6, border: "1px solid #e5e9f2", background: "#f8f9fc" }} />
                         {m.isPrimary && <Badge color="primary" style={{ position: "absolute", top: 4, left: 4, fontSize: "0.65em" }}>Primary</Badge>}
                         <button onClick={() => removeImage(m.mediaAssetId)} style={{ position: "absolute", top: 2, right: 2, background: "#e85347", border: "none", borderRadius: "50%", width: 20, height: 20, color: "#fff", lineHeight: 1, cursor: "pointer", fontSize: 12 }}>✕</button>
                       </div>

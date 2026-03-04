@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { DndContext, closestCenter, useSensors, useSensor, PointerSensor, KeyboardSensor } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Content from "@/layout/content/Content";
 import Head from "@/layout/head/Head";
 import { Modal, ModalBody, Spinner, Badge } from "reactstrap";
@@ -33,6 +36,73 @@ const blankForm = () => ({
 const SortIcon = ({ field, sortField, sort }) => (
   <Icon name={sortField === field ? (sort === "asc" ? "sort-up-fill" : "sort-down-fill") : "sort"} />
 );
+
+// ─── Sortable ingredient row (drag handle + fields) ───────────────────────────
+
+const SortableIngredientRow = ({ ing, UNITS, updateIngredient, removeIngredient, isOnly }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ing.uid });
+  const style = {
+    transition,
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    border: "1px solid #e9ecef",
+    backgroundColor: "#fafafa",
+    minHeight: 48,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="d-flex align-items-center gap-2 rounded p-2 mb-3"
+    >
+      <div
+        className="d-flex align-items-center justify-content-center flex-shrink-0 text-muted"
+        style={{ width: 28, height: 36, cursor: "grab" }}
+        {...listeners}
+        {...attributes}
+        title="Drag to reorder"
+      >
+        <Icon name="move" />
+      </div>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        className="form-control form-control-sm flex-shrink-0"
+        style={{ width: 70 }}
+        placeholder="Qty"
+        value={ing.quantity}
+        onChange={(e) => updateIngredient(ing.uid, "quantity", e.target.value)}
+      />
+      <select
+        className="form-select form-select-sm flex-shrink-0"
+        style={{ width: 90 }}
+        value={ing.unit}
+        onChange={(e) => updateIngredient(ing.uid, "unit", e.target.value)}
+      >
+        {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+      </select>
+      <input
+        type="text"
+        className="form-control form-control-sm flex-grow-1"
+        style={{ minWidth: 0 }}
+        placeholder="Ingredient name"
+        value={ing.ingredientName}
+        onChange={(e) => updateIngredient(ing.uid, "ingredientName", e.target.value)}
+      />
+      <button
+        type="button"
+        className="btn btn-icon btn-sm flex-shrink-0 border-0"
+        style={{ width: 36, height: 36, backgroundColor: "#c0392b", color: "#fff", borderRadius: 8 }}
+        onClick={() => removeIngredient(ing.uid)}
+        disabled={isOnly}
+        title="Remove ingredient"
+      >
+        <Icon name="trash" />
+      </button>
+    </div>
+  );
+};
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -173,6 +243,22 @@ const AdminRecipeList = () => {
   const updateIngredient = (id, key, val) =>
     setForm((f) => ({ ...f, ingredients: f.ingredients.map((i) => i.uid === id ? { ...i, [key]: val } : i) }));
 
+  const handleIngredientsDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setForm((f) => {
+      const oldIndex = f.ingredients.findIndex((i) => i.uid === active.id);
+      const newIndex = f.ingredients.findIndex((i) => i.uid === over.id);
+      if (oldIndex === -1 || newIndex === -1) return f;
+      return { ...f, ingredients: arrayMove(f.ingredients, oldIndex, newIndex) };
+    });
+  };
+
+  const ingredientSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor)
+  );
+
   const addStep = () =>
     setForm((f) => ({ ...f, steps: [...f.steps, blankStep(f.steps.length + 1)] }));
   const removeStep = (id) =>
@@ -290,9 +376,9 @@ const AdminRecipeList = () => {
           <Block>
             <Row className="g-4">
               {/* ── LEFT PANEL: Form ──────────────────────────────────────── */}
-              <Col lg="7">
+              <Col lg="7" style={{ minWidth: 0 }}>
                 <div className="card card-bordered h-100">
-                  <div className="card-inner">
+                  <div className="card-inner" style={{ minWidth: 0 }}>
 
                     {/* Recipe Title */}
                     <div className="mb-4">
@@ -366,62 +452,86 @@ const AdminRecipeList = () => {
 
                     {/* Ingredients */}
                     <div className="mb-4">
-                      <h6 className="fw-bold mb-3" style={{ borderBottom: "2px solid #e9ecef", paddingBottom: 8 }}>
+                      <h6 className="fw-bold mb-3 text-nowrap" style={{ borderBottom: "2px solid #e9ecef", paddingBottom: 8 }}>
                         <Icon name="list" className="me-1" />Ingredients
                       </h6>
-                      {form.ingredients.map((ing) => (
-                        <div key={ing.uid} className="d-flex align-items-center gap-2 mb-2">
-                          <input
-                            type="number" min="0" step="0.01" className="form-control" style={{ width: 70 }}
-                            placeholder="Qty" value={ing.quantity}
-                            onChange={(e) => updateIngredient(ing.uid, "quantity", e.target.value)}
-                          />
-                          <select className="form-select" style={{ width: 90 }} value={ing.unit}
-                            onChange={(e) => updateIngredient(ing.uid, "unit", e.target.value)}>
-                            {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-                          </select>
-                          <input
-                            type="text" className="form-control" placeholder="Ingredient name"
-                            value={ing.ingredientName}
-                            onChange={(e) => updateIngredient(ing.uid, "ingredientName", e.target.value)}
-                          />
-                          <button type="button" className="btn btn-icon btn-sm btn-outline-danger"
-                            onClick={() => removeIngredient(ing.uid)} disabled={form.ingredients.length === 1}>
-                            <Icon name="cross" />
-                          </button>
-                        </div>
-                      ))}
-                      <button type="button" className="btn btn-sm btn-outline-success mt-1" onClick={addIngredient}>
-                        <Icon name="plus" /><span>Add Ingredient</span>
+                      <DndContext
+                        sensors={ingredientSensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleIngredientsDragEnd}
+                      >
+                        <SortableContext
+                          items={form.ingredients.map((i) => i.uid)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {form.ingredients.map((ing) => (
+                            <SortableIngredientRow
+                              key={ing.uid}
+                              ing={ing}
+                              UNITS={UNITS}
+                              updateIngredient={updateIngredient}
+                              removeIngredient={removeIngredient}
+                              isOnly={form.ingredients.length === 1}
+                            />
+                          ))}
+                        </SortableContext>
+                      </DndContext>
+                      <button type="button" className="btn btn-sm btn-outline-success mt-2 d-inline-flex align-items-center" onClick={addIngredient}>
+                        <Icon name="plus" className="me-2" /><span>Add Ingredient</span>
                       </button>
                     </div>
 
                     {/* Instructions / Steps */}
                     <div className="mb-4">
-                      <h6 className="fw-bold mb-3" style={{ borderBottom: "2px solid #e9ecef", paddingBottom: 8 }}>
+                      <h6 className="fw-bold mb-3 text-nowrap" style={{ borderBottom: "2px solid #e9ecef", paddingBottom: 8 }}>
                         <Icon name="align-left" className="me-1" />Instructions
                       </h6>
                       {form.steps.map((step, idx) => (
-                        <div key={step.uid} className="d-flex align-items-start gap-2 mb-2">
+                        <div
+                          key={step.uid}
+                          className="mb-3"
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "28px 1fr 36px",
+                            gap: "0.5rem",
+                            alignItems: "center",
+                            minWidth: 0,
+                          }}
+                        >
                           <span
-                            className="d-flex align-items-center justify-content-center rounded-circle text-white fw-bold flex-shrink-0"
-                            style={{ width: 28, height: 28, background: "#c0392b", fontSize: 13, marginTop: 6 }}>
+                            className="d-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
+                            style={{ width: 28, height: 28, background: "#c0392b", fontSize: 13 }}
+                          >
                             {idx + 1}
                           </span>
                           <textarea
-                            className="form-control" rows={2}
+                            className="form-control"
+                            rows={2}
                             placeholder={`Describe step ${idx + 1}...`}
                             value={step.instruction}
                             onChange={(e) => updateStep(step.uid, e.target.value)}
+                            style={{ minWidth: 0, resize: "vertical" }}
                           />
-                          <button type="button" className="btn btn-icon btn-sm btn-outline-danger mt-1"
-                            onClick={() => removeStep(step.uid)} disabled={form.steps.length === 1}>
-                            <Icon name="cross" />
+                          <button
+                            type="button"
+                            className="btn btn-icon btn-sm border-0"
+                            style={{
+                              width: 36,
+                              height: 36,
+                              backgroundColor: "#c0392b",
+                              color: "#fff",
+                              borderRadius: 8,
+                            }}
+                            onClick={() => removeStep(step.uid)}
+                            disabled={form.steps.length === 1}
+                            title="Remove step"
+                          >
+                            <Icon name="trash" />
                           </button>
                         </div>
                       ))}
-                      <button type="button" className="btn btn-sm btn-outline-success mt-1" onClick={addStep}>
-                        <Icon name="plus" /><span>Add Step</span>
+                      <button type="button" className="btn btn-outline-success mt-2 d-inline-flex align-items-center" onClick={addStep}>
+                        <Icon name="plus" className="me-2" /><span>Add Step</span>
                       </button>
                     </div>
 

@@ -186,9 +186,14 @@ const MediaManager = () => {
         </div>
 
         {/* ── Folder dropdown ──────────────────────────────────────────── */}
-        <div className="px-4 py-2" style={{ borderBottom: "1px solid #dbdfea" }}>
+        <div className="px-4 py-2 d-flex align-items-center gap-2" style={{ borderBottom: "1px solid #dbdfea" }}>
           <UncontrolledDropdown>
-            <DropdownToggle tag="a" className="btn btn-white btn-outline-light d-flex align-items-center gap-2" style={{ width: "fit-content" }}>
+            <DropdownToggle
+              tag={Button}
+              color="light"
+              outline
+              className="d-flex align-items-center gap-2"
+            >
               <Icon name={FOLDERS.find((f) => f.folder === activeFolder)?.icon ?? "folder"} />
               <span>{FOLDERS.find((f) => f.folder === activeFolder)?.label ?? "All Files"}</span>
               <Icon name="chevron-down" />
