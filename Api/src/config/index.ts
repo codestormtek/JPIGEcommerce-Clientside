@@ -24,7 +24,7 @@ export const config = {
   },
 
   cors: {
-    allowedOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:3000,http://localhost:3001').split(','),
+    allowedOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:3000,http://localhost:3001,http://localhost:5000').split(','),
   },
 
   bcrypt: {

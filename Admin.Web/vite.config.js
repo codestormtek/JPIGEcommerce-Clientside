@@ -17,15 +17,15 @@ export default defineConfig({
     }
   },
   server: {
+    host: '0.0.0.0',
+    port: 3001,
     proxy: {
-      // Forward all /api requests to the Express API (avoids CORS in dev)
       '/api': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
-      // Forward /uploads so product images work without auth in dev
       '/uploads': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
     },
