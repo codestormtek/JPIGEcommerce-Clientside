@@ -13,14 +13,7 @@ const menu = [
       { text: "Order Detail", link: "/orders/:id" },
     ],
   },
-  {
-    icon: "cc-alt",
-    text: "Payments",
-    subMenu: [
-      { text: "Payment List",   link: "/payments" },
-      { text: "Payment Detail", link: "/payments/:id" },
-    ],
-  },
+
   {
     icon: "truck",
     text: "Shipments",
@@ -133,6 +126,11 @@ const menu = [
   },
 
   { heading: "Content" },
+  {
+    icon: "layout",
+    text: "Carousel Slider",
+    link: "/carousel",
+  },
   {
     icon: "pen",
     text: "Blog Posts",

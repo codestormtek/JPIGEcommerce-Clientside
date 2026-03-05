@@ -93,7 +93,9 @@ import AdminMessageTemplateList from "@/pages/pre-built/message-templates/AdminM
 import AdminBlogList from "@/pages/pre-built/blog/AdminBlogList";
 import AdminInventoryList from "@/pages/pre-built/inventory/AdminInventoryList";
 import AdminChecklistManager from "@/pages/pre-built/checklists/AdminChecklistManager";
+import AdminCarouselList from "@/pages/pre-built/carousel/AdminCarouselList";
 import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
+import AdminPaymentMethodList from "@/pages/pre-built/payment-methods/AdminPaymentMethodList";
 import MediaManager from "@/pages/pre-built/media/MediaManager";
 import KycListRegular from "@/pages/pre-built/kyc-list-regular/KycListRegular";
 import KycDetailsRegular from "@/pages/pre-built/kyc-list-regular/kycDetailsRegular";
@@ -196,11 +198,13 @@ const Pages = () => {
               <Route path="admin/audit-logs" element={<AdminAuditLogList />}></Route>
               <Route path="media" element={<MediaManager />}></Route>
               <Route path="orders" element={<AdminOrderList />}></Route>
+              <Route path="payment-methods" element={<AdminPaymentMethodList />}></Route>
               <Route path="templates" element={<AdminMessageTemplateList />}></Route>
               <Route path="blog" element={<AdminBlogList />}></Route>
               <Route path="blog/create" element={<AdminBlogList />}></Route>
               <Route path="inventory" element={<AdminInventoryList />}></Route>
               <Route path="checklists" element={<AdminChecklistManager />}></Route>
+              <Route path="carousel" element={<AdminCarouselList />}></Route>
 
               <Route path="kyc-list-regular" element={<KycListRegular />}></Route>
               <Route path="kyc-details-regular/:kycId" element={<KycDetailsRegular />}></Route>

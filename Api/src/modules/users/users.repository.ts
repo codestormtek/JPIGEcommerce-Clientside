@@ -2,7 +2,7 @@ import prisma from '../../lib/prisma';
 import {
   ListUsersInput, AdminUpdateUserInput, UpsertAddressInput,
   UpdateContactPreferencesInput, CreateReviewInput, ListReviewsInput,
-  AddPaymentMethodInput,
+  AddPaymentMethodInput, ListPaymentMethodsInput,
 } from './users.schema';
 
 // ─── Safe user select (never returns passwordHash) ────────────────────────────
@@ -192,6 +192,39 @@ export async function deleteReview(id: string) {
 }
 
 // ─── Payment Method Tokens ────────────────────────────────────────────────────
+
+export async function listAllPaymentMethods(input: ListPaymentMethodsInput) {
+  const { page, limit, search, orderBy, order } = input;
+  const skip = (page - 1) * limit;
+
+  const where: Record<string, unknown> = {};
+  if (search) {
+    where['OR'] = [
+      { brand: { contains: search, mode: 'insensitive' } },
+      { last4: { contains: search } },
+      { user: { OR: [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName:  { contains: search, mode: 'insensitive' } },
+        { emailAddress: { contains: search, mode: 'insensitive' } },
+      ]}},
+    ];
+  }
+
+  const [data, total] = await Promise.all([
+    prisma.paymentMethodToken.findMany({
+      where,
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, emailAddress: true } },
+      },
+      orderBy: { [orderBy]: order },
+      skip,
+      take: limit,
+    }),
+    prisma.paymentMethodToken.count({ where }),
+  ]);
+
+  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
 
 export async function getPaymentMethods(userId: string) {
   return prisma.paymentMethodToken.findMany({

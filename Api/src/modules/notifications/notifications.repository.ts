@@ -5,6 +5,8 @@ import {
   CreateSubscriptionInput,
   UpdateSubscriptionInput,
   ListUserNotificationsInput,
+  ListInboxInput,
+  UpdateInboxMessageInput,
 } from './notifications.schema';
 
 // ─── MessageOutbox ────────────────────────────────────────────────────────────
@@ -45,6 +47,61 @@ export async function deleteOutboxMessage(id: string) {
     await tx.messageDeliveryLog.deleteMany({ where: { outboxId: id } });
     return tx.messageOutbox.delete({ where: { id } });
   });
+}
+
+// ─── MessageInbox (inbound emails) ───────────────────────────────────────────
+
+export async function findInbox(input: ListInboxInput) {
+  const { page, limit, isRead, isTrash, orderBy, order } = input;
+  const skip = (page - 1) * limit;
+  const where: Record<string, unknown> = {};
+
+  if (isRead !== undefined)  where['isRead']  = isRead;
+  if (isTrash !== undefined) where['isTrash'] = isTrash;
+  else                       where['isTrash'] = false; // default: exclude trash
+
+  const [data, total] = await Promise.all([
+    prisma.messageInbox.findMany({
+      where,
+      orderBy: { [orderBy]: order },
+      skip,
+      take: limit,
+    }),
+    prisma.messageInbox.count({ where }),
+  ]);
+
+  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
+
+export async function findInboxById(id: string) {
+  return prisma.messageInbox.findUnique({ where: { id } });
+}
+
+export async function createInboxMessage(data: {
+  fromAddress: string;
+  toAddress: string;
+  subject?: string | null;
+  bodyHtml?: string | null;
+  bodyText?: string | null;
+  messageId?: string | null;
+  spamScore?: number | null;
+  headersJson?: string | null;
+}) {
+  return prisma.messageInbox.create({ data });
+}
+
+export async function updateInboxMessage(id: string, input: UpdateInboxMessageInput) {
+  return prisma.messageInbox.update({
+    where: { id },
+    data: {
+      ...input,
+      ...(input.isRead === true ? { readAt: new Date() } : {}),
+    },
+  });
+}
+
+export async function deleteInboxMessage(id: string) {
+  return prisma.messageInbox.delete({ where: { id } });
 }
 
 // ─── NotificationSubscription ─────────────────────────────────────────────────

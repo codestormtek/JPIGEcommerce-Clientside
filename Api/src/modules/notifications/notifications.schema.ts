@@ -45,6 +45,39 @@ export const updateSubscriptionSchema = z.object({
 
 export type UpdateSubscriptionInput = z.infer<typeof updateSubscriptionSchema>;
 
+// ─── Manual send email (admin) ───────────────────────────────────────────────
+
+export const sendEmailSchema = z.object({
+  to: z.string().email('Invalid email address'),
+  subject: z.string().min(1, 'Subject is required'),
+  bodyHtml: z.string().min(1, 'Body is required'),
+  bodyText: z.string().optional(),
+});
+
+export type SendEmailInput = z.infer<typeof sendEmailSchema>;
+
+// ─── MessageInbox (inbound emails) ───────────────────────────────────────────
+
+export const listInboxSchema = z.object({
+  page:    z.coerce.number().int().positive().default(1),
+  limit:   z.coerce.number().int().positive().max(100).default(20),
+  isRead:  z.coerce.boolean().optional(),
+  isTrash: z.coerce.boolean().optional(),
+  orderBy: z.enum(['createdAt']).default('createdAt'),
+  order:   z.enum(['asc', 'desc']).default('desc'),
+});
+
+export type ListInboxInput = z.infer<typeof listInboxSchema>;
+
+export const updateInboxMessageSchema = z.object({
+  isRead:      z.boolean().optional(),
+  isTrash:     z.boolean().optional(),
+  isArchived:  z.boolean().optional(),
+  isFavourite: z.boolean().optional(),
+});
+
+export type UpdateInboxMessageInput = z.infer<typeof updateInboxMessageSchema>;
+
 // ─── UserNotification inbox ────────────────────────────────────────────────────
 
 export const listUserNotificationsSchema = z.object({

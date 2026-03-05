@@ -5,8 +5,13 @@ import {
   CreateSubscriptionInput,
   UpdateSubscriptionInput,
   ListUserNotificationsInput,
+  SendEmailInput,
+  ListInboxInput,
+  UpdateInboxMessageInput,
 } from './notifications.schema';
 import * as repo from './notifications.repository';
+import { sendEmail } from '../../lib/mailer';
+import prisma from '../../lib/prisma';
 
 // ─── MessageOutbox (admin) ────────────────────────────────────────────────────
 
@@ -23,6 +28,55 @@ export async function getOutboxById(id: string) {
 export async function deleteOutboxMessage(id: string) {
   await getOutboxById(id);
   return repo.deleteOutboxMessage(id);
+}
+
+// ─── Manual send email (admin) ───────────────────────────────────────────────
+
+export async function sendManualEmail(input: SendEmailInput) {
+  const providerId = await sendEmail({
+    to: input.to,
+    subject: input.subject,
+    html: input.bodyHtml,
+    text: input.bodyText,
+  });
+
+  return prisma.messageOutbox.create({
+    data: {
+      channel: 'email',
+      toAddress: input.to,
+      templateKey: 'manual',
+      subject: input.subject,
+      bodyHtml: input.bodyHtml,
+      bodyText: input.bodyText ?? null,
+      payloadJson: JSON.stringify({ to: input.to, subject: input.subject }),
+      status: 'sent',
+      provider: 'resend',
+      providerMessageId: providerId ?? null,
+      sentAt: new Date(),
+    },
+  });
+}
+
+// ─── MessageInbox (inbound emails) ───────────────────────────────────────────
+
+export async function listInbox(input: ListInboxInput) {
+  return repo.findInbox(input);
+}
+
+export async function getInboxById(id: string) {
+  const msg = await repo.findInboxById(id);
+  if (!msg) throw ApiError.notFound('Message');
+  return msg;
+}
+
+export async function updateInboxMessage(id: string, input: UpdateInboxMessageInput) {
+  await getInboxById(id);
+  return repo.updateInboxMessage(id, input);
+}
+
+export async function deleteInboxMessage(id: string) {
+  await getInboxById(id);
+  return repo.deleteInboxMessage(id);
 }
 
 // ─── NotificationSubscription ─────────────────────────────────────────────────

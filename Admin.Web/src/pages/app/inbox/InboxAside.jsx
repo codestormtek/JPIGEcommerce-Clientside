@@ -203,7 +203,7 @@ const InboxAside = ({
   return (
     <div className={`nk-ibx-aside toggle-screen-lg ${aside ? "content-active" : ""}`}>
       <div className="nk-ibx-head">
-        <h5 className="mb-0">NioMail</h5>
+        <h5 className="mb-0">Mailbox</h5>
         <a
           href="#toggle"
           onClick={(ev) => {

@@ -17,6 +17,13 @@ export interface CreatePaymentIntentOptions {
   paymentMethodId?: string;
   /** Arbitrary key/value pairs attached to the PI for reconciliation */
   metadata?: Record<string, string>;
+  /**
+   * Stripe Tax Calculation ID (taxcalc_*) returned by `calculateTax()`.
+   * When provided and STRIPE_TAX_ENABLED is true, this is stored in the PI
+   * metadata so Stripe Tax can link the calculation to the charge for
+   * reporting and compliance.
+   */
+  taxCalculationId?: string;
 }
 
 // ─── Payment Intents ──────────────────────────────────────────────────────────
@@ -37,11 +44,17 @@ export async function createPaymentIntent(
   currency: string,
   options: CreatePaymentIntentOptions = {},
 ): Promise<Stripe.PaymentIntent> {
+  // Merge caller metadata with tax calculation ID (if provided) for Stripe Tax reporting
+  const metadata: Record<string, string> = { ...(options.metadata ?? {}) };
+  if (options.taxCalculationId && config.stripe.taxEnabled) {
+    metadata['tax_calculation'] = options.taxCalculationId;
+  }
+
   const params: Stripe.PaymentIntentCreateParams = {
     amount: amountInCents,
     currency: currency.toLowerCase(),
     capture_method: 'manual', // two-step: authorize now, capture later
-    metadata: options.metadata ?? {},
+    metadata,
   };
 
   if (options.paymentMethodId) {

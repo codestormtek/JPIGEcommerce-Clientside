@@ -72,6 +72,7 @@ export const config = {
   resend: {
     apiKey: process.env.RESEND_API_KEY ?? '',
     from: process.env.RESEND_FROM ?? 'invoices@thejugglingpig.com',
+    webhookSecret: process.env.RESEND_WEBHOOK_SECRET ?? '',
   },
 
 

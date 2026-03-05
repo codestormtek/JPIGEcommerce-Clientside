@@ -4,7 +4,7 @@ import { sendSuccess, sendNoContent, sendPaginated } from '../../utils/apiRespon
 import {
   ListUsersInput, AdminUpdateUserInput, UpdateProfileInput, UpsertAddressInput,
   UpdateContactPreferencesInput, CreateReviewInput, ListReviewsInput,
-  AddPaymentMethodInput,
+  AddPaymentMethodInput, ListPaymentMethodsInput,
 } from './users.schema';
 import { ctxFromRequest } from '../../utils/auditLogger';
 import * as service from './users.service';
@@ -125,6 +125,21 @@ export async function deleteReview(req: AuthRequest, res: Response): Promise<voi
 }
 
 // ─── Payment Method Token handlers ────────────────────────────────────────────
+
+// GET /api/v1/users/payment-methods  (admin)
+export async function listAllPaymentMethods(req: AuthRequest, res: Response): Promise<void> {
+  const result = await service.listAllPaymentMethods(req.query as unknown as ListPaymentMethodsInput);
+  sendPaginated(res, result);
+}
+
+// DELETE /api/v1/users/payment-methods/:tokenId  (admin)
+export async function adminDeletePaymentMethod(req: AuthRequest, res: Response): Promise<void> {
+  await service.adminDeletePaymentMethod(
+    req.params['tokenId'] as string,
+    ctxFromRequest(req, req.user?.sub),
+  );
+  sendNoContent(res);
+}
 
 // GET /api/v1/users/me/payment-methods
 export async function getMyPaymentMethods(req: AuthRequest, res: Response): Promise<void> {

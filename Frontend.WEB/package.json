@@ -9,7 +9,8 @@
     "lint": "next lint",
     "scss": "npm run scss:public && npm run scss:dashboard",
     "scss:public": "sass public/assets/scss/style.scss public/assets/css/style.css --load-path=public/assets/scss",
-    "scss:dashboard": "sass public-dashboard/assets/scss/style.scss public-dashboard/assets/css/style.css --load-path=public-dashboard/assets/scss"
+    "scss:dashboard": "sass public-dashboard/assets/scss/style.scss public-dashboard/assets/css/style.css --load-path=public-dashboard/assets/scss",
+    "scss:watch": "sass --watch public/assets/scss/style.scss:public/assets/css/style.css public-dashboard/assets/scss/style.scss:public-dashboard/assets/css/style.css"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -311,6 +311,8 @@ model MediaAsset {
   contentPosts       ContentPost[]
   contentPostMedia   ContentPostMedia[]
   scheduleEventMedia ScheduleEventMedia[]
+  carouselSlides     CarouselSlide[]      @relation("CarouselDesktopImage")
+  carouselSlidesMobile CarouselSlide[]    @relation("CarouselMobileImage")
 
   @@map("media_assets")
 }
@@ -326,6 +328,36 @@ model MediaAssetMetadata {
   createdAt      DateTime   @default(now())
 
   @@map("media_asset_metadata")
+}
+
+// ─── Carousel Slides ──────────────────────────────────────────────────────────
+
+model CarouselSlide {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  title              String?   // overlay heading text
+  subTitle           String?   // overlay sub-text
+  displayOrder       Int       @default(0)
+  isVisible          Boolean   @default(true)
+
+  // Desktop image
+  mediaAssetId       String?
+  mediaAsset         MediaAsset? @relation("CarouselDesktopImage", fields: [mediaAssetId], references: [id])
+
+  // Mobile image (optional separate crop)
+  mobileMediaAssetId String?
+  mobileMediaAsset   MediaAsset? @relation("CarouselMobileImage", fields: [mobileMediaAssetId], references: [id])
+
+  // Optional CTA button
+  buttonText         String?
+  buttonUrl          String?
+
+  @@map("carousel_slides")
 }
 
 // ─── Cart ─────────────────────────────────────────────────────────────────────
@@ -1092,6 +1124,28 @@ model MessageDeliveryLog {
   createdAt    DateTime      @default(now())
 
   @@map("message_delivery_logs")
+}
+
+model MessageInbox {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
+
+  fromAddress String
+  toAddress   String
+  subject     String?
+  bodyHtml    String?
+  bodyText    String?
+  messageId   String?   @unique // original RFC 2822 Message-ID header
+
+  spamScore   Float?
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  isTrash     Boolean   @default(false)
+  isArchived  Boolean   @default(false)
+  isFavourite Boolean   @default(false)
+  headersJson String?   // raw headers for debugging / replay
+
+  @@map("message_inbox")
 }
 
 // ─── Recipes (Internal) ───────────────────────────────────────────────────────

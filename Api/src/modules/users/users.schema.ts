@@ -89,6 +89,16 @@ export type ListReviewsInput = z.infer<typeof listReviewsSchema>;
 
 // ─── Payment Method Tokens ────────────────────────────────────────────────────
 
+export const listPaymentMethodsSchema = z.object({
+  page:    z.coerce.number().int().positive().default(1),
+  limit:   z.coerce.number().int().positive().max(100).default(20),
+  search:  z.string().optional(),
+  orderBy: z.enum(['createdAt', 'brand', 'last4']).default('createdAt'),
+  order:   z.enum(['asc', 'desc']).default('desc'),
+});
+
+export type ListPaymentMethodsInput = z.infer<typeof listPaymentMethodsSchema>;
+
 export const addPaymentMethodSchema = z.object({
   provider: z.string().min(1, 'Provider is required'),
   token: z.string().min(1, 'Token is required'),

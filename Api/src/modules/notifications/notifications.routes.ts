@@ -8,6 +8,9 @@ import {
   createSubscriptionSchema,
   updateSubscriptionSchema,
   listUserNotificationsSchema,
+  sendEmailSchema,
+  listInboxSchema,
+  updateInboxMessageSchema,
 } from './notifications.schema';
 import * as ctrl from './notifications.controller';
 
@@ -72,6 +75,63 @@ notificationsRouter.delete(
 );
 
 // ─── MessageOutbox routes (admin only) ───────────────────────────────────────
+
+// POST   /api/v1/notifications/resend-webhook  (public — no auth, verified by signature)
+notificationsRouter.post(
+  '/resend-webhook',
+  asyncHandler(ctrl.handleResendWebhook),
+);
+
+// POST   /api/v1/notifications/inbound  (public — called by Resend inbound routing)
+notificationsRouter.post(
+  '/inbound',
+  asyncHandler(ctrl.handleResendInbound),
+);
+
+// ─── MessageInbox routes (admin only) ────────────────────────────────────────
+
+// GET    /api/v1/notifications/inbox
+notificationsRouter.get(
+  '/inbox',
+  authenticate,
+  authorize('admin'),
+  validate(listInboxSchema, 'query'),
+  asyncHandler(ctrl.listInbox),
+);
+
+// GET    /api/v1/notifications/inbox/:id
+notificationsRouter.get(
+  '/inbox/:id',
+  authenticate,
+  authorize('admin'),
+  asyncHandler(ctrl.getInboxById),
+);
+
+// PATCH  /api/v1/notifications/inbox/:id
+notificationsRouter.patch(
+  '/inbox/:id',
+  authenticate,
+  authorize('admin'),
+  validate(updateInboxMessageSchema),
+  asyncHandler(ctrl.updateInboxMessage),
+);
+
+// DELETE /api/v1/notifications/inbox/:id
+notificationsRouter.delete(
+  '/inbox/:id',
+  authenticate,
+  authorize('admin'),
+  asyncHandler(ctrl.deleteInboxMessage),
+);
+
+// POST   /api/v1/notifications/send  (must be BEFORE /:id)
+notificationsRouter.post(
+  '/send',
+  authenticate,
+  authorize('admin'),
+  validate(sendEmailSchema),
+  asyncHandler(ctrl.sendManualEmail),
+);
 
 // GET    /api/v1/notifications
 notificationsRouter.get(

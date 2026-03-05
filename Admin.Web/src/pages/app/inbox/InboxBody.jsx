@@ -263,7 +263,7 @@ const InboxBody = ({
                       );
                     } else
                       return (
-                        <div className={`nk-ibx-item ${item.message.meta.unread ? "" : "is-unread"}`} key={item.id}>
+                        <div className={`nk-ibx-item ${item.message.meta.unread ? "is-unread" : ""}`} key={item.id}>
                           <a
                             href="#item"
                             onClick={(ev) => {
@@ -301,22 +301,31 @@ const InboxBody = ({
                             </div>
                           </div>
                           <div className="nk-ibx-item-elem nk-ibx-item-user">
-                            {currentTab === "Sent" ? (
+                            {item._direction === "received" ? (
                               <p>
-                                To :{" "}
+                                From:{" "}
+                                <strong>{item.message.reply[0].to.mail.split("@")[0]}</strong>
+                                {" "}
+                                <span className="text-soft">&lt;{item.message.reply[0].to.mail}&gt;</span>
+                              </p>
+                            ) : currentTab === "Sent" ? (
+                              <p>
+                                To:{" "}
                                 {getUser(item.message.reply[0].to.user)
                                   ? getUser(item.message.reply[0].to.user).name
                                   : item.message.reply[0].to.mail.split("@")[0]
                                   ? item.message.reply[0].to.mail.split("@")[0]
                                   : item.message.reply[0].to.mail}
                               </p>
-                            ) : (
+                            ) : user ? (
                               <div className="user-card">
                                 <UserAvatar text={findUpper(user.name)} image={user.img} theme={user.theme} />
                                 <div className="user-name">
                                   <div className="lead-text">{user.name}</div>
                                 </div>
                               </div>
+                            ) : (
+                              <p>{item.message.reply[0].to.mail}</p>
                             )}
                           </div>
                           <div className="nk-ibx-item-elem nk-ibx-item-fluid">

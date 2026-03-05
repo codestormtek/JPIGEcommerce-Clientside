@@ -2,7 +2,7 @@ import { ApiError } from '../../utils/apiError';
 import {
   ListUsersInput, AdminUpdateUserInput, UpdateProfileInput, UpsertAddressInput,
   UpdateContactPreferencesInput, CreateReviewInput, ListReviewsInput,
-  AddPaymentMethodInput,
+  AddPaymentMethodInput, ListPaymentMethodsInput,
 } from './users.schema';
 import * as repo from './users.repository';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
@@ -117,6 +117,15 @@ export async function deleteReview(id: string, requestingUserId: string, isAdmin
 }
 
 // ─── Payment Method Token operations ─────────────────────────────────────────
+
+export async function listAllPaymentMethods(input: ListPaymentMethodsInput) {
+  return repo.listAllPaymentMethods(input);
+}
+
+export async function adminDeletePaymentMethod(tokenId: string, ctx?: AuditContext): Promise<void> {
+  await repo.deletePaymentMethod(tokenId);
+  logAudit({ action: AuditAction.PAYMENT_METHOD_REMOVED, entityType: 'PaymentMethodToken', entityId: tokenId, ctx });
+}
 
 export async function getMyPaymentMethods(userId: string) {
   return repo.getPaymentMethods(userId);

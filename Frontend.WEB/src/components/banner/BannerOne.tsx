@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay } from 'swiper/modules';
-import CategoryBb from './CategoryBb';
 import Link from 'next/link';
 const BannerOne = () => {
 
@@ -102,7 +101,6 @@ const BannerOne = () => {
             </div>
             {/* rts banner area end */}
 
-            <CategoryBb />
         </div>
     );
 };

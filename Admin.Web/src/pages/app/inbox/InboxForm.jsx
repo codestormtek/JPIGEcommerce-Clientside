@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import Tags from "@yaireo/tagify/dist/react.tagify";
 import { formTemplates } from "./InboxData";
 import { Icon, Button, TooltipComponent } from "@/components/Component";
-import { Modal, DropdownItem, DropdownMenu, DropdownToggle, UncontrolledDropdown } from "reactstrap";
+import { Modal, DropdownItem, DropdownMenu, DropdownToggle, UncontrolledDropdown, Spinner } from "reactstrap";
 import { getDateStructured, currentTime } from "@/utils/Utils";
+import { apiPost } from "@/utils/apiClient";
 
 const tagifySettings = {
   blacklist: ["xxx", "yyy", "zzz"],
@@ -27,9 +28,11 @@ const InboxForm = ({
   composeMail,
   draftData,
 }) => {
-  const [inboxText, setInboxText] = useState();
-  const [inboxSubject, setInboxSubject] = useState();
+  const [inboxText, setInboxText] = useState("");
+  const [inboxSubject, setInboxSubject] = useState("");
   const [templateList, setTemplateList] = useState(formTemplates);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
   const [attachmentList, setAttachmentList] = useState([]);
   const [tagifyOptions, setTagifyOptions] = useState([composeMail]);
   const [ccTagify, setCCTagify] = useState({
@@ -94,9 +97,46 @@ const InboxForm = ({
     toggleModal(false);
   };
 
-  const sendInbox = () => {
-    if (tagifyOptions[0] !== "") {
-      addMailFunc("sent");
+  const sendInbox = async () => {
+    const toEmail = tagifyOptions[0]?.value ?? tagifyOptions[0] ?? "";
+    if (!toEmail || !inboxSubject || !inboxText) {
+      setSendError("To, Subject and Body are required.");
+      return;
+    }
+    setSending(true);
+    setSendError("");
+    try {
+      const bodyHtml = `<p>${inboxText.replace(/\n/g, "<br/>")}</p>`;
+      const result = await apiPost("/notifications/send", {
+        to: toEmail,
+        subject: inboxSubject,
+        bodyHtml,
+        bodyText: inboxText,
+      });
+      // Append new sent item to the mailbox list
+      const newMsg = result?.data ?? result;
+      if (newMsg && setMailData) {
+        const stripHtml = (html) => (html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
+        const newItem = {
+          id: newMsg.id,
+          userId: 1,
+          message: {
+            subject: newMsg.subject || "(no subject)",
+            meta: { sent: true, inbox: false, draft: false, trash: false, archive: false, favourite: false, unread: true, spam: false, checked: false, tags: [] },
+            reply: [{ replyId: newMsg.id, userId: 1, to: { user: null, mail: newMsg.toAddress }, date: new Date(newMsg.createdAt).toLocaleDateString(), time: new Date(newMsg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), replyMessage: [stripHtml(newMsg.bodyHtml) || newMsg.bodyText || ""], attachment: null }],
+          },
+          _raw: newMsg,
+        };
+        setMailData([newItem, ...mailData]);
+      }
+      setInboxText("");
+      setInboxSubject("");
+      setAttachmentList([]);
+      toggleModal(false);
+    } catch (err) {
+      setSendError(err.message || "Failed to send email.");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -363,11 +403,16 @@ const InboxForm = ({
             </div>
           ))}
         </div>
+        {sendError && (
+          <div className="px-3 py-2">
+            <span className="text-danger small">{sendError}</span>
+          </div>
+        )}
         <div className="nk-reply-form-tools">
           <ul className="nk-reply-form-actions g-1">
             <li className="me-2">
-              <Button color="primary" type="submit" onClick={() => sendInbox()}>
-                Send
+              <Button color="primary" type="submit" onClick={sendInbox} disabled={sending}>
+                {sending ? <><Spinner size="sm" /> Sending…</> : "Send"}
               </Button>
             </li>
             <li>

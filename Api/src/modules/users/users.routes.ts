@@ -11,6 +11,7 @@ import {
   createReviewSchema,
   listReviewsSchema,
   addPaymentMethodSchema,
+  listPaymentMethodsSchema,
 } from './users.schema';
 import * as ctrl from './users.controller';
 
@@ -61,6 +62,23 @@ usersRouter.patch('/me/payment-methods/:tokenId/default', authenticate, asyncHan
 usersRouter.delete('/me/payment-methods/:tokenId', authenticate, asyncHandler(ctrl.removeMyPaymentMethod));
 
 // ─── Admin routes ─────────────────────────────────────────────────────────────
+
+// GET    /api/v1/users/payment-methods  (admin: list all tokens with user info)
+usersRouter.get(
+  '/payment-methods',
+  authenticate,
+  authorize('admin'),
+  validate(listPaymentMethodsSchema, 'query'),
+  asyncHandler(ctrl.listAllPaymentMethods),
+);
+
+// DELETE /api/v1/users/payment-methods/:tokenId  (admin: remove any token)
+usersRouter.delete(
+  '/payment-methods/:tokenId',
+  authenticate,
+  authorize('admin'),
+  asyncHandler(ctrl.adminDeletePaymentMethod),
+);
 
 // GET    /api/v1/users/reviews  (admin: list all)
 usersRouter.get('/reviews', authenticate, authorize('admin'), validate(listReviewsSchema, 'query'), asyncHandler(ctrl.listReviews));

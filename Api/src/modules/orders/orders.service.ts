@@ -28,6 +28,7 @@ export async function checkout(userId: string, input: PlaceOrderInput, ctx?: Aud
     // ── Step 1: Fetch product prices (needed for tax and/or coupon discount) ──
     let taxTotal = 0;
     let discountTotal = 0;
+    let taxCalculationId = '';
 
     const needsPrices = (config.stripe.taxEnabled || !!input.couponCode) && input.lines.length > 0;
     const priceMap = new Map<string, number>();
@@ -62,6 +63,7 @@ export async function checkout(userId: string, input: PlaceOrderInput, ctx?: Aud
               input.currency,
             );
             taxTotal = taxResult.taxAmountInCents / 100; // store as dollars in DB (Decimal)
+            taxCalculationId = taxResult.calculationId;  // carry forward for PI metadata
           }
         } catch (taxErr: unknown) {
           logger.warn('Stripe Tax calculation failed, falling back to taxTotal=0', { taxErr });
@@ -101,6 +103,7 @@ export async function checkout(userId: string, input: PlaceOrderInput, ctx?: Aud
       const pi = await stripeService.createPaymentIntent(grandTotalCents, order.currency, {
         paymentMethodId: token.token, // token.token holds the Stripe pm_* ID
         metadata: { orderId: order.id, userId },
+        taxCalculationId: taxCalculationId || undefined, // links Stripe Tax calculation for reporting
       });
 
       await paymentRepo.createPayment({

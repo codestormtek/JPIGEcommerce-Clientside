@@ -31,6 +31,7 @@ import { metricsRouter } from './modules/metrics/metrics.routes';
 import { messageTemplatesRouter } from './modules/message-templates/message-templates.routes';
 import { inventoryRouter } from './modules/inventory/inventory.routes';
 import { checklistsRouter } from './modules/checklists/checklists.routes';
+import { carouselRouter } from './modules/carousel/carousel.routes';
 
 const app = express();
 
@@ -50,8 +51,9 @@ app.use(
     legacyHeaders: false,
   }),
 );
-// Raw body required for Stripe webhook signature verification — must come BEFORE express.json()
+// Raw body required for webhook signature verification — must come BEFORE express.json()
 app.use('/api/v1/payments/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/v1/notifications/resend-webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -96,6 +98,7 @@ app.use(`${API}/admin/metrics`, metricsRouter);
 app.use(`${API}/message-templates`, messageTemplatesRouter);
 app.use(`${API}/inventory`, inventoryRouter);
 app.use(`${API}/checklists`, checklistsRouter);
+app.use(`${API}/carousel`,   carouselRouter);
 
 // ─── 404 + Global error handler ───────────────────────────────────────────────
 app.use(notFoundHandler);
