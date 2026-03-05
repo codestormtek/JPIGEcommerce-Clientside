@@ -10,7 +10,7 @@ const requiredEnv = (key: string): string => {
 
 export const config = {
   env: process.env.NODE_ENV ?? 'development',
-  port: parseInt(process.env.PORT ?? '4000', 10),
+  port: parseInt(process.env.PORT ?? '8000', 10),
 
   database: {
     url: requiredEnv('EXTERNAL_DATABASE_URL'),
@@ -37,7 +37,7 @@ export const config = {
   },
 
   stripe: {
-    secretKey: requiredEnv('STRIPE_SECRET_KEY'),
+    secretKey: process.env.STRIPE_SECRET_KEY ?? '',
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
     taxEnabled: process.env.STRIPE_TAX_ENABLED === 'true',
   },
