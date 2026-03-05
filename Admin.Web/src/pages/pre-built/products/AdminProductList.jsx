@@ -710,7 +710,6 @@ const AdminProductList = () => {
               <TabContent activeTab={activeTab} className="mt-3">
                 {/* ── Basic Info ── */}
                 <TabPane tabId="basic">
-                  {editError && <div className="alert alert-danger">{editError}</div>}
                   <Row className="g-3">
                     <Col md="6"><div className="form-group"><label className="form-label">Name <span className="text-danger">*</span></label><input className="form-control" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} /></div></Col>
                     <Col md="3"><div className="form-group"><label className="form-label">Price <span className="text-danger">*</span></label><input className="form-control" type="number" step="0.01" value={editForm.price} onChange={(e) => setEditForm((f) => ({ ...f, price: e.target.value }))} /></div></Col>
@@ -718,7 +717,6 @@ const AdminProductList = () => {
                     <Col md="6"><div className="form-group"><label className="form-label">Brand</label><RSelect options={brandOptions} value={editForm.brandId} onChange={(v) => setEditForm((f) => ({ ...f, brandId: v }))} isClearable placeholder="Select brand" /></div></Col>
                     <Col md="6"><div className="form-group"><label className="form-label">Categories</label><RSelect options={categoryOptions} value={editForm.categoryIds} onChange={(v) => setEditForm((f) => ({ ...f, categoryIds: v ?? [] }))} isMulti placeholder="Select categories" /></div></Col>
                     <Col size="12"><div className="form-group"><label className="form-label">Description</label><textarea className="form-control" rows={3} value={editForm.description} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))} /></div></Col>
-                    <Col size="12"><Button color="primary" onClick={saveEdit} disabled={editSaving || !editForm.name || !editForm.price}>{editSaving ? <Spinner size="sm" /> : "Save Changes"}</Button></Col>
                   </Row>
                 </TabPane>
 
@@ -823,6 +821,10 @@ const AdminProductList = () => {
                   )}
                 </TabPane>
               </TabContent>
+              {editError && <div className="alert alert-danger mt-3">{editError}</div>}
+              <div className="mt-3">
+                <Button color="primary" onClick={saveEdit} disabled={editSaving || !editForm.name || !editForm.price}>{editSaving ? <Spinner size="sm" /> : "Save Changes"}</Button>
+              </div>
             </div>
           </ModalBody>
         </Modal>
