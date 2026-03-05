@@ -777,17 +777,18 @@ const AdminProductList = () => {
                 {/* ── Image ── */}
                 <TabPane tabId="image">
                   {imageError && <div className="alert alert-danger">{imageError}</div>}
-                  <div className="d-flex flex-wrap gap-3 mb-3">
+                  <div className="d-flex flex-wrap gap-3 mb-4">
                     {productImages.map((m) => (
-                      <div key={m.mediaAssetId} style={{ position: "relative" }}>
-                        <img src={m.mediaAsset?.url} alt="" style={{ width: 120, height: 160, objectFit: "contain", borderRadius: 6, border: "1px solid #e5e9f2", background: "#f8f9fc" }} />
-                        {m.isPrimary && <Badge color="primary" style={{ position: "absolute", top: 4, left: 4, fontSize: "0.65em" }}>Primary</Badge>}
-                        <button onClick={() => removeImage(m.mediaAssetId)} style={{ position: "absolute", top: 2, right: 2, background: "#e85347", border: "none", borderRadius: "50%", width: 20, height: 20, color: "#fff", lineHeight: 1, cursor: "pointer", fontSize: 12 }}>✕</button>
+                      <div key={m.mediaAssetId} style={{ position: "relative", flexShrink: 0 }}>
+                        <img src={m.mediaAsset?.url} alt="" style={{ width: 200, height: 240, objectFit: "contain", borderRadius: 8, border: "1px solid #e5e9f2", background: "#f8f9fc", padding: 4 }} />
+                        {m.isPrimary && <Badge color="primary" style={{ position: "absolute", top: 8, left: 8, fontSize: "0.7em" }}>Primary</Badge>}
+                        <button onClick={() => removeImage(m.mediaAssetId)} style={{ position: "absolute", top: 4, right: 4, background: "#e85347", border: "none", borderRadius: "50%", width: 24, height: 24, color: "#fff", lineHeight: 1, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
                       </div>
                     ))}
                     {productImages.length === 0 && <p className="text-muted">No images yet.</p>}
                   </div>
-                  <div className="form-group">
+                  <hr />
+                  <div className="form-group mt-3">
                     <label className="form-label">Upload New Image</label>
                     <Dropzone onDrop={onDropFile} maxFiles={1} accept={{ "image/*": [".jpg", ".jpeg", ".png", ".gif", ".webp"] }}>
                       {({ getRootProps, getInputProps }) => (
