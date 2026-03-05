@@ -13,7 +13,7 @@ export const config = {
   port: parseInt(process.env.PORT ?? '4000', 10),
 
   database: {
-    url: requiredEnv('DATABASE_URL'),
+    url: requiredEnv('EXTERNAL_DATABASE_URL'),
   },
 
   jwt: {
