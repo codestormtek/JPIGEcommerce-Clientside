@@ -693,9 +693,9 @@ const AdminProductList = () => {
         </Modal>
 
         {/* ── Edit Product Modal (tabbed) ───────────────────────────────────── */}
-        <Modal isOpen={editModal} toggle={() => setEditModal(false)} size="xl">
+        <Modal isOpen={editModal} toggle={() => { setEditModal(false); loadProducts(); }} size="xl">
           <ModalBody>
-            <a href="#cancel" onClick={(e) => { e.preventDefault(); setEditModal(false); }} className="close"><em className="icon ni ni-cross-sm" /></a>
+            <a href="#cancel" onClick={(e) => { e.preventDefault(); setEditModal(false); loadProducts(); }} className="close"><em className="icon ni ni-cross-sm" /></a>
             <div className="p-2">
               <h5 className="title">Edit Product — <span className="text-soft">{editProduct?.name}</span></h5>
               <Nav tabs className="mt-3">
