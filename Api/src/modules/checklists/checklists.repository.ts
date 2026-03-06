@@ -1,4 +1,4 @@
-import { prisma } from '../../lib/prisma';
+import prisma from '../../lib/prisma';
 import { ListChecklistsInput, CreateChecklistInput, UpdateChecklistInput, CreateTaskInput, UpdateTaskInput, ReorderTasksInput, SyncChecklistInput } from './checklists.schema';
 import { PaginatedResult } from '../../types';
 
