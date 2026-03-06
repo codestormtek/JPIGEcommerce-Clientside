@@ -25,8 +25,8 @@ export const createPromotionSchema = z.object({
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
   isActive: z.boolean().default(true),
-  categoryIds: z.array(z.string().uuid()).optional(),
-  productIds: z.array(z.string().uuid()).optional(),
+  categoryIds: z.array(z.string().min(1)).optional(),
+  productIds: z.array(z.string().min(1)).optional(),
 });
 
 export type CreatePromotionInput = z.infer<typeof createPromotionSchema>;

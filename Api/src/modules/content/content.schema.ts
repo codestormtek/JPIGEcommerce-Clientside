@@ -7,8 +7,8 @@ export const listPostsSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(20),
   postType: z.enum(['blog', 'news']).optional(),
   status: z.enum(['draft', 'scheduled', 'published', 'archived']).optional(),
-  categoryId: z.string().uuid().optional(),
-  tagId: z.string().uuid().optional(),
+  categoryId: z.string().min(1).optional(),
+  tagId: z.string().min(1).optional(),
   search: z.string().optional(),
   orderBy: z.enum(['publishedAt', 'createdAt', 'title']).default('publishedAt'),
   order: z.enum(['asc', 'desc']).default('desc'),
@@ -25,11 +25,11 @@ export const createPostSchema = z.object({
   excerpt: z.string().optional(),
   bodyHtml: z.string().min(1, 'Body is required'),
   status: z.enum(['draft', 'scheduled', 'published', 'archived']).default('draft'),
-  featuredMediaAssetId: z.string().uuid().optional(),
+  featuredMediaAssetId: z.string().min(1).optional(),
   publishedAt: z.coerce.date().optional(),
-  categoryIds: z.array(z.string().uuid()).optional(),
-  tagIds: z.array(z.string().uuid()).optional(),
-  mediaAssetIds: z.array(z.string().uuid()).optional(),
+  categoryIds: z.array(z.string().min(1)).optional(),
+  tagIds: z.array(z.string().min(1)).optional(),
+  mediaAssetIds: z.array(z.string().min(1)).optional(),
 });
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;
