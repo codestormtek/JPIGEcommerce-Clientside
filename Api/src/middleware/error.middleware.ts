@@ -31,7 +31,9 @@ export function errorHandler(
   }
 
   // Unknown errors
-  logger.error('Unhandled error', { err });
+  const errMsg = err instanceof Error ? err.message : String(err);
+  const errStack = err instanceof Error ? err.stack : undefined;
+  logger.error('Unhandled error', { message: errMsg, stack: errStack });
   res.status(500).json({
     success: false,
     error: 'Internal server error',
