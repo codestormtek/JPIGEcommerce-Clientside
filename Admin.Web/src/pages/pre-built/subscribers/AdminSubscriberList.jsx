@@ -327,7 +327,7 @@ const AdminSubscriberList = () => {
                       <span className="tb-lead">{sub.email || "—"}</span>
                       {sub.user && (
                         <span className="d-block text-muted small">
-                          Linked: {sub.user.username || sub.user.email}
+                          Linked: {[sub.user.firstName, sub.user.lastName].filter(Boolean).join(" ") || sub.user.emailAddress}
                         </span>
                       )}
                     </div>
@@ -585,7 +585,7 @@ const AdminSubscriberList = () => {
                     {detailSub.user && (
                       <Col xs={6}>
                         <div className="text-muted small">Linked Account</div>
-                        <div className="fw-semibold">{detailSub.user.username || detailSub.user.email}</div>
+                        <div className="fw-semibold">{[detailSub.user.firstName, detailSub.user.lastName].filter(Boolean).join(" ") || detailSub.user.emailAddress}</div>
                       </Col>
                     )}
                   </Row>

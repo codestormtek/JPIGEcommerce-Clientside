@@ -9,7 +9,7 @@ const subscriberInclude = {
     where: { isDeleted: false },
     include: { location: { select: { id: true, name: true } } },
   },
-  user: { select: { id: true, username: true, email: true } },
+  user: { select: { id: true, firstName: true, lastName: true, emailAddress: true } },
 } as const;
 
 // ─── Subscribers ──────────────────────────────────────────────────────────────
