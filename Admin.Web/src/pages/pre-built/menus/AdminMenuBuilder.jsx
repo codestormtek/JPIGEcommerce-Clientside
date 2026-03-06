@@ -558,8 +558,8 @@ const AdminMenuBuilder = () => {
                         </span>
                         <button
                           type="button"
-                          className="btn btn-icon btn-sm btn-outline-danger flex-shrink-0"
-                          style={{ minWidth: 36, minHeight: 36, width: 36, height: 36 }}
+                          className="btn btn-icon btn-sm flex-shrink-0"
+                          style={{ minWidth: 36, minHeight: 36, width: 36, height: 36, border: "none", color: "#e85347" }}
                           onClick={() => deleteSection(sec.id)}
                           title="Remove section"
                         >
@@ -653,8 +653,8 @@ const AdminMenuBuilder = () => {
                           />
                           <button
                             type="button"
-                            className="btn btn-icon btn-sm btn-outline-danger flex-shrink-0"
-                            style={{ minWidth: 36, minHeight: 36, width: 36, height: 36 }}
+                            className="btn btn-icon btn-sm flex-shrink-0"
+                            style={{ minWidth: 36, minHeight: 36, width: 36, height: 36, border: "none", color: "#e85347" }}
                             onClick={() => deleteItem(item)}
                             title="Remove item"
                           >
