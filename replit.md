@@ -37,6 +37,7 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
 - **Menus**: Menu builder with drag-and-drop sections
 - **Checklists**: Task list manager
 - **Carousel**: Homepage slide management
+- **Subscribers**: Subscriber management with global stats (total, email opt-in, SMS opt-in), CRUD, detail view with subscription topics, search by email/phone, filter by opt-in status
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
 
 ## Dev Notes

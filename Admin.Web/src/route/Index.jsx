@@ -95,6 +95,7 @@ import AdminInventoryList from "@/pages/pre-built/inventory/AdminInventoryList";
 import AdminChecklistManager from "@/pages/pre-built/checklists/AdminChecklistManager";
 import AdminCarouselList from "@/pages/pre-built/carousel/AdminCarouselList";
 import AdminNewsList from "@/pages/pre-built/news/AdminNewsList";
+import AdminSubscriberList from "@/pages/pre-built/subscribers/AdminSubscriberList";
 import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
 import AdminPaymentMethodList from "@/pages/pre-built/payment-methods/AdminPaymentMethodList";
 import MediaManager from "@/pages/pre-built/media/MediaManager";
@@ -205,6 +206,7 @@ const Pages = () => {
               <Route path="blog/create" element={<AdminBlogList />}></Route>
               <Route path="news" element={<AdminNewsList />}></Route>
               <Route path="news/create" element={<AdminNewsList />}></Route>
+              <Route path="subscribers" element={<AdminSubscriberList />}></Route>
               <Route path="inventory" element={<AdminInventoryList />}></Route>
               <Route path="checklists" element={<AdminChecklistManager />}></Route>
               <Route path="carousel" element={<AdminCarouselList />}></Route>

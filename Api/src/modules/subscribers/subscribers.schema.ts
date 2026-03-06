@@ -51,7 +51,7 @@ export const subscriptionTypeEnum = z.enum(['sales', 'truck_schedule', 'menu_upd
 
 export const addSubscriptionSchema = z.object({
   subscriptionType: subscriptionTypeEnum,
-  locationId: z.string().uuid().optional(),
+  locationId: z.string().min(1).optional(),
   radiusMiles: z.number().int().positive().optional(),
   isEnabled: z.boolean().default(true),
 });
