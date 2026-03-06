@@ -58,8 +58,8 @@ function SortableTask({ task, onChange, onDelete }) {
 
       {/* Text */}
       <Input
-        bsSize="sm"
         className={`border-0 shadow-none flex-grow-1 ${task.done ? "text-decoration-line-through text-muted" : ""}`}
+        style={{ fontSize: "1rem" }}
         value={task.text}
         placeholder="Task description…"
         onChange={(e) => onChange(task.id, "text", e.target.value)}
