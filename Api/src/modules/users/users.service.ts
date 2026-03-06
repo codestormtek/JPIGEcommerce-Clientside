@@ -39,6 +39,16 @@ export async function deleteUser(id: string, ctx?: AuditContext): Promise<void> 
   logAudit({ action: AuditAction.USER_DELETED, entityType: 'SiteUser', entityId: id, ctx });
 }
 
+export async function getUserOrders(userId: string, page: number, limit: number) {
+  await getUserById(userId);
+  return repo.getUserOrdersByUserId(userId, page, limit);
+}
+
+export async function getUserAddresses(userId: string) {
+  await getUserById(userId);
+  return repo.getUserAddressesByUserId(userId);
+}
+
 // ─── Self operations ──────────────────────────────────────────────────────────
 
 export async function getMyProfile(userId: string) {

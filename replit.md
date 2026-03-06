@@ -38,6 +38,10 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
 - **Checklists**: Task list manager
 - **Carousel**: Homepage slide management
 - **Subscribers**: Subscriber management with global stats (total, email opt-in, SMS opt-in), CRUD, detail view with subscription topics, search by email/phone, filter by opt-in status
+- **Customers**: Full customer management inspired by NopCommerce:
+  - List page (`/customers`): NopCommerce-style search panel (email, name, active, role, registration date range), paginated table with email, name, role badge, phone, active checkmark, registered date, quick edit modal, add/delete customer, export
+  - Detail page (`/customers/:id`): Editable customer info form, orders table with status/totals, addresses table, contact preferences, activity log placeholder
+  - API endpoints: `GET /users/:id/orders`, `GET /users/:id/addresses`
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
 
 ## Dev Notes

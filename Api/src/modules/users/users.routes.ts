@@ -95,6 +95,12 @@ usersRouter.get('/', authenticate, authorize('admin'), validate(listUsersSchema,
 // GET    /api/v1/users/:id
 usersRouter.get('/:id', authenticate, authorize('admin'), asyncHandler(ctrl.getUserById));
 
+// GET    /api/v1/users/:id/orders
+usersRouter.get('/:id/orders', authenticate, authorize('admin'), asyncHandler(ctrl.getUserOrders));
+
+// GET    /api/v1/users/:id/addresses
+usersRouter.get('/:id/addresses', authenticate, authorize('admin'), asyncHandler(ctrl.getUserAddresses));
+
 // PATCH  /api/v1/users/:id
 usersRouter.patch('/:id', authenticate, authorize('admin'), validate(adminUpdateUserSchema), asyncHandler(ctrl.adminUpdateUser));
 

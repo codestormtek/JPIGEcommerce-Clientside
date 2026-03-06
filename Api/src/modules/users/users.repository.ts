@@ -22,8 +22,16 @@ export const safeUserSelect = {
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 export async function findUsers(input: ListUsersInput) {
-  const { page, limit, search, role, isActive, orderBy, order } = input;
+  const { page, limit, search, role, isActive, createdFrom, createdTo, orderBy, order } = input;
   const skip = (page - 1) * limit;
+
+  const createdAtFilter: Record<string, Date> = {};
+  if (createdFrom) createdAtFilter['gte'] = new Date(createdFrom);
+  if (createdTo) {
+    const to = new Date(createdTo);
+    to.setHours(23, 59, 59, 999);
+    createdAtFilter['lte'] = to;
+  }
 
   const where = {
     isDeleted: false,
@@ -39,6 +47,7 @@ export async function findUsers(input: ListUsersInput) {
       : {}),
     ...(role ? { role } : {}),
     ...(isActive !== undefined ? { isActive } : {}),
+    ...(Object.keys(createdAtFilter).length > 0 ? { createdAt: createdAtFilter } : {}),
   };
 
   const [data, total] = await Promise.all([
@@ -56,7 +65,7 @@ export async function findUsers(input: ListUsersInput) {
 }
 
 export async function findUserById(id: string) {
-  return prisma.siteUser.findFirst({
+  const user = await prisma.siteUser.findFirst({
     where: { id, isDeleted: false },
     select: {
       ...safeUserSelect,
@@ -64,7 +73,70 @@ export async function findUserById(id: string) {
       userAddresses: {
         include: { address: { include: { country: true } } },
       },
+      orders: {
+        select: {
+          id: true,
+          orderDate: true,
+          grandTotal: true,
+          currency: true,
+          orderStatus: { select: { id: true, status: true } },
+          orderType: true,
+        },
+        orderBy: { orderDate: 'desc' },
+        take: 10,
+      },
+      _count: {
+        select: { reviews: true, orders: true },
+      },
     },
+  });
+  return user;
+}
+
+export async function getUserOrdersByUserId(userId: string, page: number, limit: number) {
+  const skip = (page - 1) * limit;
+  const where = { userId };
+
+  const [data, total] = await Promise.all([
+    prisma.shopOrder.findMany({
+      where,
+      select: {
+        id: true,
+        orderDate: true,
+        grandTotal: true,
+        subtotal: true,
+        taxTotal: true,
+        shippingTotal: true,
+        discountTotal: true,
+        currency: true,
+        orderType: true,
+        fulfillmentType: true,
+        orderStatus: { select: { id: true, status: true } },
+        lines: {
+          select: {
+            id: true,
+            qty: true,
+            unitPriceSnapshot: true,
+            lineTotal: true,
+            skuSnapshot: true,
+            productNameSnapshot: true,
+          },
+        },
+      },
+      orderBy: { orderDate: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.shopOrder.count({ where }),
+  ]);
+
+  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
+
+export async function getUserAddressesByUserId(userId: string) {
+  return prisma.userAddress.findMany({
+    where: { userId },
+    include: { address: { include: { country: true } } },
   });
 }
 

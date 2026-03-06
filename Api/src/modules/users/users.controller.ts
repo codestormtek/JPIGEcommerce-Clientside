@@ -35,6 +35,18 @@ export async function deleteUser(req: AuthRequest, res: Response): Promise<void>
   sendNoContent(res);
 }
 
+export async function getUserOrders(req: Request, res: Response): Promise<void> {
+  const page = parseInt(req.query['page'] as string) || 1;
+  const limit = parseInt(req.query['limit'] as string) || 20;
+  const result = await service.getUserOrders(req.params['id'] as string, page, limit);
+  sendPaginated(res, result);
+}
+
+export async function getUserAddresses(req: Request, res: Response): Promise<void> {
+  const addresses = await service.getUserAddresses(req.params['id'] as string);
+  sendSuccess(res, addresses);
+}
+
 // ─── Self handlers ────────────────────────────────────────────────────────────
 
 export async function getMyProfile(req: AuthRequest, res: Response): Promise<void> {

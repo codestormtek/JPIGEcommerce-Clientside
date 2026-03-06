@@ -18,6 +18,8 @@ export const listUsersSchema = z.object({
   search: z.string().optional(),
   role: z.enum(['user', 'admin']).optional(),
   isActive: z.coerce.boolean().optional(),
+  createdFrom: z.string().optional(),
+  createdTo: z.string().optional(),
   orderBy: z.enum(['createdAt', 'emailAddress']).default('createdAt'),
   order: z.enum(['asc', 'desc']).default('desc'),
 });
