@@ -6,8 +6,8 @@ export const listProductsSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
   search: z.string().optional(),
-  brandId: z.string().uuid().optional(),
-  categoryId: z.string().uuid().optional(),
+  brandId: z.string().min(1).optional(),
+  categoryId: z.string().min(1).optional(),
   minPrice: z.coerce.number().nonnegative().optional(),
   maxPrice: z.coerce.number().nonnegative().optional(),
   orderBy: z.enum(['createdAt', 'name', 'price']).default('createdAt'),
@@ -23,8 +23,8 @@ export const createProductSchema = z.object({
   description: z.string().optional(),
   price: z.number().nonnegative('Price must be ≥ 0'),
   quantity: z.number().int().nonnegative().default(0),
-  brandId: z.string().uuid().optional(),
-  categoryIds: z.array(z.string().uuid()).optional(),
+  brandId: z.string().min(1).optional(),
+  categoryIds: z.array(z.string().min(1)).optional(),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
@@ -36,8 +36,8 @@ export const updateProductSchema = z.object({
   description: z.string().optional(),
   price: z.number().nonnegative().optional(),
   quantity: z.number().int().nonnegative().optional(),
-  brandId: z.string().uuid().optional().nullable(),
-  categoryIds: z.array(z.string().uuid()).optional(),
+  brandId: z.string().min(1).optional().nullable(),
+  categoryIds: z.array(z.string().min(1)).optional(),
 });
 
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
