@@ -54,11 +54,15 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
 - **Recipes** (`/recipes`): Full recipe CRUD with:
   - Drag-and-drop ingredient ordering, structured ingredients (name, quantity, unit)
   - Live preview with print, instruction steps, tags
-  - **Nutrition Analysis**: "Analyze Recipe" button in editor (visible for saved recipes) triggers USDA FoodData Central API to fetch nutrient data per ingredient, sums totals, saves to `RecipeNutrition` table
-  - FDA-style nutrition label modal with per-serving values, % Daily Value, ingredient match details
+  - Categories include product types: Sauce, Rub, Dry Mix, Drink (with auto-preset serving sizes)
+  - **Product Packaging**: For product categories, shows yield (oz), container size selector (4–64oz), serving size (qty + unit), and auto-calculated container count
+  - Recipe fields: `yieldOz`, `containerSizeOz`, `servingSizeQty`, `servingSizeUnit`
+  - **Nutrition Analysis**: "Analyze Recipe" button in editor triggers USDA FoodData Central API, calculates nutrition per serving size
+  - Serving size presets: Sauce=1.5 tbsp, Rub=1 tbsp, Dry Mix=1 tbsp, Drink=8 oz
+  - FDA-style nutrition label modal with per-serving values, % Daily Value, container yield summary, ingredient match details
   - Print nutrition label functionality
   - API: `POST /recipes/:id/nutrition/analyze`, `GET /recipes/:id/nutrition`, `DELETE /recipes/:id/nutrition`
-  - Service: `Api/src/modules/recipes/nutrition.service.ts` — USDA search, unit→gram conversion, nutrient scaling
+  - Service: `Api/src/modules/recipes/nutrition.service.ts` — USDA search, unit→gram conversion, nutrient scaling, container yield calc
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
 
 ## Dev Notes

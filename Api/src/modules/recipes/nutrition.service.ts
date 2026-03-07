@@ -186,56 +186,67 @@ export async function analyzeRecipe(recipeId: string) {
     totals[key] = Math.round(totals[key] * 100) / 100;
   }
 
-  const servingsPerRecipe = recipe.servings || 1;
+  const totalRecipeGrams = recipe.ingredients.reduce((sum, ing) => {
+    return sum + unitToGrams(Number(ing.quantity), ing.unit);
+  }, 0);
+
+  const totalRecipeOz = recipe.yieldOz ? Number(recipe.yieldOz) : (totalRecipeGrams / 28.3495);
+  const containerSizeOz = recipe.containerSizeOz ? Number(recipe.containerSizeOz) : null;
+  const containersYielded = containerSizeOz ? Math.floor((totalRecipeOz / containerSizeOz) * 10) / 10 : null;
+
+  let servingSizeLabel: string;
+  let servingsPerRecipe: number;
+
+  const servQty = recipe.servingSizeQty ? Number(recipe.servingSizeQty) : null;
+  const servUnit = recipe.servingSizeUnit || null;
+
+  if (servQty && servUnit) {
+    const servingGrams = unitToGrams(servQty, servUnit);
+    servingsPerRecipe = servingGrams > 0 ? Math.round(totalRecipeGrams / servingGrams) : 1;
+    servingSizeLabel = `${servQty} ${servUnit}`;
+  } else if (recipe.servings) {
+    servingsPerRecipe = recipe.servings;
+    servingSizeLabel = `1/${servingsPerRecipe} of recipe`;
+  } else {
+    servingsPerRecipe = 1;
+    servingSizeLabel = 'Entire recipe';
+  }
+
+  if (servingsPerRecipe < 1) servingsPerRecipe = 1;
+
+  const nutritionData = {
+    servingSize: servingSizeLabel,
+    servingsPerRecipe,
+    calories: totals.calories,
+    totalFat: totals.totalFat,
+    saturatedFat: totals.saturatedFat,
+    transFat: totals.transFat,
+    cholesterol: totals.cholesterol,
+    sodium: totals.sodium,
+    totalCarbs: totals.totalCarbs,
+    fiber: totals.fiber,
+    sugar: totals.sugar,
+    protein: totals.protein,
+    vitaminD: totals.vitaminD,
+    calcium: totals.calcium,
+    iron: totals.iron,
+    potassium: totals.potassium,
+    ingredientMatchesJson: JSON.stringify(matches),
+    analyzedAt: new Date(),
+  };
 
   const nutrition = await prisma.recipeNutrition.upsert({
     where: { recipeId },
-    create: {
-      recipeId,
-      servingSize: `1/${servingsPerRecipe} of recipe`,
-      servingsPerRecipe,
-      calories: totals.calories,
-      totalFat: totals.totalFat,
-      saturatedFat: totals.saturatedFat,
-      transFat: totals.transFat,
-      cholesterol: totals.cholesterol,
-      sodium: totals.sodium,
-      totalCarbs: totals.totalCarbs,
-      fiber: totals.fiber,
-      sugar: totals.sugar,
-      protein: totals.protein,
-      vitaminD: totals.vitaminD,
-      calcium: totals.calcium,
-      iron: totals.iron,
-      potassium: totals.potassium,
-      ingredientMatchesJson: JSON.stringify(matches),
-      analyzedAt: new Date(),
-    },
-    update: {
-      servingSize: `1/${servingsPerRecipe} of recipe`,
-      servingsPerRecipe,
-      calories: totals.calories,
-      totalFat: totals.totalFat,
-      saturatedFat: totals.saturatedFat,
-      transFat: totals.transFat,
-      cholesterol: totals.cholesterol,
-      sodium: totals.sodium,
-      totalCarbs: totals.totalCarbs,
-      fiber: totals.fiber,
-      sugar: totals.sugar,
-      protein: totals.protein,
-      vitaminD: totals.vitaminD,
-      calcium: totals.calcium,
-      iron: totals.iron,
-      potassium: totals.potassium,
-      ingredientMatchesJson: JSON.stringify(matches),
-      analyzedAt: new Date(),
-    },
+    create: { recipeId, ...nutritionData },
+    update: nutritionData,
   });
 
   return {
     ...serializeNutrition(nutrition),
     ingredientMatches: matches,
+    totalRecipeOz: Math.round(totalRecipeOz * 10) / 10,
+    containersYielded,
+    containerSizeOz,
   };
 }
 

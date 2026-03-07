@@ -1161,6 +1161,10 @@ model Recipe {
   servings        Int?
   category        String?
   tags            String?
+  yieldOz         Decimal?
+  containerSizeOz Decimal?
+  servingSizeQty  Decimal?
+  servingSizeUnit String?
 
   ingredients RecipeIngredient[]
   steps       RecipeStep[]

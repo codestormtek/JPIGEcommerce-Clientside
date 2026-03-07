@@ -19,7 +19,9 @@ import { apiGet, apiPost, apiPatch, apiDelete, getAccessToken } from "@/utils/ap
 
 const uid = () => Math.random().toString(36).slice(2);
 const fmtTime = (min) => (min ? `${min} min` : "—");
-const CATEGORIES = ["Appetizer", "Soup", "Salad", "Entrée", "Side Dish", "Dessert", "Beverage", "Sauce", "Breakfast", "Other"];
+const CATEGORIES = ["Appetizer", "Soup", "Salad", "Entrée", "Side Dish", "Dessert", "Beverage", "Sauce", "Rub", "Dry Mix", "Drink", "Breakfast", "Other"];
+const SERVING_PRESETS = { Sauce: { qty: 1.5, unit: "tbsp" }, Rub: { qty: 1, unit: "tbsp" }, "Dry Mix": { qty: 1, unit: "tbsp" }, Drink: { qty: 8, unit: "oz" } };
+const CONTAINER_SIZES = [4, 6, 8, 10, 12, 16, 20, 24, 32, 64];
 const UNITS = ["cup", "tbsp", "tsp", "oz", "lb", "g", "kg", "ml", "l", "piece", "slice", "clove", "bunch", "pinch", "each"];
 
 const blankIngredient = () => ({ uid: uid(), ingredientName: "", quantity: "", unit: "cup", sortOrder: 0 });
@@ -27,6 +29,7 @@ const blankStep       = (n) => ({ uid: uid(), stepNumber: n, instruction: "" });
 const blankForm = () => ({
   name: "", description: "", prepTimeMinutes: "", cookTimeMinutes: "",
   servings: "", category: "", tags: "", isActive: true,
+  yieldOz: "", containerSizeOz: "", servingSizeQty: "", servingSizeUnit: "",
   ingredients: [blankIngredient()],
   steps: [blankStep(1)],
 });
@@ -299,6 +302,10 @@ const AdminRecipeList = () => {
       category:        recipe.category ?? "",
       tags:            recipe.tags ?? "",
       isActive:        recipe.isActive ?? true,
+      yieldOz:         recipe.yieldOz ?? "",
+      containerSizeOz: recipe.containerSizeOz ?? "",
+      servingSizeQty:  recipe.servingSizeQty ?? "",
+      servingSizeUnit: recipe.servingSizeUnit ?? "",
       ingredients: recipe.ingredients?.length
         ? recipe.ingredients.map((i) => ({ uid: uid(), ingredientName: i.ingredientName, quantity: String(i.quantity), unit: i.unit, sortOrder: i.sortOrder }))
         : [blankIngredient()],
@@ -367,6 +374,10 @@ const AdminRecipeList = () => {
         cookTimeMinutes: form.cookTimeMinutes !== "" ? parseInt(form.cookTimeMinutes, 10) : undefined,
         servings:        form.servings !== "" ? parseInt(form.servings, 10) : undefined,
         category:        form.category || undefined, tags: form.tags || undefined,
+        yieldOz:         form.yieldOz !== "" ? parseFloat(form.yieldOz) : undefined,
+        containerSizeOz: form.containerSizeOz !== "" ? parseFloat(form.containerSizeOz) : undefined,
+        servingSizeQty:  form.servingSizeQty !== "" ? parseFloat(form.servingSizeQty) : undefined,
+        servingSizeUnit: form.servingSizeUnit || undefined,
         ingredients: validIngredients.length ? validIngredients : undefined,
         steps:       validSteps.length ? validSteps : undefined,
       };
@@ -570,7 +581,14 @@ const AdminRecipeList = () => {
                         <div className="form-group">
                           <label className="form-label text-uppercase small fw-bold text-muted">Category</label>
                           <select className="form-select" value={form.category}
-                            onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
+                            onChange={(e) => {
+                              const cat = e.target.value;
+                              const preset = SERVING_PRESETS[cat];
+                              setForm((f) => ({
+                                ...f, category: cat,
+                                ...(preset ? { servingSizeQty: String(preset.qty), servingSizeUnit: preset.unit } : {}),
+                              }));
+                            }}>
                             <option value="">Select...</option>
                             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                           </select>
@@ -578,6 +596,76 @@ const AdminRecipeList = () => {
                       </Col>
                     </Row>
 
+                    {/* Product / Packaging row */}
+                    {["Sauce", "Rub", "Dry Mix", "Drink"].includes(form.category) && (
+                      <Row className="g-3 mb-4">
+                        <Col size="3">
+                          <div className="form-group">
+                            <label className="form-label text-uppercase small fw-bold text-muted">Total Yield</label>
+                            <div className="input-group">
+                              <input type="number" min="0" step="0.1" className="form-control" placeholder="96"
+                                value={form.yieldOz}
+                                onChange={(e) => setForm((f) => ({ ...f, yieldOz: e.target.value }))}
+                              />
+                              <span className="input-group-text">oz</span>
+                            </div>
+                          </div>
+                        </Col>
+                        <Col size="3">
+                          <div className="form-group">
+                            <label className="form-label text-uppercase small fw-bold text-muted">Container Size</label>
+                            <div className="input-group">
+                              <select className="form-select" value={form.containerSizeOz}
+                                onChange={(e) => setForm((f) => ({ ...f, containerSizeOz: e.target.value }))}>
+                                <option value="">Select...</option>
+                                {CONTAINER_SIZES.map((s) => <option key={s} value={s}>{s} oz</option>)}
+                              </select>
+                            </div>
+                            {form.yieldOz && form.containerSizeOz && (
+                              <small className="text-success fw-bold mt-1 d-block">
+                                = {Math.floor((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 10) / 10} containers
+                              </small>
+                            )}
+                          </div>
+                        </Col>
+                        <Col size="3">
+                          <div className="form-group">
+                            <label className="form-label text-uppercase small fw-bold text-muted">Serving Size</label>
+                            <div className="input-group">
+                              <input type="number" min="0" step="0.5" className="form-control" placeholder="1.5"
+                                value={form.servingSizeQty}
+                                onChange={(e) => setForm((f) => ({ ...f, servingSizeQty: e.target.value }))}
+                              />
+                              <select className="input-group-text" style={{ appearance: "auto", cursor: "pointer" }}
+                                value={form.servingSizeUnit}
+                                onChange={(e) => setForm((f) => ({ ...f, servingSizeUnit: e.target.value }))}>
+                                <option value="">unit</option>
+                                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                              </select>
+                            </div>
+                            {form.servingSizeQty && form.servingSizeUnit && (
+                              <small className="text-muted mt-1 d-block">
+                                Nutrition label per {form.servingSizeQty} {form.servingSizeUnit}
+                              </small>
+                            )}
+                          </div>
+                        </Col>
+                        <Col size="3">
+                          <div className="form-group">
+                            <label className="form-label text-uppercase small fw-bold text-muted">Containers</label>
+                            <div className="py-2 px-3 rounded" style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                              {form.yieldOz && form.containerSizeOz ? (
+                                <span className="fw-bold" style={{ color: "#166534" }}>
+                                  {Math.floor((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 10) / 10} x {form.containerSizeOz}oz
+                                </span>
+                              ) : (
+                                <span className="text-muted small">Set yield & size</span>
+                              )}
+                            </div>
+                          </div>
+                        </Col>
+                      </Row>
+                    )}
 
                     {/* Ingredients */}
                     <div className="mb-4">
@@ -717,6 +805,15 @@ const AdminRecipeList = () => {
                             {form.cookTimeMinutes !== "" && <Badge color="light" className="text-dark border"><Icon name="clock" className="me-1" />Cook {form.cookTimeMinutes} min</Badge>}
                             {form.servings !== "" && <Badge color="light" className="text-dark border"><Icon name="user" className="me-1" />{form.servings} servings</Badge>}
                             {form.category && <Badge color="warning" className="text-dark">{form.category}</Badge>}
+                            {form.yieldOz && <Badge color="info" className="text-white">Yield: {form.yieldOz} oz</Badge>}
+                            {form.containerSizeOz && form.yieldOz && (
+                              <Badge color="success" className="text-white">
+                                {Math.floor((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 10) / 10} x {form.containerSizeOz}oz containers
+                              </Badge>
+                            )}
+                            {form.servingSizeQty && form.servingSizeUnit && (
+                              <Badge color="light" className="text-dark border">Serving: {form.servingSizeQty} {form.servingSizeUnit}</Badge>
+                            )}
                           </div>
 
                           {/* Ingredients list */}
@@ -780,6 +877,23 @@ const AdminRecipeList = () => {
                       </Button>
                     </div>
                   </div>
+
+                  {/* Container yield summary */}
+                  {(nutritionData.totalRecipeOz || nutritionData.containersYielded) && (
+                    <div className="mb-3 p-3 rounded d-flex flex-wrap gap-4" style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
+                      {nutritionData.totalRecipeOz > 0 && (
+                        <div><span className="small text-muted d-block">Total Yield</span><strong>{nutritionData.totalRecipeOz} oz</strong></div>
+                      )}
+                      {nutritionData.containerSizeOz && (
+                        <div><span className="small text-muted d-block">Container Size</span><strong>{nutritionData.containerSizeOz} oz</strong></div>
+                      )}
+                      {nutritionData.containersYielded && (
+                        <div><span className="small text-muted d-block">Containers Yielded</span><strong className="text-success">{nutritionData.containersYielded}</strong></div>
+                      )}
+                      <div><span className="small text-muted d-block">Serving Size</span><strong>{nutritionData.servingSize}</strong></div>
+                      <div><span className="small text-muted d-block">Servings per Recipe</span><strong>{nutritionData.servingsPerRecipe}</strong></div>
+                    </div>
+                  )}
 
                   <div className="row g-4">
                     {/* Left: FDA-style Nutrition Label */}
