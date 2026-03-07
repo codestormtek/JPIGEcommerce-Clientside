@@ -245,72 +245,78 @@ const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove })
         </Block>
 
         {/* ── Create / Edit Modal ───────────────────────────────────────── */}
-        <Modal isOpen={modal} toggle={() => setModal(false)} size="lg" scrollable>
+        <Modal isOpen={modal} toggle={() => setModal(false)} size="xl" scrollable>
           <ModalHeader toggle={() => setModal(false)}>
             {editTarget ? "Edit Slide" : "Add Slide"}
           </ModalHeader>
           <ModalBody>
             {formError && <div className="alert alert-danger">{formError}</div>}
-            <Row className="g-3">
+            <Row>
               <Col md="8">
-                <div className="form-group">
-                  <label className="form-label">Title</label>
-                  <input className="form-control" value={form.title} onChange={(e) => setField("title", e.target.value)} placeholder="Slide heading" />
+                <Row className="g-3">
+                  <Col md="8">
+                    <div className="form-group">
+                      <label className="form-label">Title</label>
+                      <input className="form-control" value={form.title} onChange={(e) => setField("title", e.target.value)} placeholder="Slide heading" />
+                    </div>
+                  </Col>
+                  <Col md="4">
+                    <div className="form-group">
+                      <label className="form-label">Display Order</label>
+                      <input type="number" className="form-control" value={form.displayOrder} onChange={(e) => setField("displayOrder", e.target.value)} />
+                    </div>
+                  </Col>
+                  <Col md="12">
+                    <div className="form-group">
+                      <label className="form-label">Sub-title</label>
+                      <input className="form-control" value={form.subTitle} onChange={(e) => setField("subTitle", e.target.value)} placeholder="Optional sub-heading" />
+                    </div>
+                  </Col>
+                  <Col md="6">
+                    <div className="form-group">
+                      <label className="form-label">Button Text</label>
+                      <input className="form-control" value={form.buttonText} onChange={(e) => setField("buttonText", e.target.value)} placeholder="e.g. Shop Now" />
+                    </div>
+                  </Col>
+                  <Col md="6">
+                    <div className="form-group">
+                      <label className="form-label">Button URL</label>
+                      <input className="form-control" value={form.buttonUrl} onChange={(e) => setField("buttonUrl", e.target.value)} placeholder="/menu or https://..." />
+                    </div>
+                  </Col>
+                  <Col md="12">
+                    <div className="form-group">
+                      <div className="custom-control custom-switch">
+                        <input type="checkbox" className="custom-control-input" id="isVisible" checked={form.isVisible}
+                          onChange={(e) => setField("isVisible", e.target.checked)} />
+                        <label className="custom-control-label" htmlFor="isVisible">Visible on homepage</label>
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </Col>
+              <Col md="4" className="border-start ps-4">
+                <div className="mb-4">
+                  <ImageUploadWidget
+                    label="Desktop Image"
+                    assetId={form.mediaAssetId}
+                    previewUrl={editTarget?.mediaAsset?.url ?? null}
+                    onUploaded={(asset) => setField("mediaAssetId", asset.id)}
+                    onRemove={() => setField("mediaAssetId", "")}
+                  />
                 </div>
-              </Col>
-              <Col md="4">
-                <div className="form-group">
-                  <label className="form-label">Display Order</label>
-                  <input type="number" className="form-control" value={form.displayOrder} onChange={(e) => setField("displayOrder", e.target.value)} />
+                <div>
+                  <ImageUploadWidget
+                    label="Mobile Image (optional)"
+                    assetId={form.mobileMediaAssetId}
+                    previewUrl={editTarget?.mobileMediaAsset?.url ?? null}
+                    onUploaded={(asset) => setField("mobileMediaAssetId", asset.id)}
+                    onRemove={() => setField("mobileMediaAssetId", "")}
+                  />
                 </div>
-              </Col>
-              <Col md="12">
-                <div className="form-group">
-                  <label className="form-label">Sub-title</label>
-                  <input className="form-control" value={form.subTitle} onChange={(e) => setField("subTitle", e.target.value)} placeholder="Optional sub-heading" />
-                </div>
-              </Col>
-              <Col md="6">
-                <div className="form-group">
-                  <label className="form-label">Button Text</label>
-                  <input className="form-control" value={form.buttonText} onChange={(e) => setField("buttonText", e.target.value)} placeholder="e.g. Shop Now" />
-                </div>
-              </Col>
-              <Col md="6">
-                <div className="form-group">
-                  <label className="form-label">Button URL</label>
-                  <input className="form-control" value={form.buttonUrl} onChange={(e) => setField("buttonUrl", e.target.value)} placeholder="/menu or https://..." />
-                </div>
-              </Col>
-              <Col md="12">
-                <div className="form-group">
-                  <div className="custom-control custom-switch">
-                    <input type="checkbox" className="custom-control-input" id="isVisible" checked={form.isVisible}
-                      onChange={(e) => setField("isVisible", e.target.checked)} />
-                    <label className="custom-control-label" htmlFor="isVisible">Visible on homepage</label>
-                  </div>
-                </div>
-              </Col>
-              <Col md="6">
-                <ImageUploadWidget
-                  label="Desktop Image"
-                  assetId={form.mediaAssetId}
-                  previewUrl={editTarget?.mediaAsset?.url ?? null}
-                  onUploaded={(asset) => setField("mediaAssetId", asset.id)}
-                  onRemove={() => setField("mediaAssetId", "")}
-                />
-              </Col>
-              <Col md="6">
-                <ImageUploadWidget
-                  label="Mobile Image (optional)"
-                  assetId={form.mobileMediaAssetId}
-                  previewUrl={editTarget?.mobileMediaAsset?.url ?? null}
-                  onUploaded={(asset) => setField("mobileMediaAssetId", asset.id)}
-                  onRemove={() => setField("mobileMediaAssetId", "")}
-                />
               </Col>
             </Row>
-            <div className="d-flex justify-content-end gap-2 mt-3">
+            <div className="d-flex justify-content-end gap-2 mt-4">
               <Button color="light" onClick={() => setModal(false)}>Cancel</Button>
               <Button color="primary" onClick={saveSlide} disabled={saving}>
                 {saving ? <Spinner size="sm" /> : editTarget ? "Save Changes" : "Create Slide"}
