@@ -150,10 +150,7 @@ const menu = [
   {
     icon: "file-text",
     text: "Pages",
-    subMenu: [
-      { text: "Page List", link: "/pages" },
-      { text: "Edit Page", link: "/pages/:id" },
-    ],
+    link: "/site-pages",
   },
   {
     icon: "book",

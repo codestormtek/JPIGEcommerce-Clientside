@@ -65,6 +65,12 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - Print nutrition label functionality
   - API: `POST /recipes/:id/nutrition/analyze`, `GET /recipes/:id/nutrition`, `DELETE /recipes/:id/nutrition`
   - Service: `Api/src/modules/recipes/nutrition.service.ts` — USDA search, unit→gram conversion, nutrient scaling, container yield calc
+- **Pages (Topics)** (`/site-pages`): NopCommerce-style static page management
+  - Prisma model: `SitePage` (table `site_pages`) with title, slug, bodyHtml, SEO fields, display toggles
+  - Display toggles: isPublished, passwordProtected, includeInSitemap, includeInTopMenu, includeInFooterColumn1/2/3, displayOrder
+  - API: Full CRUD at `/api/v1/pages` (all admin-only) — list (paginated + search), get by ID, create, update (PATCH), soft-delete
+  - Admin UI: `AdminPageList.jsx` with list table (boolean columns shown as check/cross icons), Add/Edit modals with TinyMCE rich text editor, delete confirmation
+  - Route: `/site-pages` (avoids conflict with demo `/pages` routes)
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
 
 ## Dev Notes
