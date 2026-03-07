@@ -1165,6 +1165,7 @@ model Recipe {
   ingredients RecipeIngredient[]
   steps       RecipeStep[]
   notes       RecipeNote[]
+  nutrition   RecipeNutrition?
 
   @@map("recipes")
 }
@@ -1199,6 +1200,32 @@ model RecipeNote {
   createdAt DateTime @default(now())
 
   @@map("recipe_notes")
+}
+
+model RecipeNutrition {
+  id                String   @id @default(uuid())
+  recipeId          String   @unique
+  recipe            Recipe   @relation(fields: [recipeId], references: [id])
+  servingSize       String?
+  servingsPerRecipe Int?
+  calories          Decimal  @default(0)
+  totalFat          Decimal  @default(0)
+  saturatedFat      Decimal  @default(0)
+  transFat          Decimal  @default(0)
+  cholesterol       Decimal  @default(0)
+  sodium            Decimal  @default(0)
+  totalCarbs        Decimal  @default(0)
+  fiber             Decimal  @default(0)
+  sugar             Decimal  @default(0)
+  protein           Decimal  @default(0)
+  vitaminD          Decimal  @default(0)
+  calcium           Decimal  @default(0)
+  iron              Decimal  @default(0)
+  potassium         Decimal  @default(0)
+  ingredientMatchesJson String?
+  analyzedAt        DateTime @default(now())
+
+  @@map("recipe_nutrition")
 }
 
 

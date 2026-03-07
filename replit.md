@@ -51,6 +51,14 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - Task handler registry: `Api/src/jobs/taskHandlerRegistry.ts` — maps taskKey to handler functions
   - DB-driven task runner: `Api/src/jobs/taskRunner.ts` — polls every 60s for due tasks, supports concurrency control, retries
   - 5 built-in handlers: autoCancelSweeper, lowStockCheck, logCleanup, dailySalesSummary, aggregateMetrics (auto-seeded on startup)
+- **Recipes** (`/recipes`): Full recipe CRUD with:
+  - Drag-and-drop ingredient ordering, structured ingredients (name, quantity, unit)
+  - Live preview with print, instruction steps, tags
+  - **Nutrition Analysis**: "Analyze Recipe" button in editor (visible for saved recipes) triggers USDA FoodData Central API to fetch nutrient data per ingredient, sums totals, saves to `RecipeNutrition` table
+  - FDA-style nutrition label modal with per-serving values, % Daily Value, ingredient match details
+  - Print nutrition label functionality
+  - API: `POST /recipes/:id/nutrition/analyze`, `GET /recipes/:id/nutrition`, `DELETE /recipes/:id/nutrition`
+  - Service: `Api/src/modules/recipes/nutrition.service.ts` — USDA search, unit→gram conversion, nutrient scaling
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
 
 ## Dev Notes

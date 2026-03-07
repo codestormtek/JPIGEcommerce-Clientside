@@ -76,6 +76,7 @@ export async function updateRecipe(id: string, input: UpdateRecipeInput) {
 
 export async function deleteRecipe(id: string) {
   return prisma.$transaction(async (tx: TxClient) => {
+    await tx.recipeNutrition.deleteMany({ where: { recipeId: id } });
     await tx.recipeIngredient.deleteMany({ where: { recipeId: id } });
     await tx.recipeStep.deleteMany({ where: { recipeId: id } });
     await tx.recipeNote.deleteMany({ where: { recipeId: id } });

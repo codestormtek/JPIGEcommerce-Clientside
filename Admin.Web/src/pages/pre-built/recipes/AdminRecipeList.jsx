@@ -104,6 +104,80 @@ const SortableIngredientRow = ({ ing, UNITS, updateIngredient, removeIngredient,
   );
 };
 
+// ─── FDA-Style Nutrition Label ────────────────────────────────────────────────
+
+const DV = { totalFat: 78, saturatedFat: 20, cholesterol: 300, sodium: 2300, totalCarbs: 275, fiber: 28, sugar: 50, protein: 50, vitaminD: 20, calcium: 1300, iron: 18, potassium: 4700 };
+
+const NutritionLabel = ({ data, recipeName }) => {
+  const servings = data.servingsPerRecipe || 1;
+  const pv = (key) => Math.round((data[key] || 0) / servings * 10) / 10;
+  const dvp = (key) => {
+    const d = DV[key];
+    return d ? Math.round(pv(key) / d * 100) : 0;
+  };
+
+  const labelStyle = { border: "2px solid #000", padding: "4px 8px", fontFamily: "Arial, Helvetica, sans-serif", maxWidth: 360 };
+  const hrThick = { borderTop: "8px solid #000", margin: "2px 0" };
+  const hrMed = { borderTop: "3px solid #000", margin: "2px 0" };
+  const hrThin = { borderTop: "1px solid #000", margin: "1px 0" };
+  const rowStyle = { display: "flex", justifyContent: "space-between", fontSize: 13 };
+
+  return (
+    <div style={labelStyle}>
+      <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.1 }}>Nutrition Facts</div>
+      <div style={{ fontSize: 11 }}>{recipeName || "Recipe"}</div>
+      <div style={hrThick} />
+      <div style={{ ...rowStyle, fontSize: 11 }}>
+        <span>{servings} serving{servings > 1 ? "s" : ""} per recipe</span>
+      </div>
+      <div style={{ ...rowStyle, fontWeight: 700, fontSize: 14 }}>
+        <span>Serving size</span>
+        <span>{data.servingSize || "1 serving"}</span>
+      </div>
+      <div style={hrThick} />
+      <div style={{ fontSize: 11, fontWeight: 700 }}>Amount per serving</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <span style={{ fontSize: 22, fontWeight: 900 }}>Calories</span>
+        <span style={{ fontSize: 22, fontWeight: 900 }}>{Math.round(pv("calories"))}</span>
+      </div>
+      <div style={hrMed} />
+      <div style={{ textAlign: "right", fontSize: 11, fontWeight: 700 }}>% Daily Value*</div>
+      <div style={hrThin} />
+      <div style={rowStyle}><span><strong>Total Fat</strong> {pv("totalFat")}g</span><strong>{dvp("totalFat")}%</strong></div>
+      <div style={hrThin} />
+      <div style={{ ...rowStyle, paddingLeft: 16 }}><span>Saturated Fat {pv("saturatedFat")}g</span><strong>{dvp("saturatedFat")}%</strong></div>
+      <div style={hrThin} />
+      <div style={{ ...rowStyle, paddingLeft: 16 }}><span><em>Trans</em> Fat {pv("transFat")}g</span></div>
+      <div style={hrThin} />
+      <div style={rowStyle}><span><strong>Cholesterol</strong> {pv("cholesterol")}mg</span><strong>{dvp("cholesterol")}%</strong></div>
+      <div style={hrThin} />
+      <div style={rowStyle}><span><strong>Sodium</strong> {pv("sodium")}mg</span><strong>{dvp("sodium")}%</strong></div>
+      <div style={hrThin} />
+      <div style={rowStyle}><span><strong>Total Carbohydrate</strong> {pv("totalCarbs")}g</span><strong>{dvp("totalCarbs")}%</strong></div>
+      <div style={hrThin} />
+      <div style={{ ...rowStyle, paddingLeft: 16 }}><span>Dietary Fiber {pv("fiber")}g</span><strong>{dvp("fiber")}%</strong></div>
+      <div style={hrThin} />
+      <div style={{ ...rowStyle, paddingLeft: 16 }}><span>Total Sugars {pv("sugar")}g</span></div>
+      <div style={hrThin} />
+      <div style={rowStyle}><span><strong>Protein</strong> {pv("protein")}g</span><strong>{dvp("protein")}%</strong></div>
+      <div style={hrThick} />
+      <div style={rowStyle}><span>Vitamin D {pv("vitaminD")}mcg</span><span>{dvp("vitaminD")}%</span></div>
+      <div style={hrThin} />
+      <div style={rowStyle}><span>Calcium {pv("calcium")}mg</span><span>{dvp("calcium")}%</span></div>
+      <div style={hrThin} />
+      <div style={rowStyle}><span>Iron {pv("iron")}mg</span><span>{dvp("iron")}%</span></div>
+      <div style={hrThin} />
+      <div style={rowStyle}><span>Potassium {pv("potassium")}mg</span><span>{dvp("potassium")}%</span></div>
+      <div style={hrMed} />
+      <div style={{ fontSize: 10, lineHeight: 1.3 }}>
+        * The % Daily Value (DV) tells you how much a nutrient in a
+        serving of food contributes to a daily diet. 2,000 calories a
+        day is used for general nutrition advice.
+      </div>
+    </div>
+  );
+};
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 const AdminRecipeList = () => {
@@ -137,6 +211,12 @@ const AdminRecipeList = () => {
   // ── Export state ──────────────────────────────────────────────────────────
   const [exporting,   setExporting]   = useState(false);
   const [exportError, setExportError] = useState(null);
+
+  // ── Nutrition state ────────────────────────────────────────────────────
+  const [nutritionModal, setNutritionModal] = useState(false);
+  const [nutritionData,  setNutritionData]  = useState(null);
+  const [analyzing,      setAnalyzing]      = useState(false);
+  const [nutritionError, setNutritionError] = useState(null);
 
   const searchTimer = useRef(null);
 
@@ -334,6 +414,55 @@ const AdminRecipeList = () => {
     finally { setExporting(false); }
   };
 
+
+  // ── Nutrition helpers ─────────────────────────────────────────────────────
+
+  const analyzeRecipeNutrition = async () => {
+    if (!editingRecipe?.id) return;
+    setAnalyzing(true);
+    setNutritionError(null);
+    try {
+      const res = await apiPost(`/recipes/${editingRecipe.id}/nutrition/analyze`);
+      setNutritionData(res?.data ?? res);
+      setNutritionModal(true);
+    } catch (e) {
+      setNutritionError(e.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const loadExistingNutrition = async () => {
+    if (!editingRecipe?.id) return;
+    setAnalyzing(true);
+    setNutritionError(null);
+    try {
+      const res = await apiGet(`/recipes/${editingRecipe.id}/nutrition`);
+      const data = res?.data ?? res;
+      if (data) {
+        setNutritionData(data);
+        setNutritionModal(true);
+        setAnalyzing(false);
+      } else {
+        await analyzeRecipeNutrition();
+      }
+    } catch {
+      await analyzeRecipeNutrition();
+    }
+  };
+
+  const printNutritionLabel = () => {
+    const el = document.getElementById("nutrition-label-print");
+    if (!el) return;
+    const w = window.open("", "_blank", "width=450,height=700");
+    w.document.write(`<html><head><title>Nutrition Facts</title><style>
+      body { font-family: Arial, Helvetica, sans-serif; padding: 20px; margin: 0; }
+      @media print { body { padding: 10px; } }
+    </style></head><body>${el.innerHTML}</body></html>`);
+    w.document.close();
+    w.focus();
+    w.print();
+  };
 
   // ── EDITOR VIEW ──────────────────────────────────────────────────────────
 
@@ -555,10 +684,18 @@ const AdminRecipeList = () => {
                 <div style={{ position: "sticky", top: 80 }}>
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <span className="text-uppercase small fw-bold text-muted">Live Preview</span>
-                    <Button color="danger" size="sm" onClick={() => window.print()}>
-                      <Icon name="printer" /><span>Print Recipe</span>
-                    </Button>
+                    <div className="d-flex gap-2">
+                      {editingRecipe?.id && (
+                        <Button color="success" size="sm" onClick={loadExistingNutrition} disabled={analyzing}>
+                          {analyzing ? <Spinner size="sm" /> : <><Icon name="bar-chart" /><span>Analyze Recipe</span></>}
+                        </Button>
+                      )}
+                      <Button color="danger" size="sm" onClick={() => window.print()}>
+                        <Icon name="printer" /><span>Print Recipe</span>
+                      </Button>
+                    </div>
                   </div>
+                  {nutritionError && <div className="alert alert-warning py-1 px-2 small mb-2">{nutritionError}</div>}
                   <div className="card card-bordered shadow-sm">
                     <div className="card-inner">
                       {!form.name.trim() && form.ingredients.every((i) => !i.ingredientName.trim()) && form.steps.every((s) => !s.instruction.trim()) ? (
@@ -623,6 +760,73 @@ const AdminRecipeList = () => {
 
             </Row>
           </Block>
+
+          {/* ── Nutrition Label Modal ────────────────────────────────── */}
+          <Modal isOpen={nutritionModal} toggle={() => setNutritionModal(false)} size="lg">
+            <ModalBody className="p-4">
+              {nutritionData && (
+                <>
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h5 className="mb-0 fw-bold">Nutrition Analysis — {form.name || "Recipe"}</h5>
+                    <div className="d-flex gap-2">
+                      <Button color="warning" size="sm" onClick={analyzeRecipeNutrition} disabled={analyzing}>
+                        {analyzing ? <Spinner size="sm" /> : <><Icon name="reload" /><span>Re-analyze</span></>}
+                      </Button>
+                      <Button color="primary" size="sm" onClick={printNutritionLabel}>
+                        <Icon name="printer" /><span>Print Label</span>
+                      </Button>
+                      <Button color="light" size="sm" onClick={() => setNutritionModal(false)}>
+                        <Icon name="cross" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="row g-4">
+                    {/* Left: FDA-style Nutrition Label */}
+                    <div className="col-md-6">
+                      <div id="nutrition-label-print">
+                        <NutritionLabel data={nutritionData} recipeName={form.name} />
+                      </div>
+                    </div>
+
+                    {/* Right: Ingredient Match Details */}
+                    <div className="col-md-6">
+                      <h6 className="fw-bold mb-3" style={{ borderBottom: "2px solid #e9ecef", paddingBottom: 8 }}>
+                        Ingredient Analysis
+                      </h6>
+                      {nutritionData.ingredientMatches?.length > 0 ? (
+                        <div style={{ maxHeight: 500, overflowY: "auto" }}>
+                          {nutritionData.ingredientMatches.map((m, i) => (
+                            <div key={i} className="mb-3 p-2 rounded" style={{ border: "1px solid #e9ecef", backgroundColor: m.matched ? "#f0fdf4" : "#fef2f2" }}>
+                              <div className="d-flex align-items-center gap-2 mb-1">
+                                <span style={{ fontSize: 14 }}>{m.matched ? "\u2705" : "\u274C"}</span>
+                                <strong className="small">{m.quantity} {m.unit} {m.ingredientName}</strong>
+                              </div>
+                              {m.matched && (
+                                <div className="small text-muted">
+                                  Matched: <em>{m.usdaFood}</em>
+                                  <br />({m.gramsUsed}g used for calculation)
+                                </div>
+                              )}
+                              {m.error && <div className="small text-danger">{m.error}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted small">No ingredient data available.</p>
+                      )}
+                      <div className="mt-3 p-2 rounded small" style={{ backgroundColor: "#f8f9fa", border: "1px solid #e9ecef" }}>
+                        <strong>Note:</strong> Values are estimates from USDA FoodData Central.
+                        Unit-to-gram conversions use standard approximations.
+                        Results may vary based on ingredient brands and preparation methods.
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </ModalBody>
+          </Modal>
+
         </Content>
       </React.Fragment>
     );

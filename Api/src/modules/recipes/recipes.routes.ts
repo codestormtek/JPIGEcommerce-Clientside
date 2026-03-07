@@ -70,3 +70,14 @@ recipesRouter.patch('/:id/notes/:noteId', validate(updateNoteSchema), asyncHandl
 // DELETE /api/v1/recipes/:id/notes/:noteId
 recipesRouter.delete('/:id/notes/:noteId', asyncHandler(ctrl.deleteNote));
 
+// ─── Nutrition ────────────────────────────────────────────────────────────────
+
+// POST   /api/v1/recipes/:id/nutrition/analyze
+recipesRouter.post('/:id/nutrition/analyze', asyncHandler(ctrl.analyzeNutrition));
+
+// GET    /api/v1/recipes/:id/nutrition
+recipesRouter.get('/:id/nutrition', asyncHandler(ctrl.getNutrition));
+
+// DELETE /api/v1/recipes/:id/nutrition
+recipesRouter.delete('/:id/nutrition', asyncHandler(ctrl.deleteNutrition));
+

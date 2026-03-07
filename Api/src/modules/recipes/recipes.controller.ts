@@ -7,6 +7,7 @@ import {
   NoteInput, UpdateNoteInput,
 } from './recipes.schema';
 import * as service from './recipes.service';
+import * as nutritionService from './nutrition.service';
 
 // ─── Recipes ──────────────────────────────────────────────────────────────────
 
@@ -97,6 +98,26 @@ export async function updateNote(req: Request, res: Response): Promise<void> {
 // DELETE /api/v1/recipes/:id/notes/:noteId
 export async function deleteNote(req: Request, res: Response): Promise<void> {
   await service.deleteNote(req.params['id'] as string, req.params['noteId'] as string);
+  sendNoContent(res);
+}
+
+// ─── Nutrition ────────────────────────────────────────────────────────────────
+
+// POST /api/v1/recipes/:id/nutrition/analyze
+export async function analyzeNutrition(req: Request, res: Response): Promise<void> {
+  const result = await nutritionService.analyzeRecipe(req.params['id'] as string);
+  sendSuccess(res, result, 'Nutrition analysis complete');
+}
+
+// GET /api/v1/recipes/:id/nutrition
+export async function getNutrition(req: Request, res: Response): Promise<void> {
+  const result = await nutritionService.getNutrition(req.params['id'] as string);
+  sendSuccess(res, result);
+}
+
+// DELETE /api/v1/recipes/:id/nutrition
+export async function deleteNutrition(req: Request, res: Response): Promise<void> {
+  await nutritionService.deleteNutrition(req.params['id'] as string);
   sendNoContent(res);
 }
 
