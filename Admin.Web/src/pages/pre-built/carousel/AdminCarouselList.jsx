@@ -245,7 +245,7 @@ const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove })
         </Block>
 
         {/* ── Create / Edit Modal ───────────────────────────────────────── */}
-        <Modal isOpen={modal} toggle={() => setModal(false)} size="lg">
+        <Modal isOpen={modal} toggle={() => setModal(false)} size="lg" scrollable>
           <ModalHeader toggle={() => setModal(false)}>
             {editTarget ? "Edit Slide" : "Add Slide"}
           </ModalHeader>
