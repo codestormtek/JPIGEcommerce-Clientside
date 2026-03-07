@@ -57,6 +57,8 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - Categories include product types: Sauce, Rub, Dry Mix, Drink (with auto-preset serving sizes)
   - **Product Packaging**: For product categories, shows yield (oz), container size selector (4–64oz), serving size (qty + unit), and auto-calculated container count
   - Recipe fields: `yieldOz`, `containerSizeOz`, `servingSizeQty`, `servingSizeUnit`
+  - **Recipe–Product Linking**: Many-to-many via `RecipeProductMap` join table; admin editor shows linked products section with search-to-link and unlink; product detail modal has "Recipes" tab showing linked recipes; live preview reflects linked products
+  - API: `GET/POST /recipes/:id/products`, `DELETE /recipes/:id/products/:productId`
   - **Nutrition Analysis**: "Analyze Recipe" button in editor triggers USDA FoodData Central API, calculates nutrition per serving size
   - Serving size presets: Sauce=1.5 tbsp, Rub=1 tbsp, Dry Mix=1 tbsp, Drink=8 oz
   - FDA-style nutrition label modal with per-serving values, % Daily Value, container yield summary, ingredient match details

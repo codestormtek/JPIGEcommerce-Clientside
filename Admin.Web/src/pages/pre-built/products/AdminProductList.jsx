@@ -854,7 +854,7 @@ const AdminProductList = () => {
             <div className="p-2">
               <h5 className="title">Product Details — <span className="text-soft">{detailProduct?.name}</span></h5>
               <Nav tabs className="mt-3">
-                {["basic", "skus", "attributes", "image"].map((tab) => (
+                {["basic", "skus", "attributes", "image", "recipes"].map((tab) => (
                   <NavItem key={tab}>
                     <NavLink className={detailTab === tab ? "active" : ""} onClick={() => setDetailTab(tab)} style={{ cursor: "pointer", textTransform: "capitalize" }}>
                       {tab === "skus" ? "SKUs / Items" : tab === "basic" ? "Basic Info" : tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -935,6 +935,27 @@ const AdminProductList = () => {
                       </div>
                     ))}
                   </div>
+                </TabPane>
+                {/* Recipes */}
+                <TabPane tabId="recipes">
+                  {(detailProduct?.recipeMaps ?? []).length === 0 ? (
+                    <p className="text-muted text-center py-3">No recipes linked to this product.</p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table table-sm">
+                        <thead><tr><th>Recipe Name</th><th>Category</th><th>Status</th></tr></thead>
+                        <tbody>
+                          {(detailProduct?.recipeMaps ?? []).map((m) => (
+                            <tr key={m.id}>
+                              <td className="fw-medium">{m.recipe?.name ?? "—"}</td>
+                              <td>{m.recipe?.category ?? "—"}</td>
+                              <td><Badge color={m.recipe?.isActive ? "success" : "secondary"}>{m.recipe?.isActive ? "Active" : "Inactive"}</Badge></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </TabPane>
               </TabContent>
             </div>

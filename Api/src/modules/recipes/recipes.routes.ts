@@ -81,3 +81,14 @@ recipesRouter.get('/:id/nutrition', asyncHandler(ctrl.getNutrition));
 // DELETE /api/v1/recipes/:id/nutrition
 recipesRouter.delete('/:id/nutrition', asyncHandler(ctrl.deleteNutrition));
 
+// ─── Recipe–Product Links ────────────────────────────────────────────────────
+
+// GET    /api/v1/recipes/:id/products
+recipesRouter.get('/:id/products', asyncHandler(ctrl.getRecipeProducts));
+
+// POST   /api/v1/recipes/:id/products
+recipesRouter.post('/:id/products', asyncHandler(ctrl.linkProduct));
+
+// DELETE /api/v1/recipes/:id/products/:productId
+recipesRouter.delete('/:id/products/:productId', asyncHandler(ctrl.unlinkProduct));
+

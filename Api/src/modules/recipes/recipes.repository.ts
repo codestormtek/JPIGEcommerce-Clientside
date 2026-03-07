@@ -12,6 +12,7 @@ const recipeInclude = {
   ingredients: { orderBy: { sortOrder: 'asc' as const } },
   steps: { orderBy: { stepNumber: 'asc' as const } },
   notes: { orderBy: { createdAt: 'asc' as const } },
+  productMaps: { include: { product: { select: { id: true, name: true, price: true, isDeleted: true } } }, orderBy: { createdAt: 'asc' as const } },
 } as const;
 
 // ─── Recipes ──────────────────────────────────────────────────────────────────
@@ -76,11 +77,35 @@ export async function updateRecipe(id: string, input: UpdateRecipeInput) {
 
 export async function deleteRecipe(id: string) {
   return prisma.$transaction(async (tx: TxClient) => {
+    await tx.recipeProductMap.deleteMany({ where: { recipeId: id } });
     await tx.recipeNutrition.deleteMany({ where: { recipeId: id } });
     await tx.recipeIngredient.deleteMany({ where: { recipeId: id } });
     await tx.recipeStep.deleteMany({ where: { recipeId: id } });
     await tx.recipeNote.deleteMany({ where: { recipeId: id } });
     return tx.recipe.delete({ where: { id } });
+  });
+}
+
+// ─── Recipe–Product Links ────────────────────────────────────────────────────
+
+export async function linkProduct(recipeId: string, productId: string) {
+  return prisma.recipeProductMap.create({
+    data: { recipeId, productId },
+    include: { product: { select: { id: true, name: true, price: true, isDeleted: true } } },
+  });
+}
+
+export async function unlinkProduct(recipeId: string, productId: string) {
+  return prisma.recipeProductMap.delete({
+    where: { recipeId_productId: { recipeId, productId } },
+  });
+}
+
+export async function findRecipeProducts(recipeId: string) {
+  return prisma.recipeProductMap.findMany({
+    where: { recipeId },
+    include: { product: { select: { id: true, name: true, price: true, isDeleted: true } } },
+    orderBy: { createdAt: 'asc' },
   });
 }
 

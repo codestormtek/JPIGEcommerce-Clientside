@@ -221,7 +221,15 @@ const AdminRecipeList = () => {
   const [analyzing,      setAnalyzing]      = useState(false);
   const [nutritionError, setNutritionError] = useState(null);
 
+  // ── Linked products state ────────────────────────────────────────────
+  const [linkedProducts,   setLinkedProducts]   = useState([]);
+  const [productSearch,    setProductSearch]    = useState("");
+  const [productResults,   setProductResults]   = useState([]);
+  const [productSearching, setProductSearching] = useState(false);
+  const [linkingProduct,   setLinkingProduct]   = useState(false);
+
   const searchTimer = useRef(null);
+  const productSearchTimer = useRef(null);
 
   // ── Open editor immediately when routed to /recipes/create ───────────────
   useEffect(() => {
@@ -288,6 +296,9 @@ const AdminRecipeList = () => {
     setEditingRecipe(null);
     setForm(blankForm());
     setFormError(null);
+    setLinkedProducts([]);
+    setProductSearch("");
+    setProductResults([]);
     setView("editor");
   };
 
@@ -314,6 +325,9 @@ const AdminRecipeList = () => {
         : [blankStep(1)],
     });
     setFormError(null);
+    setLinkedProducts((recipe.productMaps ?? []).map((m) => m.product));
+    setProductSearch("");
+    setProductResults([]);
     setView("editor");
   };
 
@@ -473,6 +487,44 @@ const AdminRecipeList = () => {
     w.document.close();
     w.focus();
     w.print();
+  };
+
+  // ── Linked Products helpers ──────────────────────────────────────────────
+
+  const searchProducts = (query) => {
+    setProductSearch(query);
+    clearTimeout(productSearchTimer.current);
+    if (!query.trim()) { setProductResults([]); return; }
+    productSearchTimer.current = setTimeout(async () => {
+      setProductSearching(true);
+      try {
+        const res = await apiGet(`/products?search=${encodeURIComponent(query)}&limit=8`);
+        const all = res?.data ?? [];
+        const linkedIds = new Set(linkedProducts.map((p) => p.id));
+        setProductResults(all.filter((p) => !linkedIds.has(p.id)));
+      } catch { setProductResults([]); }
+      finally { setProductSearching(false); }
+    }, 300);
+  };
+
+  const doLinkProduct = async (product) => {
+    if (!editingRecipe?.id) return;
+    setLinkingProduct(true);
+    try {
+      await apiPost(`/recipes/${editingRecipe.id}/products`, { productId: product.id });
+      setLinkedProducts((prev) => [...prev, product]);
+      setProductSearch("");
+      setProductResults([]);
+    } catch (e) { setFormError(e.message); }
+    finally { setLinkingProduct(false); }
+  };
+
+  const doUnlinkProduct = async (productId) => {
+    if (!editingRecipe?.id) return;
+    try {
+      await apiDelete(`/recipes/${editingRecipe.id}/products/${productId}`);
+      setLinkedProducts((prev) => prev.filter((p) => p.id !== productId));
+    } catch (e) { setFormError(e.message); }
   };
 
   // ── EDITOR VIEW ──────────────────────────────────────────────────────────
@@ -763,6 +815,68 @@ const AdminRecipeList = () => {
                       />
                     </div>
 
+                    {/* Linked Products */}
+                    {editingRecipe?.id && (
+                      <div className="mb-4">
+                        <h6 className="fw-bold mb-3 text-nowrap" style={{ borderBottom: "2px solid #e9ecef", paddingBottom: 8 }}>
+                          <Icon name="package" className="me-1" />Linked Products
+                        </h6>
+                        {linkedProducts.length > 0 && (
+                          <div className="mb-3">
+                            {linkedProducts.map((p) => (
+                              <div key={p.id} className="d-flex align-items-center justify-content-between border rounded p-2 mb-2" style={{ backgroundColor: "#fafafa" }}>
+                                <div>
+                                  <strong>{p.name}</strong>
+                                  {p.price != null && <span className="text-muted ms-2">${Number(p.price).toFixed(2)}</span>}
+                                  {p.isDeleted && <Badge color="danger" className="ms-2 badge-sm">Deleted</Badge>}
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn btn-icon btn-sm border-0"
+                                  style={{ width: 32, height: 32, backgroundColor: "#c0392b", color: "#fff", borderRadius: 8 }}
+                                  onClick={() => doUnlinkProduct(p.id)}
+                                  title="Unlink product"
+                                >
+                                  <Icon name="cross" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div style={{ position: "relative" }}>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Search products to link..."
+                            value={productSearch}
+                            onChange={(e) => searchProducts(e.target.value)}
+                          />
+                          {productSearching && <Spinner size="sm" className="position-absolute" style={{ right: 10, top: 10 }} />}
+                          {productResults.length > 0 && (
+                            <div className="border rounded shadow-sm mt-1" style={{ position: "absolute", zIndex: 10, width: "100%", backgroundColor: "#fff", maxHeight: 240, overflowY: "auto" }}>
+                              {productResults.map((p) => (
+                                <div
+                                  key={p.id}
+                                  className="d-flex align-items-center justify-content-between px-3 py-2 border-bottom"
+                                  style={{ cursor: "pointer" }}
+                                  onClick={() => doLinkProduct(p)}
+                                >
+                                  <div>
+                                    <span className="fw-medium">{p.name}</span>
+                                    {p.price != null && <span className="text-muted ms-2">${Number(p.price).toFixed(2)}</span>}
+                                  </div>
+                                  <Icon name="plus" className="text-success" />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {linkedProducts.length === 0 && !productSearch && (
+                          <p className="text-soft small mt-2 mb-0">No products linked yet. Search above to link a product to this recipe.</p>
+                        )}
+                      </div>
+                    )}
+
                   </div>{/* /card-inner */}
                 </div>{/* /card */}
               </Col>{/* /left panel */}
@@ -846,6 +960,22 @@ const AdminRecipeList = () => {
                           {previewTags.length > 0 && (
                             <div className="d-flex flex-wrap gap-1 mt-2">
                               {previewTags.map((t, i) => <Badge key={i} color="secondary" pill className="text-capitalize">{t}</Badge>)}
+                            </div>
+                          )}
+
+                          {/* Linked Products in preview */}
+                          {linkedProducts.length > 0 && (
+                            <div className="mt-3 pt-3" style={{ borderTop: "1px solid #e9ecef" }}>
+                              <h6 className="fw-bold mb-2" style={{ color: "#6b5a4e" }}>
+                                <Icon name="package" className="me-1" />Linked Products
+                              </h6>
+                              <div className="d-flex flex-wrap gap-2">
+                                {linkedProducts.map((p) => (
+                                  <Badge key={p.id} color="outline-primary" className="badge-sm">
+                                    {p.name}{p.price != null ? ` — $${Number(p.price).toFixed(2)}` : ""}
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </>

@@ -23,6 +23,7 @@ const productInclude = {
   attributes: { include: { values: true } },
   promotionProducts: { include: { promotion: true } },
   items: { take: 1, orderBy: { sku: 'asc' as const } },
+  recipeMaps: { include: { recipe: { select: { id: true, name: true, category: true, isActive: true } } }, orderBy: { createdAt: 'asc' as const } },
 } as const;
 
 // ─── Products ─────────────────────────────────────────────────────────────────

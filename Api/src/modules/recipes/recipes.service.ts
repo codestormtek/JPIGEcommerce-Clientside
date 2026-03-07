@@ -1,4 +1,5 @@
 import { ApiError } from '../../utils/apiError';
+import prisma from '../../lib/prisma';
 import {
   ListRecipesInput, CreateRecipeInput, UpdateRecipeInput,
   IngredientInput, UpdateIngredientInput,
@@ -109,5 +110,26 @@ export async function deleteNote(recipeId: string, noteId: string) {
   await getRecipeById(recipeId);
   await assertNoteOwnership(recipeId, noteId);
   return repo.deleteNote(noteId);
+}
+
+// ─── Recipe–Product Links ────────────────────────────────────────────────────
+
+export async function linkProduct(recipeId: string, productId: string) {
+  await getRecipeById(recipeId);
+  const product = await prisma.product.findFirst({ where: { id: productId, isDeleted: false } });
+  if (!product) throw ApiError.notFound('Product');
+  const existing = await prisma.recipeProductMap.findUnique({ where: { recipeId_productId: { recipeId, productId } } });
+  if (existing) throw ApiError.conflict('Product is already linked to this recipe');
+  return repo.linkProduct(recipeId, productId);
+}
+
+export async function unlinkProduct(recipeId: string, productId: string) {
+  await getRecipeById(recipeId);
+  return repo.unlinkProduct(recipeId, productId);
+}
+
+export async function getRecipeProducts(recipeId: string) {
+  await getRecipeById(recipeId);
+  return repo.findRecipeProducts(recipeId);
 }
 

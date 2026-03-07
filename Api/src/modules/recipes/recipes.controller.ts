@@ -121,3 +121,24 @@ export async function deleteNutrition(req: Request, res: Response): Promise<void
   sendNoContent(res);
 }
 
+// ─── Recipe–Product Links ────────────────────────────────────────────────────
+
+// GET /api/v1/recipes/:id/products
+export async function getRecipeProducts(req: Request, res: Response): Promise<void> {
+  const products = await service.getRecipeProducts(req.params['id'] as string);
+  sendSuccess(res, products);
+}
+
+// POST /api/v1/recipes/:id/products
+export async function linkProduct(req: Request, res: Response): Promise<void> {
+  const { productId } = req.body as { productId: string };
+  const link = await service.linkProduct(req.params['id'] as string, productId);
+  sendCreated(res, link, 'Product linked to recipe');
+}
+
+// DELETE /api/v1/recipes/:id/products/:productId
+export async function unlinkProduct(req: Request, res: Response): Promise<void> {
+  await service.unlinkProduct(req.params['id'] as string, req.params['productId'] as string);
+  sendNoContent(res);
+}
+
