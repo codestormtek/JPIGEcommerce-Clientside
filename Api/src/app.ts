@@ -32,6 +32,7 @@ import { messageTemplatesRouter } from './modules/message-templates/message-temp
 import { inventoryRouter } from './modules/inventory/inventory.routes';
 import { checklistsRouter } from './modules/checklists/checklists.routes';
 import { carouselRouter } from './modules/carousel/carousel.routes';
+import { scheduledTasksRouter } from './modules/scheduledTasks/scheduledTasks.routes';
 
 const app = express();
 
@@ -101,6 +102,7 @@ app.use(`${API}/message-templates`, messageTemplatesRouter);
 app.use(`${API}/inventory`, inventoryRouter);
 app.use(`${API}/checklists`, checklistsRouter);
 app.use(`${API}/carousel`,   carouselRouter);
+app.use(`${API}/admin/scheduled-tasks`, scheduledTasksRouter);
 
 // ─── 404 + Global error handler ───────────────────────────────────────────────
 app.use(notFoundHandler);

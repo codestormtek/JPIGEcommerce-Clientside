@@ -42,6 +42,15 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - List page (`/customers`): NopCommerce-style search panel (email, name, active, role, registration date range), paginated table with email, name, role badge, phone, active checkmark, registered date, quick edit modal, add/delete customer, export
   - Detail page (`/customers/:id`): Editable customer info form, orders table with status/totals, addresses table, contact preferences, activity log placeholder
   - API endpoints: `GET /users/:id/orders`, `GET /users/:id/addresses`
+- **Scheduled Tasks** (`/scheduled-tasks`): DB-driven task scheduler management:
+  - Task list with filters (search, enabled/disabled, category, last status), sortable columns
+  - Create/edit modal with task key dropdown (from registered handlers), schedule type (cron/interval/once), timezone, retry settings, timeout, parameters JSON
+  - Enable/disable toggle, Run Now, execution history per task, execution detail with logs
+  - DB models: `ScheduledTask`, `TaskExecution`, `TaskExecutionLog`
+  - API: `Api/src/modules/scheduledTasks/` at `/api/v1/admin/scheduled-tasks`
+  - Task handler registry: `Api/src/jobs/taskHandlerRegistry.ts` — maps taskKey to handler functions
+  - DB-driven task runner: `Api/src/jobs/taskRunner.ts` — polls every 60s for due tasks, supports concurrency control, retries
+  - 5 built-in handlers: autoCancelSweeper, lowStockCheck, logCleanup, dailySalesSummary, aggregateMetrics (auto-seeded on startup)
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
 
 ## Dev Notes

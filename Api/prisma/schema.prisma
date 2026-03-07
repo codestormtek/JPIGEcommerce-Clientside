@@ -1391,3 +1391,76 @@ model ChecklistTask {
   @@map("checklist_tasks")
 }
 
+// ─── Scheduled Tasks ──────────────────────────────────────────────────────────
+
+model ScheduledTask {
+  id                  String   @id @default(uuid())
+  name                String
+  taskKey             String
+  description         String?
+  category            String?
+  scheduleType        String   @default("cron") // cron | once | interval
+  cronExpression      String?
+  intervalSeconds     Int?
+  runOnceAt           DateTime?
+  timezone            String   @default("UTC")
+  startAt             DateTime?
+  endAt               DateTime?
+  isEnabled           Boolean  @default(true)
+  parametersJson      String?
+  retryMaxAttempts    Int      @default(0)
+  retryDelaySeconds   Int      @default(60)
+  timeoutSeconds      Int      @default(300)
+  allowConcurrentRuns Boolean  @default(false)
+  lastRunAt           DateTime?
+  nextRunAt           DateTime?
+  lastStatus          String?
+  createdBy           String?
+  createdAt           DateTime @default(now())
+  updatedBy           String?
+  updatedAt           DateTime @updatedAt
+  isDeleted           Boolean  @default(false)
+
+  executions TaskExecution[]
+
+  @@unique([taskKey])
+  @@map("scheduled_tasks")
+}
+
+model TaskExecution {
+  id                String    @id @default(uuid())
+  scheduledTaskId   String
+  scheduledTask     ScheduledTask @relation(fields: [scheduledTaskId], references: [id])
+  status            String    @default("pending") // pending | running | succeeded | failed | cancelled | skipped | retrying
+  startedAt         DateTime  @default(now())
+  completedAt       DateTime?
+  durationMs        Int?
+  triggeredByType   String    @default("scheduled") // scheduled | manual
+  triggeredByUserId String?
+  workerName        String?
+  attemptNumber     Int       @default(1)
+  message           String?
+  errorMessage      String?
+  errorStack        String?
+  correlationId     String?
+  createdAt         DateTime  @default(now())
+
+  logs TaskExecutionLog[]
+
+  @@index([scheduledTaskId, startedAt(sort: Desc)])
+  @@map("task_executions")
+}
+
+model TaskExecutionLog {
+  id              String   @id @default(uuid())
+  taskExecutionId String
+  taskExecution   TaskExecution @relation(fields: [taskExecutionId], references: [id], onDelete: Cascade)
+  logLevel        String   @default("info") // debug | info | warn | error
+  message         String
+  details         String?
+  createdAt       DateTime @default(now())
+
+  @@index([taskExecutionId, createdAt])
+  @@map("task_execution_logs")
+}
+

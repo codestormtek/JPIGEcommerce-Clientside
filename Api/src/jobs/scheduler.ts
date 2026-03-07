@@ -13,6 +13,7 @@ import { lowStockCheckProcessor } from './lowStockCheck.job';
 import { logCleanupProcessor } from './logCleanup.job';
 import { dailySalesSummaryProcessor } from './dailySalesSummary.job';
 import { aggregateMetricsProcessor } from './aggregateMetrics.job';
+import { pollAndRunDueTasks, seedScheduledTasks } from './taskRunner';
 
 // ─── Auto-cancel sweeper ──────────────────────────────────────────────────────
 
@@ -25,7 +26,7 @@ const AUTO_CANCEL_THRESHOLD_MS = parseInt(
  * Cancels any pending orders older than AUTO_CANCEL_THRESHOLD_MS that have no
  * authorized or captured payment. Runs every 5 minutes via cron.
  */
-async function autoCancelSweeper(): Promise<void> {
+export async function autoCancelSweeper(): Promise<void> {
   const cutoff = new Date(Date.now() - AUTO_CANCEL_THRESHOLD_MS);
 
   const cancelledStatus = await prisma.orderStatus.findFirst({
@@ -108,6 +109,14 @@ export function startScheduler(): void {
   // Daily at 01:00 — aggregate yesterday's metrics into MetricDaily
   cron.schedule('0 1 * * *', safe('aggregateMetrics', aggregateMetricsProcessor));
 
-  logger.info('Scheduler started: 5 cron jobs registered (no Redis required)');
+  // Every 60 seconds — poll DB for due scheduled tasks and execute them
+  cron.schedule('* * * * *', safe('taskRunner', pollAndRunDueTasks));
+
+  // Seed scheduled tasks on startup
+  seedScheduledTasks().catch((err) =>
+    logger.error('Failed to seed scheduled tasks', { err }),
+  );
+
+  logger.info('Scheduler started: 5 cron jobs + DB-driven task runner registered');
 }
 

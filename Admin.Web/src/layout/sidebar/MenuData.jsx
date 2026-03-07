@@ -245,6 +245,11 @@ const menu = [
     text: "Audit Logs",
     link: "/admin/audit-logs",
   },
+  {
+    icon: "clock",
+    text: "Scheduled Tasks",
+    link: "/scheduled-tasks",
+  },
 
   // ─── SAMPLE & DEMO COMPONENTS ─────────────────────────────────────────────
   { heading: "─── Sample / Demo ───" },
