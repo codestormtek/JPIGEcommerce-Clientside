@@ -92,6 +92,9 @@ usersRouter.delete('/reviews/:reviewId', authenticate, asyncHandler(ctrl.deleteR
 // GET    /api/v1/users
 usersRouter.get('/', authenticate, authorize('admin'), validate(listUsersSchema, 'query'), asyncHandler(ctrl.listUsers));
 
+// GET    /api/v1/users/admin/addresses  (must be before /:id to avoid route shadowing)
+usersRouter.get('/admin/addresses', authenticate, authorize('admin'), asyncHandler(ctrl.listAllAddresses));
+
 // GET    /api/v1/users/:id
 usersRouter.get('/:id', authenticate, authorize('admin'), asyncHandler(ctrl.getUserById));
 

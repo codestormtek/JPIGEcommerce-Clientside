@@ -157,6 +157,59 @@ export async function softDeleteUser(id: string): Promise<void> {
 
 // ─── Addresses ────────────────────────────────────────────────────────────────
 
+export interface ListAllAddressesInput {
+  page: number;
+  limit: number;
+  search?: string;
+  city?: string;
+  region?: string;
+  countryId?: string;
+  orderBy?: string;
+  order?: 'asc' | 'desc';
+}
+
+export async function listAllAddresses(input: ListAllAddressesInput) {
+  const { page, limit, search, city, region, countryId, orderBy = 'label', order = 'asc' } = input;
+  const skip = (page - 1) * limit;
+
+  const where: Record<string, unknown> = {};
+
+  if (search) {
+    where['OR'] = [
+      { label: { contains: search, mode: 'insensitive' } },
+      { user: { firstName: { contains: search, mode: 'insensitive' } } },
+      { user: { lastName: { contains: search, mode: 'insensitive' } } },
+      { user: { emailAddress: { contains: search, mode: 'insensitive' } } },
+      { address: { addressLine1: { contains: search, mode: 'insensitive' } } },
+      { address: { city: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+  if (city) where['address'] = { ...((where['address'] as object) || {}), city: { contains: city, mode: 'insensitive' } };
+  if (region) where['address'] = { ...((where['address'] as object) || {}), region: { contains: region, mode: 'insensitive' } };
+  if (countryId) where['address'] = { ...((where['address'] as object) || {}), countryId };
+
+  const orderClause: Record<string, unknown> = {};
+  if (orderBy === 'city') orderClause['address'] = { city: order };
+  else if (orderBy === 'user') orderClause['user'] = { lastName: order };
+  else orderClause[orderBy] = order;
+
+  const [data, total] = await Promise.all([
+    prisma.userAddress.findMany({
+      where,
+      include: {
+        address: { include: { country: true } },
+        user: { select: { id: true, firstName: true, lastName: true, emailAddress: true } },
+      },
+      orderBy: orderClause,
+      skip,
+      take: limit,
+    }),
+    prisma.userAddress.count({ where }),
+  ]);
+
+  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
+
 export async function getUserAddresses(userId: string) {
   return prisma.userAddress.findMany({
     where: { userId },

@@ -84,6 +84,7 @@ import UserProfileActivity from "@/pages/pre-built/user-manage/UserProfileActivi
 import AdminUserList from "@/pages/pre-built/user-manage/AdminUserList";
 import AdminCustomerList from "@/pages/pre-built/customers/AdminCustomerList";
 import AdminCustomerDetail from "@/pages/pre-built/customers/AdminCustomerDetail";
+import AdminAddressList from "@/pages/pre-built/addresses/AdminAddressList";
 import AdminProductList from "@/pages/pre-built/products/AdminProductList";
 import AdminBrandList from "@/pages/pre-built/products/AdminBrandList";
 import AdminCategoryList from "@/pages/pre-built/products/AdminCategoryList";
@@ -195,6 +196,7 @@ const Pages = () => {
               <Route path="admin/users" element={<AdminUserList />}></Route>
               <Route path="customers" element={<AdminCustomerList />}></Route>
               <Route path="customers/:id" element={<AdminCustomerDetail />}></Route>
+              <Route path="addresses" element={<AdminAddressList />}></Route>
               <Route path="products" element={<AdminProductList />}></Route>
               <Route path="brands" element={<AdminBrandList />}></Route>
               <Route path="categories" element={<AdminCategoryList />}></Route>

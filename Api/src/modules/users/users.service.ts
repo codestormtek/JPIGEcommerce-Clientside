@@ -49,6 +49,10 @@ export async function getUserAddresses(userId: string) {
   return repo.getUserAddressesByUserId(userId);
 }
 
+export async function listAllAddresses(input: repo.ListAllAddressesInput) {
+  return repo.listAllAddresses(input);
+}
+
 // ─── Self operations ──────────────────────────────────────────────────────────
 
 export async function getMyProfile(userId: string) {

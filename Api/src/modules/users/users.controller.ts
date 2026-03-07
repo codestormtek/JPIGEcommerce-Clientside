@@ -47,6 +47,20 @@ export async function getUserAddresses(req: Request, res: Response): Promise<voi
   sendSuccess(res, addresses);
 }
 
+export async function listAllAddresses(req: Request, res: Response): Promise<void> {
+  const result = await service.listAllAddresses({
+    page: parseInt(req.query['page'] as string) || 1,
+    limit: parseInt(req.query['limit'] as string) || 20,
+    search: req.query['search'] as string | undefined,
+    city: req.query['city'] as string | undefined,
+    region: req.query['region'] as string | undefined,
+    countryId: req.query['countryId'] as string | undefined,
+    orderBy: (req.query['orderBy'] as string) || 'label',
+    order: (req.query['order'] as 'asc' | 'desc') || 'asc',
+  });
+  sendPaginated(res, result);
+}
+
 // ─── Self handlers ────────────────────────────────────────────────────────────
 
 export async function getMyProfile(req: AuthRequest, res: Response): Promise<void> {
