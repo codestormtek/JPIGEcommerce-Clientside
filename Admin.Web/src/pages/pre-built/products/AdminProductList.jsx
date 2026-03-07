@@ -55,7 +55,7 @@ const AdminProductList = () => {
   const [activeTab, setActiveTab] = useState("basic");
   // SKU items tab
   const [skuItems, setSkuItems] = useState([]);
-  const [skuDraft, setSkuDraft] = useState({ sku: "", barcode: "", price: "", qtyInStock: "", isPublished: true });
+  const [skuDraft, setSkuDraft] = useState({ sku: "", barcode: "", price: "", qtyInStock: "", isPublished: true, weight: "", length: "", width: "", height: "" });
   const [skuSaving, setSkuSaving] = useState(false);
   const [skuError, setSkuError] = useState(null);
   // Attributes tab
@@ -188,7 +188,7 @@ const AdminProductList = () => {
     });
     setEditError(null);
     setActiveTab("basic");
-    setSkuDraft({ sku: "", barcode: "", price: "", qtyInStock: "", isPublished: true });
+    setSkuDraft({ sku: "", barcode: "", price: "", qtyInStock: "", isPublished: true, weight: "", length: "", width: "", height: "" });
     setSkuError(null);
     setAttrDraft({ name: "", values: "" });
     setAttrError(null);
@@ -215,10 +215,14 @@ const AdminProductList = () => {
         price: parseFloat(skuDraft.price),
         qtyInStock: skuDraft.qtyInStock !== "" ? parseInt(skuDraft.qtyInStock, 10) : 0,
         isPublished: skuDraft.isPublished,
+        weight: skuDraft.weight !== "" ? parseFloat(skuDraft.weight) : undefined,
+        length: skuDraft.length !== "" ? parseFloat(skuDraft.length) : undefined,
+        width: skuDraft.width !== "" ? parseFloat(skuDraft.width) : undefined,
+        height: skuDraft.height !== "" ? parseFloat(skuDraft.height) : undefined,
       });
       const newItem = res?.data ?? res;
       setSkuItems((prev) => [...prev, newItem]);
-      setSkuDraft({ sku: "", barcode: "", price: "", qtyInStock: "", isPublished: true });
+      setSkuDraft({ sku: "", barcode: "", price: "", qtyInStock: "", isPublished: true, weight: "", length: "", width: "", height: "" });
     } catch (e) { setSkuError(e.message); }
     finally { setSkuSaving(false); }
   };
@@ -725,12 +729,17 @@ const AdminProductList = () => {
                   {skuError && <div className="alert alert-danger">{skuError}</div>}
                   <div className="table-responsive">
                     <table className="table table-sm">
-                      <thead><tr><th>SKU</th><th>Barcode</th><th>Price</th><th>Qty</th><th>Published</th><th></th></tr></thead>
+                      <thead><tr><th>SKU</th><th>Barcode</th><th>Price</th><th>Qty</th><th>Weight (oz)</th><th>L × W × H (in)</th><th>Published</th><th></th></tr></thead>
                       <tbody>
-                        {skuItems.length === 0 && <tr><td colSpan={6} className="text-center text-muted py-2">No SKUs yet.</td></tr>}
+                        {skuItems.length === 0 && <tr><td colSpan={8} className="text-center text-muted py-2">No SKUs yet.</td></tr>}
                         {skuItems.map((item) => (
                           <tr key={item.id}>
-                            <td>{item.sku}</td><td>{item.barcode ?? "—"}</td><td>{fmtPrice(item.price)}</td><td>{item.qtyInStock}</td>
+                            <td>{item.sku}</td>
+                            <td>{item.barcode ?? "—"}</td>
+                            <td>{fmtPrice(item.price)}</td>
+                            <td>{item.qtyInStock}</td>
+                            <td>{item.weight != null ? `${item.weight} oz` : "—"}</td>
+                            <td>{item.length != null ? `${item.length} × ${item.width ?? "—"} × ${item.height ?? "—"}` : "—"}</td>
                             <td><Badge color={item.isPublished ? "success" : "secondary"}>{item.isPublished ? "Yes" : "No"}</Badge></td>
                             <td><Button size="xs" color="danger" outline onClick={() => removeSkuItem(item.id)}><Icon name="trash" /></Button></td>
                           </tr>
@@ -740,6 +749,14 @@ const AdminProductList = () => {
                           <td><input className="form-control form-control-sm" placeholder="Barcode" value={skuDraft.barcode} onChange={(e) => setSkuDraft((d) => ({ ...d, barcode: e.target.value }))} /></td>
                           <td><input className="form-control form-control-sm" type="number" step="0.01" placeholder="Price *" value={skuDraft.price} onChange={(e) => setSkuDraft((d) => ({ ...d, price: e.target.value }))} /></td>
                           <td><input className="form-control form-control-sm" type="number" placeholder="Qty" value={skuDraft.qtyInStock} onChange={(e) => setSkuDraft((d) => ({ ...d, qtyInStock: e.target.value }))} /></td>
+                          <td><input className="form-control form-control-sm" type="number" step="0.1" placeholder="oz" value={skuDraft.weight} onChange={(e) => setSkuDraft((d) => ({ ...d, weight: e.target.value }))} style={{ width: 70 }} /></td>
+                          <td style={{ minWidth: 160 }}>
+                            <div className="d-flex gap-1">
+                              <input className="form-control form-control-sm" type="number" step="0.1" placeholder="L" value={skuDraft.length} onChange={(e) => setSkuDraft((d) => ({ ...d, length: e.target.value }))} style={{ width: 50 }} />
+                              <input className="form-control form-control-sm" type="number" step="0.1" placeholder="W" value={skuDraft.width} onChange={(e) => setSkuDraft((d) => ({ ...d, width: e.target.value }))} style={{ width: 50 }} />
+                              <input className="form-control form-control-sm" type="number" step="0.1" placeholder="H" value={skuDraft.height} onChange={(e) => setSkuDraft((d) => ({ ...d, height: e.target.value }))} style={{ width: 50 }} />
+                            </div>
+                          </td>
                           <td><input type="checkbox" checked={skuDraft.isPublished} onChange={(e) => setSkuDraft((d) => ({ ...d, isPublished: e.target.checked }))} /></td>
                           <td><Button size="sm" color="primary" onClick={addSkuItem} disabled={skuSaving || !skuDraft.sku || !skuDraft.price}>{skuSaving ? <Spinner size="sm" /> : <Icon name="plus" />}</Button></td>
                         </tr>
@@ -875,12 +892,17 @@ const AdminProductList = () => {
                 <TabPane tabId="skus">
                   <div className="table-responsive">
                     <table className="table table-sm">
-                      <thead><tr><th>SKU</th><th>Barcode</th><th>Price</th><th>Qty</th><th>Published</th></tr></thead>
+                      <thead><tr><th>SKU</th><th>Barcode</th><th>Price</th><th>Qty</th><th>Weight (oz)</th><th>L × W × H (in)</th><th>Published</th></tr></thead>
                       <tbody>
-                        {detailSkuItems.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-2">No SKUs.</td></tr>}
+                        {detailSkuItems.length === 0 && <tr><td colSpan={7} className="text-center text-muted py-2">No SKUs.</td></tr>}
                         {detailSkuItems.map((item) => (
                           <tr key={item.id}>
-                            <td>{item.sku}</td><td>{item.barcode ?? "—"}</td><td>{fmtPrice(item.price)}</td><td>{item.qtyInStock}</td>
+                            <td>{item.sku}</td>
+                            <td>{item.barcode ?? "—"}</td>
+                            <td>{fmtPrice(item.price)}</td>
+                            <td>{item.qtyInStock}</td>
+                            <td>{item.weight != null ? `${item.weight} oz` : "—"}</td>
+                            <td>{item.length != null ? `${item.length} × ${item.width ?? "—"} × ${item.height ?? "—"}` : "—"}</td>
                             <td><Badge color={item.isPublished ? "success" : "secondary"}>{item.isPublished ? "Yes" : "No"}</Badge></td>
                           </tr>
                         ))}
