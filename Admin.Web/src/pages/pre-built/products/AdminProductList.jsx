@@ -58,11 +58,15 @@ const AdminProductList = () => {
   const [skuDraft, setSkuDraft] = useState({ sku: "", barcode: "", price: "", qtyInStock: "", isPublished: true, weight: "", length: "", width: "", height: "" });
   const [skuSaving, setSkuSaving] = useState(false);
   const [skuError, setSkuError] = useState(null);
+  const [skuSuccess, setSkuSuccess] = useState(null);
   // Attributes tab
   const [attrItems, setAttrItems] = useState([]);
   const [attrDraft, setAttrDraft] = useState({ name: "", values: "" });
   const [attrSaving, setAttrSaving] = useState(false);
   const [attrError, setAttrError] = useState(null);
+  const [attrSuccess, setAttrSuccess] = useState(null);
+  const [skuLoading, setSkuLoading] = useState(false);
+  const successTimers = useRef([]);
   // Image tab
   const [productImages, setProductImages] = useState([]);
   const [imageFile, setImageFile] = useState(null);
@@ -189,25 +193,32 @@ const AdminProductList = () => {
     setEditError(null);
     setActiveTab("basic");
     setSkuDraft({ sku: "", barcode: "", price: "", qtyInStock: "", isPublished: true, weight: "", length: "", width: "", height: "" });
-    setSkuError(null);
+    setSkuError(null); setSkuSuccess(null);
     setAttrDraft({ name: "", values: "" });
-    setAttrError(null);
+    setAttrError(null); setAttrSuccess(null);
     setImageFile(null); setImagePreview(null); setImageError(null);
-    // Load items + existing attrs/images from product data already in response
+    setSkuItems([]);
+    setAttrItems(product.attributes ?? []);
+    setProductImages(product.media ?? []);
+    setSkuLoading(true);
+    setEditModal(true);
     try {
       const itemsRes = await apiGet(`/products/${product.id}/items`);
       setSkuItems(Array.isArray(itemsRes) ? itemsRes : (itemsRes?.data ?? []));
-    } catch { setSkuItems([]); }
-    setAttrItems(product.attributes ?? []);
-    setProductImages(product.media ?? []);
-    setEditModal(true);
+    } catch (e) {
+      console.error("Failed to load SKU items:", e);
+      setSkuError("Failed to load SKU items: " + (e.message || "Unknown error"));
+      setSkuItems([]);
+    } finally {
+      setSkuLoading(false);
+    }
   };
 
   // ─── SKU handlers ────────────────────────────────────────────────────────────
 
   const addSkuItem = async () => {
     if (!skuDraft.sku || !skuDraft.price) return;
-    setSkuSaving(true); setSkuError(null);
+    setSkuSaving(true); setSkuError(null); setSkuSuccess(null);
     try {
       const res = await apiPost(`/products/${editProduct.id}/items`, {
         sku: skuDraft.sku,
@@ -223,14 +234,21 @@ const AdminProductList = () => {
       const newItem = res?.data ?? res;
       setSkuItems((prev) => [...prev, newItem]);
       setSkuDraft({ sku: "", barcode: "", price: "", qtyInStock: "", isPublished: true, weight: "", length: "", width: "", height: "" });
+      setSkuSuccess("SKU item saved successfully");
+      const t = setTimeout(() => setSkuSuccess(null), 3000);
+      successTimers.current.push(t);
     } catch (e) { setSkuError(e.message); }
     finally { setSkuSaving(false); }
   };
 
   const removeSkuItem = async (itemId) => {
+    setSkuError(null);
     try {
       await apiDelete(`/products/${editProduct.id}/items/${itemId}`);
       setSkuItems((prev) => prev.filter((i) => i.id !== itemId));
+      setSkuSuccess("SKU item removed");
+      const t = setTimeout(() => setSkuSuccess(null), 3000);
+      successTimers.current.push(t);
     } catch (e) { setSkuError(e.message); }
   };
 
@@ -238,7 +256,7 @@ const AdminProductList = () => {
 
   const addAttrItem = async () => {
     if (!attrDraft.name) return;
-    setAttrSaving(true); setAttrError(null);
+    setAttrSaving(true); setAttrError(null); setAttrSuccess(null);
     try {
       const values = attrDraft.values
         .split(",")
@@ -249,14 +267,21 @@ const AdminProductList = () => {
       const newAttr = res?.data ?? res;
       setAttrItems((prev) => [...prev, newAttr]);
       setAttrDraft({ name: "", values: "" });
+      setAttrSuccess("Attribute saved successfully");
+      const t = setTimeout(() => setAttrSuccess(null), 3000);
+      successTimers.current.push(t);
     } catch (e) { setAttrError(e.message); }
     finally { setAttrSaving(false); }
   };
 
   const removeAttrItem = async (attrId) => {
+    setAttrError(null);
     try {
       await apiDelete(`/products/${editProduct.id}/attributes/${attrId}`);
       setAttrItems((prev) => prev.filter((a) => a.id !== attrId));
+      setAttrSuccess("Attribute removed");
+      const t = setTimeout(() => setAttrSuccess(null), 3000);
+      successTimers.current.push(t);
     } catch (e) { setAttrError(e.message); }
   };
 
@@ -310,6 +335,8 @@ const AdminProductList = () => {
         brandId: editForm.brandId?.value ?? null,
         categoryIds: editForm.categoryIds.map((c) => c.value),
       });
+      successTimers.current.forEach(clearTimeout);
+      successTimers.current = [];
       setEditModal(false);
       loadProducts();
     } catch (e) {
@@ -697,9 +724,9 @@ const AdminProductList = () => {
         </Modal>
 
         {/* ── Edit Product Modal (tabbed) ───────────────────────────────────── */}
-        <Modal isOpen={editModal} toggle={() => { setEditModal(false); loadProducts(); }} size="xl">
+        <Modal isOpen={editModal} toggle={() => { successTimers.current.forEach(clearTimeout); successTimers.current = []; setEditModal(false); loadProducts(); }} size="xl">
           <ModalBody>
-            <a href="#cancel" onClick={(e) => { e.preventDefault(); setEditModal(false); loadProducts(); }} className="close"><em className="icon ni ni-cross-sm" /></a>
+            <a href="#cancel" onClick={(e) => { e.preventDefault(); successTimers.current.forEach(clearTimeout); successTimers.current = []; setEditModal(false); loadProducts(); }} className="close"><em className="icon ni ni-cross-sm" /></a>
             <div className="p-2">
               <h5 className="title">Edit Product — <span className="text-soft">{editProduct?.name}</span></h5>
               <Nav tabs className="mt-3">
@@ -727,47 +754,56 @@ const AdminProductList = () => {
                 {/* ── SKUs / Items ── */}
                 <TabPane tabId="skus">
                   {skuError && <div className="alert alert-danger">{skuError}</div>}
-                  <div className="table-responsive">
-                    <table className="table table-sm">
-                      <thead><tr><th>SKU</th><th>Barcode</th><th>Price</th><th>Qty</th><th>Weight (oz)</th><th>L × W × H (in)</th><th>Published</th><th></th></tr></thead>
-                      <tbody>
-                        {skuItems.length === 0 && <tr><td colSpan={8} className="text-center text-muted py-2">No SKUs yet.</td></tr>}
-                        {skuItems.map((item) => (
-                          <tr key={item.id}>
-                            <td>{item.sku}</td>
-                            <td>{item.barcode ?? "—"}</td>
-                            <td>{fmtPrice(item.price)}</td>
-                            <td>{item.qtyInStock}</td>
-                            <td>{item.weight != null ? `${item.weight} oz` : "—"}</td>
-                            <td>{item.length != null ? `${item.length} × ${item.width ?? "—"} × ${item.height ?? "—"}` : "—"}</td>
-                            <td><Badge color={item.isPublished ? "success" : "secondary"}>{item.isPublished ? "Yes" : "No"}</Badge></td>
-                            <td><Button size="xs" color="danger" outline onClick={() => removeSkuItem(item.id)}><Icon name="trash" /></Button></td>
-                          </tr>
-                        ))}
-                        <tr>
-                          <td><input className="form-control form-control-sm" placeholder="SKU *" value={skuDraft.sku} onChange={(e) => setSkuDraft((d) => ({ ...d, sku: e.target.value }))} /></td>
-                          <td><input className="form-control form-control-sm" placeholder="Barcode" value={skuDraft.barcode} onChange={(e) => setSkuDraft((d) => ({ ...d, barcode: e.target.value }))} /></td>
-                          <td><input className="form-control form-control-sm" type="number" step="0.01" placeholder="Price *" value={skuDraft.price} onChange={(e) => setSkuDraft((d) => ({ ...d, price: e.target.value }))} /></td>
-                          <td><input className="form-control form-control-sm" type="number" placeholder="Qty" value={skuDraft.qtyInStock} onChange={(e) => setSkuDraft((d) => ({ ...d, qtyInStock: e.target.value }))} /></td>
-                          <td><input className="form-control form-control-sm" type="number" step="0.1" placeholder="oz" value={skuDraft.weight} onChange={(e) => setSkuDraft((d) => ({ ...d, weight: e.target.value }))} style={{ width: 70 }} /></td>
-                          <td style={{ minWidth: 160 }}>
-                            <div className="d-flex gap-1">
-                              <input className="form-control form-control-sm" type="number" step="0.1" placeholder="L" value={skuDraft.length} onChange={(e) => setSkuDraft((d) => ({ ...d, length: e.target.value }))} style={{ width: 50 }} />
-                              <input className="form-control form-control-sm" type="number" step="0.1" placeholder="W" value={skuDraft.width} onChange={(e) => setSkuDraft((d) => ({ ...d, width: e.target.value }))} style={{ width: 50 }} />
-                              <input className="form-control form-control-sm" type="number" step="0.1" placeholder="H" value={skuDraft.height} onChange={(e) => setSkuDraft((d) => ({ ...d, height: e.target.value }))} style={{ width: 50 }} />
-                            </div>
-                          </td>
-                          <td><input type="checkbox" checked={skuDraft.isPublished} onChange={(e) => setSkuDraft((d) => ({ ...d, isPublished: e.target.checked }))} /></td>
-                          <td><Button size="sm" color="primary" onClick={addSkuItem} disabled={skuSaving || !skuDraft.sku || !skuDraft.price}>{skuSaving ? <Spinner size="sm" /> : <Icon name="plus" />}</Button></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                  {skuSuccess && <div className="alert alert-success py-1">{skuSuccess}</div>}
+                  {skuLoading ? (
+                    <div className="text-center py-4"><Spinner size="sm" /> Loading SKU items...</div>
+                  ) : (
+                    <>
+                      <div className="table-responsive">
+                        <table className="table table-sm">
+                          <thead><tr><th>SKU</th><th>Barcode</th><th>Price</th><th>Qty</th><th>Weight (oz)</th><th>L × W × H (in)</th><th>Published</th><th></th></tr></thead>
+                          <tbody>
+                            {skuItems.length === 0 && <tr><td colSpan={8} className="text-center text-muted py-2">No SKUs yet.</td></tr>}
+                            {skuItems.map((item) => (
+                              <tr key={item.id}>
+                                <td>{item.sku}</td>
+                                <td>{item.barcode ?? "—"}</td>
+                                <td>{fmtPrice(item.price)}</td>
+                                <td>{item.qtyInStock}</td>
+                                <td>{item.weight != null ? `${item.weight} oz` : "—"}</td>
+                                <td>{item.length != null ? `${item.length} × ${item.width ?? "—"} × ${item.height ?? "—"}` : "—"}</td>
+                                <td><Badge color={item.isPublished ? "success" : "secondary"}>{item.isPublished ? "Yes" : "No"}</Badge></td>
+                                <td><Button size="xs" color="danger" outline onClick={() => removeSkuItem(item.id)}><Icon name="trash" /></Button></td>
+                              </tr>
+                            ))}
+                            <tr>
+                              <td><input className="form-control form-control-sm" placeholder="SKU *" value={skuDraft.sku} onChange={(e) => setSkuDraft((d) => ({ ...d, sku: e.target.value }))} /></td>
+                              <td><input className="form-control form-control-sm" placeholder="Barcode" value={skuDraft.barcode} onChange={(e) => setSkuDraft((d) => ({ ...d, barcode: e.target.value }))} /></td>
+                              <td><input className="form-control form-control-sm" type="number" step="0.01" placeholder="Price *" value={skuDraft.price} onChange={(e) => setSkuDraft((d) => ({ ...d, price: e.target.value }))} /></td>
+                              <td><input className="form-control form-control-sm" type="number" placeholder="Qty" value={skuDraft.qtyInStock} onChange={(e) => setSkuDraft((d) => ({ ...d, qtyInStock: e.target.value }))} /></td>
+                              <td><input className="form-control form-control-sm" type="number" step="0.1" placeholder="oz" value={skuDraft.weight} onChange={(e) => setSkuDraft((d) => ({ ...d, weight: e.target.value }))} style={{ width: 70 }} /></td>
+                              <td style={{ minWidth: 160 }}>
+                                <div className="d-flex gap-1">
+                                  <input className="form-control form-control-sm" type="number" step="0.1" placeholder="L" value={skuDraft.length} onChange={(e) => setSkuDraft((d) => ({ ...d, length: e.target.value }))} style={{ width: 50 }} />
+                                  <input className="form-control form-control-sm" type="number" step="0.1" placeholder="W" value={skuDraft.width} onChange={(e) => setSkuDraft((d) => ({ ...d, width: e.target.value }))} style={{ width: 50 }} />
+                                  <input className="form-control form-control-sm" type="number" step="0.1" placeholder="H" value={skuDraft.height} onChange={(e) => setSkuDraft((d) => ({ ...d, height: e.target.value }))} style={{ width: 50 }} />
+                                </div>
+                              </td>
+                              <td><input type="checkbox" checked={skuDraft.isPublished} onChange={(e) => setSkuDraft((d) => ({ ...d, isPublished: e.target.checked }))} /></td>
+                              <td><Button size="sm" color="primary" onClick={addSkuItem} disabled={skuSaving || !skuDraft.sku || !skuDraft.price}>{skuSaving ? <Spinner size="sm" /> : <Icon name="plus" />}</Button></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <p className="text-muted small mt-1">SKU items are saved immediately when you click the <strong>+</strong> button.</p>
+                    </>
+                  )}
                 </TabPane>
 
                 {/* ── Attributes ── */}
                 <TabPane tabId="attributes">
                   {attrError && <div className="alert alert-danger">{attrError}</div>}
+                  {attrSuccess && <div className="alert alert-success py-1">{attrSuccess}</div>}
                   <div className="table-responsive">
                     <table className="table table-sm">
                       <thead><tr><th>Attribute Name</th><th>Values</th><th></th></tr></thead>
@@ -788,7 +824,7 @@ const AdminProductList = () => {
                       </tbody>
                     </table>
                   </div>
-                  <p className="text-muted small mt-1">Separate values with commas (e.g. <em>10oz, 12oz, 16oz</em>).</p>
+                  <p className="text-muted small mt-1">Separate values with commas (e.g. <em>10oz, 12oz, 16oz</em>). Attributes are saved immediately when you click the <strong>+</strong> button.</p>
                 </TabPane>
 
                 {/* ── Image ── */}
@@ -840,9 +876,11 @@ const AdminProductList = () => {
                 </TabPane>
               </TabContent>
               {editError && <div className="alert alert-danger mt-3">{editError}</div>}
-              <div className="mt-3">
-                <Button color="primary" onClick={saveEdit} disabled={editSaving || !editForm.name || !editForm.price}>{editSaving ? <Spinner size="sm" /> : "Save Changes"}</Button>
-              </div>
+              {activeTab === "basic" && (
+                <div className="mt-3">
+                  <Button color="primary" onClick={saveEdit} disabled={editSaving || !editForm.name || !editForm.price}>{editSaving ? <Spinner size="sm" /> : "Save Basic Info"}</Button>
+                </div>
+              )}
             </div>
           </ModalBody>
         </Modal>
