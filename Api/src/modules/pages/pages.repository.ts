@@ -1,6 +1,10 @@
 import prisma from '../../lib/prisma';
 import { ListPagesInput, CreatePageInput, UpdatePageInput } from './pages.schema';
 
+const pageInclude = {
+  headerMediaAsset: true,
+} as const;
+
 export async function findPages(input: ListPagesInput) {
   const { page, limit, search, orderBy, order } = input;
   const skip = (page - 1) * limit;
@@ -14,26 +18,26 @@ export async function findPages(input: ListPagesInput) {
   }
 
   const [data, total] = await Promise.all([
-    prisma.sitePage.findMany({ where, orderBy: { [orderBy]: order }, skip, take: limit }),
+    prisma.sitePage.findMany({ where, include: pageInclude, orderBy: { [orderBy]: order }, skip, take: limit }),
     prisma.sitePage.count({ where }),
   ]);
   return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
 }
 
 export async function findPageById(id: string) {
-  return prisma.sitePage.findFirst({ where: { id, isDeleted: false } });
+  return prisma.sitePage.findFirst({ where: { id, isDeleted: false }, include: pageInclude });
 }
 
 export async function findPageBySlug(slug: string) {
-  return prisma.sitePage.findFirst({ where: { slug, isDeleted: false } });
+  return prisma.sitePage.findFirst({ where: { slug, isDeleted: false }, include: pageInclude });
 }
 
 export async function createPage(input: CreatePageInput) {
-  return prisma.sitePage.create({ data: input });
+  return prisma.sitePage.create({ data: input, include: pageInclude });
 }
 
 export async function updatePage(id: string, input: UpdatePageInput) {
-  return prisma.sitePage.update({ where: { id }, data: input });
+  return prisma.sitePage.update({ where: { id }, data: input, include: pageInclude });
 }
 
 export async function softDeletePage(id: string) {

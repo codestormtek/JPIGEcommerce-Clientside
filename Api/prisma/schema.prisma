@@ -314,6 +314,7 @@ model MediaAsset {
   scheduleEventMedia ScheduleEventMedia[]
   carouselSlides     CarouselSlide[]      @relation("CarouselDesktopImage")
   carouselSlidesMobile CarouselSlide[]    @relation("CarouselMobileImage")
+  sitePages          SitePage[]
 
   @@map("media_assets")
 }
@@ -1025,19 +1026,21 @@ model SitePage {
   lastModifiedAt DateTime? @updatedAt
   isDeleted      Boolean   @default(false)
 
-  title                String
-  slug                 String  @unique
-  bodyHtml             String  @default("")
-  metaTitle            String?
-  metaDescription      String?
-  isPublished          Boolean @default(false)
-  passwordProtected    Boolean @default(false)
-  includeInSitemap     Boolean @default(false)
-  includeInTopMenu     Boolean @default(false)
-  includeInFooterColumn1 Boolean @default(false)
-  includeInFooterColumn2 Boolean @default(false)
-  includeInFooterColumn3 Boolean @default(false)
-  displayOrder         Int     @default(0)
+  title                  String
+  slug                   String      @unique
+  bodyHtml               String      @default("")
+  metaTitle              String?
+  metaDescription        String?
+  headerMediaAssetId     String?
+  headerMediaAsset       MediaAsset? @relation(fields: [headerMediaAssetId], references: [id])
+  isPublished            Boolean     @default(false)
+  passwordProtected      Boolean     @default(false)
+  includeInSitemap       Boolean     @default(false)
+  includeInTopMenu       Boolean     @default(false)
+  includeInFooterColumn1 Boolean     @default(false)
+  includeInFooterColumn2 Boolean     @default(false)
+  includeInFooterColumn3 Boolean     @default(false)
+  displayOrder           Int         @default(0)
 
   @@map("site_pages")
 }

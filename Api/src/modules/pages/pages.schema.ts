@@ -16,6 +16,7 @@ export const createPageSchema = z.object({
   bodyHtml: z.string().default(''),
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
+  headerMediaAssetId: z.string().min(1).nullable().optional(),
   isPublished: z.boolean().default(false),
   passwordProtected: z.boolean().default(false),
   includeInSitemap: z.boolean().default(false),

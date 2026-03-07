@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import Dropzone from "react-dropzone";
 import Content from "@/layout/content/Content";
 import Head from "@/layout/head/Head";
 import { Modal, ModalBody, Spinner } from "reactstrap";
@@ -8,7 +9,7 @@ import {
   DataTable, DataTableBody, DataTableHead, DataTableRow, DataTableItem,
   Button,
 } from "@/components/Component";
-import { apiGet, apiPost, apiPatch, apiDelete } from "@/utils/apiClient";
+import { apiGet, apiPost, apiPatch, apiDelete, apiUpload } from "@/utils/apiClient";
 import { Editor } from "@tinymce/tinymce-react";
 import { useTheme } from "@/layout/provider/Theme";
 import "tinymce/tinymce";
@@ -83,6 +84,12 @@ const AdminPageList = () => {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState(null);
 
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageUploading, setImageUploading] = useState(null);
+  const [imageError, setImageError] = useState(null);
+  const [existingImageUrl, setExistingImageUrl] = useState(null);
+
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -129,9 +136,17 @@ const AdminPageList = () => {
     }, 400);
   };
 
+  const resetImageState = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setImageError(null);
+    setExistingImageUrl(null);
+  };
+
   const openAdd = () => {
-    setAddForm(BLANK_FORM);
+    setAddForm({ ...BLANK_FORM, headerMediaAssetId: null });
     setAddError(null);
+    resetImageState();
     setAddModal(true);
   };
 
@@ -143,6 +158,7 @@ const AdminPageList = () => {
       bodyHtml: pg.bodyHtml || "",
       metaTitle: pg.metaTitle || "",
       metaDescription: pg.metaDescription || "",
+      headerMediaAssetId: pg.headerMediaAssetId ?? null,
       isPublished: pg.isPublished ?? false,
       passwordProtected: pg.passwordProtected ?? false,
       includeInSitemap: pg.includeInSitemap ?? false,
@@ -152,6 +168,10 @@ const AdminPageList = () => {
       includeInFooterColumn3: pg.includeInFooterColumn3 ?? false,
       displayOrder: pg.displayOrder ?? 0,
     });
+    setExistingImageUrl(pg.headerMediaAsset?.url ?? null);
+    setImageFile(null);
+    setImagePreview(null);
+    setImageError(null);
     setEditError(null);
     setEditModal(true);
   };
@@ -172,12 +192,35 @@ const AdminPageList = () => {
     }));
   };
 
+  const uploadHeaderImage = async (file) => {
+    setImageUploading(true);
+    setImageError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "pages");
+      const res = await apiUpload("/media/upload", fd);
+      return (res?.data ?? res)?.id ?? null;
+    } catch (e) {
+      setImageError(e.message);
+      return null;
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
   const submitAdd = async () => {
     setAddSaving(true);
     setAddError(null);
     try {
+      let headerMediaAssetId = addForm.headerMediaAssetId;
+      if (imageFile) {
+        headerMediaAssetId = await uploadHeaderImage(imageFile);
+        if (!headerMediaAssetId) { setAddSaving(false); return; }
+      }
       await apiPost("/pages", {
         ...addForm,
+        headerMediaAssetId: headerMediaAssetId || null,
         displayOrder: Number(addForm.displayOrder) || 0,
       });
       setAddModal(false);
@@ -194,8 +237,14 @@ const AdminPageList = () => {
     setEditSaving(true);
     setEditError(null);
     try {
+      let headerMediaAssetId = editForm.headerMediaAssetId;
+      if (imageFile) {
+        headerMediaAssetId = await uploadHeaderImage(imageFile);
+        if (!headerMediaAssetId) { setEditSaving(false); return; }
+      }
       await apiPatch(`/pages/${editPage.id}`, {
         ...editForm,
+        headerMediaAssetId: headerMediaAssetId || null,
         displayOrder: Number(editForm.displayOrder) || 0,
       });
       setEditModal(false);
@@ -278,6 +327,76 @@ const AdminPageList = () => {
               />
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="col-12">
+        <h6 className="overline-title mb-2">Page Header Image</h6>
+        <div className="card card-bordered p-3">
+          {(imagePreview || existingImageUrl) && (
+            <div className="mb-3">
+              <img
+                src={imagePreview || existingImageUrl}
+                alt="Header"
+                style={{ maxHeight: 220, maxWidth: "100%", borderRadius: 8, objectFit: "cover", border: "1px solid #e5e9f2" }}
+              />
+              <div className="d-flex align-items-center gap-2 mt-2">
+                <span className="text-muted small">
+                  {imageFile ? imageFile.name : "Current image — drop a new file to replace"}
+                </span>
+                <a
+                  href="#remove"
+                  className="text-danger small"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setImageFile(null);
+                    setImagePreview(null);
+                    setExistingImageUrl(null);
+                    setForm((f) => ({ ...f, headerMediaAssetId: null }));
+                  }}
+                >
+                  Remove
+                </a>
+              </div>
+            </div>
+          )}
+          <Dropzone
+            onDrop={(files) => {
+              const f = files[0];
+              if (f) {
+                setImageFile(f);
+                setImagePreview(URL.createObjectURL(f));
+              }
+            }}
+            accept={{ "image/*": [".jpg", ".jpeg", ".png", ".gif", ".webp"] }}
+            maxFiles={1}
+          >
+            {({ getRootProps, getInputProps, isDragActive }) => (
+              <div
+                {...getRootProps()}
+                style={{
+                  border: `2px dashed ${isDragActive ? "#6576ff" : "#c9d0d7"}`,
+                  borderRadius: 8,
+                  padding: "28px 16px",
+                  textAlign: "center",
+                  cursor: "pointer",
+                  background: isDragActive ? "rgba(101,118,255,.06)" : (theme.skin === "dark" ? "#1e2234" : "#f8f9fa"),
+                  transition: "border-color .2s",
+                }}
+              >
+                <input {...getInputProps()} />
+                <Icon name="img" style={{ fontSize: 36, color: "#8094ae" }} />
+                <p className="mt-2 mb-0 text-muted">
+                  {isDragActive ? "Drop the image here…" : "Drag & drop a header image, or click to browse"}
+                </p>
+                <p className="text-muted mb-0" style={{ fontSize: 11 }}>JPG · PNG · GIF · WebP</p>
+              </div>
+            )}
+          </Dropzone>
+          {imageUploading && (
+            <div className="text-center mt-2"><Spinner size="sm" color="primary" /> Uploading…</div>
+          )}
+          {imageError && <div className="alert alert-danger mt-2 mb-0">{imageError}</div>}
         </div>
       </div>
 
