@@ -54,6 +54,12 @@ const AdminCustomerDetail = () => {
   const [addresses, setAddresses] = useState([]);
   const [addressLoading, setAddressLoading] = useState(false);
 
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [activityTotal, setActivityTotal] = useState(0);
+  const [activityPage, setActivityPage] = useState(1);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [expandedLog, setExpandedLog] = useState(null);
+
   const loadCustomer = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -94,9 +100,22 @@ const AdminCustomerDetail = () => {
     finally { setAddressLoading(false); }
   }, [id]);
 
+  useEffect(() => { setActivityPage(1); }, [id]);
+
+  const loadActivityLogs = useCallback(async () => {
+    setActivityLoading(true);
+    try {
+      const res = await apiGet(`/audit-logs?userId=${id}&page=${activityPage}&limit=10&orderBy=createdAt&order=desc`);
+      setActivityLogs(res?.data ?? []);
+      setActivityTotal(res?.meta?.total ?? 0);
+    } catch {}
+    finally { setActivityLoading(false); }
+  }, [id, activityPage]);
+
   useEffect(() => { loadCustomer(); }, [loadCustomer]);
   useEffect(() => { loadOrders(); }, [loadOrders]);
   useEffect(() => { loadAddresses(); }, [loadAddresses]);
+  useEffect(() => { loadActivityLogs(); }, [loadActivityLogs]);
 
   const saveChanges = async () => {
     setSaving(true);
@@ -390,15 +409,134 @@ const AdminCustomerDetail = () => {
           </Block>
         )}
 
-        {/* Activity Log placeholder */}
+        {/* Activity Log */}
         <Block>
           <div className="card card-bordered">
             <div className="card-inner">
               <h6 className="overline-title-alt mb-3">
                 <Icon name="activity-round-fill" className="me-1" />
                 Activity log
+                {activityTotal > 0 && <span className="text-muted ms-2">({activityTotal})</span>}
               </h6>
-              <div className="text-muted text-center py-3">Activity log will be displayed here.</div>
+              {activityLoading ? (
+                <div className="text-center py-3"><Spinner size="sm" color="primary" /></div>
+              ) : activityLogs.length > 0 ? (
+                <>
+                  <div className="timeline">
+                    {activityLogs.map((log) => {
+                      const isExpanded = expandedLog === log.id;
+                      const actionColor =
+                        log.action?.toLowerCase().includes("delete") ? "danger" :
+                        log.action?.toLowerCase().includes("create") ? "success" :
+                        log.action?.toLowerCase().includes("login") ? "info" :
+                        "primary";
+                      const actionIcon =
+                        log.action?.toLowerCase().includes("delete") ? "trash" :
+                        log.action?.toLowerCase().includes("create") ? "plus-circle" :
+                        log.action?.toLowerCase().includes("update") ? "edit" :
+                        log.action?.toLowerCase().includes("login") ? "signin" :
+                        log.action?.toLowerCase().includes("logout") ? "signout" :
+                        "activity-round";
+                      let parsedBefore = null;
+                      let parsedAfter = null;
+                      try { parsedBefore = log.beforeJson ? JSON.parse(log.beforeJson) : null; } catch {}
+                      try { parsedAfter = log.afterJson ? JSON.parse(log.afterJson) : null; } catch {}
+                      const hasChanges = parsedBefore || parsedAfter;
+
+                      return (
+                        <div key={log.id} className="timeline-item pb-3">
+                          <div className="d-flex align-items-start">
+                            <div className={`timeline-status bg-${actionColor} rounded-circle d-flex align-items-center justify-content-center`}
+                              style={{ width: 32, height: 32, minWidth: 32, marginRight: 12 }}>
+                              <Icon name={actionIcon} style={{ color: "#fff", fontSize: 14 }} />
+                            </div>
+                            <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                  <Badge color={actionColor} className="me-2 text-capitalize">
+                                    {(log.action || "unknown").replace(/_/g, " ")}
+                                  </Badge>
+                                  {log.entityType && (
+                                    <span className="text-muted small">
+                                      on <strong>{log.entityType}</strong>
+                                      {log.entityId && <span className="ms-1">({log.entityId.slice(0, 8)}…)</span>}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-muted small text-nowrap ms-2">{fmtDate(log.createdAt)}</span>
+                              </div>
+                              {log.ip && (
+                                <div className="text-muted small mt-1">
+                                  <Icon name="globe" className="me-1" style={{ fontSize: 11 }} />
+                                  IP: {log.ip}
+                                  {log.userAgent && (
+                                    <span className="ms-2" title={log.userAgent}>
+                                      <Icon name="monitor" className="me-1" style={{ fontSize: 11 }} />
+                                      {log.userAgent.length > 60 ? log.userAgent.slice(0, 60) + "…" : log.userAgent}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {hasChanges && (
+                                <div className="mt-1">
+                                  <a href="#toggle" className="small text-primary" onClick={(e) => {
+                                    e.preventDefault();
+                                    setExpandedLog(isExpanded ? null : log.id);
+                                  }}>
+                                    <Icon name={isExpanded ? "chevron-up" : "chevron-down"} className="me-1" />
+                                    {isExpanded ? "Hide changes" : "Show changes"}
+                                  </a>
+                                  {isExpanded && (
+                                    <div className="mt-2 p-2 bg-lighter rounded" style={{ fontSize: "0.8rem" }}>
+                                      {parsedBefore && parsedAfter ? (
+                                        <div className="row g-2">
+                                          <div className="col-md-6">
+                                            <div className="fw-bold text-muted mb-1">Before</div>
+                                            <pre className="mb-0" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 200, overflow: "auto" }}>
+                                              {JSON.stringify(parsedBefore, null, 2)}
+                                            </pre>
+                                          </div>
+                                          <div className="col-md-6">
+                                            <div className="fw-bold text-muted mb-1">After</div>
+                                            <pre className="mb-0" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 200, overflow: "auto" }}>
+                                              {JSON.stringify(parsedAfter, null, 2)}
+                                            </pre>
+                                          </div>
+                                        </div>
+                                      ) : parsedAfter ? (
+                                        <div>
+                                          <div className="fw-bold text-muted mb-1">Details</div>
+                                          <pre className="mb-0" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 200, overflow: "auto" }}>
+                                            {JSON.stringify(parsedAfter, null, 2)}
+                                          </pre>
+                                        </div>
+                                      ) : parsedBefore ? (
+                                        <div>
+                                          <div className="fw-bold text-muted mb-1">Previous state</div>
+                                          <pre className="mb-0" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 200, overflow: "auto" }}>
+                                            {JSON.stringify(parsedBefore, null, 2)}
+                                          </pre>
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {activityTotal > 10 && (
+                    <div className="card-inner pt-0">
+                      <PaginationComponent itemPerPage={10} totalItems={activityTotal} paginate={(p) => setActivityPage(p)} currentPage={activityPage} />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-muted text-center py-3">No activity recorded for this customer.</div>
+              )}
             </div>
           </div>
         </Block>
