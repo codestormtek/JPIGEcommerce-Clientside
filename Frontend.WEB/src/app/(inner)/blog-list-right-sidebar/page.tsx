@@ -1,36 +1,111 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import HeaderOne from '@/components/header/HeaderOne';
 import ShortService from '@/components/service/ShortService';
 import FooterOne from '@/components/footer/FooterOne';
 import BlogListMain from './BlogListMain';
-import Posts from '@/data/Posts.json';
 import Link from 'next/link';
+import { apiGet, buildQS } from '@/lib/api';
 
-interface PostType {
-    category?: string;
+interface ContentPost {
+    id: string;
+    title: string;
     slug: string;
-    image: string;
-    title?: string;
-    author?: string;
-    publishedDate?: string;
+    excerpt?: string;
+    bodyHtml?: string;
+    postType: string;
+    status: string;
+    publishedAt?: string;
+    featuredMediaAsset?: { url: string } | null;
+    categories?: { category: { id: string; name: string; slug: string } }[];
+    tags?: { tag: { id: string; name: string; slug: string } }[];
+    authorUser?: { firstName: string; lastName: string };
 }
 
-export default function BlogGridPage() {
-    const [currentPage, setCurrentPage] = useState(1);
+interface PaginatedResponse {
+    data: ContentPost[];
+    meta: { total: number; page: number; limit: number; totalPages: number };
+}
+
+function formatDate(dateStr?: string): string {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+export default function BlogListRightSidebar() {
+    const [posts, setPosts] = useState<ContentPost[]>([]);
+    const [latestPosts, setLatestPosts] = useState<ContentPost[]>([]);
+    const [allCategories, setAllCategories] = useState<{ id: string; name: string; slug: string; count: number }[]>([]);
+    const [allTags, setAllTags] = useState<{ id: string; name: string; slug: string }[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeCategoryId, setActiveCategoryId] = useState('');
+    const [activeTagId, setActiveTagId] = useState('');
     const postsPerPage = 4;
 
-    const totalPages = Math.ceil(Posts.length / postsPerPage);
-    const startIndex = (currentPage - 1) * postsPerPage;
-    const currentPosts = Posts.slice(startIndex, startIndex + postsPerPage);
+    useEffect(() => {
+        apiGet<PaginatedResponse>(`/content?limit=3&page=1`)
+            .then(res => setLatestPosts(res.data || []))
+            .catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        setLoading(true);
+        const params: Record<string, string | number | undefined> = {
+            page,
+            limit: postsPerPage,
+        };
+        if (searchQuery) params.search = searchQuery;
+        if (activeCategoryId) params.categoryId = activeCategoryId;
+        if (activeTagId) params.tagId = activeTagId;
+
+        const qs = buildQS(params);
+        apiGet<PaginatedResponse>(`/content${qs}`)
+            .then(res => {
+                setPosts(res.data || []);
+                setTotalPages(res.meta?.totalPages || 1);
+            })
+            .catch(() => setPosts([]))
+            .finally(() => setLoading(false));
+    }, [page, searchQuery, activeCategoryId, activeTagId]);
+
+    useEffect(() => {
+        apiGet<PaginatedResponse>(`/content?limit=50`)
+            .then(res => {
+                const catMap = new Map<string, { id: string; name: string; slug: string; count: number }>();
+                const tagMap = new Map<string, { id: string; name: string; slug: string }>();
+                (res.data || []).forEach(p => {
+                    (p.categories || []).forEach(c => {
+                        const existing = catMap.get(c.category.id);
+                        if (existing) existing.count++;
+                        else catMap.set(c.category.id, { id: c.category.id, name: c.category.name, slug: c.category.slug, count: 1 });
+                    });
+                    (p.tags || []).forEach(t => {
+                        if (!tagMap.has(t.tag.id)) tagMap.set(t.tag.id, { id: t.tag.id, name: t.tag.name, slug: t.tag.slug });
+                    });
+                });
+                setAllCategories([...catMap.values()]);
+                setAllTags([...tagMap.values()]);
+            })
+            .catch(() => {});
+    }, []);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        setPage(1);
+    };
+
+    const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
     return (
         <div className="demo-one">
-            {/* Header */}
             <HeaderOne />
 
-            {/* Breadcrumb Area */}
             <div className="rts-navigation-area-breadcrumb bg_light-1">
                 <div className="container">
                     <div className="row">
@@ -39,7 +114,7 @@ export default function BlogGridPage() {
                                 <Link href="/">Home</Link>
                                 <i className="fa-regular fa-chevron-right" />
                                 <a className="current" href="#">
-                                    Blog Lists With Sidebar
+                                    Blog
                                 </a>
                             </div>
                         </div>
@@ -47,7 +122,6 @@ export default function BlogGridPage() {
                 </div>
             </div>
 
-            {/* Separator */}
             <div className="section-seperator bg_light-1">
                 <div className="container">
                     <hr className="section-seperator" />
@@ -58,20 +132,59 @@ export default function BlogGridPage() {
                 <div className="container" style={{ transform: "none" }}>
                     <div className="row" style={{ transform: "none" }}>
                         <div className="col-lg-8 order-lg-1 order-md-2 order-sm-2 order-2">
-                            {currentPosts.map((post: PostType, index: number) => (
-                                <div
-                                    key={index}
-                                    className="single-blog-main-wrapper-top"
-                                >
-                                    <div className="single-blog-style-card-border mb--40">
-                                        <BlogListMain
-                                            Slug={post.slug}
-                                            blogImage={post.image}
-                                            blogTitle={post.title}
-                                        />
+                            {loading ? (
+                                <div className="text-center py-5">
+                                    <div className="spinner-border text-primary" role="status">
+                                        <span className="visually-hidden">Loading...</span>
                                     </div>
+                                    <p className="mt-3">Loading posts...</p>
                                 </div>
-                            ))}
+                            ) : posts.length === 0 ? (
+                                <div className="text-center py-5">
+                                    <p>No posts found.</p>
+                                </div>
+                            ) : (
+                                posts.map((post) => (
+                                    <div key={post.id} className="single-blog-main-wrapper-top">
+                                        <div className="single-blog-style-card-border mb--40">
+                                            <BlogListMain
+                                                slug={post.slug}
+                                                imageUrl={post.featuredMediaAsset?.url}
+                                                title={post.title}
+                                                excerpt={post.excerpt}
+                                                date={formatDate(post.publishedAt)}
+                                                category={post.categories?.[0]?.category?.name}
+                                            />
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+
+                            {totalPages > 1 && (
+                                <div className="pagination-area-blog mt--30">
+                                    <nav>
+                                        <ul className="pagination">
+                                            <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
+                                                <button className="page-link" onClick={() => setPage(Math.max(1, page - 1))}>
+                                                    <i className="fa-regular fa-chevron-left" />
+                                                </button>
+                                            </li>
+                                            {pageNumbers.map(num => (
+                                                <li key={num} className={`page-item ${num === page ? 'active' : ''}`}>
+                                                    <button className="page-link" onClick={() => setPage(num)}>
+                                                        {num}
+                                                    </button>
+                                                </li>
+                                            ))}
+                                            <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
+                                                <button className="page-link" onClick={() => setPage(Math.min(totalPages, page + 1))}>
+                                                    <i className="fa-regular fa-chevron-right" />
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            )}
                         </div>
                         <div
                             className="col-lg-4 pl--60 order-lg-2 order-md-1 order-sm-1 order-1 pl_md--10 pl_sm--10 rts-sticky-column-item"
@@ -90,13 +203,17 @@ export default function BlogGridPage() {
                                     position: "static",
                                     transform: "none",
                                     top: 0,
-                                    left: "1292.66px"
                                 }}
                             >
                                 <div className="blog-sidebar-single-wized">
-                                    <form action="#">
-                                        <input type="text" placeholder="Search Here" />
-                                        <button>
+                                    <form onSubmit={handleSearch}>
+                                        <input
+                                            type="text"
+                                            placeholder="Search Here"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                        <button type="submit">
                                             <i className="fa-regular fa-magnifying-glass" />
                                         </button>
                                     </form>
@@ -104,201 +221,78 @@ export default function BlogGridPage() {
                                 <div className="blog-sidebar-single-wized with-title">
                                     <h4 className="title">Categories</h4>
                                     <div className="category-main-wrapper">
-                                        {/* single category area start */}
-                                        <div className="single-category-area">
-                                            <p>Baking Material</p>
-                                        </div>
-                                        {/* single category area end */}
-                                        {/* single category area start */}
-                                        <div className="single-category-area">
-                                            <p>Bread and Juice</p>
-                                        </div>
-                                        {/* single category area end */}
-                                        {/* single category area start */}
-                                        <div className="single-category-area">
-                                            <p>Clothing &amp; Beauty</p>
-                                        </div>
-                                        {/* single category area end */}
-                                        {/* single category area start */}
-                                        <div className="single-category-area">
-                                            <p>Fresh Vegetable</p>
-                                        </div>
-                                        {/* single category area end */}
-                                        {/* single category area start */}
-                                        <div className="single-category-area">
-                                            <p>Fresh Seafood</p>
-                                        </div>
-                                        {/* single category area end */}
-                                        {/* single category area start */}
-                                        <div className="single-category-area">
-                                            <p>Milks and Daires</p>
-                                        </div>
-                                        {/* single category area end */}
-                                        {/* single category area start */}
-                                        <div className="single-category-area">
-                                            <p>Wine &amp; Drinks</p>
-                                        </div>
-                                        {/* single category area end */}
+                                        {allCategories.map(cat => (
+                                            <div
+                                                key={cat.id}
+                                                className="single-category-area"
+                                                style={{
+                                                    cursor: 'pointer',
+                                                    fontWeight: activeCategoryId === cat.id ? 'bold' : 'normal',
+                                                }}
+                                                onClick={() => {
+                                                    setActiveCategoryId(activeCategoryId === cat.id ? '' : cat.id);
+                                                    setPage(1);
+                                                }}
+                                            >
+                                                <p>{cat.name}</p>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                                 <div className="blog-sidebar-single-wized with-title">
-                                    <h4 className="title">Latest Post</h4>
+                                    <h4 className="title">Latest Posts</h4>
                                     <div className="latest-post-small-area-wrapper">
-                                        {/* single latest post */}
-                                        <div className="single-latest-post-area">
-                                            <a href="blog-details.html" className="thumbnail">
-                                                <img src="/assets/images/blog/thumb/01.jpg" alt="thumbnail" />
-                                            </a>
-                                            <div className="inner-content-area">
-                                                <div className="icon-top-area">
-                                                    <i className="fa-light fa-clock" />
-                                                    <span>Sep 25, 2024</span>
+                                        {latestPosts.map(post => (
+                                            <div key={post.id} className="single-latest-post-area">
+                                                <Link href={`/blog/${post.slug}`} className="thumbnail">
+                                                    <img
+                                                        src={post.featuredMediaAsset?.url || "/assets/images/blog/thumb/01.jpg"}
+                                                        alt={post.title}
+                                                    />
+                                                </Link>
+                                                <div className="inner-content-area">
+                                                    <div className="icon-top-area">
+                                                        <i className="fa-light fa-clock" />
+                                                        <span>{formatDate(post.publishedAt)}</span>
+                                                    </div>
+                                                    <Link href={`/blog/${post.slug}`}>
+                                                        <h5 className="title-sm-blog">
+                                                            {post.title}
+                                                        </h5>
+                                                    </Link>
                                                 </div>
-                                                <a href="#">
-                                                    <h5 className="title-sm-blog">
-                                                        Crowd-Pleasing Meals Made with Our Grocery Staples
-                                                    </h5>
-                                                </a>
                                             </div>
-                                        </div>
-                                        {/* single latest post end */}
-                                        {/* single latest post */}
-                                        <div className="single-latest-post-area">
-                                            <a href="blog-details.html" className="thumbnail">
-                                                <img src="/assets/images/blog/thumb/02.jpg" alt="thumbnail" />
-                                            </a>
-                                            <div className="inner-content-area">
-                                                <div className="icon-top-area">
-                                                    <i className="fa-light fa-clock" />
-                                                    <span>Sep 25, 2024</span>
-                                                </div>
-                                                <a href="#">
-                                                    <h5 className="title-sm-blog">
-                                                        Reducing Your Carbon Footprint with Our Sustainable
-                                                        Products"
-                                                    </h5>
-                                                </a>
-                                            </div>
-                                        </div>
-                                        {/* single latest post end */}
-                                        {/* single latest post */}
-                                        <div className="single-latest-post-area">
-                                            <a href="blog-details.html" className="thumbnail">
-                                                <img src="/assets/images/blog/thumb/03.jpg" alt="thumbnail" />
-                                            </a>
-                                            <div className="inner-content-area">
-                                                <div className="icon-top-area">
-                                                    <i className="fa-light fa-clock" />
-                                                    <span>Sep 25, 2024</span>
-                                                </div>
-                                                <a href="#">
-                                                    <h5 className="title-sm-blog">
-                                                        Discovering New Flavors in Our Ethnic Foods Aisle
-                                                    </h5>
-                                                </a>
-                                            </div>
-                                        </div>
-                                        {/* single latest post end */}
+                                        ))}
                                     </div>
                                 </div>
                                 <div className="blog-sidebar-single-wized with-title">
                                     <h4 className="title">Tags</h4>
                                     <div className="tags-area-blog-short-main">
-                                        {/* single */}
-                                        <button className="single-category">Shampoo</button>
-                                        {/* single end */}
-                                        {/* single */}
-                                        <button className="single-category">Butter</button>
-                                        {/* single end */}
-                                        {/* single */}
-                                        <button className="single-category">Birthday</button>
-                                        {/* single end */}
-                                        {/* single */}
-                                        <button className="single-category">Gifts</button>
-                                        {/* single end */}
-                                        {/* single */}
-                                        <button className="single-category">Facial</button>
-                                        {/* single end */}
-                                        {/* single */}
-                                        <button className="single-category">Green</button>
-                                        {/* single end */}
-                                        {/* single */}
-                                        <button className="single-category">Lotion</button>
-                                        {/* single end */}
-                                        {/* single */}
-                                        <button className="single-category">Scrub</button>
-                                        {/* single end */}
-                                    </div>
-                                </div>
-                                <div className="blog-sidebar-single-wized with-title">
-                                    <h4 className="title">Instagram Posts</h4>
-                                    <div className="instagram-post-main-wrapper">
-                                        {/* single-instagram-post */}
-                                        <a href="#">
-                                            <div className="single-instagram-post">
-                                                <img src="/assets/images/blog/thumb/04.jpg" alt="post" />
-                                            </div>
-                                        </a>
-                                        {/* single-instagram-post end */}
-                                        {/* single-instagram-post */}
-                                        <a href="#">
-                                            <div className="single-instagram-post">
-                                                <img src="/assets/images/blog/thumb/05.jpg" alt="post" />
-                                            </div>
-                                        </a>
-                                        {/* single-instagram-post end */}
-                                        {/* single-instagram-post */}
-                                        <a href="#">
-                                            <div className="single-instagram-post">
-                                                <img src="/assets/images/blog/thumb/06.jpg" alt="post" />
-                                            </div>
-                                        </a>
-                                        {/* single-instagram-post end */}
-                                        {/* single-instagram-post */}
-                                        <a href="#">
-                                            <div className="single-instagram-post">
-                                                <img src="/assets/images/blog/thumb/07.jpg" alt="post" />
-                                            </div>
-                                        </a>
-                                        {/* single-instagram-post end */}
-                                        {/* single-instagram-post */}
-                                        <a href="#">
-                                            <div className="single-instagram-post">
-                                                <img src="/assets/images/blog/thumb/08.jpg" alt="post" />
-                                            </div>
-                                        </a>
-                                        {/* single-instagram-post end */}
-                                        {/* single-instagram-post */}
-                                        <a href="#">
-                                            <div className="single-instagram-post">
-                                                <img src="/assets/images/blog/thumb/09.jpg" alt="post" />
-                                            </div>
-                                        </a>
-                                        {/* single-instagram-post end */}
-                                        {/* single-instagram-post */}
-                                        <a href="#">
-                                            <div className="single-instagram-post">
-                                                <img src="/assets/images/blog/thumb/10.jpg" alt="post" />
-                                            </div>
-                                        </a>
-                                        {/* single-instagram-post end */}
-                                        {/* single-instagram-post */}
-                                        <a href="#">
-                                            <div className="single-instagram-post">
-                                                <img src="/assets/images/blog/thumb/11.jpg" alt="post" />
-                                            </div>
-                                        </a>
-                                        {/* single-instagram-post end */}
+                                        {allTags.map(tag => (
+                                            <button
+                                                key={tag.id}
+                                                className="single-category"
+                                                style={{
+                                                    fontWeight: activeTagId === tag.id ? 'bold' : 'normal',
+                                                }}
+                                                onClick={() => {
+                                                    setActiveTagId(activeTagId === tag.id ? '' : tag.id);
+                                                    setPage(1);
+                                                }}
+                                            >
+                                                {tag.name}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                                 <div className="blog-sidebar-single-wized with-add bg_image">
                                     <div className="add-are-content">
-                                        <span className="pre">Weekend Discount</span>
+                                        <span className="pre">Check Out</span>
                                         <h5 className="title">
-                                            Discover Real organic <br />
-                                            <span>Flavors Vegetable</span>
+                                            The Jiggling Pig <br />
+                                            <span>BBQ Products</span>
                                         </h5>
-                                        <a href="#" className="shop-now-goshop-btn">
+                                        <Link href="/shop" className="shop-now-goshop-btn">
                                             <span className="text">Shop Now</span>
                                             <div className="plus-icon">
                                                 <i className="fa-sharp fa-regular fa-plus" />
@@ -306,7 +300,7 @@ export default function BlogGridPage() {
                                             <div className="plus-icon">
                                                 <i className="fa-sharp fa-regular fa-plus" />
                                             </div>
-                                        </a>
+                                        </Link>
                                     </div>
                                 </div>
                             </div>
@@ -315,8 +309,6 @@ export default function BlogGridPage() {
                 </div>
             </div>
 
-
-            {/* Footer */}
             <ShortService />
             <FooterOne />
         </div>

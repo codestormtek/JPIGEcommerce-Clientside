@@ -2,49 +2,62 @@
 import React from 'react';
 import Link from 'next/link';
 
-interface BlogGridMainProps {
-    Slug: string;
-    blogImage: string;
-    blogTitle?: string;
+interface BlogListMainProps {
+    slug: string;
+    imageUrl?: string;
+    title: string;
+    excerpt?: string;
+    date?: string;
+    category?: string;
 }
 
-const BlogGridMain: React.FC<BlogGridMainProps> = ({
-    Slug,
-    blogImage,
-    blogTitle,
+const BlogListMain: React.FC<BlogListMainProps> = ({
+    slug,
+    imageUrl,
+    title,
+    excerpt,
+    date,
+    category,
 }) => {
+    const imgSrc = imageUrl || "/assets/images/blog/blog-01.jpg";
+
     return (
         <>
-
-            <a href={`/blog/${Slug}`} className="thumbnail">
-                <img src={`assets/images/blog/${blogImage}`} alt="blog-area" />
-            </a>
+            <Link href={`/blog/${slug}`} className="thumbnail">
+                <img
+                    src={imgSrc}
+                    alt={title}
+                    style={{ width: '100%', height: 'auto', objectFit: 'cover' }}
+                />
+            </Link>
             <div className="inner-content-body">
                 <div className="tag-area">
-                    <div className="single">
-                        <i className="fa-light fa-clock" />
-                        <span>15 Sep, 2023</span>
-                    </div>
-                    <div className="single">
-                        <i className="fa-light fa-folder" />
-                        <span>Modern Fashion</span>
-                    </div>
+                    {date && (
+                        <div className="single">
+                            <i className="fa-light fa-clock" />
+                            <span>{date}</span>
+                        </div>
+                    )}
+                    {category && (
+                        <div className="single">
+                            <i className="fa-light fa-folder" />
+                            <span>{category}</span>
+                        </div>
+                    )}
                 </div>
-                <a className="title-main" href={`/blog/${Slug}`}>
+                <Link className="title-main" href={`/blog/${slug}`}>
                     <h3 className="title animated fadeIn">
-                        {blogTitle ? blogTitle : 'How to growing your business'}
+                        {title}
                     </h3>
-                </a>
-                <p className="disc mb--20">
-                    Bibendum ac non dis aliquet rhoncus litora dui ante, ornare
-                    faucibus torquent per parturient enim sem, nunc condimentum
-                    luctus tortor justo pharetra placerat. Lobortis quis odio neque
-                    varius donec egestas turpis, nisi ut inceptos etiam placerat
-                    habitasse nisl, dignissim fusce habitant libero accumsan quam.
-                </p>
+                </Link>
+                {excerpt && (
+                    <p className="disc mb--20">
+                        {excerpt}
+                    </p>
+                )}
                 <div className="button-area">
-                    <a
-                        href={`/blog/${Slug}`}
+                    <Link
+                        href={`/blog/${slug}`}
                         className="rts-btn btn-primary radious-sm with-icon"
                     >
                         <div className="btn-text">Read Details</div>
@@ -54,12 +67,11 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                         <div className="arrow-icon">
                             <i className="fa-solid fa-circle-plus" />
                         </div>
-                    </a>
+                    </Link>
                 </div>
             </div>
-
         </>
     );
 };
 
-export default BlogGridMain;
+export default BlogListMain;
