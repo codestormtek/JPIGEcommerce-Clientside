@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Modal, ModalBody, ModalHeader, Spinner } from "reactstrap";
+import { Modal, ModalBody, ModalHeader, Spinner, Nav, NavItem, NavLink, TabContent, TabPane } from "reactstrap";
+import classnames from "classnames";
 import {
   Block, BlockBetween, BlockDes, BlockHead, BlockHeadContent, BlockTitle,
   Icon, Row, Col, PaginationComponent,
@@ -8,17 +9,13 @@ import {
 } from "@/components/Component";
 import Content from "@/layout/content/Content";
 import Head from "@/layout/head/Head";
-import { apiGet, apiPost, apiPatch, apiDelete } from "@/utils/apiClient";
+import { apiGet, apiPost, apiPatch, apiDelete, apiUpload } from "@/utils/apiClient";
 
 const slugify = (str) =>
   str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 const blankGalleryForm = () => ({
   name: "", slug: "", description: "", isVisible: true, displayOrder: 0,
-});
-
-const blankImageForm = () => ({
-  mediaAssetId: "", title: "", description: "", sortOrder: 0,
 });
 
 const AdminGalleryList = () => {
@@ -35,21 +32,16 @@ const AdminGalleryList = () => {
   const [saving,     setSaving]     = useState(false);
   const [formError,  setFormError]  = useState(null);
   const [slugTouched, setSlugTouched] = useState(false);
+  const [activeTab,   setActiveTab]   = useState("info");
 
   const [deleteModal,  setDeleteModal]  = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting,     setDeleting]     = useState(false);
 
-  const [imagesModal,    setImagesModal]    = useState(false);
-  const [imagesGallery,  setImagesGallery]  = useState(null);
-  const [galleryImages,  setGalleryImages]  = useState([]);
-  const [imagesLoading,  setImagesLoading]  = useState(false);
-
-  const [imgForm,       setImgForm]       = useState(blankImageForm());
-  const [imgFormOpen,   setImgFormOpen]   = useState(false);
-  const [imgEditTarget, setImgEditTarget] = useState(null);
-  const [imgSaving,     setImgSaving]     = useState(false);
+  const [galleryImages, setGalleryImages] = useState([]);
+  const [imagesLoading, setImagesLoading] = useState(false);
   const [imgError,      setImgError]      = useState(null);
+  const [uploading,     setUploading]     = useState(false);
 
   const loadGalleries = useCallback(async () => {
     setLoading(true); setError(null);
@@ -66,10 +58,11 @@ const AdminGalleryList = () => {
 
   const openCreate = () => {
     setEditTarget(null); setForm(blankGalleryForm()); setFormError(null);
-    setSlugTouched(false); setModal(true);
+    setSlugTouched(false); setActiveTab("info"); setGalleryImages([]);
+    setImgError(null); setModal(true);
   };
 
-  const openEdit = (g) => {
+  const openEdit = async (g) => {
     setEditTarget(g);
     setForm({
       name:         g.name         ?? "",
@@ -80,6 +73,9 @@ const AdminGalleryList = () => {
     });
     setSlugTouched(true);
     setFormError(null);
+    setImgError(null);
+    setActiveTab("info");
+    setGalleryImages(g.images ?? []);
     setModal(true);
   };
 
@@ -93,10 +89,23 @@ const AdminGalleryList = () => {
         isVisible:    form.isVisible,
         displayOrder: Number(form.displayOrder),
       };
-      if (editTarget) await apiPatch(`/galleries/${editTarget.id}`, body);
-      else            await apiPost("/galleries", body);
-      setModal(false);
+      let savedGallery;
+      if (editTarget) {
+        const res = await apiPatch(`/galleries/${editTarget.id}`, body);
+        savedGallery = res?.data ?? editTarget;
+      } else {
+        const res = await apiPost("/galleries", body);
+        savedGallery = res?.data ?? null;
+      }
+      if (savedGallery && !editTarget) {
+        setEditTarget(savedGallery);
+        setGalleryImages(savedGallery.images ?? []);
+        setActiveTab("images");
+      }
       loadGalleries();
+      if (editTarget) {
+        setModal(false);
+      }
     } catch (e) { setFormError(e.message); }
     finally { setSaving(false); }
   };
@@ -119,15 +128,6 @@ const AdminGalleryList = () => {
     });
   };
 
-  const openImagesModal = async (gallery) => {
-    setImagesGallery(gallery);
-    setImagesModal(true);
-    setImgFormOpen(false);
-    setImgEditTarget(null);
-    setImgError(null);
-    await loadGalleryImages(gallery.id);
-  };
-
   const loadGalleryImages = async (galleryId) => {
     setImagesLoading(true);
     try {
@@ -137,55 +137,49 @@ const AdminGalleryList = () => {
     finally { setImagesLoading(false); }
   };
 
-  const openAddImage = () => {
-    setImgEditTarget(null); setImgForm(blankImageForm());
-    setImgError(null); setImgFormOpen(true);
-  };
-
-  const openEditImage = (img) => {
-    setImgEditTarget(img);
-    setImgForm({
-      mediaAssetId: img.mediaAssetId ?? "",
-      title:        img.title        ?? "",
-      description:  img.description  ?? "",
-      sortOrder:    img.sortOrder    ?? 0,
-    });
-    setImgError(null); setImgFormOpen(true);
-  };
-
-  const saveImage = async () => {
-    if (!imagesGallery) return;
-    setImgSaving(true); setImgError(null);
+  const handleImageUpload = async (e) => {
+    const files = e.target.files;
+    if (!files?.length || !editTarget) return;
+    setUploading(true); setImgError(null);
     try {
-      if (imgEditTarget) {
-        await apiPatch(`/galleries/${imagesGallery.id}/images/${imgEditTarget.id}`, {
-          title:       imgForm.title       || undefined,
-          description: imgForm.description || undefined,
-          sortOrder:   Number(imgForm.sortOrder),
-        });
-      } else {
-        await apiPost(`/galleries/${imagesGallery.id}/images`, {
-          mediaAssetId: imgForm.mediaAssetId,
-          title:        imgForm.title       || undefined,
-          description:  imgForm.description || undefined,
-          sortOrder:    Number(imgForm.sortOrder),
-        });
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("folder", "galleries");
+        fd.append("name", file.name.replace(/\.[^.]+$/, ""));
+        const uploadRes = await apiUpload("/media/upload-resized", fd);
+        const data = uploadRes?.data ?? uploadRes;
+        const asset = data?.primary ?? data;
+        if (asset?.id) {
+          const nextOrder = galleryImages.length;
+          await apiPost(`/galleries/${editTarget.id}/images`, {
+            mediaAssetId: asset.id,
+            title: file.name.replace(/\.[^.]+$/, ""),
+            sortOrder: nextOrder,
+          });
+        }
       }
-      setImgFormOpen(false);
-      await loadGalleryImages(imagesGallery.id);
+      await loadGalleryImages(editTarget.id);
       loadGalleries();
-    } catch (e) { setImgError(e.message); }
-    finally { setImgSaving(false); }
+    } catch (err) { setImgError(err.message); }
+    finally { setUploading(false); e.target.value = ""; }
   };
 
   const removeImage = async (img) => {
-    if (!imagesGallery) return;
+    if (!editTarget) return;
     if (!window.confirm("Remove this image from the gallery?")) return;
     try {
-      await apiDelete(`/galleries/${imagesGallery.id}/images/${img.id}`);
-      await loadGalleryImages(imagesGallery.id);
+      await apiDelete(`/galleries/${editTarget.id}/images/${img.id}`);
+      await loadGalleryImages(editTarget.id);
       loadGalleries();
     } catch (e) { setImgError(e.message); }
+  };
+
+  const closeModal = () => {
+    setModal(false);
+    setEditTarget(null);
+    setGalleryImages([]);
   };
 
   return (
@@ -243,11 +237,6 @@ const AdminGalleryList = () => {
                   <DataTableRow className="nk-tb-col-tools text-end">
                     <ul className="nk-tb-actions gx-1">
                       <li>
-                        <Button size="sm" color="info" outline onClick={() => openImagesModal(g)}>
-                          <Icon name="img" /><span>Images</span>
-                        </Button>
-                      </li>
-                      <li>
                         <Button size="sm" color="light" onClick={() => openEdit(g)}>
                           <Icon name="edit" /><span>Edit</span>
                         </Button>
@@ -274,58 +263,150 @@ const AdminGalleryList = () => {
           </DataTable>
         </Block>
 
-        <Modal isOpen={modal} toggle={() => setModal(false)} size="lg">
-          <ModalHeader toggle={() => setModal(false)}>
+        <Modal isOpen={modal} toggle={closeModal} size="xl" scrollable>
+          <ModalHeader toggle={closeModal}>
             {editTarget ? "Edit Gallery" : "Add Gallery"}
           </ModalHeader>
           <ModalBody>
-            {formError && <div className="alert alert-danger">{formError}</div>}
-            <Row className="g-3">
-              <Col md="8">
-                <div className="form-group">
-                  <label className="form-label">Name</label>
-                  <input className="form-control" value={form.name}
-                    onChange={(e) => setField("name", e.target.value)} placeholder="Gallery name" />
+            <Nav tabs className="mb-3">
+              <NavItem>
+                <NavLink
+                  className={classnames({ active: activeTab === "info" })}
+                  onClick={() => setActiveTab("info")}
+                  style={{ cursor: "pointer" }}
+                >
+                  <Icon name="info" /> <span>Gallery Info</span>
+                </NavLink>
+              </NavItem>
+              <NavItem>
+                <NavLink
+                  className={classnames({ active: activeTab === "images" })}
+                  onClick={() => { if (editTarget) setActiveTab("images"); }}
+                  style={{ cursor: editTarget ? "pointer" : "not-allowed", opacity: editTarget ? 1 : 0.5 }}
+                  title={!editTarget ? "Save the gallery first to manage images" : ""}
+                >
+                  <Icon name="img" /> <span>Images ({galleryImages.length})</span>
+                </NavLink>
+              </NavItem>
+            </Nav>
+
+            <TabContent activeTab={activeTab}>
+              <TabPane tabId="info">
+                {formError && <div className="alert alert-danger">{formError}</div>}
+                <Row className="g-3">
+                  <Col md="8">
+                    <div className="form-group">
+                      <label className="form-label">Name</label>
+                      <input className="form-control" value={form.name}
+                        onChange={(e) => setField("name", e.target.value)} placeholder="Gallery name" />
+                    </div>
+                  </Col>
+                  <Col md="4">
+                    <div className="form-group">
+                      <label className="form-label">Display Order</label>
+                      <input type="number" className="form-control" value={form.displayOrder}
+                        onChange={(e) => setField("displayOrder", e.target.value)} />
+                    </div>
+                  </Col>
+                  <Col md="8">
+                    <div className="form-group">
+                      <label className="form-label">Slug</label>
+                      <input className="form-control" value={form.slug}
+                        onChange={(e) => { setSlugTouched(true); setField("slug", e.target.value); }}
+                        placeholder="auto-generated-from-name" />
+                    </div>
+                  </Col>
+                  <Col md="4">
+                    <div className="form-group pt-4">
+                      <div className="custom-control custom-switch">
+                        <input type="checkbox" className="custom-control-input" id="galleryVisible"
+                          checked={form.isVisible} onChange={(e) => setField("isVisible", e.target.checked)} />
+                        <label className="custom-control-label" htmlFor="galleryVisible">Visible</label>
+                      </div>
+                    </div>
+                  </Col>
+                  <Col md="12">
+                    <div className="form-group">
+                      <label className="form-label">Description</label>
+                      <textarea className="form-control" rows="3" value={form.description}
+                        onChange={(e) => setField("description", e.target.value)} placeholder="Optional description" />
+                    </div>
+                  </Col>
+                </Row>
+                <div className="d-flex justify-content-end gap-2 mt-4">
+                  <Button color="light" onClick={closeModal}>Cancel</Button>
+                  <Button color="primary" onClick={saveGallery} disabled={saving}>
+                    {saving ? <Spinner size="sm" /> : editTarget ? "Save Changes" : "Create Gallery"}
+                  </Button>
                 </div>
-              </Col>
-              <Col md="4">
-                <div className="form-group">
-                  <label className="form-label">Display Order</label>
-                  <input type="number" className="form-control" value={form.displayOrder}
-                    onChange={(e) => setField("displayOrder", e.target.value)} />
+              </TabPane>
+
+              <TabPane tabId="images">
+                {imgError && <div className="alert alert-danger">{imgError}</div>}
+
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <span className="text-soft">{galleryImages.length} image{galleryImages.length !== 1 ? "s" : ""} in this gallery</span>
+                  <label className="btn btn-primary btn-sm mb-0" style={{ cursor: "pointer" }}>
+                    {uploading ? <Spinner size="sm" /> : <><Icon name="upload" /> Upload Images</>}
+                    <input type="file" accept="image/*" multiple hidden onChange={handleImageUpload} disabled={uploading} />
+                  </label>
                 </div>
-              </Col>
-              <Col md="8">
-                <div className="form-group">
-                  <label className="form-label">Slug</label>
-                  <input className="form-control" value={form.slug}
-                    onChange={(e) => { setSlugTouched(true); setField("slug", e.target.value); }}
-                    placeholder="auto-generated-from-name" />
-                </div>
-              </Col>
-              <Col md="4">
-                <div className="form-group pt-4">
-                  <div className="custom-control custom-switch">
-                    <input type="checkbox" className="custom-control-input" id="galleryVisible"
-                      checked={form.isVisible} onChange={(e) => setField("isVisible", e.target.checked)} />
-                    <label className="custom-control-label" htmlFor="galleryVisible">Visible</label>
+
+                {imagesLoading ? (
+                  <div className="text-center py-4"><Spinner /></div>
+                ) : galleryImages.length === 0 ? (
+                  <div className="text-center py-5 text-muted">
+                    <Icon name="img" style={{ fontSize: 48 }} className="d-block mx-auto mb-2" />
+                    <p>No images in this gallery yet. Click "Upload Images" to add some.</p>
                   </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-bordered">
+                      <thead className="table-light">
+                        <tr>
+                          <th style={{ width: 80 }}>Image</th>
+                          <th>Name</th>
+                          <th>Description</th>
+                          <th style={{ width: 80 }}>Order</th>
+                          <th style={{ width: 80 }}>Delete</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {galleryImages.map((img) => (
+                          <tr key={img.id}>
+                            <td>
+                              {img.mediaAsset?.url ? (
+                                <img src={img.mediaAsset.url} alt={img.title || "gallery image"}
+                                  style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 4 }} />
+                              ) : (
+                                <div className="d-flex align-items-center justify-content-center bg-light"
+                                  style={{ width: 60, height: 60, borderRadius: 4 }}>
+                                  <Icon name="img" className="text-muted" />
+                                </div>
+                              )}
+                            </td>
+                            <td className="align-middle">{img.title || <em className="text-soft">Untitled</em>}</td>
+                            <td className="align-middle">
+                              <span className="text-soft">{img.description || "—"}</span>
+                            </td>
+                            <td className="align-middle text-center">{img.sortOrder}</td>
+                            <td className="align-middle text-center">
+                              <Button size="sm" color="danger" outline onClick={() => removeImage(img)}>
+                                <Icon name="cross" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div className="d-flex justify-content-end mt-3">
+                  <Button color="light" onClick={closeModal}>Close</Button>
                 </div>
-              </Col>
-              <Col md="12">
-                <div className="form-group">
-                  <label className="form-label">Description</label>
-                  <textarea className="form-control" rows="3" value={form.description}
-                    onChange={(e) => setField("description", e.target.value)} placeholder="Optional description" />
-                </div>
-              </Col>
-            </Row>
-            <div className="d-flex justify-content-end gap-2 mt-4">
-              <Button color="light" onClick={() => setModal(false)}>Cancel</Button>
-              <Button color="primary" onClick={saveGallery} disabled={saving}>
-                {saving ? <Spinner size="sm" /> : editTarget ? "Save Changes" : "Create Gallery"}
-              </Button>
-            </div>
+              </TabPane>
+            </TabContent>
           </ModalBody>
         </Modal>
 
@@ -339,108 +420,6 @@ const AdminGalleryList = () => {
                 {deleting ? <Spinner size="sm" /> : "Delete"}
               </Button>
             </div>
-          </ModalBody>
-        </Modal>
-
-        <Modal isOpen={imagesModal} toggle={() => setImagesModal(false)} size="xl" scrollable>
-          <ModalHeader toggle={() => setImagesModal(false)}>
-            Images — {imagesGallery?.name}
-          </ModalHeader>
-          <ModalBody>
-            {imgError && <div className="alert alert-danger">{imgError}</div>}
-
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <span className="text-soft">{galleryImages.length} image{galleryImages.length !== 1 ? "s" : ""}</span>
-              <Button size="sm" color="primary" onClick={openAddImage}>
-                <Icon name="plus" /><span>Add Image</span>
-              </Button>
-            </div>
-
-            {imgFormOpen && (
-              <div className="card card-bordered mb-3">
-                <div className="card-inner">
-                  <h6 className="mb-3">{imgEditTarget ? "Edit Image" : "Add Image"}</h6>
-                  <Row className="g-3">
-                    {!imgEditTarget && (
-                      <Col md="12">
-                        <div className="form-group">
-                          <label className="form-label">Media Asset ID</label>
-                          <input className="form-control" value={imgForm.mediaAssetId}
-                            onChange={(e) => setImgForm((f) => ({ ...f, mediaAssetId: e.target.value }))}
-                            placeholder="Paste media asset UUID from Media Library" />
-                        </div>
-                      </Col>
-                    )}
-                    <Col md="5">
-                      <div className="form-group">
-                        <label className="form-label">Title</label>
-                        <input className="form-control" value={imgForm.title}
-                          onChange={(e) => setImgForm((f) => ({ ...f, title: e.target.value }))}
-                          placeholder="Optional title" />
-                      </div>
-                    </Col>
-                    <Col md="5">
-                      <div className="form-group">
-                        <label className="form-label">Description</label>
-                        <input className="form-control" value={imgForm.description}
-                          onChange={(e) => setImgForm((f) => ({ ...f, description: e.target.value }))}
-                          placeholder="Optional description" />
-                      </div>
-                    </Col>
-                    <Col md="2">
-                      <div className="form-group">
-                        <label className="form-label">Sort Order</label>
-                        <input type="number" className="form-control" value={imgForm.sortOrder}
-                          onChange={(e) => setImgForm((f) => ({ ...f, sortOrder: e.target.value }))} />
-                      </div>
-                    </Col>
-                  </Row>
-                  <div className="d-flex justify-content-end gap-2 mt-3">
-                    <Button size="sm" color="light" onClick={() => setImgFormOpen(false)}>Cancel</Button>
-                    <Button size="sm" color="primary" onClick={saveImage} disabled={imgSaving}>
-                      {imgSaving ? <Spinner size="sm" /> : imgEditTarget ? "Update" : "Add"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {imagesLoading ? (
-              <div className="text-center py-4"><Spinner /></div>
-            ) : galleryImages.length === 0 ? (
-              <div className="text-center py-4 text-muted">No images in this gallery yet.</div>
-            ) : (
-              <Row className="g-3">
-                {galleryImages.map((img) => (
-                  <Col sm="6" md="4" lg="3" key={img.id}>
-                    <div className="card card-bordered h-100">
-                      {img.mediaAsset?.url ? (
-                        <img src={img.mediaAsset.url} alt={img.title || "gallery image"}
-                          className="card-img-top" style={{ height: 160, objectFit: "cover" }} />
-                      ) : (
-                        <div className="card-img-top d-flex align-items-center justify-content-center bg-light"
-                          style={{ height: 160 }}>
-                          <Icon name="img" className="text-muted" style={{ fontSize: 32 }} />
-                        </div>
-                      )}
-                      <div className="card-inner p-2">
-                        <p className="fw-semibold mb-0 small">{img.title || <em className="text-soft">No title</em>}</p>
-                        {img.description && <p className="text-soft small mb-0">{img.description}</p>}
-                        <p className="text-soft small mb-1">Order: {img.sortOrder}</p>
-                        <div className="d-flex gap-1">
-                          <Button size="xs" color="light" onClick={() => openEditImage(img)}>
-                            <Icon name="edit" />
-                          </Button>
-                          <Button size="xs" color="danger" outline onClick={() => removeImage(img)}>
-                            <Icon name="trash" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </Col>
-                ))}
-              </Row>
-            )}
           </ModalBody>
         </Modal>
       </Content>
