@@ -10,7 +10,7 @@ function ComponentName() {
                             <div className="invoice-main-wrapper-1">
                                 <div className="logo-top-area">
                                     <div className="logo">
-                                        <img src="assets/images/logo/logo-01.svg" alt="logo" />
+                                        <img src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png" alt="The Jiggling Pig" style={{ height: 70 }} />
                                     </div>
                                     <div className="invoice-location">
                                         <h6 className="title">Invoice</h6>
@@ -101,7 +101,7 @@ function ComponentName() {
                                 <div className="invoice-area-bottom">
                                     <div className="powerby">
                                         <p>Powerby</p>
-                                        <img src="assets/images/logo/fav.png" alt="" />
+                                        <img src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png" alt="The Jiggling Pig" style={{ height: 24, maxWidth: 'none' }} />
                                     </div>
                                     <p>
                                         Note:This is computer generated receipt and does not require

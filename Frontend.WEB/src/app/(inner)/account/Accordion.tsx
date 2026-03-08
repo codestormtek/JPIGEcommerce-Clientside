@@ -784,101 +784,185 @@ const AccountTabs = () => {
         >
           <div
             style={{
-              background: '#fff', borderRadius: 12, padding: 32,
-              maxWidth: 700, width: '90%', maxHeight: '80vh', overflowY: 'auto',
+              background: '#fff', borderRadius: 8,
+              maxWidth: 860, width: '94%', maxHeight: '90vh', overflowY: 'auto',
               position: 'relative',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
+              className="no-print"
               onClick={() => { setShowInvoice(false); setInvoice(null); }}
               style={{
                 position: 'absolute', top: 12, right: 16,
-                background: 'none', border: 'none', fontSize: 24, cursor: 'pointer',
+                background: 'none', border: 'none', fontSize: 28, cursor: 'pointer', zIndex: 10,
+                color: '#333', lineHeight: 1,
               }}
             >
               &times;
             </button>
             {invoiceLoading ? (
-              <p>Loading invoice...</p>
+              <div style={{ padding: 60, textAlign: 'center' }}>
+                <p>Loading invoice...</p>
+              </div>
             ) : invoice ? (
-              <div id="invoice-print-area">
-                <h2 style={{ marginBottom: 4 }}>Invoice</h2>
-                <p style={{ color: '#777', marginBottom: 16 }}>
-                  #{invoice.invoiceNumber} &mdash; {formatDate(invoice.orderDate)}
-                </p>
+              <div className="rts-invoice-style-one" id="invoice-print-area">
+                <div className="invoice-main-wrapper-1" style={{ marginTop: 0, marginBottom: 0, borderRadius: '8px 8px 0 0' }}>
+                  <div className="logo-top-area">
+                    <div className="logo">
+                      <img
+                        src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
+                        alt="The Jiggling Pig"
+                        style={{ height: 70 }}
+                      />
+                    </div>
+                    <div className="invoice-location">
+                      <h6 className="title">Invoice</h6>
+                      <span className="number">#{invoice.invoiceNumber}</span>
+                      <span className="email">{formatDate(invoice.issuedAt)}</span>
+                      <span className="website" style={{ textTransform: 'capitalize' }}>
+                        Status: {invoice.status}
+                      </span>
+                    </div>
+                  </div>
 
-                {invoice.addresses && (
-                  <div style={{ display: 'flex', gap: 32, marginBottom: 20 }}>
-                    {invoice.addresses.billing && (
-                      <div>
-                        <strong>Billing</strong>
-                        <p style={{ fontSize: 13, margin: '4px 0 0' }}>
-                          {invoice.addresses.billing.addressLine1}<br />
-                          {invoice.addresses.billing.city}
-                          {invoice.addresses.billing.stateProvince ? `, ${invoice.addresses.billing.stateProvince}` : ''}
-                          {invoice.addresses.billing.postalCode ? ` ${invoice.addresses.billing.postalCode}` : ''}
+                  <div style={{ display: 'flex', gap: 40, marginTop: 30, flexWrap: 'wrap' }}>
+                    {invoice.billTo && (
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <h6 style={{ fontWeight: 600, marginBottom: 6, fontSize: 14, textTransform: 'uppercase', color: '#888' }}>Bill To</h6>
+                        <p style={{ margin: 0, lineHeight: 1.7 }}>
+                          {invoice.billTo.addressLine1}
+                          {invoice.billTo.addressLine2 && (<><br />{invoice.billTo.addressLine2}</>)}
+                          <br />
+                          {invoice.billTo.city}{invoice.billTo.stateProvince ? `, ${invoice.billTo.stateProvince}` : ''}{invoice.billTo.postalCode ? ` ${invoice.billTo.postalCode}` : ''}
+                          {invoice.billTo.country && (<><br />{invoice.billTo.country}</>)}
                         </p>
                       </div>
                     )}
-                    {invoice.addresses.shipping && (
-                      <div>
-                        <strong>Shipping</strong>
-                        <p style={{ fontSize: 13, margin: '4px 0 0' }}>
-                          {invoice.addresses.shipping.addressLine1}<br />
-                          {invoice.addresses.shipping.city}
-                          {invoice.addresses.shipping.stateProvince ? `, ${invoice.addresses.shipping.stateProvince}` : ''}
-                          {invoice.addresses.shipping.postalCode ? ` ${invoice.addresses.shipping.postalCode}` : ''}
+                    {invoice.shipTo && (
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <h6 style={{ fontWeight: 600, marginBottom: 6, fontSize: 14, textTransform: 'uppercase', color: '#888' }}>Ship To</h6>
+                        <p style={{ margin: 0, lineHeight: 1.7 }}>
+                          {invoice.shipTo.addressLine1}
+                          {invoice.shipTo.addressLine2 && (<><br />{invoice.shipTo.addressLine2}</>)}
+                          <br />
+                          {invoice.shipTo.city}{invoice.shipTo.stateProvince ? `, ${invoice.shipTo.stateProvince}` : ''}{invoice.shipTo.postalCode ? ` ${invoice.shipTo.postalCode}` : ''}
+                          {invoice.shipTo.country && (<><br />{invoice.shipTo.country}</>)}
                         </p>
+                      </div>
+                    )}
+                    {invoice.shippingMethod && (
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <h6 style={{ fontWeight: 600, marginBottom: 6, fontSize: 14, textTransform: 'uppercase', color: '#888' }}>Shipping Method</h6>
+                        <p style={{ margin: 0 }}>{invoice.shippingMethod}</p>
                       </div>
                     )}
                   </div>
-                )}
 
-                <table className="table" style={{ width: '100%' }}>
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th>Qty</th>
-                      <th>Unit Price</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoice.lines.map((line) => (
-                      <tr key={line.id}>
-                        <td>{line.productName || line.product?.name || 'N/A'}</td>
-                        <td>{line.qty}</td>
-                        <td>{formatCurrency(line.unitPrice)}</td>
-                        <td>{formatCurrency(line.lineTotal)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  <div className="invoice-center-rts">
+                    <div className="table-responsive">
+                      <table className="table table-striped invoice-table">
+                        <thead className="bg-active">
+                          <tr>
+                            <th>Item</th>
+                            <th className="text-center">Unit Price</th>
+                            <th className="text-center">Quantity</th>
+                            <th className="text-right">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {invoice.lines.map((line, idx) => (
+                            <tr key={idx}>
+                              <td>
+                                <div className="item-desc-1">
+                                  <span>{line.name || 'N/A'}</span>
+                                  {line.sku && <small>SKU: {line.sku}</small>}
+                                  {line.options && line.options.length > 0 && (
+                                    <small>{line.options.join(', ')}</small>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="text-center">{formatCurrency(line.unitPrice)}</td>
+                              <td className="text-center">{line.qty}</td>
+                              <td className="text-right">{formatCurrency(line.lineTotal)}</td>
+                            </tr>
+                          ))}
+                          <tr>
+                            <td colSpan={3} className="text-end f-w-600">SubTotal</td>
+                            <td className="text-right">{formatCurrency(invoice.totals.subtotal)}</td>
+                          </tr>
+                          {invoice.totals.discount > 0 && (
+                            <tr>
+                              <td colSpan={3} className="text-end f-w-600">Discount</td>
+                              <td className="text-right">-{formatCurrency(invoice.totals.discount)}</td>
+                            </tr>
+                          )}
+                          <tr>
+                            <td colSpan={3} className="text-end f-w-600">Tax</td>
+                            <td className="text-right">{formatCurrency(invoice.totals.tax)}</td>
+                          </tr>
+                          {invoice.totals.shipping > 0 && (
+                            <tr>
+                              <td colSpan={3} className="text-end f-w-600">Shipping</td>
+                              <td className="text-right">{formatCurrency(invoice.totals.shipping)}</td>
+                            </tr>
+                          )}
+                          <tr>
+                            <td colSpan={3} className="text-end f-w-600">Grand Total</td>
+                            <td className="text-right f-w-600">{formatCurrency(invoice.totals.grand)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
 
-                <div style={{ textAlign: 'right', marginTop: 16, lineHeight: 2 }}>
-                  <div>Subtotal: {formatCurrency(invoice.totals.subtotal)}</div>
-                  {Number(invoice.totals.discountTotal) > 0 && (
-                    <div>Discount: -{formatCurrency(invoice.totals.discountTotal)}</div>
+                  {invoice.payments && invoice.payments.length > 0 && (
+                    <div style={{ marginTop: 20 }}>
+                      <h6 style={{ fontWeight: 600, marginBottom: 8, fontSize: 14, textTransform: 'uppercase', color: '#888' }}>Payments</h6>
+                      {invoice.payments.map((p, idx) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #eee' }}>
+                          <span style={{ textTransform: 'capitalize' }}>{p.provider}</span>
+                          <span>{formatCurrency(p.amount)} — <em style={{ textTransform: 'capitalize' }}>{p.status}</em></span>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                  <div>Tax: {formatCurrency(invoice.totals.taxTotal)}</div>
-                  <div>Shipping: {formatCurrency(invoice.totals.shippingTotal)}</div>
-                  <div style={{ fontWeight: 700, fontSize: 18, borderTop: '2px solid #333', paddingTop: 8, marginTop: 4 }}>
-                    Grand Total: {formatCurrency(invoice.totals.grandTotal)}
+
+                  <div className="invoice-area-bottom">
+                    <div className="powerby">
+                      <p>Powered by</p>
+                      <img
+                        src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
+                        alt="The Jiggling Pig"
+                        style={{ height: 30, maxWidth: 'none' }}
+                      />
+                    </div>
+                    <p>
+                      Note: This is a computer generated receipt and does not require
+                      physical signature.
+                    </p>
                   </div>
                 </div>
-
-                <div style={{ textAlign: 'center', marginTop: 24 }}>
-                  <button
-                    className="rts-btn btn-primary"
-                    onClick={() => window.print()}
+                <div className="buttons-area-invoice no-print" style={{ marginBottom: 0, padding: '16px 50px 24px', background: '#f1f1f1', borderRadius: '0 0 8px 8px' }}>
+                  <a
+                    href="#"
+                    className="rts-btn btn-primary radious-sm with-icon"
+                    onClick={(e) => { e.preventDefault(); window.print(); }}
                   >
-                    Print Invoice
-                  </button>
+                    <div className="btn-text">Print Now</div>
+                    <div className="arrow-icon">
+                      <i className="fa-regular fa-print" />
+                    </div>
+                    <div className="arrow-icon">
+                      <i className="fa-regular fa-print" />
+                    </div>
+                  </a>
                 </div>
               </div>
             ) : (
-              <p>Unable to load invoice.</p>
+              <div style={{ padding: 60, textAlign: 'center' }}>
+                <p>Unable to load invoice.</p>
+              </div>
             )}
           </div>
         </div>

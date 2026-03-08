@@ -175,21 +175,41 @@ export interface ShopOrder {
   lines: OrderLine[];
 }
 
+export interface InvoiceLine {
+  sku: string | null;
+  name: string | null;
+  qty: number;
+  unitPrice: number;
+  lineTotal: number;
+  options: string[];
+}
+
+export interface InvoicePayment {
+  provider: string;
+  amount: number;
+  status: string;
+  capturedAt: string | null;
+}
+
 export interface OrderInvoice {
   invoiceNumber: string;
-  orderDate: string;
-  lines: OrderLine[];
+  issuedAt: string;
+  currency: string;
+  status: string;
+  orderType: string;
+  specialInstructions: string | null;
+  billTo: UserAddress | null;
+  shipTo: UserAddress | null;
+  shippingMethod: string | null;
+  lines: InvoiceLine[];
   totals: {
     subtotal: number;
-    discountTotal: number;
-    taxTotal: number;
-    shippingTotal: number;
-    grandTotal: number;
+    discount: number;
+    tax: number;
+    shipping: number;
+    grand: number;
   };
-  addresses: {
-    billing: UserAddress | null;
-    shipping: UserAddress | null;
-  };
+  payments: InvoicePayment[];
 }
 
 export interface UserReview {
