@@ -51,7 +51,7 @@ function ResetPasswordForm() {
             className="mb--10"
             src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
             alt="The Jiggling Pig"
-            style={{ height: 80 }}
+            style={{ height: 80, maxWidth: 'none' }}
           />
         </div>
         <h3 className="title">Password Reset Successfully</h3>
@@ -74,7 +74,7 @@ function ResetPasswordForm() {
           className="mb--10"
           src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
           alt="The Jiggling Pig"
-          style={{ height: 80 }}
+          style={{ height: 80, maxWidth: 'none' }}
         />
       </div>
       <h3 className="title">Reset Your Password</h3>
