@@ -113,6 +113,95 @@ export interface CarouselSlide {
   mobileImage?: MediaAsset | null;
 }
 
+export interface UserAddress {
+  id: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  stateProvince: string | null;
+  postalCode: string | null;
+  country: string | null;
+  isDefault: boolean;
+  addressType: string | null;
+}
+
+export interface ContactPreference {
+  optInEmail: boolean;
+  optInSms: boolean;
+  smsPhone: string | null;
+  preferredLanguage: string | null;
+  timezone: string | null;
+}
+
+export interface UserProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  emailAddress: string;
+  phoneNumber: string | null;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  contactPreference: ContactPreference | null;
+  userAddresses: UserAddress[];
+  _count: Record<string, number>;
+}
+
+export interface OrderLine {
+  id: string;
+  productName: string;
+  qty: number;
+  unitPrice: number;
+  lineTotal: number;
+  product?: { id: string; name: string };
+}
+
+export interface OrderStatus {
+  id: string;
+  name: string;
+}
+
+export interface ShopOrder {
+  id: string;
+  orderDate: string;
+  orderStatusId: string;
+  subtotal: number;
+  discountTotal: number;
+  taxTotal: number;
+  shippingTotal: number;
+  grandTotal: number;
+  orderType: string | null;
+  orderStatus: OrderStatus;
+  lines: OrderLine[];
+}
+
+export interface OrderInvoice {
+  invoiceNumber: string;
+  orderDate: string;
+  lines: OrderLine[];
+  totals: {
+    subtotal: number;
+    discountTotal: number;
+    taxTotal: number;
+    shippingTotal: number;
+    grandTotal: number;
+  };
+  addresses: {
+    billing: UserAddress | null;
+    shipping: UserAddress | null;
+  };
+}
+
+export interface UserReview {
+  id: string;
+  productId: string;
+  ratingValue: number;
+  comment: string | null;
+  isApproved: boolean;
+  createdAt: string;
+  product: { id: string; name: string };
+}
+
 export function getProductImage(product: Product): string {
   const primary = product.media?.find((m) => m.isPrimary);
   const first = product.media?.[0];

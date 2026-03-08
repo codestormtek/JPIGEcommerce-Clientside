@@ -1,10 +1,256 @@
 'use client';
 
-import Link from 'next/link';
-import { useState } from 'react';
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import {
+  getMyProfile,
+  updateMyProfile,
+  getMyOrders,
+  getOrderInvoice,
+  getMyContactPreferences,
+  updateMyContactPreferences,
+  getMyReviews,
+  changePassword,
+} from '@/lib/account';
+import type {
+  UserProfile,
+  ShopOrder,
+  OrderInvoice,
+  ContactPreference,
+  UserReview,
+} from '@/types/api';
+
+function formatCurrency(n: number | string): string {
+  const v = typeof n === 'string' ? parseFloat(n) : n;
+  return '$' + v.toFixed(2);
+}
+
+function formatDate(d: string): string {
+  return new Date(d).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+function StarRating({ value }: { value: number }) {
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    stars.push(
+      <i
+        key={i}
+        className={i <= value ? 'fa-solid fa-star' : 'fa-regular fa-star'}
+        style={{ color: i <= value ? '#f5a623' : '#ccc', marginRight: 2 }}
+      />
+    );
+  }
+  return <span>{stars}</span>;
+}
 
 const AccountTabs = () => {
-  const [activeTab, setActiveTab] = useState('track');
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  const [orders, setOrders] = useState<ShopOrder[]>([]);
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersTotalPages, setOrdersTotalPages] = useState(1);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+
+  const [invoice, setInvoice] = useState<OrderInvoice | null>(null);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
+
+  const [contactPref, setContactPref] = useState<ContactPreference | null>(null);
+  const [prefLoading, setPrefLoading] = useState(false);
+  const [prefMsg, setPrefMsg] = useState('');
+
+  const [reviews, setReviews] = useState<UserReview[]>([]);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsTotalPages, setReviewsTotalPages] = useState(1);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  const [profileError, setProfileError] = useState('');
+  const [ordersError, setOrdersError] = useState('');
+  const [prefError, setPrefError] = useState('');
+  const [reviewsError, setReviewsError] = useState('');
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [emailAddress, setEmailAddress] = useState('');
+  const [profileMsg, setProfileMsg] = useState('');
+  const [profileErr, setProfileErr] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  const [curPassword, setCurPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwMsg, setPwMsg] = useState('');
+  const [pwErr, setPwErr] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    setProfileLoading(true);
+    setProfileError('');
+    getMyProfile()
+      .then((p) => {
+        setProfile(p);
+        setFirstName(p.firstName);
+        setLastName(p.lastName);
+        setPhoneNumber(p.phoneNumber || '');
+        setEmailAddress(p.emailAddress);
+      })
+      .catch(() => setProfileError('Failed to load profile.'))
+      .finally(() => setProfileLoading(false));
+  }, [isAuthenticated]);
+
+  const fetchOrders = useCallback(
+    (page: number) => {
+      setOrdersLoading(true);
+      setOrdersError('');
+      getMyOrders(page, 10)
+        .then((res) => {
+          setOrders(res.data);
+          setOrdersTotalPages(res.totalPages);
+          setOrdersPage(res.page);
+        })
+        .catch(() => setOrdersError('Failed to load orders.'))
+        .finally(() => setOrdersLoading(false));
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (activeTab === 'order' && isAuthenticated) fetchOrders(ordersPage);
+  }, [activeTab, isAuthenticated, ordersPage, fetchOrders]);
+
+  useEffect(() => {
+    if (activeTab === 'subscriptions' && isAuthenticated && !contactPref) {
+      setPrefLoading(true);
+      setPrefError('');
+      getMyContactPreferences()
+        .then(setContactPref)
+        .catch(() => setPrefError('Failed to load preferences.'))
+        .finally(() => setPrefLoading(false));
+    }
+  }, [activeTab, isAuthenticated, contactPref]);
+
+  const fetchReviews = useCallback(
+    (page: number) => {
+      setReviewsLoading(true);
+      setReviewsError('');
+      getMyReviews(page, 10)
+        .then((res) => {
+          setReviews(res.data);
+          setReviewsTotalPages(res.totalPages);
+          setReviewsPage(res.page);
+        })
+        .catch(() => setReviewsError('Failed to load reviews.'))
+        .finally(() => setReviewsLoading(false));
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (activeTab === 'reviews' && isAuthenticated) fetchReviews(reviewsPage);
+  }, [activeTab, isAuthenticated, reviewsPage, fetchReviews]);
+
+  const handleViewInvoice = async (orderId: string) => {
+    setInvoiceLoading(true);
+    setShowInvoice(true);
+    try {
+      const inv = await getOrderInvoice(orderId);
+      setInvoice(inv);
+    } catch {
+      setInvoice(null);
+    } finally {
+      setInvoiceLoading(false);
+    }
+  };
+
+  const handleTogglePref = async (field: 'optInEmail' | 'optInSms', value: boolean) => {
+    if (!contactPref) return;
+    const updated = { ...contactPref, [field]: value };
+    setContactPref(updated);
+    setPrefMsg('');
+    try {
+      const res = await updateMyContactPreferences({ [field]: value });
+      setContactPref(res);
+      setPrefMsg('Preferences saved!');
+      setTimeout(() => setPrefMsg(''), 3000);
+    } catch {
+      setContactPref(contactPref);
+    }
+  };
+
+  const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileSaving(true);
+    setProfileMsg('');
+    setProfileErr('');
+    try {
+      const updated = await updateMyProfile({ firstName, lastName, phoneNumber });
+      setProfile(updated);
+      setProfileMsg('Profile updated successfully!');
+      setTimeout(() => setProfileMsg(''), 3000);
+    } catch (err: unknown) {
+      setProfileErr(err instanceof Error ? err.message : 'Failed to update profile');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setPwErr('Passwords do not match');
+      return;
+    }
+    setPwSaving(true);
+    setPwMsg('');
+    setPwErr('');
+    try {
+      await changePassword(curPassword, newPassword, confirmPassword);
+      setPwMsg('Password changed successfully!');
+      setCurPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPwMsg(''), 3000);
+    } catch (err: unknown) {
+      setPwErr(err instanceof Error ? err.message : 'Failed to change password');
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+
+  if (authLoading || (!isAuthenticated && !authLoading)) {
+    return (
+      <div className="account-tab-area-start rts-section-gap">
+        <div className="container-2" style={{ textAlign: 'center', padding: '60px 0' }}>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="account-tab-area-start rts-section-gap">
@@ -42,10 +288,20 @@ const AccountTabs = () => {
               >
                 <i className="fa-regular fa-user"></i> Account Details
               </button>
-              <button className="nav-link">
-                <Link href="/login">
-                  <i className="fa-light fa-right-from-bracket"></i> Log Out
-                </Link>
+              <button
+                className={`nav-link ${activeTab === 'subscriptions' ? 'active' : ''}`}
+                onClick={() => setActiveTab('subscriptions')}
+              >
+                <i className="fa-regular fa-bell"></i> Subscriptions
+              </button>
+              <button
+                className={`nav-link ${activeTab === 'reviews' ? 'active' : ''}`}
+                onClick={() => setActiveTab('reviews')}
+              >
+                <i className="fa-regular fa-star"></i> Reviews
+              </button>
+              <button className="nav-link" onClick={handleLogout}>
+                <i className="fa-light fa-right-from-bracket"></i> Log Out
               </button>
             </div>
           </div>
@@ -54,55 +310,160 @@ const AccountTabs = () => {
 
               {activeTab === 'dashboard' && (
                 <div className="dashboard-account-area">
-                  <h2 className="title">
-                    Hello Raisa! (Not Raisa?) <Link href="/login">Log Out.</Link>
-                  </h2>
-                  <p className="disc">
-                    From your account dashboard you can view your recent orders,
-                    manage your shipping and billing addresses, and edit your password and account details.
-                  </p>
+                  {profileLoading ? (
+                    <p>Loading...</p>
+                  ) : profileError ? (
+                    <p style={{ color: '#dc3545' }}>{profileError}</p>
+                  ) : profile ? (
+                    <>
+                      <h2 className="title">
+                        Hello {profile.firstName}!{' '}
+                        (Not {profile.firstName}?){' '}
+                        <a href="#" onClick={(e) => { e.preventDefault(); handleLogout(); }}>Log Out.</a>
+                      </h2>
+                      <p className="disc">
+                        From your account dashboard you can view your recent orders,
+                        manage your shipping and billing addresses, and edit your password and account details.
+                      </p>
+                      <div style={{ marginTop: 20 }}>
+                        <p><strong>Member since:</strong> {formatDate(profile.createdAt)}</p>
+                        {profile._count && (
+                          <p style={{ marginTop: 8 }}>
+                            <strong>Orders:</strong> {profile._count.orders ?? profile._count.shopOrders ?? 0}
+                            {' | '}
+                            <strong>Reviews:</strong> {profile._count.reviews ?? profile._count.productReviews ?? 0}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p>Unable to load profile.</p>
+                  )}
                 </div>
               )}
 
               {activeTab === 'order' && (
                 <div className="order-table-account">
                   <div className="h2 title">Your Orders</div>
-                  <div className="table-responsive">
-                    <table className="table">
-                      <thead>
-                        <tr>
-                          <th>Order</th>
-                          <th>Date</th>
-                          <th>Status</th>
-                          <th>Total</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>#1357</td>
-                          <td>March 45, 2020</td>
-                          <td>Processing</td>
-                          <td>$125.00 for 2 item</td>
-                          <td><a href="#" className="btn-small d-block">View</a></td>
-                        </tr>
-                        <tr>
-                          <td>#2468</td>
-                          <td>June 29, 2020</td>
-                          <td>Completed</td>
-                          <td>$364.00 for 5 item</td>
-                          <td><a href="#" className="btn-small d-block">View</a></td>
-                        </tr>
-                        <tr>
-                          <td>#2366</td>
-                          <td>August 02, 2020</td>
-                          <td>Completed</td>
-                          <td>$280.00 for 3 item</td>
-                          <td><a href="#" className="btn-small d-block">View</a></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                  {ordersLoading ? (
+                    <p>Loading orders...</p>
+                  ) : ordersError ? (
+                    <p style={{ color: '#dc3545' }}>{ordersError}</p>
+                  ) : orders.length === 0 ? (
+                    <p>No orders yet.</p>
+                  ) : (
+                    <>
+                      <div className="table-responsive">
+                        <table className="table">
+                          <thead>
+                            <tr>
+                              <th>Order</th>
+                              <th>Date</th>
+                              <th>Status</th>
+                              <th>Total</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {orders.map((order) => (
+                              <React.Fragment key={order.id}>
+                                <tr>
+                                  <td>#{order.id.slice(-6)}</td>
+                                  <td>{formatDate(order.orderDate)}</td>
+                                  <td>{order.orderStatus?.name || 'N/A'}</td>
+                                  <td>{formatCurrency(order.grandTotal)}</td>
+                                  <td>
+                                    <a
+                                      href="#"
+                                      className="btn-small d-inline-block"
+                                      style={{ marginRight: 8 }}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        setExpandedOrder(expandedOrder === order.id ? null : order.id);
+                                      }}
+                                    >
+                                      {expandedOrder === order.id ? 'Hide' : 'View'}
+                                    </a>
+                                    <a
+                                      href="#"
+                                      className="btn-small d-inline-block"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        handleViewInvoice(order.id);
+                                      }}
+                                    >
+                                      Invoice
+                                    </a>
+                                  </td>
+                                </tr>
+                                {expandedOrder === order.id && (
+                                  <tr>
+                                    <td colSpan={5} style={{ background: '#f9f9f9', padding: 16 }}>
+                                      <strong>Order Lines:</strong>
+                                      {order.lines && order.lines.length > 0 ? (
+                                        <table className="table" style={{ marginTop: 8, marginBottom: 0 }}>
+                                          <thead>
+                                            <tr>
+                                              <th>Product</th>
+                                              <th>Qty</th>
+                                              <th>Unit Price</th>
+                                              <th>Line Total</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {order.lines.map((line) => (
+                                              <tr key={line.id}>
+                                                <td>{line.productName || line.product?.name || 'N/A'}</td>
+                                                <td>{line.qty}</td>
+                                                <td>{formatCurrency(line.unitPrice)}</td>
+                                                <td>{formatCurrency(line.lineTotal)}</td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      ) : (
+                                        <p style={{ marginTop: 8 }}>No line items.</p>
+                                      )}
+                                      <div style={{ marginTop: 8 }}>
+                                        <span style={{ marginRight: 16 }}><strong>Subtotal:</strong> {formatCurrency(order.subtotal)}</span>
+                                        <span style={{ marginRight: 16 }}><strong>Tax:</strong> {formatCurrency(order.taxTotal)}</span>
+                                        <span style={{ marginRight: 16 }}><strong>Shipping:</strong> {formatCurrency(order.shippingTotal)}</span>
+                                        {Number(order.discountTotal) > 0 && (
+                                          <span style={{ marginRight: 16 }}><strong>Discount:</strong> -{formatCurrency(order.discountTotal)}</span>
+                                        )}
+                                        <span><strong>Grand Total:</strong> {formatCurrency(order.grandTotal)}</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {ordersTotalPages > 1 && (
+                        <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'center' }}>
+                          <button
+                            className="rts-btn btn-primary"
+                            disabled={ordersPage <= 1}
+                            onClick={() => setOrdersPage(ordersPage - 1)}
+                            style={{ padding: '6px 16px', fontSize: 14 }}
+                          >
+                            Prev
+                          </button>
+                          <span style={{ lineHeight: '36px' }}>Page {ordersPage} of {ordersTotalPages}</span>
+                          <button
+                            className="rts-btn btn-primary"
+                            disabled={ordersPage >= ordersTotalPages}
+                            onClick={() => setOrdersPage(ordersPage + 1)}
+                            style={{ padding: '6px 16px', fontSize: 14 }}
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
 
@@ -111,7 +472,7 @@ const AccountTabs = () => {
                   <h2 className="title">Orders tracking</h2>
                   <p>
                     To keep up with the status of your order, kindly input your OrderID
-                    in the designated box below and click the "Track" button.
+                    in the designated box below and click the &quot;Track&quot; button.
                   </p>
                   <form className="order-tracking">
                     <div className="single-input">
@@ -129,55 +490,399 @@ const AccountTabs = () => {
 
               {activeTab === 'address' && (
                 <div className="shipping-address-billing-address-account">
-                  <div className="half">
-                    <h2 className="title">Billing Address</h2>
-                    <p className="address">
-                      3522 Interstate <br />
-                      75 Business Spur, <br />
-                      Sault Ste. <br />
-                      Marie, MI 49783 <br />
-                      New York
-                    </p>
-                    <a href="#">Edit</a>
-                  </div>
-                  <div className="half">
-                    <h2 className="title">Shipping Address</h2>
-                    <p className="address">
-                      3522 Interstate <br />
-                      75 Business Spur, <br />
-                      Sault Ste. <br />
-                      Marie, MI 49783 <br />
-                      New York
-                    </p>
-                    <a href="#">Edit</a>
-                  </div>
+                  {profileLoading ? (
+                    <p>Loading...</p>
+                  ) : profile && profile.userAddresses && profile.userAddresses.length > 0 ? (
+                    profile.userAddresses.map((addr) => (
+                      <div className="half" key={addr.id} style={{ marginBottom: 24 }}>
+                        <h2 className="title">
+                          {addr.addressType
+                            ? addr.addressType.charAt(0).toUpperCase() + addr.addressType.slice(1) + ' Address'
+                            : 'Address'}
+                        </h2>
+                        <p className="address">
+                          {addr.addressLine1}
+                          <br />
+                          {addr.addressLine2 && (
+                            <>
+                              {addr.addressLine2}
+                              <br />
+                            </>
+                          )}
+                          {addr.city}
+                          {addr.stateProvince ? `, ${addr.stateProvince}` : ''}
+                          {addr.postalCode ? ` ${addr.postalCode}` : ''}
+                          <br />
+                          {addr.country || ''}
+                        </p>
+                        {addr.isDefault && (
+                          <span style={{ fontSize: 12, color: '#28a745', fontWeight: 600 }}>Default</span>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <p>No addresses saved.</p>
+                  )}
                 </div>
               )}
 
               {activeTab === 'account' && (
-                <form className="account-details-area">
+                <div className="account-details-area">
                   <h2 className="title">Account Details</h2>
-                  <div className="input-half-area">
-                    <div className="single-input">
-                      <input type="text" placeholder="First Name" />
+                  <form onSubmit={handleProfileSave}>
+                    <div className="input-half-area">
+                      <div className="single-input">
+                        <input
+                          type="text"
+                          placeholder="First Name"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                        />
+                      </div>
+                      <div className="single-input">
+                        <input
+                          type="text"
+                          placeholder="Last Name"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                        />
+                      </div>
                     </div>
-                    <div className="single-input">
-                      <input type="text" placeholder="Last Name" />
+                    <div className="single-input" style={{ marginBottom: 16 }}>
+                      <input
+                        type="tel"
+                        placeholder="Phone Number"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                      />
                     </div>
-                  </div>
-                  <input type="text" placeholder="Display Name" required />
-                  <input type="email" placeholder="Email Address *" required />
-                  <input type="password" placeholder="Current Password *" required />
-                  <input type="password" placeholder="New Password *" />
-                  <input type="password" placeholder="Confirm Password *" />
-                  <button className="rts-btn btn-primary">Save Change</button>
-                </form>
+                    <div className="single-input" style={{ marginBottom: 16 }}>
+                      <input
+                        type="email"
+                        placeholder="Email Address *"
+                        value={emailAddress}
+                        readOnly
+                        disabled
+                        style={{ opacity: 0.6, cursor: 'not-allowed' }}
+                      />
+                    </div>
+                    {profileMsg && <p style={{ color: '#28a745', marginBottom: 12 }}>{profileMsg}</p>}
+                    {profileErr && <p style={{ color: '#dc3545', marginBottom: 12 }}>{profileErr}</p>}
+                    <button className="rts-btn btn-primary" type="submit" disabled={profileSaving}>
+                      {profileSaving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </form>
+
+                  <hr style={{ margin: '32px 0' }} />
+
+                  <h2 className="title">Change Password</h2>
+                  <form onSubmit={handlePasswordChange}>
+                    <div className="single-input" style={{ marginBottom: 16 }}>
+                      <input
+                        type="password"
+                        placeholder="Current Password *"
+                        value={curPassword}
+                        onChange={(e) => setCurPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="single-input" style={{ marginBottom: 16 }}>
+                      <input
+                        type="password"
+                        placeholder="New Password *"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="single-input" style={{ marginBottom: 16 }}>
+                      <input
+                        type="password"
+                        placeholder="Confirm New Password *"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    {pwMsg && <p style={{ color: '#28a745', marginBottom: 12 }}>{pwMsg}</p>}
+                    {pwErr && <p style={{ color: '#dc3545', marginBottom: 12 }}>{pwErr}</p>}
+                    <button className="rts-btn btn-primary" type="submit" disabled={pwSaving}>
+                      {pwSaving ? 'Changing...' : 'Change Password'}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {activeTab === 'subscriptions' && (
+                <div className="subscriptions-area">
+                  <h2 className="title">Subscriptions</h2>
+                  {prefLoading ? (
+                    <p>Loading preferences...</p>
+                  ) : prefError ? (
+                    <p style={{ color: '#dc3545' }}>{prefError}</p>
+                  ) : contactPref ? (
+                    <div style={{ maxWidth: 400 }}>
+                      {prefMsg && <p style={{ color: '#28a745', marginBottom: 16 }}>{prefMsg}</p>}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid #eee' }}>
+                        <div>
+                          <strong>Email Subscriptions</strong>
+                          <p style={{ fontSize: 13, color: '#777', margin: 0 }}>Receive updates via email</p>
+                        </div>
+                        <label style={{ position: 'relative', display: 'inline-block', width: 48, height: 26, cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={contactPref.optInEmail}
+                            onChange={(e) => handleTogglePref('optInEmail', e.target.checked)}
+                            style={{ opacity: 0, width: 0, height: 0 }}
+                          />
+                          <span style={{
+                            position: 'absolute', inset: 0, borderRadius: 26,
+                            background: contactPref.optInEmail ? '#28a745' : '#ccc',
+                            transition: 'background 0.2s',
+                          }}>
+                            <span style={{
+                              position: 'absolute', top: 3, left: contactPref.optInEmail ? 25 : 3,
+                              width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                              transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                            }} />
+                          </span>
+                        </label>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderBottom: '1px solid #eee' }}>
+                        <div>
+                          <strong>SMS Subscriptions</strong>
+                          <p style={{ fontSize: 13, color: '#777', margin: 0 }}>Receive updates via SMS</p>
+                        </div>
+                        <label style={{ position: 'relative', display: 'inline-block', width: 48, height: 26, cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={contactPref.optInSms}
+                            onChange={(e) => handleTogglePref('optInSms', e.target.checked)}
+                            style={{ opacity: 0, width: 0, height: 0 }}
+                          />
+                          <span style={{
+                            position: 'absolute', inset: 0, borderRadius: 26,
+                            background: contactPref.optInSms ? '#28a745' : '#ccc',
+                            transition: 'background 0.2s',
+                          }}>
+                            <span style={{
+                              position: 'absolute', top: 3, left: contactPref.optInSms ? 25 : 3,
+                              width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                              transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                            }} />
+                          </span>
+                        </label>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0' }}>
+                        <div>
+                          <strong>News Subscriptions</strong>
+                          <p style={{ fontSize: 13, color: '#777', margin: 0 }}>Receive news and promotions</p>
+                        </div>
+                        <label style={{ position: 'relative', display: 'inline-block', width: 48, height: 26, cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={contactPref.optInEmail}
+                            onChange={(e) => handleTogglePref('optInEmail', e.target.checked)}
+                            style={{ opacity: 0, width: 0, height: 0 }}
+                          />
+                          <span style={{
+                            position: 'absolute', inset: 0, borderRadius: 26,
+                            background: contactPref.optInEmail ? '#28a745' : '#ccc',
+                            transition: 'background 0.2s',
+                          }}>
+                            <span style={{
+                              position: 'absolute', top: 3, left: contactPref.optInEmail ? 25 : 3,
+                              width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                              transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                            }} />
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  ) : (
+                    <p>Unable to load preferences.</p>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'reviews' && (
+                <div className="reviews-area">
+                  <h2 className="title">My Reviews</h2>
+                  {reviewsLoading ? (
+                    <p>Loading reviews...</p>
+                  ) : reviewsError ? (
+                    <p style={{ color: '#dc3545' }}>{reviewsError}</p>
+                  ) : reviews.length === 0 ? (
+                    <p>No reviews yet.</p>
+                  ) : (
+                    <>
+                      {reviews.map((review) => (
+                        <div
+                          key={review.id}
+                          style={{
+                            border: '1px solid #eee',
+                            borderRadius: 8,
+                            padding: 20,
+                            marginBottom: 16,
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <h4 style={{ margin: 0, fontSize: 16 }}>{review.product?.name || 'Product'}</h4>
+                            <span style={{
+                              fontSize: 12,
+                              padding: '2px 8px',
+                              borderRadius: 4,
+                              background: review.isApproved ? '#d4edda' : '#fff3cd',
+                              color: review.isApproved ? '#155724' : '#856404',
+                            }}>
+                              {review.isApproved ? 'Approved' : 'Pending'}
+                            </span>
+                          </div>
+                          <StarRating value={review.ratingValue} />
+                          {review.comment && <p style={{ marginTop: 8, color: '#555' }}>{review.comment}</p>}
+                          <p style={{ fontSize: 12, color: '#999', marginTop: 8 }}>{formatDate(review.createdAt)}</p>
+                        </div>
+                      ))}
+                      {reviewsTotalPages > 1 && (
+                        <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'center' }}>
+                          <button
+                            className="rts-btn btn-primary"
+                            disabled={reviewsPage <= 1}
+                            onClick={() => setReviewsPage(reviewsPage - 1)}
+                            style={{ padding: '6px 16px', fontSize: 14 }}
+                          >
+                            Prev
+                          </button>
+                          <span style={{ lineHeight: '36px' }}>Page {reviewsPage} of {reviewsTotalPages}</span>
+                          <button
+                            className="rts-btn btn-primary"
+                            disabled={reviewsPage >= reviewsTotalPages}
+                            onClick={() => setReviewsPage(reviewsPage + 1)}
+                            style={{ padding: '6px 16px', fontSize: 14 }}
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               )}
 
             </div>
           </div>
         </div>
       </div>
+
+      {showInvoice && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+            zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={() => { setShowInvoice(false); setInvoice(null); }}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: 12, padding: 32,
+              maxWidth: 700, width: '90%', maxHeight: '80vh', overflowY: 'auto',
+              position: 'relative',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => { setShowInvoice(false); setInvoice(null); }}
+              style={{
+                position: 'absolute', top: 12, right: 16,
+                background: 'none', border: 'none', fontSize: 24, cursor: 'pointer',
+              }}
+            >
+              &times;
+            </button>
+            {invoiceLoading ? (
+              <p>Loading invoice...</p>
+            ) : invoice ? (
+              <div id="invoice-print-area">
+                <h2 style={{ marginBottom: 4 }}>Invoice</h2>
+                <p style={{ color: '#777', marginBottom: 16 }}>
+                  #{invoice.invoiceNumber} &mdash; {formatDate(invoice.orderDate)}
+                </p>
+
+                {invoice.addresses && (
+                  <div style={{ display: 'flex', gap: 32, marginBottom: 20 }}>
+                    {invoice.addresses.billing && (
+                      <div>
+                        <strong>Billing</strong>
+                        <p style={{ fontSize: 13, margin: '4px 0 0' }}>
+                          {invoice.addresses.billing.addressLine1}<br />
+                          {invoice.addresses.billing.city}
+                          {invoice.addresses.billing.stateProvince ? `, ${invoice.addresses.billing.stateProvince}` : ''}
+                          {invoice.addresses.billing.postalCode ? ` ${invoice.addresses.billing.postalCode}` : ''}
+                        </p>
+                      </div>
+                    )}
+                    {invoice.addresses.shipping && (
+                      <div>
+                        <strong>Shipping</strong>
+                        <p style={{ fontSize: 13, margin: '4px 0 0' }}>
+                          {invoice.addresses.shipping.addressLine1}<br />
+                          {invoice.addresses.shipping.city}
+                          {invoice.addresses.shipping.stateProvince ? `, ${invoice.addresses.shipping.stateProvince}` : ''}
+                          {invoice.addresses.shipping.postalCode ? ` ${invoice.addresses.shipping.postalCode}` : ''}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <table className="table" style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Qty</th>
+                      <th>Unit Price</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoice.lines.map((line) => (
+                      <tr key={line.id}>
+                        <td>{line.productName || line.product?.name || 'N/A'}</td>
+                        <td>{line.qty}</td>
+                        <td>{formatCurrency(line.unitPrice)}</td>
+                        <td>{formatCurrency(line.lineTotal)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div style={{ textAlign: 'right', marginTop: 16, lineHeight: 2 }}>
+                  <div>Subtotal: {formatCurrency(invoice.totals.subtotal)}</div>
+                  {Number(invoice.totals.discountTotal) > 0 && (
+                    <div>Discount: -{formatCurrency(invoice.totals.discountTotal)}</div>
+                  )}
+                  <div>Tax: {formatCurrency(invoice.totals.taxTotal)}</div>
+                  <div>Shipping: {formatCurrency(invoice.totals.shippingTotal)}</div>
+                  <div style={{ fontWeight: 700, fontSize: 18, borderTop: '2px solid #333', paddingTop: 8, marginTop: 4 }}>
+                    Grand Total: {formatCurrency(invoice.totals.grandTotal)}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'center', marginTop: 24 }}>
+                  <button
+                    className="rts-btn btn-primary"
+                    onClick={() => window.print()}
+                  >
+                    Print Invoice
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p>Unable to load invoice.</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

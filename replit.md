@@ -109,6 +109,7 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
 - **Blog detail**: `[slug]/page.tsx` — fetches single post via `/content/:slug`, renders featured image, excerpt, full body HTML, author info, tags, social share; sidebar has categories, latest posts, tag cloud; `ContentPost` type includes `authorUser` field
 - **Product routing**: Uses product `id` as the slug (e.g., `/shop/[id]`)
 - **Auth system**: `src/lib/auth.ts` (API calls), `src/context/AuthContext.tsx` (React context with `useAuth()` hook), tokens stored in localStorage (`jpig_access_token`, `jpig_refresh_token`, `jpig_user_id`). Pages: `/login`, `/register`, `/forgot-password`, `/reset-password?token=xxx`
+- **Account page**: `src/app/(inner)/account/Accordion.tsx` — auth-gated, live API data via `src/lib/account.ts`. Tabs: Dashboard (greeting, member since, order/review counts), Orders (paginated table, expandable line items, invoice modal with print), Track Order, My Address, Account Details (profile edit + password change), Subscriptions (email/SMS toggles via contact preferences API), Reviews (paginated review cards with star ratings). Types: `UserProfile`, `UserAddress`, `ContactPreference`, `ShopOrder`, `OrderInvoice`, `UserReview` in `types/api.ts`
 - **Image handling**: Components detect CDN URLs (starting with `http`) vs local static paths
 
 ## Dev Notes
