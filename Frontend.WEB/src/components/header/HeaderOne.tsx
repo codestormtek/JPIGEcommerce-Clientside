@@ -8,6 +8,7 @@ import WishList from "./WishList";
 import Sidebar from "./Sidebar";
 import BackToTop from "@/components/common/BackToTop";
 import { useCompare } from "@/components/header/CompareContext";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiGet, buildQS } from "@/lib/api";
@@ -15,8 +16,21 @@ import { PaginatedResponse, Product } from "@/types/api";
 
 function HeaderOne() {
   const { compareItems } = useCompare();
+  const { user, isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState<
@@ -193,7 +207,7 @@ function HeaderOne() {
                                     <div className="nav-sm-left">
                                         <ul className="nav-h_top">
                                             <li><Link href="/about">About Us</Link></li>
-                                            <li><Link href="/account">My Account</Link></li>
+                                            <li><Link href="/account">{isAuthenticated && user ? `Hi, ${user.firstName}` : 'My Account'}</Link></li>
                                             <li><Link href="/wishlist">Wishlist</Link></li>
                                         </ul>
                                         <p className="para">We deliver to your everyday from 7:00 to 22:00</p>
@@ -312,10 +326,85 @@ function HeaderOne() {
                                         </div>
                                     </div>
                                     <div className="accont-wishlist-cart-area-header">
-                                        <Link href="/account" className="btn-border-only account">
+                                        {isAuthenticated && user ? (
+                                          <div ref={userMenuRef} style={{ position: 'relative' }}>
+                                            <button
+                                              onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                              className="btn-border-only account"
+                                              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                                            >
+                                              {user.avatarUrl ? (
+                                                <img
+                                                  src={user.avatarUrl}
+                                                  alt={user.firstName}
+                                                  style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+                                                />
+                                              ) : (
+                                                <i className="fa-light fa-user" />
+                                              )}
+                                              <span>{user.firstName}</span>
+                                              <i className="fa-solid fa-chevron-down" style={{ fontSize: 10 }} />
+                                            </button>
+                                            {userMenuOpen && (
+                                              <div style={{
+                                                position: 'absolute',
+                                                top: '100%',
+                                                right: 0,
+                                                background: '#fff',
+                                                border: '1px solid #e9ecef',
+                                                borderRadius: 8,
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                                minWidth: 180,
+                                                zIndex: 999,
+                                                padding: '8px 0',
+                                                marginTop: 8,
+                                              }}>
+                                                <div style={{ padding: '10px 16px', borderBottom: '1px solid #f0f0f0' }}>
+                                                  <div style={{ fontWeight: 600, fontSize: 14 }}>{user.firstName} {user.lastName}</div>
+                                                  <div style={{ fontSize: 12, color: '#74787C', marginTop: 2 }}>{user.emailAddress}</div>
+                                                </div>
+                                                <Link
+                                                  href="/account"
+                                                  onClick={() => setUserMenuOpen(false)}
+                                                  style={{ display: 'block', padding: '10px 16px', fontSize: 14, color: '#1F1F25', textDecoration: 'none' }}
+                                                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+                                                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                                >
+                                                  <i className="fa-regular fa-user" style={{ marginRight: 8, width: 16 }} />
+                                                  My Account
+                                                </Link>
+                                                <Link
+                                                  href="/account?tab=order"
+                                                  onClick={() => setUserMenuOpen(false)}
+                                                  style={{ display: 'block', padding: '10px 16px', fontSize: 14, color: '#1F1F25', textDecoration: 'none' }}
+                                                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+                                                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                                >
+                                                  <i className="fa-regular fa-bag-shopping" style={{ marginRight: 8, width: 16 }} />
+                                                  My Orders
+                                                </Link>
+                                                <div style={{ borderTop: '1px solid #f0f0f0', margin: '4px 0' }} />
+                                                <button
+                                                  onClick={async () => { setUserMenuOpen(false); await logout(); router.push('/'); }}
+                                                  style={{
+                                                    display: 'block', width: '100%', padding: '10px 16px', fontSize: 14,
+                                                    color: '#dc3545', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+                                                  }}
+                                                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+                                                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                                >
+                                                  <i className="fa-regular fa-right-from-bracket" style={{ marginRight: 8, width: 16 }} />
+                                                  Log Out
+                                                </button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <Link href="/login" className="btn-border-only account">
                                             <i className="fa-light fa-user" />
-                                            <span>Account</span>
-                                        </Link>
+                                            <span>Sign In</span>
+                                          </Link>
+                                        )}
                                         <Link href="/shop-compare" className="btn-border-only account compare-number">
                                             <i className="fa-regular fa-code-compare" />
                                             <span className="number">{compareItems.length}</span>

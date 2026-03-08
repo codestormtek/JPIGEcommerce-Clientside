@@ -8,6 +8,7 @@ interface User {
   emailAddress: string;
   firstName: string;
   lastName: string;
+  avatarUrl?: string | null;
   [key: string]: unknown;
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -50,10 +50,16 @@ function StarRating({ value }: { value: number }) {
   return <span>{stars}</span>;
 }
 
+const VALID_TABS = ['dashboard', 'order', 'track', 'address', 'account', 'subscriptions', 'reviews'];
+
 const AccountTabs = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    tabParam && VALID_TABS.includes(tabParam) ? tabParam : 'dashboard'
+  );
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
