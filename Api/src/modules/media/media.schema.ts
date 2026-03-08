@@ -3,7 +3,7 @@ import { z } from 'zod';
 // ─── List media ───────────────────────────────────────────────────────────────
 
 // Folder keys map to upload sub-directories:  products | avatars | carousel | blog | news | topics | categories | media
-export const MEDIA_FOLDERS = ['products', 'avatars', 'carousel', 'blog', 'news', 'topics', 'pages', 'categories', 'media'] as const;
+export const MEDIA_FOLDERS = ['products', 'avatars', 'carousel', 'blog', 'news', 'topics', 'pages', 'categories', 'galleries', 'media'] as const;
 export type MediaFolder = (typeof MEDIA_FOLDERS)[number];
 
 export const listMediaSchema = z.object({
