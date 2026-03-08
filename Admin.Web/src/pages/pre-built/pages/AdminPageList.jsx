@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import Dropzone from "react-dropzone";
 import Content from "@/layout/content/Content";
 import Head from "@/layout/head/Head";
-import { Modal, ModalBody, Spinner } from "reactstrap";
+import { Modal, ModalBody, Spinner, Nav, NavItem, NavLink, TabContent, TabPane } from "reactstrap";
 import {
   Block, BlockBetween, BlockHead, BlockHeadContent, BlockTitle,
   Icon, Row, Col, PaginationComponent,
@@ -77,12 +77,14 @@ const AdminPageList = () => {
   const [addForm, setAddForm] = useState(BLANK_FORM);
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState(null);
+  const [addTab, setAddTab] = useState("info");
 
   const [editModal, setEditModal] = useState(false);
   const [editPage, setEditPage] = useState(null);
   const [editForm, setEditForm] = useState(BLANK_FORM);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState(null);
+  const [editTab, setEditTab] = useState("info");
 
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -146,6 +148,7 @@ const AdminPageList = () => {
   const openAdd = () => {
     setAddForm({ ...BLANK_FORM, headerMediaAssetId: null });
     setAddError(null);
+    setAddTab("info");
     resetImageState();
     setAddModal(true);
   };
@@ -173,6 +176,7 @@ const AdminPageList = () => {
     setImagePreview(null);
     setImageError(null);
     setEditError(null);
+    setEditTab("info");
     setEditModal(true);
   };
 
@@ -287,11 +291,33 @@ const AdminPageList = () => {
     branding: false,
   };
 
-  const renderForm = (form, setForm, onTitleChange, error, isEdit = false) => (
-    <div className="row g-4">
-      <div className="col-12">
-        <h6 className="overline-title mb-2">Info</h6>
-        <div className="card card-bordered p-3">
+  const renderForm = (form, setForm, onTitleChange, error, isEdit = false, activeTab, setActiveTab) => (
+    <div>
+      <Nav tabs className="mb-3">
+        <NavItem>
+          <NavLink className={activeTab === "info" ? "active" : ""} href="#" onClick={(e) => { e.preventDefault(); setActiveTab("info"); }}>
+            <Icon name="file-text" /> <span>Info</span>
+          </NavLink>
+        </NavItem>
+        <NavItem>
+          <NavLink className={activeTab === "image" ? "active" : ""} href="#" onClick={(e) => { e.preventDefault(); setActiveTab("image"); }}>
+            <Icon name="img" /> <span>Header Image</span>
+          </NavLink>
+        </NavItem>
+        <NavItem>
+          <NavLink className={activeTab === "seo" ? "active" : ""} href="#" onClick={(e) => { e.preventDefault(); setActiveTab("seo"); }}>
+            <Icon name="globe" /> <span>SEO</span>
+          </NavLink>
+        </NavItem>
+        <NavItem>
+          <NavLink className={activeTab === "display" ? "active" : ""} href="#" onClick={(e) => { e.preventDefault(); setActiveTab("display"); }}>
+            <Icon name="eye" /> <span>Display</span>
+          </NavLink>
+        </NavItem>
+      </Nav>
+
+      <TabContent activeTab={activeTab}>
+        <TabPane tabId="info">
           <div className="row g-3">
             <div className="col-12">
               <label className="form-label">Title</label>
@@ -327,12 +353,9 @@ const AdminPageList = () => {
               />
             </div>
           </div>
-        </div>
-      </div>
+        </TabPane>
 
-      <div className="col-12">
-        <h6 className="overline-title mb-2">Page Header Image</h6>
-        <div className="card card-bordered p-3">
+        <TabPane tabId="image">
           {(imagePreview || existingImageUrl) && (
             <div className="mb-3">
               <img
@@ -397,12 +420,9 @@ const AdminPageList = () => {
             <div className="text-center mt-2"><Spinner size="sm" color="primary" /> Uploading…</div>
           )}
           {imageError && <div className="alert alert-danger mt-2 mb-0">{imageError}</div>}
-        </div>
-      </div>
+        </TabPane>
 
-      <div className="col-12">
-        <h6 className="overline-title mb-2">SEO</h6>
-        <div className="card card-bordered p-3">
+        <TabPane tabId="seo">
           <div className="row g-3">
             <div className="col-md-6">
               <label className="form-label">Meta Title</label>
@@ -421,12 +441,9 @@ const AdminPageList = () => {
               />
             </div>
           </div>
-        </div>
-      </div>
+        </TabPane>
 
-      <div className="col-12">
-        <h6 className="overline-title mb-2">Display</h6>
-        <div className="card card-bordered p-3">
+        <TabPane tabId="display">
           <div className="row g-3">
             {[
               ["isPublished", "Published"],
@@ -453,13 +470,11 @@ const AdminPageList = () => {
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </TabPane>
+      </TabContent>
 
       {error && (
-        <div className="col-12">
-          <div className="alert alert-danger">{error}</div>
-        </div>
+        <div className="alert alert-danger mt-3">{error}</div>
       )}
     </div>
   );
@@ -578,7 +593,7 @@ const AdminPageList = () => {
             </a>
             <div className="p-2">
               <h5 className="title mb-4">Add New Page</h5>
-              {renderForm(addForm, setAddForm, handleAddTitleChange, addError, false)}
+              {renderForm(addForm, setAddForm, handleAddTitleChange, addError, false, addTab, setAddTab)}
               <div className="mt-4">
                 <Button color="primary" size="lg" onClick={submitAdd} disabled={addSaving || !addForm.title || !addForm.slug}>
                   {addSaving ? <Spinner size="sm" /> : <Icon name="plus" />}
@@ -597,7 +612,7 @@ const AdminPageList = () => {
             </a>
             <div className="p-2">
               <h5 className="title mb-4">Edit Page — {editPage?.title}</h5>
-              {renderForm(editForm, setEditForm, handleEditTitleChange, editError, true)}
+              {renderForm(editForm, setEditForm, handleEditTitleChange, editError, true, editTab, setEditTab)}
               <div className="mt-4 d-flex justify-content-between">
                 <Button color="primary" size="lg" onClick={submitEdit} disabled={editSaving || !editForm.title || !editForm.slug}>
                   {editSaving ? <Spinner size="sm" /> : <Icon name="check" />}
