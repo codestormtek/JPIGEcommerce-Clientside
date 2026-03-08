@@ -178,19 +178,19 @@ const HomePage = () => {
             {STAT_CARDS.map((card) => (
               <Col sm="6" xl="3" key={card.key}>
                 <Card className="card-bordered" style={{ overflow: "hidden" }}>
-                  <div className="card-inner text-center py-4">
+                  <div className="card-inner text-center py-2 px-2">
                     <div
-                      className="rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
-                      style={{ width: 80, height: 80, backgroundColor: card.bg }}
+                      className="rounded-circle d-inline-flex align-items-center justify-content-center mb-1"
+                      style={{ width: 48, height: 48, backgroundColor: card.bg }}
                     >
-                      <em className={`icon ni ${card.icon}`} style={{ fontSize: 36, color: "#fff" }}></em>
+                      <em className={`icon ni ${card.icon}`} style={{ fontSize: 20, color: "#fff" }}></em>
                     </div>
-                    <h2 className="mb-1" style={{ fontSize: 28, fontWeight: 700 }}>
+                    <h4 className="mb-0" style={{ fontWeight: 700 }}>
                       {commonStats?.[card.key] ?? 0}
-                    </h2>
-                    <p className="text-soft mb-1">{card.label}</p>
+                    </h4>
+                    <p className="text-soft small mb-1">{card.label}</p>
                     {card.link && (
-                      <Link to={card.link} className="link link-primary small">
+                      <Link to={card.link} className="link link-primary" style={{ fontSize: 12 }}>
                         More info <em className="icon ni ni-arrow-right"></em>
                       </Link>
                     )}
