@@ -90,8 +90,9 @@ function ComponentName() {
                             <div className="logo-search-category-wrapper after-md-device-header">
                                 <Link href="/" className="logo-area">
                                     <img
-                                        src="/assets/images/logo/logo-01.svg"
-                                        alt="logo-main"
+                                        src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
+                                        alt="The Jiggling Pig"
+                                        style={{ maxHeight: '50px' }}
                                         className="logo"
                                     />
                                 </Link>
