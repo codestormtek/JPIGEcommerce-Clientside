@@ -71,6 +71,13 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export interface ContentPostAuthor {
+  id: string;
+  firstName: string;
+  lastName: string;
+  emailAddress: string;
+}
+
 export interface ContentPost {
   id: string;
   title: string;
@@ -83,6 +90,7 @@ export interface ContentPost {
   createdAt: string;
   featuredImage: MediaAsset | null;
   featuredMediaAsset: MediaAsset | null;
+  authorUser?: ContentPostAuthor | null;
   categories: { id?: string; name?: string; category?: { id: string; name: string; slug?: string } }[];
   tags: { id?: string; name?: string; tag?: { id: string; name: string; slug?: string } }[];
 }

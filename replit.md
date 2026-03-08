@@ -106,6 +106,7 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
 - **Environment**: `NEXT_PUBLIC_API_URL` env var (defaults to `http://localhost:8000/api/v1`)
 - **Pages wired to API**: Homepage (featured products, bestsellers, blog, carousel), Shop listing (categories, brands, filtering, pagination), Product detail (images, variants, attributes, add-to-cart), Header (dynamic categories, live search), Blog grid (`/blog`)
 - **Carousel**: `BannerOne.tsx` — fetches from `/carousel/public`, renders slides with CDN images (1300×480), gradient text overlay, nav arrows; responsive (480px desktop, 320px tablet, 260px mobile); styles in `globals.css` with `jpig-carousel-*` classes
+- **Blog detail**: `[slug]/page.tsx` — fetches single post via `/content/:slug`, renders featured image, excerpt, full body HTML, author info, tags, social share; sidebar has categories, latest posts, tag cloud; `ContentPost` type includes `authorUser` field
 - **Product routing**: Uses product `id` as the slug (e.g., `/shop/[id]`)
 - **Image handling**: Components detect CDN URLs (starting with `http`) vs local static paths
 
