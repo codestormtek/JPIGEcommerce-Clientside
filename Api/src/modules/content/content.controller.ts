@@ -5,6 +5,7 @@ import {
   ListPostsInput, CreatePostInput, UpdatePostInput,
   CreateCategoryInput, UpdateCategoryInput,
   CreateTagInput, UpdateTagInput,
+  ListCommentsInput, CreateCommentInput,
 } from './content.schema';
 import * as service from './content.service';
 
@@ -81,6 +82,26 @@ export async function updateTag(req: Request, res: Response): Promise<void> {
 
 export async function deleteTag(req: Request, res: Response): Promise<void> {
   await service.deleteTag(req.params['id'] as string);
+  sendNoContent(res);
+}
+
+// ─── Comments ─────────────────────────────────────────────────────────────────
+
+export async function listComments(req: Request, res: Response): Promise<void> {
+  const postId = req.params['postId'] as string;
+  const result = await service.listComments(postId, req.query as unknown as ListCommentsInput);
+  sendPaginated(res, result);
+}
+
+export async function createComment(req: AuthRequest, res: Response): Promise<void> {
+  const postId = req.params['postId'] as string;
+  const comment = await service.createComment(postId, req.user!.sub, req.body as CreateCommentInput);
+  sendCreated(res, comment, 'Comment posted');
+}
+
+export async function deleteComment(req: AuthRequest, res: Response): Promise<void> {
+  const postId = req.params['postId'] as string;
+  await service.deleteComment(postId, req.params['commentId'] as string, req.user!.sub, req.user!.role);
   sendNoContent(res);
 }
 

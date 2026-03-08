@@ -10,6 +10,8 @@ import {
   updateCategorySchema,
   createTagSchema,
   updateTagSchema,
+  listCommentsSchema,
+  createCommentSchema,
 } from './content.schema';
 import * as ctrl from './content.controller';
 
@@ -34,6 +36,17 @@ contentRouter.post('/tags', authenticate, authorize('admin'), validate(createTag
 contentRouter.patch('/tags/:id', authenticate, authorize('admin'), validate(updateTagSchema), asyncHandler(ctrl.updateTag));
 // DELETE /api/v1/content/tags/:id
 contentRouter.delete('/tags/:id', authenticate, authorize('admin'), asyncHandler(ctrl.deleteTag));
+
+// ─── Comments (must be before /:slug) ─────────────────────────────────────────
+
+// GET    /api/v1/content/comments/:postId     — list approved comments (public)
+contentRouter.get('/comments/:postId', validate(listCommentsSchema, 'query'), asyncHandler(ctrl.listComments));
+
+// POST   /api/v1/content/comments/:postId     — add comment (authenticated)
+contentRouter.post('/comments/:postId', authenticate, validate(createCommentSchema), asyncHandler(ctrl.createComment));
+
+// DELETE /api/v1/content/comments/:postId/:commentId — delete comment (owner or admin)
+contentRouter.delete('/comments/:postId/:commentId', authenticate, asyncHandler(ctrl.deleteComment));
 
 // ─── Posts ────────────────────────────────────────────────────────────────────
 

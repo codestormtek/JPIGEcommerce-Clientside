@@ -1,5 +1,5 @@
 import prisma from '../../lib/prisma';
-import { ListPostsInput, CreatePostInput, UpdatePostInput, CreateCategoryInput, UpdateCategoryInput, CreateTagInput, UpdateTagInput } from './content.schema';
+import { ListPostsInput, CreatePostInput, UpdatePostInput, CreateCategoryInput, UpdateCategoryInput, CreateTagInput, UpdateTagInput, ListCommentsInput, CreateCommentInput } from './content.schema';
 
 type TxClient = Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -119,5 +119,48 @@ export async function updateTag(id: string, input: UpdateTagInput) {
 
 export async function deleteTag(id: string) {
   return prisma.contentTag.delete({ where: { id } });
+}
+
+// ─── Comments ─────────────────────────────────────────────────────────────────
+
+const commentInclude = {
+  user: { select: { id: true, firstName: true, lastName: true } },
+  replies: {
+    where: { isApproved: true },
+    include: { user: { select: { id: true, firstName: true, lastName: true } } },
+    orderBy: { createdAt: 'asc' as const },
+  },
+} as const;
+
+export async function findCommentsByPostId(postId: string, input: ListCommentsInput) {
+  const { page, limit } = input;
+  const skip = (page - 1) * limit;
+  const where = { postId, isApproved: true, parentId: null };
+
+  const [data, total] = await Promise.all([
+    prisma.contentComment.findMany({ where, include: commentInclude, orderBy: { createdAt: 'desc' }, skip, take: limit }),
+    prisma.contentComment.count({ where }),
+  ]);
+  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
+
+export async function countCommentsByPostId(postId: string) {
+  return prisma.contentComment.count({ where: { postId, isApproved: true } });
+}
+
+export async function createComment(postId: string, userId: string, input: CreateCommentInput) {
+  return prisma.contentComment.create({
+    data: { postId, userId, body: input.body, parentId: input.parentId || null, isApproved: true },
+    include: commentInclude,
+  });
+}
+
+export async function findCommentById(id: string) {
+  return prisma.contentComment.findUnique({ where: { id }, include: commentInclude });
+}
+
+export async function deleteComment(id: string) {
+  await prisma.contentComment.deleteMany({ where: { parentId: id } });
+  return prisma.contentComment.delete({ where: { id } });
 }
 

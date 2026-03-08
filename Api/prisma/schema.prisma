@@ -36,6 +36,7 @@ model SiteUser {
   promotionUsages       PromotionUsage[]
   auditLogs             AuditLog[]
   contentPosts          ContentPost[]
+  contentComments       ContentComment[]
   subscriberLinks       Subscriber[]
   orderStatusChanges    OrderStatusHistory[]
   actorEvents           Event[]
@@ -964,8 +965,25 @@ model ContentPost {
   categories ContentPostCategory[]
   tags       ContentPostTag[]
   media      ContentPostMedia[]
+  comments   ContentComment[]
 
   @@map("content_posts")
+}
+
+model ContentComment {
+  id        String    @id @default(uuid())
+  postId    String
+  post      ContentPost @relation(fields: [postId], references: [id])
+  userId    String
+  user      SiteUser    @relation(fields: [userId], references: [id])
+  parentId  String?
+  parent    ContentComment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   ContentComment[] @relation("CommentReplies")
+  body      String
+  isApproved Boolean  @default(false)
+  createdAt DateTime  @default(now())
+
+  @@map("content_comments")
 }
 
 model ContentCategory {

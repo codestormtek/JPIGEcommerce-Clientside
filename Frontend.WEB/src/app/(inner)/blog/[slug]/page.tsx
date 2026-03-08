@@ -8,6 +8,7 @@ import { useParams } from 'next/navigation';
 import { apiGet } from '@/lib/api';
 import { ContentPost, PaginatedResponse } from '@/types/api';
 import { getBlogImageUrl } from '@/lib/blogImages';
+import BlogComments from '@/components/blog/BlogComments';
 
 interface SinglePostResponse {
     success: boolean;
@@ -226,6 +227,8 @@ export default function BlogDetailPage() {
                                             </div>
                                         </div>
                                     )}
+
+                                    <BlogComments postId={post.id} />
                                 </div>
                             </div>
                         </div>

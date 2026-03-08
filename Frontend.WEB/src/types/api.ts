@@ -222,6 +222,24 @@ export interface UserReview {
   product: { id: string; name: string };
 }
 
+export interface CommentUser {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+}
+
+export interface ContentComment {
+  id: string;
+  postId: string;
+  userId: string;
+  parentId: string | null;
+  body: string;
+  isApproved: boolean;
+  createdAt: string;
+  user: CommentUser;
+  replies: ContentComment[];
+}
+
 export function getProductImage(product: Product): string {
   const primary = product.media?.find((m) => m.isPrimary);
   const first = product.media?.[0];

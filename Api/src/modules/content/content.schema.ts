@@ -59,3 +59,19 @@ export type CreateTagInput = z.infer<typeof createTagSchema>;
 export const updateTagSchema = createTagSchema.partial();
 export type UpdateTagInput = z.infer<typeof updateTagSchema>;
 
+// ─── Comments ─────────────────────────────────────────────────────────────────
+
+export const listCommentsSchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(50),
+});
+
+export type ListCommentsInput = z.infer<typeof listCommentsSchema>;
+
+export const createCommentSchema = z.object({
+  body: z.string().min(1, 'Comment body is required').max(2000),
+  parentId: z.string().min(1).optional(),
+});
+
+export type CreateCommentInput = z.infer<typeof createCommentSchema>;
+
