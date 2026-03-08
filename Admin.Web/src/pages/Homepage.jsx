@@ -176,7 +176,7 @@ const HomePage = () => {
         <Block>
           <Row className="g-gs">
             {STAT_CARDS.map((card) => (
-              <Col sm="6" xl="3" key={card.key}>
+              <Col xs="6" md="3" key={card.key}>
                 <Card className="card-bordered" style={{ overflow: "hidden" }}>
                   <div className="card-inner text-center py-2 px-2">
                     <div
