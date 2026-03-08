@@ -116,3 +116,4 @@ R2_SECRET_ACCESS_KEY = "a3591c6828d362c12fa7ee8a0d8dd84209ed12abfffbf2dad62400cc
 RESEND_API_KEY = "re_F1VEmSx3_JyK5X8hv2z3U9qTJZrAWqAzg"
 RESEND_WEBHOOK_SECRET = "whsec_kTjTSfiqgoJWIRDXtFjm8mO3Xb/+Wo92"
 NEXT_PUBLIC_API_URL = "http://localhost:8000/api/v1"
+ADMIN_EMAIL = "jeromealfredharrison@gmail.com"
