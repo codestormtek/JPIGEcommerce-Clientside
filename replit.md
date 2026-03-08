@@ -71,6 +71,20 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - API: Full CRUD at `/api/v1/pages` (all admin-only) — list (paginated + search), get by ID, create, update (PATCH), soft-delete
   - Admin UI: `AdminPageList.jsx` with list table (boolean columns shown as check/cross icons), Add/Edit modals with TinyMCE rich text editor, delete confirmation
   - Route: `/site-pages` (avoids conflict with demo `/pages` routes)
+- **Dashboard (Homepage)** (`/`): Real-time store overview dashboard
+  - KPI cards: Orders Today, Revenue Today, Orders This Week, Revenue This Week, Low Stock Items, Refunds (7d), New Customers (30d)
+  - Sales Trend line chart (Chart.js): 30-day gross sales timeseries
+  - Open Orders doughnut chart: status-based breakdown
+  - Top Products table: top 10 by revenue with product name, SKU, qty sold, revenue
+  - Date range selector (Today / 7d / 30d) refreshes KPI cards
+  - Powered by: `GET /api/v1/admin/metrics/summary`, `/timeseries`, `/open-orders`, `/top-products`
+- **Metrics & KPIs** (`/metrics`): Detailed analytics page
+  - 8 summary cards (gross/net sales, orders, discounts, tax, shipping, refunds, new customers)
+  - Timeseries chart with metric key selector dropdown (8 available metrics)
+  - Top Products table with adjustable limit (5/10/25/50)
+  - Open Orders doughnut chart with status legend
+  - Date range selector (7d / 30d)
+  - File: `Admin.Web/src/pages/pre-built/metrics/AdminMetricsPage.jsx`
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
 
 ## Dev Notes

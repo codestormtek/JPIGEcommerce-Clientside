@@ -104,6 +104,7 @@ import AdminPageList from "@/pages/pre-built/pages/AdminPageList";
 import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
 import AdminPaymentMethodList from "@/pages/pre-built/payment-methods/AdminPaymentMethodList";
 import MediaManager from "@/pages/pre-built/media/MediaManager";
+import AdminMetricsPage from "@/pages/pre-built/metrics/AdminMetricsPage";
 import KycListRegular from "@/pages/pre-built/kyc-list-regular/KycListRegular";
 import KycDetailsRegular from "@/pages/pre-built/kyc-list-regular/kycDetailsRegular";
 import TransListBasic from "@/pages/pre-built/trans-list/TransListBasic";
@@ -220,6 +221,7 @@ const Pages = () => {
               <Route path="carousel" element={<AdminCarouselList />}></Route>
               <Route path="scheduled-tasks" element={<AdminScheduledTaskList />}></Route>
               <Route path="site-pages" element={<AdminPageList />}></Route>
+              <Route path="metrics" element={<AdminMetricsPage />}></Route>
 
               <Route path="kyc-list-regular" element={<KycListRegular />}></Route>
               <Route path="kyc-details-regular/:kycId" element={<KycDetailsRegular />}></Route>
