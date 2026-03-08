@@ -192,6 +192,16 @@ a {
   }
 }
 
+.submenu-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f1f25;
+  padding: 8px 20px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+
 .blog-body-content {
   margin-top: 20px;
   line-height: 1.8;
