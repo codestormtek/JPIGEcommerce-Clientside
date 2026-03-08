@@ -108,6 +108,7 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
 - **Carousel**: `BannerOne.tsx` — fetches from `/carousel/public`, renders slides with CDN images (1300×480), gradient text overlay, nav arrows; responsive (480px desktop, 320px tablet, 260px mobile); styles in `globals.css` with `jpig-carousel-*` classes
 - **Blog detail**: `[slug]/page.tsx` — fetches single post via `/content/:slug`, renders featured image, excerpt, full body HTML, author info, tags, social share; sidebar has categories, latest posts, tag cloud; `ContentPost` type includes `authorUser` field
 - **Product routing**: Uses product `id` as the slug (e.g., `/shop/[id]`)
+- **Auth system**: `src/lib/auth.ts` (API calls), `src/context/AuthContext.tsx` (React context with `useAuth()` hook), tokens stored in localStorage (`jpig_access_token`, `jpig_refresh_token`, `jpig_user_id`). Pages: `/login`, `/register`, `/forgot-password`, `/reset-password?token=xxx`
 - **Image handling**: Components detect CDN URLs (starting with `http`) vs local static paths
 
 ## Dev Notes

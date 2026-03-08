@@ -1,17 +1,39 @@
+"use client";
 
 import HeaderOne from "@/components/header/HeaderOne";
-import AboutBanner from "@/components/banner/AboutBanner";
-import CounterOne from "@/components/counterup/CounterOne";
-import AboutOne from "@/components/about/AboutOne";
-import Team from "@/components/about/Team";
-import ServiceOne from "@/components/service/ServiceOne";
-import TestimonilsOne from "@/components/testimonials/TestimonilsOne";
 import ShortService from "@/components/service/ShortService";
-
 import FooterOne from "@/components/footer/FooterOne";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, FormEvent } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
+    const router = useRouter();
+    const { login } = useAuth();
+    const [emailAddress, setEmailAddress] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    async function handleSubmit(e: FormEvent) {
+        e.preventDefault();
+        setError("");
+        setLoading(true);
+        try {
+            await login(emailAddress, password);
+            router.push("/");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("Login failed. Please try again.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return (
         <div className="demo-one">
             <HeaderOne />
@@ -22,11 +44,11 @@ export default function Home() {
       <div className="row">
         <div className="col-lg-12">
           <div className="navigator-breadcrumb-wrapper">
-            <a href="index.html">Home</a>
+            <Link href="/">Home</Link>
             <i className="fa-regular fa-chevron-right" />
-            <a className="current" href="register.html">
+            <Link className="current" href="/login">
               Log In
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -37,7 +59,6 @@ export default function Home() {
       <hr className="section-seperator" />
     </div>
   </div>
-  {/* rts register area start */}
   <div className="rts-register-area rts-section-gap bg_light-1">
     <div className="container">
       <div className="row">
@@ -51,30 +72,43 @@ export default function Home() {
               />
             </div>
             <h3 className="title">Login Into Your Account</h3>
-            <form action="#" className="registration-form">
+            <form onSubmit={handleSubmit} className="registration-form">
               <div className="input-wrapper">
                 <label htmlFor="email">Email*</label>
-                <input type="email" id="email" />
+                <input
+                  type="email"
+                  id="email"
+                  value={emailAddress}
+                  onChange={(e) => setEmailAddress(e.target.value)}
+                  required
+                  disabled={loading}
+                />
               </div>
               <div className="input-wrapper">
                 <label htmlFor="password">Password*</label>
-                <input type="password" id="password" />
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                />
               </div>
-              <button className="rts-btn btn-primary">Login Account</button>
+              {error && (
+                <div className="text-danger mb-3" style={{ color: "red", marginBottom: "10px" }}>
+                  {error}
+                </div>
+              )}
+              <button className="rts-btn btn-primary" type="submit" disabled={loading}>
+                {loading ? "Logging in..." : "Login Account"}
+              </button>
               <div className="another-way-to-registration">
-                <div className="registradion-top-text">
-                  <span>Or Register With</span>
-                </div>
-                <div className="login-with-brand">
-                  <a href="#" className="single">
-                    <img src="assets/images/form/google.svg" alt="login" />
-                  </a>
-                  <a href="#" className="single">
-                    <img src="assets/images/form/facebook.svg" alt="login" />
-                  </a>
-                </div>
                 <p>
-                  Don't have Acocut? <Link href="/register">Registration</Link>
+                  <Link href="/forgot-password">Forgot Password?</Link>
+                </p>
+                <p>
+                  Don't have Account? <Link href="/register">Registration</Link>
                 </p>
               </div>
             </form>
@@ -83,11 +117,7 @@ export default function Home() {
       </div>
     </div>
   </div>
-  {/* rts register area end */}
 </>
-
-
-
 
             <ShortService/>
             <FooterOne />
