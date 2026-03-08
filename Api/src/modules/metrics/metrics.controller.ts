@@ -39,11 +39,11 @@ export async function getTimeseries(req: AuthRequest, res: Response): Promise<vo
 }
 
 /**
- * GET /api/v1/admin/metrics/top-products?from=&to=&limit=
+ * GET /api/v1/admin/metrics/top-products?from=&to=&limit=&sortBy=amount|quantity
  */
 export async function getTopProducts(req: AuthRequest, res: Response): Promise<void> {
-  const { from, to, limit } = req.query as unknown as TopProductsQuery;
-  const data = await service.getTopProductsService(new Date(from), new Date(to), limit);
+  const { from, to, limit, sortBy } = req.query as unknown as TopProductsQuery;
+  const data = await service.getTopProductsService(new Date(from), new Date(to), limit, sortBy);
   sendSuccess(res, data);
 }
 
@@ -54,5 +54,32 @@ export async function getTopProducts(req: AuthRequest, res: Response): Promise<v
 export async function getOpenOrders(req: AuthRequest, res: Response): Promise<void> {
   const summary = await service.getLiveSummary();
   sendSuccess(res, { openOrdersByStatus: summary.openOrdersByStatus });
+}
+
+/**
+ * GET /api/v1/admin/metrics/order-totals
+ * Order totals by status across time ranges (NopCommerce-style).
+ */
+export async function getOrderTotals(req: AuthRequest, res: Response): Promise<void> {
+  const data = await service.getOrderTotals();
+  sendSuccess(res, data);
+}
+
+/**
+ * GET /api/v1/admin/metrics/incomplete-orders
+ * Incomplete orders summary (unpaid, not shipped, incomplete).
+ */
+export async function getIncompleteOrders(req: AuthRequest, res: Response): Promise<void> {
+  const data = await service.getIncompleteOrdersSummary();
+  sendSuccess(res, data);
+}
+
+/**
+ * GET /api/v1/admin/metrics/common-stats
+ * Common statistics (total orders, customers, low stock).
+ */
+export async function getCommonStats(req: AuthRequest, res: Response): Promise<void> {
+  const data = await service.getCommonStats();
+  sendSuccess(res, data);
 }
 

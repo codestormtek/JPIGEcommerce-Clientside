@@ -109,6 +109,7 @@ export async function getTopProducts(
   from: Date,
   to: Date,
   limit = 10,
+  sortBy: 'amount' | 'quantity' = 'amount',
 ): Promise<TopProduct[]> {
   // Group order lines by productItem, aggregate qty + revenue, join product name
   const lines = await prisma.orderLine.findMany({
@@ -146,7 +147,7 @@ export async function getTopProducts(
   }
 
   return Array.from(map.values())
-    .sort((a, b) => b.totalRevenue - a.totalRevenue)
+    .sort((a, b) => sortBy === 'quantity' ? b.totalQty - a.totalQty : b.totalRevenue - a.totalRevenue)
     .slice(0, limit);
 }
 

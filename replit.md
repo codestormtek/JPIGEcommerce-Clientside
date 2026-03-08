@@ -71,13 +71,16 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - API: Full CRUD at `/api/v1/pages` (all admin-only) — list (paginated + search), get by ID, create, update (PATCH), soft-delete
   - Admin UI: `AdminPageList.jsx` with list table (boolean columns shown as check/cross icons), Add/Edit modals with TinyMCE rich text editor, delete confirmation
   - Route: `/site-pages` (avoids conflict with demo `/pages` routes)
-- **Dashboard (Homepage)** (`/`): Real-time store overview dashboard
-  - KPI cards: Orders Today, Revenue Today, Orders This Week, Revenue This Week, Low Stock Items, Refunds (7d), New Customers (30d)
-  - Sales Trend line chart (Chart.js): 30-day gross sales timeseries
-  - Open Orders doughnut chart: status-based breakdown
-  - Top Products table: top 10 by revenue with product name, SKU, qty sold, revenue
-  - Date range selector (Today / 7d / 30d) refreshes KPI cards
-  - Powered by: `GET /api/v1/admin/metrics/summary`, `/timeseries`, `/open-orders`, `/top-products`
+- **Dashboard (Homepage)** (`/`): NopCommerce-style store overview dashboard
+  - Common Statistics: 4 large colored circle-icon cards (Orders, Pending Returns, Registered Customers, Low Stock) with "More info" links
+  - Orders chart: Line chart with Day/Week/Month toggles for `orders_count` timeseries
+  - New Customers chart: Line chart with Day/Week/Month toggles for `new_customers` timeseries
+  - Order Totals table: Status rows (Pending, Processing, Complete, Cancelled) × time columns (Today, This Week, This Month, This Year, All Time)
+  - Incomplete Orders panel: Unpaid orders, not-yet-shipped orders, incomplete orders (amount + count + view link)
+  - Latest Orders table: 5 most recent orders with status badge, customer name, date, view link
+  - Bestsellers by Quantity: Top 5 products sorted by qty sold
+  - Bestsellers by Amount: Top 5 products sorted by revenue
+  - API endpoints: `/common-stats`, `/order-totals`, `/incomplete-orders`, `/timeseries`, `/top-products?sortBy=quantity|amount`, orders list
 - **Metrics & KPIs** (`/metrics`): Detailed analytics page
   - 8 summary cards (gross/net sales, orders, discounts, tax, shipping, refunds, new customers)
   - Timeseries chart with metric key selector dropdown (8 available metrics)

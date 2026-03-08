@@ -9,7 +9,16 @@
  *  - open-orders → live
  */
 
-import { getLiveMetricsSummary, LiveSummary } from './metrics.live';
+import {
+  getLiveMetricsSummary,
+  LiveSummary,
+  getOrderTotalsByStatus,
+  OrderTotalRow,
+  getIncompleteOrders,
+  IncompleteOrdersSummary,
+  getCommonStatistics,
+  CommonStats,
+} from './metrics.live';
 import {
   getAggregateSummary,
   getTimeseries,
@@ -53,12 +62,28 @@ export async function getMetricTimeseries(
   return getTimeseries(metricKey, from, to, currency, channel);
 }
 
-/** Top products by revenue over a date range (live grouped query). */
+/** Top products by revenue or quantity over a date range (live grouped query). */
 export async function getTopProductsService(
   from: Date,
   to: Date,
   limit: number,
+  sortBy: 'amount' | 'quantity' = 'amount',
 ): Promise<TopProduct[]> {
-  return getTopProducts(from, to, limit);
+  return getTopProducts(from, to, limit, sortBy);
+}
+
+/** Order totals by status across time ranges (NopCommerce-style). */
+export async function getOrderTotals(): Promise<OrderTotalRow[]> {
+  return getOrderTotalsByStatus();
+}
+
+/** Incomplete orders summary (unpaid, not shipped, incomplete). */
+export async function getIncompleteOrdersSummary(): Promise<IncompleteOrdersSummary> {
+  return getIncompleteOrders();
+}
+
+/** Common statistics (total orders, registered customers, low stock). */
+export async function getCommonStats(): Promise<CommonStats> {
+  return getCommonStatistics();
 }
 

@@ -45,6 +45,142 @@ function startOfWeekUtc(): Date {
 
 // ─── Provider ────────────────────────────────────────────────────────────────
 
+// ─── Order Totals by Status ──────────────────────────────────────────────────
+
+export interface OrderTotalRow {
+  status: string;
+  today: number;
+  thisWeek: number;
+  thisMonth: number;
+  thisYear: number;
+  allTime: number;
+}
+
+export async function getOrderTotalsByStatus(): Promise<OrderTotalRow[]> {
+  const todayStart = startOfDayUtc(new Date());
+  const weekStart = startOfWeekUtc();
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+
+  const statuses = ['pending', 'processing', 'complete', 'cancelled'];
+
+  const results: OrderTotalRow[] = [];
+
+  for (const status of statuses) {
+    const [today, thisWeek, thisMonth, thisYear, allTime] = await Promise.all([
+      prisma.shopOrder.aggregate({
+        _sum: { grandTotal: true },
+        where: { orderStatus: { status }, orderDate: { gte: todayStart } },
+      }),
+      prisma.shopOrder.aggregate({
+        _sum: { grandTotal: true },
+        where: { orderStatus: { status }, orderDate: { gte: weekStart } },
+      }),
+      prisma.shopOrder.aggregate({
+        _sum: { grandTotal: true },
+        where: { orderStatus: { status }, orderDate: { gte: monthStart } },
+      }),
+      prisma.shopOrder.aggregate({
+        _sum: { grandTotal: true },
+        where: { orderStatus: { status }, orderDate: { gte: yearStart } },
+      }),
+      prisma.shopOrder.aggregate({
+        _sum: { grandTotal: true },
+        where: { orderStatus: { status } },
+      }),
+    ]);
+
+    results.push({
+      status,
+      today: Number(today._sum.grandTotal ?? 0),
+      thisWeek: Number(thisWeek._sum.grandTotal ?? 0),
+      thisMonth: Number(thisMonth._sum.grandTotal ?? 0),
+      thisYear: Number(thisYear._sum.grandTotal ?? 0),
+      allTime: Number(allTime._sum.grandTotal ?? 0),
+    });
+  }
+
+  return results;
+}
+
+// ─── Incomplete Orders ───────────────────────────────────────────────────────
+
+export interface IncompleteOrdersSummary {
+  unpaidOrders: { count: number; amount: number };
+  notShippedOrders: { count: number; amount: number };
+  incompleteOrders: { count: number; amount: number };
+}
+
+export async function getIncompleteOrders(): Promise<IncompleteOrdersSummary> {
+  const [unpaid, notShipped, incomplete] = await Promise.all([
+    prisma.shopOrder.aggregate({
+      _sum: { grandTotal: true },
+      _count: { id: true },
+      where: {
+        orderStatus: { status: { notIn: ['cancelled', 'refunded'] } },
+        payments: { none: { status: { in: ['captured', 'authorized'] } } },
+      },
+    }),
+    prisma.shopOrder.aggregate({
+      _sum: { grandTotal: true },
+      _count: { id: true },
+      where: {
+        orderStatus: { status: { notIn: ['cancelled', 'refunded', 'completed'] } },
+        shipment: null,
+      },
+    }),
+    prisma.shopOrder.aggregate({
+      _sum: { grandTotal: true },
+      _count: { id: true },
+      where: {
+        orderStatus: { status: 'pending' },
+      },
+    }),
+  ]);
+
+  return {
+    unpaidOrders: {
+      count: unpaid._count.id,
+      amount: Number(unpaid._sum.grandTotal ?? 0),
+    },
+    notShippedOrders: {
+      count: notShipped._count.id,
+      amount: Number(notShipped._sum.grandTotal ?? 0),
+    },
+    incompleteOrders: {
+      count: incomplete._count.id,
+      amount: Number(incomplete._sum.grandTotal ?? 0),
+    },
+  };
+}
+
+// ─── Common Statistics ───────────────────────────────────────────────────────
+
+export interface CommonStats {
+  totalOrders: number;
+  pendingReturns: number;
+  registeredCustomers: number;
+  lowStockProducts: number;
+}
+
+export async function getCommonStatistics(): Promise<CommonStats> {
+  const [totalOrders, registeredCustomers, lowStockProducts] = await Promise.all([
+    prisma.shopOrder.count(),
+    prisma.siteUser.count({ where: { isDeleted: false } }),
+    prisma.productItem.count({
+      where: { qtyInStock: { lte: config.jobs.lowStockThreshold }, isPublished: true },
+    }),
+  ]);
+
+  return {
+    totalOrders,
+    pendingReturns: 0,
+    registeredCustomers,
+    lowStockProducts,
+  };
+}
+
 export async function getLiveMetricsSummary(): Promise<LiveSummary> {
   const todayStart = startOfDayUtc(new Date());
   const weekStart = startOfWeekUtc();

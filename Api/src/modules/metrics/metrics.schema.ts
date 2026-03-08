@@ -22,6 +22,7 @@ export const topProductsQuerySchema = z.object({
     .string()
     .optional()
     .transform((v) => (v ? Math.min(parseInt(v, 10), 50) : 10)),
+  sortBy: z.enum(['amount', 'quantity']).optional().default('amount'),
 });
 
 export type SummaryQuery = z.infer<typeof summaryQuerySchema>;
