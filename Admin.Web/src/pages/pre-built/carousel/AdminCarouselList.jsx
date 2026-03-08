@@ -113,7 +113,7 @@ const AdminCarouselList = () => {
 
 // ─── Image upload widget ──────────────────────────────────────────────────────
 
-const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove }) => {
+const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove, slideName }) => {
   const [uploading, setUploading] = useState(false);
 
   const handleFile = async (e) => {
@@ -124,8 +124,10 @@ const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove })
       const fd = new FormData();
       fd.append("file", file);
       fd.append("folder", "carousel");
-      const res = await apiUpload("/media/upload", fd);
-      const asset = res?.data ?? res;
+      fd.append("name", slideName || "carousel_slide");
+      const res = await apiUpload("/media/upload-resized", fd);
+      const data = res?.data ?? res;
+      const asset = data?.primary ?? data;
       onUploaded(asset);
     } catch (err) {
       console.error("Upload failed", err);
@@ -303,6 +305,7 @@ const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove })
                     previewUrl={editTarget?.mediaAsset?.url ?? null}
                     onUploaded={(asset) => setField("mediaAssetId", asset.id)}
                     onRemove={() => setField("mediaAssetId", "")}
+                    slideName={form.title || "carousel_desktop"}
                   />
                 </div>
                 <div>
@@ -312,6 +315,7 @@ const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove })
                     previewUrl={editTarget?.mobileMediaAsset?.url ?? null}
                     onUploaded={(asset) => setField("mobileMediaAssetId", asset.id)}
                     onRemove={() => setField("mobileMediaAssetId", "")}
+                    slideName={form.title ? `${form.title}_mobile` : "carousel_mobile"}
                   />
                 </div>
               </Col>

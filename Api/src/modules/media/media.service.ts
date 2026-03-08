@@ -4,7 +4,7 @@ import { ApiError } from '../../utils/apiError';
 import { saveFile, getPublicUrl } from '../../lib/storage';
 import { ListMediaInput, CreateMediaInput, UpdateMediaInput, MEDIA_FOLDERS, MediaFolder } from './media.schema';
 import * as repo from './media.repository';
-import { resizeImage, buildVariantFilename, BLOG_VARIANTS, PAGE_VARIANTS, ResizeVariant } from '../../lib/imageResize';
+import { resizeImage, buildVariantFilename, BLOG_VARIANTS, PAGE_VARIANTS, CAROUSEL_VARIANTS, ResizeVariant } from '../../lib/imageResize';
 
 export async function listMedia(input: ListMediaInput) {
   return repo.findMedia(input);
@@ -71,6 +71,7 @@ const FOLDER_VARIANT_MAP: Record<string, ResizeVariant[]> = {
   news: BLOG_VARIANTS,
   pages: PAGE_VARIANTS,
   topics: PAGE_VARIANTS,
+  carousel: CAROUSEL_VARIANTS,
 };
 
 export async function uploadWithResize(

@@ -17,6 +17,10 @@ export const PAGE_VARIANTS: ResizeVariant[] = [
   { suffix: 'xlarge', width: 1200, height: 346 },
 ];
 
+export const CAROUSEL_VARIANTS: ResizeVariant[] = [
+  { suffix: 'xlarge', width: 1300, height: 480 },
+];
+
 function sanitizeName(name: string): string {
   return name
     .toLowerCase()
