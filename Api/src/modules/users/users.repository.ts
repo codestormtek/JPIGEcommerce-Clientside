@@ -13,6 +13,7 @@ export const safeUserSelect = {
   lastName: true,
   emailAddress: true,
   phoneNumber: true,
+  avatarUrl: true,
   role: true,
   isActive: true,
   createdAt: true,

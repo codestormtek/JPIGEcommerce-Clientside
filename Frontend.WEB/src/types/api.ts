@@ -139,6 +139,7 @@ export interface UserProfile {
   lastName: string;
   emailAddress: string;
   phoneNumber: string | null;
+  avatarUrl: string | null;
   role: string;
   isActive: boolean;
   createdAt: string;
@@ -226,6 +227,7 @@ export interface CommentUser {
   id: string;
   firstName: string | null;
   lastName: string | null;
+  avatarUrl: string | null;
 }
 
 export interface ContentComment {

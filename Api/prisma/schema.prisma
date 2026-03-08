@@ -22,6 +22,7 @@ model SiteUser {
   emailAddress String  @unique
   phoneNumber  String?
   passwordHash String
+  avatarUrl    String?
   isActive     Boolean @default(true)
   role         String  @default("user") // user|admin
 

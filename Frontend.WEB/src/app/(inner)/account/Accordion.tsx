@@ -13,6 +13,7 @@ import {
   updateMyContactPreferences,
   getMyReviews,
   changePassword,
+  uploadAvatar,
 } from '@/lib/account';
 import type {
   UserProfile,
@@ -138,6 +139,11 @@ const AccountTabs = () => {
   const [profileErr, setProfileErr] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
 
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarMsg, setAvatarMsg] = useState('');
+  const [avatarErr, setAvatarErr] = useState('');
+
   const [curPassword, setCurPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -243,6 +249,25 @@ const AccountTabs = () => {
       setTimeout(() => setPrefMsg(''), 3000);
     } catch {
       setContactPref(contactPref);
+    }
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    setAvatarMsg('');
+    setAvatarErr('');
+    try {
+      const updated = await uploadAvatar(file);
+      setProfile(updated);
+      setAvatarMsg('Avatar updated!');
+      setTimeout(() => setAvatarMsg(''), 3000);
+    } catch (err: unknown) {
+      setAvatarErr(err instanceof Error ? err.message : 'Failed to upload avatar');
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
     }
   };
 
@@ -578,6 +603,56 @@ const AccountTabs = () => {
               {activeTab === 'account' && (
                 <div className="account-details-area">
                   <h2 className="title">Account Details</h2>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24 }}>
+                    <div
+                      style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        backgroundColor: '#e9ecef',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        border: '2px solid #dee2e6',
+                      }}
+                    >
+                      {profile?.avatarUrl ? (
+                        <img
+                          src={profile.avatarUrl}
+                          alt="Avatar"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: 28, fontWeight: 700, color: '#74787C', textTransform: 'uppercase' }}>
+                          {(profile?.firstName?.[0] || '') + (profile?.lastName?.[0] || '')}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <input
+                        ref={avatarInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        style={{ display: 'none' }}
+                        onChange={handleAvatarChange}
+                      />
+                      <button
+                        type="button"
+                        className="rts-btn btn-primary"
+                        style={{ padding: '8px 20px', fontSize: 14 }}
+                        disabled={avatarUploading}
+                        onClick={() => avatarInputRef.current?.click()}
+                      >
+                        {avatarUploading ? 'Uploading...' : profile?.avatarUrl ? 'Change Avatar' : 'Upload Avatar'}
+                      </button>
+                      {avatarMsg && <p style={{ color: '#28a745', marginTop: 8, marginBottom: 0, fontSize: 13 }}>{avatarMsg}</p>}
+                      {avatarErr && <p style={{ color: '#dc3545', marginTop: 8, marginBottom: 0, fontSize: 13 }}>{avatarErr}</p>}
+                    </div>
+                  </div>
+
                   <form onSubmit={handleProfileSave}>
                     <div className="input-half-area">
                       <div className="single-input">

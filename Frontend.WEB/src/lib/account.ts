@@ -127,6 +127,33 @@ export async function getMyReviews(
   return unwrapPaginated(res);
 }
 
+export async function uploadAvatar(file: File): Promise<UserProfile> {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("jpig_access_token")
+      : null;
+  if (!token) throw new Error("Not authenticated");
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const baseUrl =
+    typeof window !== "undefined" ? "/api/v1" : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const response = await fetch(`${baseUrl}/users/me/avatar`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errBody = await response.json().catch(() => null);
+    throw new Error(errBody?.message || "Failed to upload avatar");
+  }
+
+  const json = await response.json();
+  return unwrap(json);
+}
+
 export async function changePassword(
   currentPassword: string,
   newPassword: string,

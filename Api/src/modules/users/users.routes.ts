@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validate.middleware';
 import { asyncHandler } from '../../utils/asyncHandler';
+import { config } from '../../config';
 import {
   listUsersSchema,
   adminUpdateUserSchema,
@@ -17,6 +19,15 @@ import * as ctrl from './users.controller';
 
 export const usersRouter = Router();
 
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    cb(null, allowed.includes(file.mimetype));
+  },
+});
+
 // ─── Self routes (any authenticated user) ────────────────────────────────────
 
 // GET    /api/v1/users/me
@@ -24,6 +35,9 @@ usersRouter.get('/me', authenticate, asyncHandler(ctrl.getMyProfile));
 
 // PATCH  /api/v1/users/me
 usersRouter.patch('/me', authenticate, validate(updateProfileSchema), asyncHandler(ctrl.updateMyProfile));
+
+// POST   /api/v1/users/me/avatar — upload avatar image
+usersRouter.post('/me/avatar', authenticate, avatarUpload.single('file'), asyncHandler(ctrl.uploadMyAvatar));
 
 // GET    /api/v1/users/me/addresses
 usersRouter.get('/me/addresses', authenticate, asyncHandler(ctrl.getMyAddresses));

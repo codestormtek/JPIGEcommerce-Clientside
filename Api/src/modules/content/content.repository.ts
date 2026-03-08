@@ -124,10 +124,10 @@ export async function deleteTag(id: string) {
 // ─── Comments ─────────────────────────────────────────────────────────────────
 
 const commentInclude = {
-  user: { select: { id: true, firstName: true, lastName: true } },
+  user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
   replies: {
     where: { isApproved: true },
-    include: { user: { select: { id: true, firstName: true, lastName: true } } },
+    include: { user: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } } },
     orderBy: { createdAt: 'asc' as const },
   },
 } as const;

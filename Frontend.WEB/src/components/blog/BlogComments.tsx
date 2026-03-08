@@ -126,22 +126,35 @@ export default function BlogComments({ postId }: BlogCommentsProps) {
       style={isReply ? { paddingLeft: 60, paddingTop: 20, marginTop: 10 } : { paddingTop: 20, marginBottom: 10 }}
     >
       <div className="thumbanil">
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            background: '#ff8c00',
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 24,
-            fontWeight: 700,
-          }}
-        >
-          {getInitials(comment.user)}
-        </div>
+        {comment.user.avatarUrl ? (
+          <img
+            src={comment.user.avatarUrl}
+            alt={getDisplayName(comment.user)}
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              objectFit: 'cover',
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              background: '#ff8c00',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 24,
+              fontWeight: 700,
+            }}
+          >
+            {getInitials(comment.user)}
+          </div>
+        )}
       </div>
       <div className="comment-information" style={{ flex: 1 }}>
         <div className="top-area">

@@ -8,6 +8,7 @@ import {
 } from './users.schema';
 import { ctxFromRequest } from '../../utils/auditLogger';
 import * as service from './users.service';
+import * as mediaService from '../media/media.service';
 
 // ─── Admin handlers ───────────────────────────────────────────────────────────
 
@@ -71,6 +72,13 @@ export async function getMyProfile(req: AuthRequest, res: Response): Promise<voi
 export async function updateMyProfile(req: AuthRequest, res: Response): Promise<void> {
   const user = await service.updateMyProfile(req.user!.sub, req.body as UpdateProfileInput);
   sendSuccess(res, user);
+}
+
+export async function uploadMyAvatar(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.file) throw new Error('No file attached');
+  const asset = await mediaService.uploadMediaFile(req.file, 'avatars');
+  const user = await service.updateMyProfile(req.user!.sub, { avatarUrl: asset.url });
+  sendSuccess(res, user, 'Avatar updated');
 }
 
 // ─── Address handlers ─────────────────────────────────────────────────────────
