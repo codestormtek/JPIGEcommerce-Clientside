@@ -231,8 +231,8 @@ function HeaderOne() {
                         <div className="row">
                             <div className="col-lg-12">
                                 <div className="logo-search-category-wrapper">
-                                    <Link href="/" className="logo-area">
-                                        <img src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png" alt="The Jiggling Pig" className="logo" style={{ maxHeight: '50px' }} />
+                                    <Link href="/" className="logo-area" style={{ overflow: 'visible', position: 'relative', zIndex: 10 }}>
+                                        <img src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png" alt="The Jiggling Pig" className="logo" style={{ height: '80px', maxHeight: 'none', marginTop: '-15px', marginBottom: '-15px' }} />
                                     </Link>
                                     <div className="category-search-wrapper">
                                         <div className="category-btn category-hover-header">
