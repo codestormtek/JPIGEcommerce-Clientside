@@ -3,8 +3,24 @@ import React from 'react'
 import { useState, useEffect } from 'react';
 import Nav from './Nav';
 import Link from 'next/link';
+import { apiGet } from '@/lib/api';
+import { Category } from '@/types/api';
 
 function ComponentName() {
+    const [categories, setCategories] = useState<Category[]>([]);
+
+    useEffect(() => {
+        apiGet<Category[]>("/products/categories")
+            .then((data) => setCategories(data))
+            .catch(() => setCategories([]));
+    }, []);
+
+    const parentCategories = categories.filter((c) => !c.parentCategoryId);
+
+    const iconFiles = [
+        "01.svg", "02.svg", "03.svg", "04.svg", "05.svg",
+        "06.svg", "07.svg", "08.svg", "09.svg", "10.svg",
+    ];
 
     // header sticky
     const [isSticky, setIsSticky] = useState(false);
@@ -88,79 +104,35 @@ function ComponentName() {
                                         />
                                         <span>Categories</span>
                                         <ul className="category-sub-menu">
-                                            <li>
-                                                <a href="#" className="menu-item">
-                                                    <img src="/assets/images/icons/01.svg" alt="icons" />
-                                                    <span>Breakfast &amp; Dairy</span>
-                                                    <i className="fa-regular fa-plus" />
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#" className="menu-item">
-                                                    <img src="/assets/images/icons/02.svg" alt="icons" />
-                                                    <span>Meats &amp; Seafood</span>
-                                                    <i className="fa-regular fa-plus" />
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#" className="menu-item">
-                                                    <img src="/assets/images/icons/03.svg" alt="icons" />
-                                                    <span>Breads &amp; Bakery</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#" className="menu-item">
-                                                    <img src="/assets/images/icons/04.svg" alt="icons" />
-                                                    <span>Chips &amp; Snacks</span>
-                                                    <i className="fa-regular fa-plus" />
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#" className="menu-item">
-                                                    <img src="/assets/images/icons/05.svg" alt="icons" />
-                                                    <span>Medical Healthcare</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#" className="menu-item">
-                                                    <img src="/assets/images/icons/06.svg" alt="icons" />
-                                                    <span>Breads &amp; Bakery</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#" className="menu-item">
-                                                    <img src="/assets/images/icons/07.svg" alt="icons" />
-                                                    <span>Biscuits &amp; Snacks</span>
-                                                    <i className="fa-regular fa-plus" />
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#" className="menu-item">
-                                                    <img src="/assets/images/icons/08.svg" alt="icons" />
-                                                    <span>Frozen Foods</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#" className="menu-item">
-                                                    <img src="/assets/images/icons/09.svg" alt="icons" />
-                                                    <span>Grocery &amp; Staples</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#" className="menu-item">
-                                                    <img src="/assets/images/icons/10.svg" alt="icons" />
-                                                    <span>Other Items</span>
-                                                </a>
-                                            </li>
+                                            {parentCategories.map((cat, idx) => (
+                                                <li key={cat.id}>
+                                                    <Link href={`/shop?categoryId=${encodeURIComponent(cat.id)}`} className="menu-item">
+                                                        <img src={cat.imageUrl || `/assets/images/icons/${iconFiles[idx % iconFiles.length]}`} alt={cat.name} />
+                                                        <span>{cat.name}</span>
+                                                    </Link>
+                                                </li>
+                                            ))}
                                         </ul>
                                     </div>
-                                    <form action="#" className="search-header">
+                                    <form
+                                        className="search-header"
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(e.currentTarget);
+                                            const q = (formData.get("search") as string || "").trim();
+                                            if (q) {
+                                                window.location.href = `/shop?search=${encodeURIComponent(q)}`;
+                                            } else {
+                                                window.location.href = "/shop";
+                                            }
+                                        }}
+                                    >
                                         <input
                                             type="text"
+                                            name="search"
                                             placeholder="Search for products, categories or brands"
-                                            required
                                         />
-                                        <button className="rts-btn btn-primary radious-sm with-icon">
+                                        <button type="submit" className="rts-btn btn-primary radious-sm with-icon">
                                             <span className="btn-text">Search</span>
                                             <span className="arrow-icon">
                                                 <i className="fa-light fa-magnifying-glass" />

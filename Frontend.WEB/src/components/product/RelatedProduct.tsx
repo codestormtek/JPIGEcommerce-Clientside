@@ -3,23 +3,18 @@ import React, { useEffect, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay } from 'swiper/modules';
 import WeeklyBestSellingMain from "@/components/product-main/WeeklyBestSellingMain";
-import Product from '@/data/Product.json';
+import { apiGet } from "@/lib/api";
+import { Product, PaginatedResponse, getProductImage, getProductSlug, formatPrice } from "@/types/api";
 
+function RelatedProduct() {
+    const [products, setProducts] = useState<Product[]>([]);
 
-interface PostType {
-    category?: string;
-    slug: string;
-    image: string;
-    title?: string;
-    author?: string;
-    publishedDate?: string;
-    price?: string;
-}
+    useEffect(() => {
+        apiGet<PaginatedResponse<Product>>('/products?limit=8&page=1')
+            .then((res) => setProducts(res.data || []))
+            .catch(() => {});
+    }, []);
 
-function FeatureProduct() {
-
-
-    // number count up and down
     useEffect(() => {
         const handleQuantityClick = (e: Event) => {
             const button = e.currentTarget as HTMLElement;
@@ -27,7 +22,7 @@ function FeatureProduct() {
             if (!parent) return;
 
             const input = parent.querySelector('.input') as HTMLInputElement | null;
-            const addToCart = parent.querySelector('a.add-to-cart') as HTMLElement | null;
+            const addToCartBtn = parent.querySelector('a.add-to-cart') as HTMLElement | null;
             if (!input) return;
 
             let oldValue = parseInt(input.value || '1', 10);
@@ -40,14 +35,13 @@ function FeatureProduct() {
             }
 
             input.value = newVal.toString();
-            if (addToCart) {
-                addToCart.setAttribute('data-quantity', newVal.toString());
+            if (addToCartBtn) {
+                addToCartBtn.setAttribute('data-quantity', newVal.toString());
             }
         };
 
         const buttons = document.querySelectorAll('.quantity-edit .button');
 
-        // 💡 Remove any existing handlers first (safe rebind)
         buttons.forEach(button => {
             button.removeEventListener('click', handleQuantityClick);
             button.addEventListener('click', handleQuantityClick);
@@ -58,38 +52,13 @@ function FeatureProduct() {
                 button.removeEventListener('click', handleQuantityClick);
             });
         };
-    }, []);
+    }, [products]);
 
-    // modal activation
-    type ModalType = 'one' | 'two' | 'three' | null;
-    const [activeModal, setActiveModal] = useState<ModalType>(null);
-
-    const handleClose = () => setActiveModal(null);
-
-    // product content
-    const selectedPosts = Product.slice(1, 11);
-
-    const postIndicesSection1 = [1];
-    const postIndicesSection2 = [5];
-    const postIndicesSection3 = [6];
-    const postIndicesSection4 = [16];
-
-    // Helper function to get posts from indices
-    const getPostsByIndices = (indices: number[]): PostType[] =>
-        indices.map(index => Product[index]).filter(Boolean);
-
-    // Prepare post groups
-    const postsSection1 = getPostsByIndices(postIndicesSection1);
-    const postsSection2 = getPostsByIndices(postIndicesSection2);
-    const postsSection3 = getPostsByIndices(postIndicesSection3);
-    const postsSection4 = getPostsByIndices(postIndicesSection4);
-
-
+    if (products.length === 0) return null;
 
     return (
         <div>
             <>
-                {/* rts grocery feature area start */}
                 <div className="rts-grocery-feature-area rts-section-gap">
                     <div className="container">
                         <div className="row">
@@ -118,10 +87,10 @@ function FeatureProduct() {
                                             hide: true,
                                         }}
                                         autoplay={{
-                                            delay: 3000, // Delay between transitions (3 seconds)
-                                            disableOnInteraction: false, // Continue autoplay after user interactions
+                                            delay: 3000,
+                                            disableOnInteraction: false,
                                         }}
-                                        loop={true}
+                                        loop={products.length > 6}
                                         navigation={{
                                             nextEl: ".swiper-button-next",
                                             prevEl: ".swiper-button-prev",
@@ -136,135 +105,27 @@ function FeatureProduct() {
                                             1140: { slidesPerView: 6, spaceBetween: 30 },
                                         }}
                                     >
-                                        <SwiperSlide>
-                                                  {postsSection1.map((post: PostType, index: number) => (
-                                                <div
-                                                    key={index}
-                                                    className=""
-                                                >
-                                                    <div className="single-shopping-card-one">
-                                                        <WeeklyBestSellingMain
-                                                            Slug={post.slug}
-                                                            ProductImage={post.image}
-                                                            ProductTitle={post.title}
-                                                            Price={post.price}
-                                                        />
-                                                    </div>
+                                        {products.map((product) => (
+                                            <SwiperSlide key={product.id}>
+                                                <div className="single-shopping-card-one">
+                                                    <WeeklyBestSellingMain
+                                                        Slug={getProductSlug(product)}
+                                                        ProductImage={getProductImage(product)}
+                                                        ProductTitle={product.name}
+                                                        Price={formatPrice(product.price)}
+                                                    />
                                                 </div>
-                                                ))}
-                                        </SwiperSlide>
-                                        <SwiperSlide>
-                                             {postsSection2.map((post: PostType, index: number) => (
-                                                <div
-                                                    key={index}
-                                                    className=""
-                                                >
-                                                    <div className="single-shopping-card-one">
-                                                        <WeeklyBestSellingMain
-                                                            Slug={post.slug}
-                                                            ProductImage={post.image}
-                                                            ProductTitle={post.title}
-                                                            Price={post.price}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                ))}
-                                        </SwiperSlide>
-                                        <SwiperSlide>
-                                             {postsSection3.map((post: PostType, index: number) => (
-                                                <div
-                                                    key={index}
-                                                    className=""
-                                                >
-                                                    <div className="single-shopping-card-one">
-                                                        <WeeklyBestSellingMain
-                                                            Slug={post.slug}
-                                                            ProductImage={post.image}
-                                                            ProductTitle={post.title}
-                                                            Price={post.price}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                ))}
-                                        </SwiperSlide>
-                                        <SwiperSlide>
-                                             {postsSection4.map((post: PostType, index: number) => (
-                                                <div
-                                                    key={index}
-                                                    className=""
-                                                >
-                                                    <div className="single-shopping-card-one">
-                                                        <WeeklyBestSellingMain
-                                                            Slug={post.slug}
-                                                            ProductImage={post.image}
-                                                            ProductTitle={post.title}
-                                                            Price={post.price}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                ))}
-                                        </SwiperSlide>
-                                        <SwiperSlide>
-                                             {postsSection1.map((post: PostType, index: number) => (
-                                                <div
-                                                    key={index}
-                                                    className=""
-                                                >
-                                                    <div className="single-shopping-card-one">
-                                                        <WeeklyBestSellingMain
-                                                            Slug={post.slug}
-                                                            ProductImage={post.image}
-                                                            ProductTitle={post.title}
-                                                            Price={post.price}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                ))}
-                                        </SwiperSlide>
-                                        <SwiperSlide>
-                                             {postsSection2.map((post: PostType, index: number) => (
-                                                <div
-                                                    key={index}
-                                                    className=""
-                                                >
-                                                    <div className="single-shopping-card-one">
-                                                        <WeeklyBestSellingMain
-                                                            Slug={post.slug}
-                                                            ProductImage={post.image}
-                                                            ProductTitle={post.title}
-                                                            Price={post.price}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                ))}
-                                        </SwiperSlide>
-                                        <SwiperSlide>
-                                             {postsSection3.map((post: PostType, index: number) => (
-                                                <div
-                                                    key={index}
-                                                    className=""
-                                                >
-                                                    <div className="single-shopping-card-one">
-                                                        <WeeklyBestSellingMain
-                                                            Slug={post.slug}
-                                                            ProductImage={post.image}
-                                                            ProductTitle={post.title}
-                                                            Price={post.price}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                ))}
-                                        </SwiperSlide>
+                                            </SwiperSlide>
+                                        ))}
                                     </Swiper>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                {/* rts grocery feature area end */}
             </>
         </div>
     )
 }
 
-export default FeatureProduct
+export default RelatedProduct

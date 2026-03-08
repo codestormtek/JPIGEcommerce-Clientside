@@ -6,27 +6,38 @@ interface BlogGridMainProps {
     Slug: string;
     blogImage: string;
     blogTitle?: string;
+    publishedDate?: string;
+    categoryName?: string;
 }
 
 const BlogGridMain: React.FC<BlogGridMainProps> = ({
     Slug,
     blogImage,
     blogTitle,
+    publishedDate,
+    categoryName,
 }) => {
+    const isExternal = blogImage && (blogImage.startsWith('http') || blogImage.startsWith('//'));
+    const imageSrc = isExternal ? blogImage : (blogImage ? `assets/images/blog/${blogImage}` : 'assets/images/blog/01.jpg');
+
+    const formattedDate = publishedDate
+        ? new Date(publishedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+        : '15 Sep, 2023';
+
     return (
         <>
             <Link href={`/blog/${Slug}`} className="thumbnail">
-                <img src={`assets/images/blog/${blogImage}`} alt="blog-area" />
+                <img src={imageSrc} alt="blog-area" />
             </Link>
             <div className="blog-body">
                 <div className="top-area">
                     <div className="single-meta">
                         <i className="fa-light fa-clock" />
-                        <span>15 Sep, 2023</span>
+                        <span>{formattedDate}</span>
                     </div>
                     <div className="single-meta">
                         <i className="fa-regular fa-folder" />
-                        <span>Modern Fashion</span>
+                        <span>{categoryName || 'Modern Fashion'}</span>
                     </div>
                 </div>
                 <Link href={`/blog/${Slug}`}>

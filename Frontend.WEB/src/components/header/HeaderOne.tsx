@@ -10,6 +10,8 @@ import BackToTop from "@/components/common/BackToTop";
 import { useCompare } from "@/components/header/CompareContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { apiGet, buildQS } from "@/lib/api";
+import { PaginatedResponse, Product } from "@/types/api";
 
 function HeaderOne() {
   const { compareItems } = useCompare();
@@ -18,52 +20,36 @@ function HeaderOne() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState<
-    { id: number; title: string; slug: string }[]
+    { id: string; title: string; slug: string }[]
   >([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  
-
-  // 🔥 Auto Slug Function
-  const makeSlug = (text: string) =>
-    text
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, "")
-      .trim()
-      .replace(/\s+/g, "-");
-
-  // Example data (id + title + slug)
-  const allSuggestions = [
-    { id: 1, title: "Profitable business makes your profit Best Solution" },
-    { id: 2, title: "Details Profitable business makes your profit" },
-    { id: 3, title: "One Profitable business makes your profit" },
-    { id: 4, title: "Me Profitable business makes your profit" },
-    { id: 5, title: "Details business makes your profit" },
-    { id: 6, title: "Firebase business makes your profit" },
-    { id: 7, title: "Netlyfy business makes your profit" },
-    { id: 8, title: "Profitable business makes your profit" },
-    { id: 9, title: "Valuable business makes your profit" },
-    { id: 10, title: "System business makes your profit" },
-    { id: 11, title: "Profitables business makes your profit" },
-    { id: 12, title: "Content business makes your profit" }
-  ].map((item) => ({
-    ...item,
-    slug: makeSlug(item.title) // auto generate 🔥
-  }));
-
   const suggestionRef = useRef<HTMLUListElement>(null);
-  // Suggestion filter
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (searchTerm.trim().length > 0) {
-      const filtered = allSuggestions.filter((item) =>
-        item.title.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setSuggestions(filtered.slice(0, 6));
-      setShowSuggestions(true);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        const qs = buildQS({ search: searchTerm.trim(), limit: 6 });
+        apiGet<PaginatedResponse<Product>>(`/products${qs}`)
+          .then((res) => {
+            setSuggestions(
+              res.data.map((p) => ({ id: p.id, title: p.name, slug: p.id }))
+            );
+            setShowSuggestions(true);
+          })
+          .catch(() => {
+            setSuggestions([]);
+          });
+      }, 300);
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
     }
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [searchTerm]);
 
   // Suggestion click open item page

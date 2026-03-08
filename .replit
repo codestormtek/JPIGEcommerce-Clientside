@@ -21,6 +21,10 @@ args = "API Server"
 task = "workflow.run"
 args = "Admin Panel"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Frontend"
+
 [[workflows.workflow]]
 name = "API Server"
 author = "agent"
@@ -45,6 +49,18 @@ task = "shell.exec"
 args = "bash -c 'cd Admin.Web && npm run dev'"
 waitForPort = 5000
 
+[[workflows.workflow]]
+name = "Frontend"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c 'cd Frontend.WEB && npm run dev'"
+waitForPort = 3000
+
+[workflows.workflow.metadata]
+outputType = "console"
+
 [[ports]]
 localPort = 3001
 externalPort = 3001
@@ -60,6 +76,10 @@ externalPort = 3000
 [[ports]]
 localPort = 8000
 externalPort = 8000
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
 
 [userenv]
 
@@ -95,3 +115,4 @@ R2_ACCESS_KEY_ID = "714b82227453cd674d0502dea1c24169"
 R2_SECRET_ACCESS_KEY = "a3591c6828d362c12fa7ee8a0d8dd84209ed12abfffbf2dad62400cc0f6f7ba8"
 RESEND_API_KEY = "re_F1VEmSx3_JyK5X8hv2z3U9qTJZrAWqAzg"
 RESEND_WEBHOOK_SECRET = "whsec_kTjTSfiqgoJWIRDXtFjm8mO3Xb/+Wo92"
+NEXT_PUBLIC_API_URL = "http://localhost:8000/api/v1"

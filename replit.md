@@ -4,13 +4,13 @@
 Full-stack e-commerce monorepo for The Jiggling Pig, migrated from Vercel to Replit.
 
 ## Architecture
-Two active services (Frontend.WEB paused for now):
+Three active services:
 
 | Service | Directory | Port | Framework |
 |---------|-----------|------|-----------|
 | API Server | `Api/` | 8000 | Express + TypeScript + Prisma |
 | Admin Panel | `Admin.Web/` | 5000 (webview) | Vite + React |
-| Frontend (paused) | `Frontend.WEB/` | — | Next.js 16 |
+| Frontend | `Frontend.WEB/` | 3000 (console) | Next.js 16 + TypeScript |
 
 ## Key Configuration
 - **Database**: External PostgreSQL on Render, accessed via `EXTERNAL_DATABASE_URL` env var (not the Replit-managed `DATABASE_URL`)
@@ -23,6 +23,7 @@ Two active services (Frontend.WEB paused for now):
 ## Workflows
 - **Admin Panel** — Vite admin dashboard (port 5000, webview) — main UI
 - **API Server** — Express API (port 8000, console)
+- **Frontend** — Next.js storefront (port 3000, console)
 
 ## Environment Variables
 All secrets managed via Replit Secrets panel. Non-sensitive config set as shared env vars. See `Api/.env.example` for the full list of variables.
@@ -90,9 +91,17 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - File: `Admin.Web/src/pages/pre-built/metrics/AdminMetricsPage.jsx`
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
 
+## Frontend.WEB (Storefront)
+- **API client**: `Frontend.WEB/src/lib/api.ts` — fetch wrapper with `apiGet`, `apiPost`, `apiPatch`, `apiDelete`
+- **Shared types**: `Frontend.WEB/src/types/api.ts` — `Product`, `Category`, `Brand`, `ContentPost`, `CarouselSlide`, etc.
+- **Helper functions**: `getProductImage()`, `getProductSlug()`, `formatPrice()` in types/api.ts
+- **Environment**: `NEXT_PUBLIC_API_URL` env var (defaults to `http://localhost:8000/api/v1`)
+- **Pages wired to API**: Homepage (featured products, bestsellers, blog, carousel), Shop listing (categories, brands, filtering, pagination), Product detail (images, variants, attributes, add-to-cart), Header (dynamic categories, live search)
+- **Product routing**: Uses product `id` as the slug (e.g., `/shop/[id]`)
+- **Image handling**: Components detect CDN URLs (starting with `http`) vs local static paths
+
 ## Dev Notes
 - Admin Panel proxies `/api` and `/uploads` requests to the API at `localhost:8000`
-- CORS origins default includes `localhost:5000` (admin)
-- To re-enable Frontend.WEB later: create a new workflow on a separate port and update Vite back to a non-5000 port
+- CORS origins default includes `localhost:3000,localhost:5000` (frontend + admin)
 - Zod schemas use `z.string().min(1)` instead of `z.string().uuid()` for entity IDs (DB uses human-readable string IDs)
 - BigInt `fileSizeBytes` from Prisma must be serialized to Number before JSON responses (done in media + carousel repos)

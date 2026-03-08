@@ -1,55 +1,45 @@
 "use client"
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import WeeklyBestSellingMain from "@/components/product-main/WeeklyBestSellingMain";
-import Product from '@/data/Product.json';
-
-
-interface PostType {
-    category?: string;
-    slug: string;
-    image: string;
-    title?: string;
-    author?: string;
-    publishedDate?: string;
-    price?: string;
-}
+import { apiGet } from '@/lib/api';
+import { Product, PaginatedResponse, getProductImage, getProductSlug, formatPrice } from '@/types/api';
 
 const WeeklyBestSelling: React.FC = () => {
+    const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+    const [activeTab, setActiveTab] = useState<string>('all');
 
+    useEffect(() => {
+        apiGet<PaginatedResponse<Product>>('/products?limit=24&page=1')
+            .then(res => {
+                const items = res.data || [];
+                setProducts(items);
+                const cats: { id: string; name: string }[] = [];
+                const seen = new Set<string>();
+                items.forEach(p => {
+                    p.categoryMaps?.forEach(cm => {
+                        if (!seen.has(cm.category.id)) {
+                            seen.add(cm.category.id);
+                            cats.push(cm.category);
+                        }
+                    });
+                });
+                setCategories(cats.slice(0, 4));
+            })
+            .catch(() => {});
+    }, []);
 
+    const filteredProducts = activeTab === 'all'
+        ? products
+        : products.filter(p =>
+            p.categoryMaps?.some(cm => cm.category.id === activeTab)
+          );
 
-    // tab
-    const [activeTab, setActiveTab] = useState<string>('tab1');
-
-    // modal
-    type ModalType = 'one' | 'two' | 'three' | null;
-    const [activeModal, setActiveModal] = useState<ModalType>(null);
-    const handleClose = () => setActiveModal(null);
-
-
-    // product content
-    const selectedPosts = Product.slice(1, 11);
-
-    const postIndicesSection1 = [1, 5, 6, 4, 7, 8, 9, 10, 11, 12, 13, 15];
-    const postIndicesSection2 = [5, 6, 4, 7, 8, 5, 6, 5, 8, 9, 18, 12];
-    const postIndicesSection3 = [5, 6, 8, 7, 3, 2, 1, 5, 8, 9, 13, 2];
-    const postIndicesSection4 = [1, 2, 6, 7, 10, 2, 1, 5, 8, 11, 12, 16];
-
-    // Helper function to get posts from indices
-    const getPostsByIndices = (indices: number[]): PostType[] =>
-        indices.map(index => Product[index]).filter(Boolean);
-
-    // Prepare post groups
-    const postsSection1 = getPostsByIndices(postIndicesSection1);
-    const postsSection2 = getPostsByIndices(postIndicesSection2);
-    const postsSection3 = getPostsByIndices(postIndicesSection3);
-    const postsSection4 = getPostsByIndices(postIndicesSection4);
-
+    const displayProducts = filteredProducts.slice(0, 12);
 
     return (
         <div>
             <>
-                {/* best selling groceris */}
                 <div className="weekly-best-selling-area rts-section-gap bg_light-1">
                     <div className="container">
                         <div className="row">
@@ -63,124 +53,49 @@ const WeeklyBestSelling: React.FC = () => {
                                     >
                                         <li className="nav-item" role="presentation">
                                             <button
-                                                onClick={() => setActiveTab('tab1')}
-                                                className={`nav-link ${activeTab === 'tab1' ? 'active' : ''}`}
+                                                onClick={() => setActiveTab('all')}
+                                                className={`nav-link ${activeTab === 'all' ? 'active' : ''}`}
                                             >
-                                                Frozen Foods
+                                                All
                                             </button>
                                         </li>
-                                        <li className="nav-item" role="presentation">
-                                            <button
-                                                onClick={() => setActiveTab('tab2')}
-                                                className={`nav-link ${activeTab === 'tab2' ? 'active' : ''}`}
-                                            >
-                                                Diet Foods
-                                            </button>
-                                        </li>
-                                        <li className="nav-item" role="presentation">
-                                            <button
-                                                onClick={() => setActiveTab('tab3')}
-                                                className={`nav-link ${activeTab === 'tab3' ? 'active' : ''}`}
-                                            >
-                                                Healthy Foods
-                                            </button>
-                                        </li>
-                                        <li className="nav-item" role="presentation">
-                                            <button
-                                                onClick={() => setActiveTab('tab4')}
-                                                className={`nav-link ${activeTab === 'tab4' ? 'active' : ''}`}
-                                            >
-                                                Vitamin Items
-                                            </button>
-                                        </li>
+                                        {categories.map(cat => (
+                                            <li key={cat.id} className="nav-item" role="presentation">
+                                                <button
+                                                    onClick={() => setActiveTab(cat.id)}
+                                                    className={`nav-link ${activeTab === cat.id ? 'active' : ''}`}
+                                                >
+                                                    {cat.name}
+                                                </button>
+                                            </li>
+                                        ))}
                                     </ul>
                                 </div>
                             </div>
                         </div>
                         <div className="row">
                             <div className="col-lg-12">
-                                {activeTab === 'tab1' &&
-                                    <div>
-                                        <div className="row g-4">
-                                            {postsSection1.map((post: PostType, index: number) => (
-                                                <div
-                                                    key={index}
-                                                    className="col-xxl-2 col-xl-3 col-lg-4 col-md-4 col-sm-6 col-12"
-                                                >
-                                                    <div className="single-shopping-card-one">
-                                                        <WeeklyBestSellingMain
-                                                            Slug={post.slug}
-                                                            ProductImage={post.image}
-                                                            ProductTitle={post.title}
-                                                            Price={post.price}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
+                                <div className="row g-4">
+                                    {displayProducts.map((product, index) => (
+                                        <div
+                                            key={product.id || index}
+                                            className="col-xxl-2 col-xl-3 col-lg-4 col-md-4 col-sm-6 col-12"
+                                        >
+                                            <div className="single-shopping-card-one">
+                                                <WeeklyBestSellingMain
+                                                    Slug={getProductSlug(product)}
+                                                    ProductImage={getProductImage(product)}
+                                                    ProductTitle={product.name}
+                                                    Price={formatPrice(product.price)}
+                                                />
+                                            </div>
                                         </div>
-                                    </div>}
-                                {activeTab === 'tab2' && <div>
-                                    <div className="row g-4">
-                                        {postsSection2.map((post: PostType, index: number) => (
-                                            <div
-                                                key={index}
-                                                className="col-xxl-2 col-xl-3 col-lg-4 col-md-4 col-sm-6 col-12"
-                                            >
-                                                <div className="single-shopping-card-one">
-                                                    <WeeklyBestSellingMain
-                                                        Slug={post.slug}
-                                                        ProductImage={post.image}
-                                                        ProductTitle={post.title}
-                                                        Price={post.price}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>}
-                                {activeTab === 'tab3' && <div>
-                                    <div className="row g-4">
-                                        {postsSection3.map((post: PostType, index: number) => (
-                                            <div
-                                                key={index}
-                                                className="col-xxl-2 col-xl-3 col-lg-4 col-md-4 col-sm-6 col-12"
-                                            >
-                                                <div className="single-shopping-card-one">
-                                                    <WeeklyBestSellingMain
-                                                        Slug={post.slug}
-                                                        ProductImage={post.image}
-                                                        ProductTitle={post.title}
-                                                        Price={post.price}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>}
-                                {activeTab === 'tab4' && <div>
-                                    <div className="row g-4">
-                                        {postsSection4.map((post: PostType, index: number) => (
-                                            <div
-                                                key={index}
-                                                className="col-xxl-2 col-xl-3 col-lg-4 col-md-4 col-sm-6 col-12"
-                                            >
-                                                <div className="single-shopping-card-one">
-                                                    <WeeklyBestSellingMain
-                                                        Slug={post.slug}
-                                                        ProductImage={post.image}
-                                                        ProductTitle={post.title}
-                                                        Price={post.price}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>}
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                {/* best selling groceris end */}
             </>
         </div>
     )

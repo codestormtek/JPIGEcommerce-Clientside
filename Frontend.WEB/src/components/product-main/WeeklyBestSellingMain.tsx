@@ -24,14 +24,12 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
   Price,
 }) => {
 
-  // ✅ Swiper Anti-Hydration Fix (safe version)
   const [domReady, setDomReady] = useState(false);
 
   useEffect(() => {
     setDomReady(true);
   }, []);
 
-  // Other hooks (must stay in order)
   type ModalType = 'one' | 'two' | 'three' | null;
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const handleClose = () => setActiveModal(null);
@@ -43,15 +41,17 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
   const [added, setAdded] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
 
-  // quantity
   const [quantity, setQuantity] = useState(1);
   const increase = () => setQuantity(prev => prev + 1);
   const decrease = () => setQuantity(prev => prev > 1 ? prev - 1 : 1);
 
+  const isExternal = ProductImage.startsWith('http') || ProductImage.startsWith('//');
+  const imageSrc = isExternal ? ProductImage : `/assets/images/grocery/${ProductImage}`;
+
   const handleAdd = () => {
     addToCart({
       id: Date.now(),
-      image: `/assets/images/grocery/${ProductImage}`,
+      image: imageSrc,
       title: ProductTitle ?? 'Default Product Title',
       price: parseFloat(Price ?? '0'),
       quantity,
@@ -64,7 +64,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
   const handleWishlist = () => {
     addToWishlist({
       id: Date.now(),
-      image: `/assets/images/grocery/${ProductImage}`,
+      image: imageSrc,
       title: ProductTitle ?? 'Default Product Title',
       price: parseFloat(Price ?? '0'),
       quantity: 1,
@@ -75,7 +75,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
 
   const handleCompare = () => {
     addToCompare({
-      image: `/assets/images/grocery/${ProductImage}`,
+      image: imageSrc,
       name: ProductTitle ?? 'Default Product Title',
       price: Price ?? '0',
       description: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
@@ -92,7 +92,6 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
 
   return (
     <>
-      {/* ⛔ Don't render UI until DOM ready, but WITHOUT breaking hooks */}
       {!domReady ? null : (
         <>
           <div className="image-and-action-area-wrapper">
@@ -104,7 +103,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                 </span>
                 <i className="fa-solid fa-bookmark" />
               </div>
-              <img src={`/assets/images/grocery/${ProductImage}`} alt="grocery" />
+              <img src={imageSrc} alt="grocery" />
             </Link>
             <div className="action-share-option">
               <span
@@ -190,12 +189,11 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
         </>
       )}
 
-      {/* Modals always mounted (does not affect swiper width) */}
       <CompareModal show={activeModal === 'one'} handleClose={handleClose} />
       <ProductDetails
         show={activeModal === 'two'}
         handleClose={handleClose}
-        productImage={`/assets/images/grocery/${ProductImage}`}
+        productImage={imageSrc}
         productTitle={ProductTitle ?? 'Default Product Title'}
         productPrice={Price ?? '0'}
       />

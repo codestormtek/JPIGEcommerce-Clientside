@@ -26,18 +26,18 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
     const { addToCart } = useCart();
     const { addToWishlist } = useWishlist();
 
-    // Increase quantity
+    const isExternal = ProductImage.startsWith('http') || ProductImage.startsWith('//');
+    const imageSrc = isExternal ? ProductImage : `/assets/images/grocery/${ProductImage}`;
+
     const increase = () => setQuantity(prev => prev + 1);
 
-    // Decrease quantity
     const decrease = () =>
         setQuantity(prev => (prev > 1 ? prev - 1 : 1));
 
-    // Add to cart
     const handleAdd = () => {
         addToCart({
             id: Date.now(),
-            image: `/assets/images/grocery/${ProductImage}`,
+            image: imageSrc,
             title: ProductTitle ?? 'Default Product Title',
             price: parseFloat(Price ?? '0'),
             quantity: quantity,
@@ -49,11 +49,10 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
         setTimeout(() => setAdded(false), 3000);
     };
 
-    // Add to wishlist
     const handleWishlist = () => {
         addToWishlist({
             id: Date.now(),
-            image: `/assets/images/grocery/${ProductImage}`,
+            image: imageSrc,
             title: ProductTitle ?? 'Default Product Title',
             price: parseFloat(Price ?? '0'),
             quantity: 1,
@@ -69,7 +68,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                     <span>25% <br />Off</span>
                     <i className="fa-solid fa-bookmark" />
                 </div>
-                <img src={`/assets/images/grocery/${ProductImage}`} alt="grocery" />
+                <img src={imageSrc} alt="grocery" />
             </Link>
 
             <div className="body-content">
@@ -85,7 +84,6 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                 </div>
 
                 <div className="cart-counter-action">
-                    {/* Quantity */}
                     <div className="quantity-edit">
                         <input
                             type="text"
@@ -106,7 +104,6 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                         </div>
                     </div>
 
-                    {/* Add to cart */}
                     <Link
                         href="#"
                         className="rts-btn btn-primary radious-sm with-icon add-to-cart"

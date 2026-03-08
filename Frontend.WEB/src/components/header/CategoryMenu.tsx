@@ -1,113 +1,94 @@
 "use client";
 
 import Link from "next/link";
-import React, { useState, MouseEvent } from "react";
-
-type MenuItem = {
-    icon: string;
-    label: string;
-    submenu: string[] | null;
-};
+import React, { useState, useEffect, MouseEvent } from "react";
+import { apiGet } from "@/lib/api";
+import { Category } from "@/types/api";
 
 function CategoryMenu() {
     const [openIndex, setOpenIndex] = useState<number | null>(null);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        apiGet<Category[]>("/products/categories")
+            .then((data) => {
+                setCategories(data);
+            })
+            .catch(() => {
+                setCategories([]);
+            })
+            .finally(() => setLoading(false));
+    }, []);
 
     const toggleMenu = (index: number) => {
         setOpenIndex(openIndex === index ? null : index);
     };
 
-    const menuItems: MenuItem[] = [
-        {
-            icon: "01.svg",
-            label: "Breakfast & Dairy",
-            submenu: ["Breakfast", "Dinner", "Pumking"],
-        },
-        {
-            icon: "02.svg",
-            label: "Meats & Seafood",
-            submenu: ["Breakfast", "Dinner", "Pumking"],
-        },
-        {
-            icon: "03.svg",
-            label: "Breads & Bakery",
-            submenu: null,
-        },
-        {
-            icon: "04.svg",
-            label: "Chips & Snacks",
-            submenu: ["Breakfast", "Dinner", "Pumking"],
-        },
-        {
-            icon: "05.svg",
-            label: "Medical Healthcare",
-            submenu: null,
-        },
-        {
-            icon: "06.svg",
-            label: "Breads & Bakery",
-            submenu: null,
-        },
-        {
-            icon: "07.svg",
-            label: "Biscuits & Snacks",
-            submenu: ["Breakfast", "Dinner", "Pumking"],
-        },
-        {
-            icon: "08.svg",
-            label: "Frozen Foods",
-            submenu: null,
-        },
-        {
-            icon: "09.svg",
-            label: "Grocery & Staples",
-            submenu: null,
-        },
-        {
-            icon: "10.svg",
-            label: "Other Items",
-            submenu: null,
-        },
+    const iconFiles = [
+        "01.svg", "02.svg", "03.svg", "04.svg", "05.svg",
+        "06.svg", "07.svg", "08.svg", "09.svg", "10.svg",
     ];
+
+    const parentCategories = categories.filter((c) => !c.parentCategoryId);
+    const getChildren = (parentId: string) =>
+        categories.filter((c) => c.parentCategoryId === parentId);
+
+    if (loading) {
+        return (
+            <div>
+                <ul className="category-sub-menu" id="category-active-four">
+                    <li style={{ padding: "10px", textAlign: "center" }}>Loading...</li>
+                </ul>
+            </div>
+        );
+    }
 
     return (
         <div>
             <ul className="category-sub-menu" id="category-active-four">
-                {menuItems.map((item, index) => (
-                    <li key={index}>
-                        <Link
-                            href="#"
-                            className="menu-item"
-                            onClick={(e: MouseEvent<HTMLAnchorElement>) => {
-                                e.preventDefault();
-                                if (item.submenu) toggleMenu(index);
-                            }}
-                        >
-                            <img src={`/assets/images/icons/${item.icon}`} alt="icons" />
-                            <span>{item.label}</span>
-                            {item.submenu && (
-                                <i
-                                    className={`fa-regular ${openIndex === index ? "fa-minus" : "fa-plus"
-                                        }`}
-                                />
-                            )}
-                        </Link>
+                {parentCategories.map((item, index) => {
+                    const children = getChildren(item.id);
+                    const hasChildren = children.length > 0;
+                    const iconSrc = item.imageUrl || `/assets/images/icons/${iconFiles[index % iconFiles.length]}`;
 
-                        {item.submenu && (
-                            <ul
-                                className={`submenu mm-collapse ${openIndex === index ? "mm-show" : ""
-                                    }`}
+                    return (
+                        <li key={item.id}>
+                            <Link
+                                href={`/shop?categoryId=${encodeURIComponent(item.id)}`}
+                                className="menu-item"
+                                onClick={(e: MouseEvent<HTMLAnchorElement>) => {
+                                    if (hasChildren) {
+                                        e.preventDefault();
+                                        toggleMenu(index);
+                                    }
+                                }}
                             >
-                                {item.submenu.map((subItem, subIdx) => (
-                                    <li key={subIdx}>
-                                        <Link className="mobile-menu-link" href="/shop">
-                                            {subItem}
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </li>
-                ))}
+                                <img src={iconSrc} alt={item.name} />
+                                <span>{item.name}</span>
+                                {hasChildren && (
+                                    <i
+                                        className={`fa-regular ${openIndex === index ? "fa-minus" : "fa-plus"}`}
+                                    />
+                                )}
+                            </Link>
+
+                            {hasChildren && (
+                                <ul
+                                    className={`submenu mm-collapse ${openIndex === index ? "mm-show" : ""}`}
+                                >
+                                    {children.map((child) => (
+                                        <li key={child.id}>
+                                            <Link className="mobile-menu-link" href={`/shop?categoryId=${encodeURIComponent(child.id)}`}>
+                                                {child.name}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </li>
+                    );
+                })}
             </ul>
         </div>
     );

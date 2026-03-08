@@ -1,34 +1,132 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import HeaderOne from "@/components/header/HeaderOne";
 import ShortService from "@/components/service/ShortService";
 import RelatedProduct from "@/components/product/RelatedProduct";
 import FooterOne from "@/components/footer/FooterOne";
-import Product from "@/data/Product.json";
 import { useParams } from 'next/navigation';
+import { apiGet } from "@/lib/api";
+import { Product, getProductImage, formatPrice } from "@/types/api";
 
 import { useCart } from "@/components/header/CartContext";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const CompareElements: React.FC = () => {
-  const { slug } = useParams(); // Get the slug from URL parameters
-  const blogPost = Product.find(post => post.slug === slug);
+const ProductDetailPage: React.FC = () => {
+  const { slug } = useParams();
+  const { addToCart } = useCart();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [added, setAdded] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('tab1');
+  const [activeImage, setActiveImage] = useState<string>('');
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-  if (!blogPost) {
-    return <div>Post not found Man!</div>;
+  useEffect(() => {
+    if (!slug) return;
+    setLoading(true);
+    setError(null);
+    apiGet<Product>(`/products/${slug}`)
+      .then((data) => {
+        setProduct(data);
+        setActiveImage(getProductImage(data));
+        if (data.items && data.items.length > 0) {
+          setSelectedItemId(data.items[0].id);
+        }
+      })
+      .catch((err) => {
+        setError(err.message || 'Failed to load product');
+      })
+      .finally(() => setLoading(false));
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div>
+        <HeaderOne />
+        <div className="rts-section-gap bg_light-1 d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+        <FooterOne />
+      </div>
+    );
   }
 
-  const { addToCart } = useCart();
-  const [added, setAdded] = useState(false);
+  if (error || !product) {
+    return (
+      <div>
+        <HeaderOne />
+        <div className="rts-section-gap bg_light-1 d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+          <div className="text-center">
+            <h3>Product not found</h3>
+            <p>{error || 'The product you are looking for does not exist.'}</p>
+            <a href="/shop" className="rts-btn btn-primary">Back to Shop</a>
+          </div>
+        </div>
+        <FooterOne />
+      </div>
+    );
+  }
+
+  const thumbnails = product.media
+    ?.sort((a, b) => {
+      if (a.isPrimary && !b.isPrimary) return -1;
+      if (!a.isPrimary && b.isPrimary) return 1;
+      return a.sortOrder - b.sortOrder;
+    })
+    .map((m, i) => ({
+      id: `thumb-${i}`,
+      src: m.mediaAsset.url,
+      alt: m.mediaAsset.altText || product.name,
+    })) || [];
+
+  if (thumbnails.length === 0) {
+    thumbnails.push({
+      id: 'thumb-default',
+      src: '/assets/images/grocery/15.jpg',
+      alt: product.name,
+    });
+  }
+
+  const categories = product.categoryMaps?.map((cm) => cm.category.name).join(', ') || '';
+  const brandName = product.brand?.name || '';
+
+  const selectedItem = product.items?.find((item) => item.id === selectedItemId);
+  const displayPrice = selectedItem ? selectedItem.price : product.price;
+  const displaySku = selectedItem?.sku || '';
+
+  const variationGroups: Record<string, { variationName: string; options: { id: string; value: string; itemId: string }[] }> = {};
+  if (product.items && product.items.length > 0) {
+    product.items.forEach((item) => {
+      item.options?.forEach((opt) => {
+        const varName = opt.variationOption.variation.name;
+        if (!variationGroups[varName]) {
+          variationGroups[varName] = { variationName: varName, options: [] };
+        }
+        const existing = variationGroups[varName].options.find(
+          (o) => o.id === opt.variationOption.id
+        );
+        if (!existing) {
+          variationGroups[varName].options.push({
+            id: opt.variationOption.id,
+            value: opt.variationOption.value,
+            itemId: item.id,
+          });
+        }
+      });
+    });
+  }
 
   const handleAdd = () => {
     addToCart({
       id: Date.now(),
-      image: `/assets/images/grocery/${blogPost.bannerImg}`,
-      title: blogPost.title ?? 'Default Product Title',
-      price: parseFloat(blogPost.price ?? '0'),
+      image: activeImage,
+      title: product.name,
+      price: displayPrice,
       quantity: 1,
       active: true,
     });
@@ -37,39 +135,13 @@ const CompareElements: React.FC = () => {
     setTimeout(() => setAdded(false), 5000);
   };
 
-  const [activeTab, setActiveTab] = useState<string>('tab1');
-  type ModalType = 'one' | 'two' | 'three' | null;
-  const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const handleClose = () => setActiveModal(null);
-
-  const [activeImage, setActiveImage] = useState(`/assets/images/grocery/${blogPost.bannerImg}`);
-  const thumbnails = [
-    {
-      id: 'one',
-      src: `/assets/images/grocery/${blogPost.bannerImg}`,
-      alt: blogPost.title,
-    },
-    {
-      id: 'two',
-      src: '/assets/images/shop/02.jpg',
-      alt: 'product-thumb-filter',
-    },
-    {
-      id: 'three',
-      src: '/assets/images/shop/03.jpg',
-      alt: 'product-thumb-filter',
-    },
-    {
-      id: 'four',
-      src: '/assets/images/shop/04.jpg',
-      alt: 'product-thumb-filter',
-    },
-    {
-      id: 'five',
-      src: '/assets/images/shop/05.jpg',
-      alt: 'product-thumb-filter',
-    },
-  ];
+  const handleVariantSelect = (itemId: string) => {
+    setSelectedItemId(itemId);
+    const item = product.items?.find((i) => i.id === itemId);
+    if (item) {
+      // optionally could change image based on variant
+    }
+  };
 
   return (
     <div>
@@ -81,7 +153,9 @@ const CompareElements: React.FC = () => {
               <div className="navigator-breadcrumb-wrapper">
                 <a href="/">Home</a>
                 <i className="fa-regular fa-chevron-right" />
-                <a className="current" href="#">Vendor Details</a>
+                <a href="/shop">Shop</a>
+                <i className="fa-regular fa-chevron-right" />
+                <a className="current" href="#">{product.name}</a>
               </div>
             </div>
           </div>
@@ -107,41 +181,55 @@ const CompareElements: React.FC = () => {
                           <div className="cursor" />
                           <div className="thumb-wrapper one filterd-items figure">
                             <div className="product-thumb">
-                              <img src={activeImage} alt={blogPost.title} />
+                              <img src={activeImage} alt={product.name} />
                             </div>
                           </div>
-                          <div className="product-thumb-filter-group">
-                            {thumbnails.map((thumb) => (
-                              <div
-                                key={thumb.id}
-                                className={`thumb-filter filter-btn ${activeImage === thumb.src ? 'active' : ''}`}
-                                onClick={() => setActiveImage(thumb.src)}
-                                style={{ cursor: 'pointer' }}
-                              >
-                                <img src={thumb.src} alt={thumb.alt} />
-                              </div>
-                            ))}
-                          </div>
+                          {thumbnails.length > 1 && (
+                            <div className="product-thumb-filter-group">
+                              {thumbnails.map((thumb) => (
+                                <div
+                                  key={thumb.id}
+                                  className={`thumb-filter filter-btn ${activeImage === thumb.src ? 'active' : ''}`}
+                                  onClick={() => setActiveImage(thumb.src)}
+                                  style={{ cursor: 'pointer' }}
+                                >
+                                  <img src={thumb.src} alt={thumb.alt} />
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         <div className="contents">
                           <div className="product-status">
-                            <span className="product-catagory">Dress</span>
-                            <div className="rating-stars-group">
-                              <div className="rating-star"><i className="fas fa-star" /></div>
-                              <div className="rating-star"><i className="fas fa-star" /></div>
-                              <div className="rating-star"><i className="fas fa-star-half-alt" /></div>
-                              <span>10 Reviews</span>
-                            </div>
+                            {categories && <span className="product-catagory">{categories}</span>}
                           </div>
-                          <h2 className="product-title">{blogPost.title}</h2>
-                          <p className="mt--20 mb--20">
-                            Priyoshop has brought to you the Hijab 3 Pieces Combo Pack PS23...
-                          </p>
+                          <h2 className="product-title">{product.name}</h2>
+                          {product.description && (
+                            <p className="mt--20 mb--20">{product.description}</p>
+                          )}
                           <span className="product-price mb--15 d-block" style={{ color: "#DC2626", fontWeight: 600 }}>
-                            ${blogPost.price}
-                            <span className="old-price ml--15">$69.35</span>
+                            ${formatPrice(displayPrice)}
                           </span>
+
+                          {Object.keys(variationGroups).length > 0 && (
+                            <div className="product-variants mb--15">
+                              {Object.entries(variationGroups).map(([varName, group]) => (
+                                <div key={varName} className="variant-group mb--10">
+                                  <strong>{group.variationName}:</strong>{' '}
+                                  {group.options.map((opt) => (
+                                    <button
+                                      key={opt.id}
+                                      className={`btn btn-sm me-1 ${selectedItemId === opt.itemId ? 'btn-primary' : 'btn-outline-primary'}`}
+                                      onClick={() => handleVariantSelect(opt.itemId)}
+                                    >
+                                      {opt.value}
+                                    </button>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
                           <div className="product-bottom-action">
                             <a
@@ -159,12 +247,15 @@ const CompareElements: React.FC = () => {
                           </div>
 
                           <div className="product-uniques">
-                            <span className="sku product-unipue mb--10"><strong>SKU:</strong> BO1D0MX8SJ</span>
-                            <span className="catagorys product-unipue mb--10"><strong>Categories:</strong> T-Shirts, Tops, Mens</span>
-                            <span className="tags product-unipue mb--10"><strong>Tags:</strong> fashion, t-shirts, Men</span>
-                            <span className="tags product-unipue mb--10"><strong>LIFE:</strong> 6 Months</span>
-                            <span className="tags product-unipue mb--10"><strong>Type:</strong> original</span>
-                            <span className="tags product-unipue mb--10"><strong>Category:</strong> Beverages, Dairy & Bakery</span>
+                            {displaySku && (
+                              <span className="sku product-unipue mb--10"><strong>SKU:</strong> {displaySku}</span>
+                            )}
+                            {categories && (
+                              <span className="catagorys product-unipue mb--10"><strong>Categories:</strong> {categories}</span>
+                            )}
+                            {brandName && (
+                              <span className="tags product-unipue mb--10"><strong>Brand:</strong> {brandName}</span>
+                            )}
                           </div>
 
                           <div className="share-option-shop-details">
@@ -186,18 +277,20 @@ const CompareElements: React.FC = () => {
                         Product Details
                       </button>
                     </li>
-                    <li className="nav-item" role="presentation">
-                      <button
-                        onClick={() => setActiveTab('tab2')}
-                        className={`nav-link ${activeTab === 'tab2' ? 'active' : ''}`}>
-                        Additional Information
-                      </button>
-                    </li>
+                    {product.attributes && product.attributes.length > 0 && (
+                      <li className="nav-item" role="presentation">
+                        <button
+                          onClick={() => setActiveTab('tab2')}
+                          className={`nav-link ${activeTab === 'tab2' ? 'active' : ''}`}>
+                          Additional Information
+                        </button>
+                      </li>
+                    )}
                     <li className="nav-item" role="presentation">
                       <button
                         onClick={() => setActiveTab('tab3')}
                         className={`nav-link ${activeTab === 'tab3' ? 'active' : ''}`}>
-                        Customer Reviews (01)
+                        Customer Reviews
                       </button>
                     </li>
                   </ul>
@@ -205,268 +298,70 @@ const CompareElements: React.FC = () => {
                     {activeTab === 'tab1' &&
                       <div>
                         <div className="single-tab-content-shop-details">
-                          <p className="disc">
-                            Uninhibited carnally hired played in whimpered dear gorilla
-                            koala depending and much yikes off far quetzal goodness and
-                            from for grimaced goodness unaccountably and meadowlark near
-                            unblushingly crucial scallop tightly neurotic hungrily some
-                            and dear furiously this apart.
-                          </p>
-                          <div className="details-row-2">
-                            <div className="left-area">
-                              <img src="/assets/images/shop/06.jpg" alt="shop" />
-                            </div>
-                            <div className="right">
-                              <h4 className="title">
-                                All Natural Italian-Style Chicken Meatballs
-                              </h4>
-                              <p className="mb--25">
-                                Pellentesque habitant morbi tristique senectus et netus
-                                et malesuada fames ac turpis egestas Vestibulum tortor
-                                quam, feugiat vitae, ultricies eget, tempor sit amet,
-                                ante. ibero sit amet quam egestas semperAenean ultricies
-                                mi vitae est Mauris placerat eleifend.
-                              </p>
-                              <ul className="bottom-ul">
-                                <li>
-                                  Elementum sociis rhoncus aptent auctor urna justo
-                                </li>
-                                <li>
-                                  Habitasse venenatis gravida nisl, sollicitudin posuere
-                                </li>
-                              </ul>
-                            </div>
-                          </div>
+                          {product.description ? (
+                            <p className="disc">{product.description}</p>
+                          ) : (
+                            <p className="disc">No detailed description available for this product.</p>
+                          )}
                         </div>
-
-
-
-
                       </div>}
-                    {activeTab === 'tab2' &&
+
+                    {activeTab === 'tab2' && product.attributes && product.attributes.length > 0 &&
                       <div>
                         <div className="single-tab-content-shop-details">
-                          <p className="disc">
-                            Uninhibited carnally hired played in whimpered dear gorilla
-                            koala depending and much yikes off far quetzal goodness and
-                            from for grimaced goodness unaccountably and meadowlark near
-                            unblushingly crucial scallop tightly neurotic hungrily some
-                            and dear furiously this apart.
-                          </p>
                           <div className="table-responsive table-shop-details-pd">
                             <table className="table">
-                              <thead>
-                                <tr>
-                                  <th>Kitchen Fade Defy</th>
-                                  <th>5KG</th>
-                                </tr>
-                              </thead>
                               <tbody>
-                                <tr>
-                                  <td>PRAN Full Cream Milk Powder</td>
-                                  <td>3KG</td>
-                                </tr>
-                                <tr>
-                                  <td>Net weight</td>
-                                  <td>8KG</td>
-                                </tr>
-                                <tr>
-                                  <td>Brand</td>
-                                  <td>Reactheme</td>
-                                </tr>
-                                <tr>
-                                  <td>Item code</td>
-                                  <td>4000000005</td>
-                                </tr>
-                                <tr>
-                                  <td>Product type</td>
-                                  <td>Powder milk</td>
-                                </tr>
+                                {product.attributes.map((attr) => (
+                                  <tr key={attr.id}>
+                                    <td><strong>{attr.name}</strong></td>
+                                    <td>{attr.values.map((v) => v.value).join(', ')}</td>
+                                  </tr>
+                                ))}
+                                {brandName && (
+                                  <tr>
+                                    <td><strong>Brand</strong></td>
+                                    <td>{brandName}</td>
+                                  </tr>
+                                )}
                               </tbody>
                             </table>
                           </div>
-                          <p className="cansellation mt--20">
-                            <span> Return/cancellation:</span> No change will be
-                            applicable which are already delivered to customer. If
-                            product quality or quantity problem found then customer can
-                            return/cancel their order on delivery time with presence of
-                            delivery person.
-                          </p>
-                          <p className="note">
-                            <span>Note:</span> Product delivery duration may vary due to
-                            product availability in stock.
-                          </p>
                         </div>
                       </div>}
 
                     {activeTab === 'tab3' &&
                       <div>
                         <div className="single-tab-content-shop-details">
-                          <div className="product-details-review-product-style">
-                            <div className="average-stars-area-left">
-                              <div className="top-stars-wrapper">
-                                <h4 className="review">5.0</h4>
-                                <div className="rating-disc">
-                                  <span>Average Rating</span>
-                                  <div className="stars">
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <span>(1 Reviews &amp; 0 Ratings)</span>
-                                  </div>
+                          <div className="submit-review-area">
+                            <form action="#" className="submit-review-area">
+                              <h5 className="title">Submit Your Review</h5>
+                              <div className="your-rating">
+                                <span>Your Rating Of This Product :</span>
+                                <div className="stars">
+                                  <i className="fa-solid fa-star" />
+                                  <i className="fa-solid fa-star" />
+                                  <i className="fa-solid fa-star" />
+                                  <i className="fa-solid fa-star" />
+                                  <i className="fa-solid fa-star" />
                                 </div>
                               </div>
-                              <div className="average-stars-area">
-                                <h4 className="average">66.7%</h4>
-                                <span>Recommended (2 of 3)</span>
-                              </div>
-                              <div className="review-charts-details">
-                                <div className="single-review">
-                                  <div className="stars">
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                  </div>
-                                  <div className="single-progress-area-incard">
-                                    <div className="progress">
-                                      <div
-                                        className="progress-bar wow fadeInLeft"
-                                        role="progressbar"
-                                        style={{ width: "80%" }}
-                                        aria-valuenow={25}
-                                        aria-valuemin={0}
-                                        aria-valuemax={100}
-                                      />
-                                    </div>
-                                  </div>
-                                  <span className="pac">100%</span>
+                              <div className="half-input-wrapper">
+                                <div className="half-input">
+                                  <input type="text" placeholder="Your Name*" />
                                 </div>
-                                <div className="single-review">
-                                  <div className="stars">
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-regular fa-star" />
-                                  </div>
-                                  <div className="single-progress-area-incard">
-                                    <div className="progress">
-                                      <div
-                                        className="progress-bar wow fadeInLeft"
-                                        role="progressbar"
-                                        style={{ width: "80%" }}
-                                        aria-valuenow={25}
-                                        aria-valuemin={0}
-                                        aria-valuemax={100}
-                                      />
-                                    </div>
-                                  </div>
-                                  <span className="pac">80%</span>
-                                </div>
-                                <div className="single-review">
-                                  <div className="stars">
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-regular fa-star" />
-                                    <i className="fa-regular fa-star" />
-                                  </div>
-                                  <div className="single-progress-area-incard">
-                                    <div className="progress">
-                                      <div
-                                        className="progress-bar wow fadeInLeft"
-                                        role="progressbar"
-                                        style={{ width: "60%" }}
-                                        aria-valuenow={25}
-                                        aria-valuemin={0}
-                                        aria-valuemax={100}
-                                      />
-                                    </div>
-                                  </div>
-                                  <span className="pac">60%</span>
-                                </div>
-                                <div className="single-review">
-                                  <div className="stars">
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-regular fa-star" />
-                                    <i className="fa-regular fa-star" />
-                                    <i className="fa-regular fa-star" />
-                                  </div>
-                                  <div className="single-progress-area-incard">
-                                    <div className="progress">
-                                      <div
-                                        className="progress-bar wow fadeInLeft"
-                                        role="progressbar"
-                                        style={{ width: "80%" }}
-                                        aria-valuenow={25}
-                                        aria-valuemin={0}
-                                        aria-valuemax={100}
-                                      />
-                                    </div>
-                                  </div>
-                                  <span className="pac">40%</span>
-                                </div>
-                                <div className="single-review">
-                                  <div className="stars">
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-regular fa-star" />
-                                    <i className="fa-regular fa-star" />
-                                    <i className="fa-regular fa-star" />
-                                    <i className="fa-regular fa-star" />
-                                  </div>
-                                  <div className="single-progress-area-incard">
-                                    <div className="progress">
-                                      <div
-                                        className="progress-bar wow fadeInLeft"
-                                        role="progressbar"
-                                        style={{ width: "80%" }}
-                                        aria-valuenow={25}
-                                        aria-valuemin={0}
-                                        aria-valuemax={100}
-                                      />
-                                    </div>
-                                  </div>
-                                  <span className="pac">30%</span>
+                                <div className="half-input">
+                                  <input type="text" placeholder="Your Email *" />
                                 </div>
                               </div>
-                            </div>
-                            <div className="submit-review-area">
-                              <form action="#" className="submit-review-area">
-                                <h5 className="title">Submit Your Review</h5>
-                                <div className="your-rating">
-                                  <span>Your Rating Of This Product :</span>
-                                  <div className="stars">
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                    <i className="fa-solid fa-star" />
-                                  </div>
-                                </div>
-                                <div className="half-input-wrapper">
-                                  <div className="half-input">
-                                    <input type="text" placeholder="Your Name*" />
-                                  </div>
-                                  <div className="half-input">
-                                    <input type="text" placeholder="Your Email *" />
-                                  </div>
-                                </div>
-                                <textarea
-                                  name="#"
-                                  id="#"
-                                  placeholder="Write Your Review"
-                                  defaultValue={""}
-                                />
-                                <button className="rts-btn btn-primary">
-                                  SUBMIT REVIEW
-                                </button>
-                              </form>
-                            </div>
+                              <textarea
+                                placeholder="Write Your Review"
+                                defaultValue={""}
+                              />
+                              <button className="rts-btn btn-primary">
+                                SUBMIT REVIEW
+                              </button>
+                            </form>
                           </div>
                         </div>
                       </div>}
@@ -511,4 +406,4 @@ const CompareElements: React.FC = () => {
   );
 };
 
-export default CompareElements;
+export default ProductDetailPage;

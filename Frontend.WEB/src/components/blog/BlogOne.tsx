@@ -1,24 +1,20 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import BlogOneMain from './BlogOneMain';
-import Posts from '@/data/Posts.json';
-
-interface PostType {
-    category?: string;
-    slug: string;
-    image: string;
-    title?: string;
-    author?: string;
-    publishedDate?: string;
-}
+import { apiGet } from '@/lib/api';
+import { ContentPost, PaginatedResponse } from '@/types/api';
 
 function BlogOne() {
-    // Slice posts 11 to 15 (index 10 to 14)
-    const selectedPosts = Posts.slice(11, 15);
+    const [posts, setPosts] = useState<ContentPost[]>([]);
+
+    useEffect(() => {
+        apiGet<PaginatedResponse<ContentPost>>('/content?limit=4&page=1')
+            .then(res => setPosts(res.data || []))
+            .catch(() => {});
+    }, []);
 
     return (
         <div>
-            {/* rts top tranding product area */}
             <div className="blog-area-start rts-section-gapBottom">
                 <div className="container">
                     <div className="row">
@@ -32,16 +28,18 @@ function BlogOne() {
                         <div className="col-lg-12">
                             <div className="cover-card-main-over">
                                 <div className="row g-4">
-                                    {selectedPosts.map((post: PostType, index: number) => (
+                                    {posts.map((post, index) => (
                                         <div
-                                            key={index}
+                                            key={post.id || index}
                                             className="col-lg-3 col-md-6 col-sm-12"
                                         >
                                             <div className="single-blog-area-start">
                                                 <BlogOneMain
                                                     Slug={post.slug}
-                                                    blogImage={post.image}
+                                                    blogImage={post.featuredImage?.url || ''}
                                                     blogTitle={post.title}
+                                                    publishedDate={post.publishedAt || post.createdAt}
+                                                    categoryName={post.categories?.[0]?.name}
                                                 />
                                             </div>
                                         </div>
@@ -52,7 +50,6 @@ function BlogOne() {
                     </div>
                 </div>
             </div>
-            {/* rts top tranding product area end */}
         </div>
     );
 }
