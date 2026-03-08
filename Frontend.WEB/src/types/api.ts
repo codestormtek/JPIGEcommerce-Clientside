@@ -90,13 +90,19 @@ export interface ContentPost {
 export interface CarouselSlide {
   id: string;
   title: string | null;
-  subtitle: string | null;
-  linkUrl: string | null;
-  linkText: string | null;
+  subTitle: string | null;
+  subtitle?: string | null;
+  buttonUrl: string | null;
+  buttonText: string | null;
+  linkUrl?: string | null;
+  linkText?: string | null;
   displayOrder: number;
-  isActive: boolean;
-  desktopImage: MediaAsset | null;
-  mobileImage: MediaAsset | null;
+  isVisible: boolean;
+  isActive?: boolean;
+  mediaAsset: MediaAsset | null;
+  mobileMediaAsset: MediaAsset | null;
+  desktopImage?: MediaAsset | null;
+  mobileImage?: MediaAsset | null;
 }
 
 export function getProductImage(product: Product): string {

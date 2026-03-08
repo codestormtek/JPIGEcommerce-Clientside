@@ -40,3 +40,154 @@ a {
     color-scheme: dark;
   }
 }
+
+.jpig-banner-area {
+  padding: 20px 0 30px;
+  background: #f8f8f8;
+}
+
+.jpig-carousel-wrapper {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.jpig-carousel-slide {
+  position: relative;
+  width: 100%;
+  height: 480px;
+}
+
+.jpig-carousel-image-wrapper {
+  position: absolute;
+  inset: 0;
+}
+
+.jpig-carousel-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.jpig-carousel-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.25) 50%,
+    transparent 100%
+  );
+}
+
+.jpig-carousel-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px 60px;
+  z-index: 2;
+  max-width: 600px;
+}
+
+.jpig-carousel-subtitle {
+  display: inline-block;
+  font-size: 16px;
+  font-weight: 500;
+  color: #ff8c00;
+  margin-bottom: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.jpig-carousel-title {
+  font-size: 42px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+  margin-bottom: 24px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.jpig-carousel-prev,
+.jpig-carousel-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #333;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.jpig-carousel-prev:hover,
+.jpig-carousel-next:hover {
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.jpig-carousel-prev {
+  left: 16px;
+}
+
+.jpig-carousel-next {
+  right: 16px;
+}
+
+.jpig-carousel-loading {
+  background: #f8f8f8;
+  padding: 20px 0 30px;
+}
+
+@media (max-width: 768px) {
+  .jpig-carousel-slide {
+    height: 320px;
+  }
+
+  .jpig-carousel-content {
+    padding: 24px 30px;
+    max-width: 100%;
+  }
+
+  .jpig-carousel-title {
+    font-size: 26px;
+    margin-bottom: 16px;
+  }
+
+  .jpig-carousel-subtitle {
+    font-size: 13px;
+  }
+
+  .jpig-carousel-prev,
+  .jpig-carousel-next {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .jpig-carousel-slide {
+    height: 260px;
+  }
+
+  .jpig-carousel-content {
+    padding: 20px;
+  }
+
+  .jpig-carousel-title {
+    font-size: 22px;
+  }
+}
