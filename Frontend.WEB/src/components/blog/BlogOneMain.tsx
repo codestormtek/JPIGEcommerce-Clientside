@@ -1,6 +1,8 @@
 "use client"
 import React from 'react';
 import Link from 'next/link';
+import { ContentPost } from '@/types/api';
+import { getBlogImageUrl } from '@/lib/blogImages';
 
 interface BlogGridMainProps {
     Slug: string;
@@ -8,6 +10,7 @@ interface BlogGridMainProps {
     blogTitle?: string;
     publishedDate?: string;
     categoryName?: string;
+    post?: ContentPost;
 }
 
 const BlogGridMain: React.FC<BlogGridMainProps> = ({
@@ -16,9 +19,13 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
     blogTitle,
     publishedDate,
     categoryName,
+    post,
 }) => {
-    const isExternal = blogImage && (blogImage.startsWith('http') || blogImage.startsWith('//'));
-    const imageSrc = isExternal ? blogImage : (blogImage ? `assets/images/blog/${blogImage}` : 'assets/images/blog/01.jpg');
+    const imageSrc = post
+        ? getBlogImageUrl(post, 'medium')
+        : blogImage && (blogImage.startsWith('http') || blogImage.startsWith('//'))
+            ? blogImage
+            : (blogImage ? `assets/images/blog/${blogImage}` : 'assets/images/blog/01.jpg');
 
     const formattedDate = publishedDate
         ? new Date(publishedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })

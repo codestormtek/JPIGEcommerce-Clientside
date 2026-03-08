@@ -82,8 +82,9 @@ export interface ContentPost {
   publishedAt: string | null;
   createdAt: string;
   featuredImage: MediaAsset | null;
-  categories: { id: string; name: string }[];
-  tags: { id: string; name: string }[];
+  featuredMediaAsset: MediaAsset | null;
+  categories: { id?: string; name?: string; category?: { id: string; name: string; slug?: string } }[];
+  tags: { id?: string; name?: string; tag?: { id: string; name: string; slug?: string } }[];
 }
 
 export interface CarouselSlide {

@@ -1,42 +1,51 @@
 "use client"
 import React from 'react';
 import Link from 'next/link';
+import { ContentPost } from '@/types/api';
+import { getBlogImageUrl } from '@/lib/blogImages';
 
 interface BlogGridMainProps {
-    Slug: string;
-    blogImage: string;
-    blogTitle?: string;
+    post: ContentPost;
 }
 
-const BlogGridMain: React.FC<BlogGridMainProps> = ({
-    Slug,
-    blogImage,
-    blogTitle,
-}) => {
+const BlogGridMain: React.FC<BlogGridMainProps> = ({ post }) => {
+    const imageUrl = getBlogImageUrl(post, 'medium');
+
+    const formattedDate = post.publishedAt || post.createdAt
+        ? new Date(post.publishedAt || post.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+        : '';
+
+    const firstCat = post.categories?.[0];
+    const categoryName = firstCat?.category?.name || firstCat?.name || '';
+
     return (
         <>
-            <a href={`/blog/${Slug}`} className="thumbnail">
-                <img src={`assets/images/blog/${blogImage}`} alt="blog-area" />
-            </a>
+            <Link href={`/blog/${post.slug}`} className="thumbnail">
+                <img src={imageUrl} alt={post.title || 'blog-area'} />
+            </Link>
             <div className="inner-content-body">
                 <div className="tag-area">
-                    <div className="single">
-                        <i className="fa-light fa-clock" />
-                        <span>15 Sep, 2023</span>
-                    </div>
-                    <div className="single">
-                        <i className="fa-light fa-folder" />
-                        <span>Modern Fashion</span>
-                    </div>
+                    {formattedDate && (
+                        <div className="single">
+                            <i className="fa-light fa-clock" />
+                            <span>{formattedDate}</span>
+                        </div>
+                    )}
+                    {categoryName && (
+                        <div className="single">
+                            <i className="fa-light fa-folder" />
+                            <span>{categoryName}</span>
+                        </div>
+                    )}
                 </div>
-                <a className="title-main" href={`/blog/${Slug}`}>
+                <Link className="title-main" href={`/blog/${post.slug}`}>
                     <h3 className="title animated fadeIn">
-                        {blogTitle ? blogTitle : 'How to growing your business'}
+                        {post.title || 'Untitled'}
                     </h3>
-                </a>
+                </Link>
                 <div className="button-area">
-                    <a
-                        href={`/blog/${Slug}`}
+                    <Link
+                        href={`/blog/${post.slug}`}
                         className="rts-btn btn-primary radious-sm with-icon"
                     >
                         <div className="btn-text">Read Details</div>
@@ -46,7 +55,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                         <div className="arrow-icon">
                             <i className="fa-solid fa-circle-plus" />
                         </div>
-                    </a>
+                    </Link>
                 </div>
             </div>
         </>

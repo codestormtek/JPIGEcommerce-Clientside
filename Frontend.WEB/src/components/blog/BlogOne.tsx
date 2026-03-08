@@ -8,7 +8,7 @@ function BlogOne() {
     const [posts, setPosts] = useState<ContentPost[]>([]);
 
     useEffect(() => {
-        apiGet<PaginatedResponse<ContentPost>>('/content?limit=4&page=1')
+        apiGet<PaginatedResponse<ContentPost>>('/content?limit=4&page=1&postType=blog&status=published')
             .then(res => setPosts(res.data || []))
             .catch(() => {});
     }, []);
@@ -28,22 +28,27 @@ function BlogOne() {
                         <div className="col-lg-12">
                             <div className="cover-card-main-over">
                                 <div className="row g-4">
-                                    {posts.map((post, index) => (
-                                        <div
-                                            key={post.id || index}
-                                            className="col-lg-3 col-md-6 col-sm-12"
-                                        >
-                                            <div className="single-blog-area-start">
-                                                <BlogOneMain
-                                                    Slug={post.slug}
-                                                    blogImage={post.featuredImage?.url || ''}
-                                                    blogTitle={post.title}
-                                                    publishedDate={post.publishedAt || post.createdAt}
-                                                    categoryName={post.categories?.[0]?.name}
-                                                />
+                                    {posts.map((post, index) => {
+                                        const firstCat = post.categories?.[0];
+                                        const catName = firstCat?.category?.name || firstCat?.name || '';
+                                        return (
+                                            <div
+                                                key={post.id || index}
+                                                className="col-lg-3 col-md-6 col-sm-12"
+                                            >
+                                                <div className="single-blog-area-start">
+                                                    <BlogOneMain
+                                                        Slug={post.slug}
+                                                        blogImage={post.featuredMediaAsset?.url || post.featuredImage?.url || ''}
+                                                        blogTitle={post.title}
+                                                        publishedDate={post.publishedAt || post.createdAt}
+                                                        categoryName={catName}
+                                                        post={post}
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
