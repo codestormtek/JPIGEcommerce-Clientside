@@ -111,6 +111,9 @@ const MobileMenu = () => {
                     </ul>
                 </li>
 
+                {/* Gallery */}
+                <li><Link className="main" href="/gallery">Gallery</Link></li>
+
                 {/* Contact */}
                 <li><Link className="main" href="/contact">Contact Us</Link></li>
 

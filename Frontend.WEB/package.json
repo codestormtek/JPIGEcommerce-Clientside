@@ -26,6 +26,7 @@
     "react-countup": "^6.5.3",
     "react-data-table-component": "^7.7.0",
     "react-dom": "^19.0.0",
+    "react-image-gallery": "^2.1.2",
     "react-toastify": "^11.0.5",
     "styled-components": "^6.1.19",
     "swiper": "^11.2.6"
