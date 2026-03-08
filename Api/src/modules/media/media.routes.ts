@@ -21,6 +21,9 @@ const upload = multer({
 // POST   /api/v1/media/upload — upload a file and create asset (admin) — MUST be before /:id
 mediaRouter.post('/upload', authenticate, authorize('admin'), upload.single('file'), asyncHandler(ctrl.uploadMedia));
 
+// POST   /api/v1/media/upload-resized — upload + auto-resize to variants (admin)
+mediaRouter.post('/upload-resized', authenticate, authorize('admin'), upload.single('file'), asyncHandler(ctrl.uploadResized));
+
 // GET    /api/v1/media        — list media assets (public)
 mediaRouter.get('/', validate(listMediaSchema, 'query'), asyncHandler(ctrl.listMedia));
 

@@ -89,6 +89,13 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - Open Orders doughnut chart with status legend
   - Date range selector (7d / 30d)
   - File: `Admin.Web/src/pages/pre-built/metrics/AdminMetricsPage.jsx`
+- **Media Upload with Auto-Resize**: `POST /api/v1/media/upload-resized` — accepts `file`, `folder`, and `name` fields
+  - Blog uploads (`folder=blog`): 4 variants — xlarge (1018×657), large (1018×622), medium (349×213), small (80×80)
+  - Page uploads (`folder=topics` or `pages`): 1 variant — xlarge (1200×346)
+  - Naming: `{slugified_name}_{uid}_{suffix}{ext}` — collision-safe with 8-char UUID prefix
+  - Returns `{ primary: MediaAsset, variants: [{ suffix, id, url }] }`
+  - Image-only (rejects video mimetypes)
+  - Utility: `Api/src/lib/imageResize.ts` — sharp-based resize with cover fit
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
 
 ## Frontend.WEB (Storefront)

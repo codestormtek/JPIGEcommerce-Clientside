@@ -37,9 +37,17 @@ export async function deleteMedia(req: Request, res: Response): Promise<void> {
 // POST /api/v1/media/upload
 export async function uploadMedia(req: AuthRequest, res: Response): Promise<void> {
   if (!req.file) throw new Error('No file attached');
-  // folder is sent as a FormData text field alongside the file
   const folder = (req.body?.folder as string) || 'media';
   const asset = await service.uploadMediaFile(req.file, folder as import('./media.schema').MediaFolder);
   sendCreated(res, asset, 'Media uploaded');
+}
+
+// POST /api/v1/media/upload-resized
+export async function uploadResized(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.file) throw new Error('No file attached');
+  const folder = (req.body?.folder as string) || 'blog';
+  const name = (req.body?.name as string) || '';
+  const result = await service.uploadWithResize(req.file, folder as import('./media.schema').MediaFolder, name);
+  sendCreated(res, result, 'Resized images uploaded');
 }
 

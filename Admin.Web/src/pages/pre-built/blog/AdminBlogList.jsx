@@ -180,12 +180,16 @@ const AdminBlogList = () => {
     finally { setDeleteLoading(false); }
   };
 
-  const uploadFeaturedImage = async (file, mode) => {
+  const uploadFeaturedImage = async (file, mode, title) => {
     setImageUploading(mode); setImageError(null);
     try {
-      const fd = new FormData(); fd.append("file", file); fd.append("folder", "blog");
-      const res = await apiUpload("/media/upload", fd);
-      return (res?.data ?? res)?.id ?? null;
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "blog");
+      fd.append("name", title || "blog_image");
+      const res = await apiUpload("/media/upload-resized", fd);
+      const data = res?.data ?? res;
+      return data?.primary?.id ?? data?.id ?? null;
     } catch (e) { setImageError(e.message); return null; }
     finally { setImageUploading(null); }
   };
@@ -194,7 +198,7 @@ const AdminBlogList = () => {
     setAddSaving(true); setAddError(null);
     try {
       let featuredMediaAssetId = addForm.featuredMediaAssetId;
-      if (imageFile) { featuredMediaAssetId = await uploadFeaturedImage(imageFile, "add"); }
+      if (imageFile) { featuredMediaAssetId = await uploadFeaturedImage(imageFile, "add", addForm.title); }
       await apiPost("/content", {
         postType: "blog", title: addForm.title,
         slug: addForm.slug || toSlug(addForm.title),
@@ -215,7 +219,7 @@ const AdminBlogList = () => {
     setEditSaving(true); setEditError(null);
     try {
       let featuredMediaAssetId = editForm.featuredMediaAssetId;
-      if (imageFile) { featuredMediaAssetId = await uploadFeaturedImage(imageFile, "edit"); }
+      if (imageFile) { featuredMediaAssetId = await uploadFeaturedImage(imageFile, "edit", editForm.title); }
       await apiPatch(`/content/${editPost.id}`, {
         title: editForm.title, slug: editForm.slug,
         excerpt: editForm.excerpt || undefined,

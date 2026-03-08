@@ -196,15 +196,17 @@ const AdminPageList = () => {
     }));
   };
 
-  const uploadHeaderImage = async (file) => {
+  const uploadHeaderImage = async (file, title) => {
     setImageUploading(true);
     setImageError(null);
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("folder", "pages");
-      const res = await apiUpload("/media/upload", fd);
-      return (res?.data ?? res)?.id ?? null;
+      fd.append("folder", "topics");
+      fd.append("name", title || "page_header");
+      const res = await apiUpload("/media/upload-resized", fd);
+      const data = res?.data ?? res;
+      return data?.primary?.id ?? data?.id ?? null;
     } catch (e) {
       setImageError(e.message);
       return null;
@@ -219,7 +221,7 @@ const AdminPageList = () => {
     try {
       let headerMediaAssetId = addForm.headerMediaAssetId;
       if (imageFile) {
-        headerMediaAssetId = await uploadHeaderImage(imageFile);
+        headerMediaAssetId = await uploadHeaderImage(imageFile, addForm.title);
         if (!headerMediaAssetId) { setAddSaving(false); return; }
       }
       await apiPost("/pages", {
@@ -243,7 +245,7 @@ const AdminPageList = () => {
     try {
       let headerMediaAssetId = editForm.headerMediaAssetId;
       if (imageFile) {
-        headerMediaAssetId = await uploadHeaderImage(imageFile);
+        headerMediaAssetId = await uploadHeaderImage(imageFile, editForm.title);
         if (!headerMediaAssetId) { setEditSaving(false); return; }
       }
       await apiPatch(`/pages/${editPage.id}`, {
