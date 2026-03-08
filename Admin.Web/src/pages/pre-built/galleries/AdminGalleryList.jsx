@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Modal, ModalBody, ModalHeader, Spinner, Nav, NavItem, NavLink, TabContent, TabPane } from "reactstrap";
 import classnames from "classnames";
 import {
@@ -43,6 +43,11 @@ const AdminGalleryList = () => {
   const [imgError,      setImgError]      = useState(null);
   const [uploading,     setUploading]     = useState(false);
 
+  const fileInputRef = useRef(null);
+  const blankImageForm = () => ({ title: "", description: "", sortOrder: galleryImages.length, file: null });
+  const [imageForm, setImageForm] = useState(blankImageForm());
+  const setImgField = (k, v) => setImageForm((f) => ({ ...f, [k]: v }));
+
   const loadGalleries = useCallback(async () => {
     setLoading(true); setError(null);
     try {
@@ -59,7 +64,8 @@ const AdminGalleryList = () => {
   const openCreate = () => {
     setEditTarget(null); setForm(blankGalleryForm()); setFormError(null);
     setSlugTouched(false); setActiveTab("info"); setGalleryImages([]);
-    setImgError(null); setModal(true);
+    setImgError(null); setImageForm({ title: "", description: "", sortOrder: 0, file: null });
+    setModal(true);
   };
 
   const openEdit = async (g) => {
@@ -76,6 +82,7 @@ const AdminGalleryList = () => {
     setImgError(null);
     setActiveTab("info");
     setGalleryImages(g.images ?? []);
+    setImageForm({ title: "", description: "", sortOrder: (g.images ?? []).length, file: null });
     setModal(true);
   };
 
@@ -137,33 +144,32 @@ const AdminGalleryList = () => {
     finally { setImagesLoading(false); }
   };
 
-  const handleImageUpload = async (e) => {
-    const files = e.target.files;
-    if (!files?.length || !editTarget) return;
+  const handleAddImage = async () => {
+    if (!imageForm.file || !editTarget) return;
     setUploading(true); setImgError(null);
     try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("folder", "galleries");
-        fd.append("name", file.name.replace(/\.[^.]+$/, ""));
-        const uploadRes = await apiUpload("/media/upload-resized", fd);
-        const data = uploadRes?.data ?? uploadRes;
-        const asset = data?.primary ?? data;
-        if (asset?.id) {
-          const nextOrder = galleryImages.length;
-          await apiPost(`/galleries/${editTarget.id}/images`, {
-            mediaAssetId: asset.id,
-            title: file.name.replace(/\.[^.]+$/, ""),
-            sortOrder: nextOrder,
-          });
-        }
+      const fd = new FormData();
+      fd.append("file", imageForm.file);
+      fd.append("folder", "galleries");
+      fd.append("name", imageForm.title || imageForm.file.name.replace(/\.[^.]+$/, ""));
+      const uploadRes = await apiUpload("/media/upload-resized", fd);
+      const data = uploadRes?.data ?? uploadRes;
+      const asset = data?.primary ?? data;
+      if (!asset?.id) {
+        throw new Error("Upload failed — no asset was returned from the server.");
       }
+      await apiPost(`/galleries/${editTarget.id}/images`, {
+        mediaAssetId: asset.id,
+        title: imageForm.title || imageForm.file.name.replace(/\.[^.]+$/, ""),
+        description: imageForm.description || undefined,
+        sortOrder: Number(imageForm.sortOrder) || 0,
+      });
       await loadGalleryImages(editTarget.id);
       loadGalleries();
+      setImageForm({ title: "", description: "", sortOrder: galleryImages.length + 1, file: null });
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) { setImgError(err.message); }
-    finally { setUploading(false); e.target.value = ""; }
+    finally { setUploading(false); }
   };
 
   const removeImage = async (img) => {
@@ -344,20 +350,55 @@ const AdminGalleryList = () => {
               <TabPane tabId="images">
                 {imgError && <div className="alert alert-danger">{imgError}</div>}
 
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <span className="text-soft">{galleryImages.length} image{galleryImages.length !== 1 ? "s" : ""} in this gallery</span>
-                  <label className="btn btn-primary btn-sm mb-0" style={{ cursor: "pointer" }}>
-                    {uploading ? <Spinner size="sm" /> : <><Icon name="upload" /> Upload Images</>}
-                    <input type="file" accept="image/*" multiple hidden onChange={handleImageUpload} disabled={uploading} />
-                  </label>
+                <div className="card card-bordered mb-4">
+                  <div className="card-inner">
+                    <h6 className="mb-3">Add New Image</h6>
+                    <Row className="g-3 align-items-end">
+                      <Col md="3">
+                        <div className="form-group mb-0">
+                          <label className="form-label">Name</label>
+                          <input className="form-control" value={imageForm.title}
+                            onChange={(e) => setImgField("title", e.target.value)} placeholder="Image name" />
+                        </div>
+                      </Col>
+                      <Col md="4">
+                        <div className="form-group mb-0">
+                          <label className="form-label">Description</label>
+                          <input className="form-control" value={imageForm.description}
+                            onChange={(e) => setImgField("description", e.target.value)} placeholder="Optional description" />
+                        </div>
+                      </Col>
+                      <Col md="2">
+                        <div className="form-group mb-0">
+                          <label className="form-label">Order</label>
+                          <input type="number" className="form-control" value={imageForm.sortOrder}
+                            onChange={(e) => setImgField("sortOrder", e.target.value)} />
+                        </div>
+                      </Col>
+                      <Col md="3">
+                        <div className="form-group mb-0">
+                          <label className="form-label">Image File</label>
+                          <input type="file" className="form-control" accept="image/*" ref={fileInputRef}
+                            onChange={(e) => setImgField("file", e.target.files?.[0] || null)} />
+                        </div>
+                      </Col>
+                    </Row>
+                    <div className="d-flex justify-content-end mt-3">
+                      <Button color="primary" size="sm" onClick={handleAddImage} disabled={uploading || !imageForm.file}>
+                        {uploading ? <Spinner size="sm" /> : <><Icon name="upload" /> Upload &amp; Add</>}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
+
+                <h6 className="mb-2">{galleryImages.length} image{galleryImages.length !== 1 ? "s" : ""} in this gallery</h6>
 
                 {imagesLoading ? (
                   <div className="text-center py-4"><Spinner /></div>
                 ) : galleryImages.length === 0 ? (
                   <div className="text-center py-5 text-muted">
                     <Icon name="img" style={{ fontSize: 48 }} className="d-block mx-auto mb-2" />
-                    <p>No images in this gallery yet. Click "Upload Images" to add some.</p>
+                    <p>No images yet. Use the form above to add some.</p>
                   </div>
                 ) : (
                   <div className="table-responsive">
