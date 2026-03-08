@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -66,6 +66,55 @@ const AccountTabs = () => {
   const [invoice, setInvoice] = useState<OrderInvoice | null>(null);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
+  const invoiceContentRef = useRef<HTMLDivElement>(null);
+  const [printPortalRoot, setPrintPortalRoot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    let el = document.getElementById('invoice-print-root');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'invoice-print-root';
+      el.style.display = 'none';
+      document.body.appendChild(el);
+    }
+    setPrintPortalRoot(el);
+    return () => {
+      el.innerHTML = '';
+      el.style.display = 'none';
+      if (el.parentNode) el.parentNode.removeChild(el);
+    };
+  }, []);
+
+  const handlePrintInvoice = useCallback(() => {
+    if (!printPortalRoot || !invoiceContentRef.current) return;
+    printPortalRoot.innerHTML = invoiceContentRef.current.innerHTML;
+    printPortalRoot.style.display = 'block';
+    const afterPrint = () => {
+      printPortalRoot.innerHTML = '';
+      printPortalRoot.style.display = 'none';
+      window.removeEventListener('afterprint', afterPrint);
+    };
+    window.addEventListener('afterprint', afterPrint);
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  }, [printPortalRoot]);
+
+  const handleDownloadPdf = useCallback(async () => {
+    if (!invoiceContentRef.current) return;
+    const html2pdf = (await import('html2pdf.js')).default;
+    const invoiceNumber = invoice?.invoiceNumber || 'invoice';
+    html2pdf()
+      .set({
+        margin: [10, 10, 10, 10],
+        filename: `${invoiceNumber}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      })
+      .from(invoiceContentRef.current)
+      .save();
+  }, [invoice]);
 
   const [contactPref, setContactPref] = useState<ContactPreference | null>(null);
   const [prefLoading, setPrefLoading] = useState(false);
@@ -806,7 +855,7 @@ const AccountTabs = () => {
                 <p>Loading invoice...</p>
               </div>
             ) : invoice ? (
-              <div className="rts-invoice-style-one" id="invoice-print-area">
+              <div className="rts-invoice-style-one" id="invoice-print-area" ref={invoiceContentRef}>
                 <div className="invoice-main-wrapper-1" style={{ marginTop: 0, marginBottom: 0, borderRadius: '8px 8px 0 0' }}>
                   <div className="logo-top-area">
                     <div className="logo">
@@ -943,11 +992,11 @@ const AccountTabs = () => {
                     </p>
                   </div>
                 </div>
-                <div className="buttons-area-invoice no-print" style={{ marginBottom: 0, padding: '16px 50px 24px', background: '#f1f1f1', borderRadius: '0 0 8px 8px' }}>
+                <div className="buttons-area-invoice no-print" style={{ marginBottom: 0, padding: '16px 50px 24px', background: '#f1f1f1', borderRadius: '0 0 8px 8px', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   <a
                     href="#"
                     className="rts-btn btn-primary radious-sm with-icon"
-                    onClick={(e) => { e.preventDefault(); window.print(); }}
+                    onClick={(e) => { e.preventDefault(); handlePrintInvoice(); }}
                   >
                     <div className="btn-text">Print Now</div>
                     <div className="arrow-icon">
@@ -955,6 +1004,19 @@ const AccountTabs = () => {
                     </div>
                     <div className="arrow-icon">
                       <i className="fa-regular fa-print" />
+                    </div>
+                  </a>
+                  <a
+                    href="#"
+                    className="rts-btn btn-primary radious-sm with-icon"
+                    onClick={(e) => { e.preventDefault(); handleDownloadPdf(); }}
+                  >
+                    <div className="btn-text">Download PDF</div>
+                    <div className="arrow-icon">
+                      <i className="fa-regular fa-download" />
+                    </div>
+                    <div className="arrow-icon">
+                      <i className="fa-regular fa-download" />
                     </div>
                   </a>
                 </div>

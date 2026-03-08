@@ -1,9 +1,50 @@
-import React from 'react';
+'use client';
 
-function ComponentName() {
+import React, { useRef, useCallback } from 'react';
+
+function InvoicePage() {
+    const invoiceRef = useRef<HTMLDivElement>(null);
+
+    const handlePrint = useCallback(() => {
+        if (!invoiceRef.current) return;
+        let printRoot = document.getElementById('invoice-print-root');
+        if (!printRoot) {
+            printRoot = document.createElement('div');
+            printRoot.id = 'invoice-print-root';
+            printRoot.style.display = 'none';
+            document.body.appendChild(printRoot);
+        }
+        printRoot.innerHTML = invoiceRef.current.innerHTML;
+        printRoot.style.display = 'block';
+        const afterPrint = () => {
+            printRoot!.innerHTML = '';
+            printRoot!.style.display = 'none';
+            window.removeEventListener('afterprint', afterPrint);
+        };
+        window.addEventListener('afterprint', afterPrint);
+        setTimeout(() => {
+            window.print();
+        }, 100);
+    }, []);
+
+    const handleDownload = useCallback(async () => {
+        if (!invoiceRef.current) return;
+        const html2pdf = (await import('html2pdf.js')).default;
+        html2pdf()
+            .set({
+                margin: [10, 10, 10, 10],
+                filename: 'invoice.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            })
+            .from(invoiceRef.current)
+            .save();
+    }, []);
+
     return (
         <div>
-            <div className="rts-invoice-style-one">
+            <div className="rts-invoice-style-one" ref={invoiceRef}>
                 <div className="container-2">
                     <div className="row">
                         <div className="col-lg-12">
@@ -109,10 +150,11 @@ function ComponentName() {
                                     </p>
                                 </div>
                             </div>
-                            <div className="buttons-area-invoice no-print mb--30">
+                            <div className="buttons-area-invoice no-print mb--30" style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                                 <a
-                                    href="javascript:window.print()"
+                                    href="#"
                                     className="rts-btn btn-primary radious-sm with-icon"
+                                    onClick={(e) => { e.preventDefault(); handlePrint(); }}
                                 >
                                     <div className="btn-text">Print Now</div>
                                     <div className="arrow-icon">
@@ -123,11 +165,11 @@ function ComponentName() {
                                     </div>
                                 </a>
                                 <a
-                                    href="assets/images/invoice/invoice.pdf"
-                                    download=""
+                                    href="#"
                                     className="rts-btn btn-primary radious-sm with-icon"
+                                    onClick={(e) => { e.preventDefault(); handleDownload(); }}
                                 >
-                                    <div className="btn-text">Download</div>
+                                    <div className="btn-text">Download PDF</div>
                                     <div className="arrow-icon">
                                         <i className="fa-thin fa-download" />
                                     </div>
@@ -140,9 +182,8 @@ function ComponentName() {
                     </div>
                 </div>
             </div>
-
         </div>
     );
 }
 
-export default ComponentName;
+export default InvoicePage;

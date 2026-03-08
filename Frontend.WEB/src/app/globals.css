@@ -275,3 +275,23 @@ a {
   font-size: 28px;
   font-weight: 700;
 }
+
+@media print {
+  body > *:not(#invoice-print-root) {
+    display: none !important;
+  }
+  #invoice-print-root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+  #invoice-print-root .no-print {
+    display: none !important;
+  }
+  #invoice-print-root .invoice-main-wrapper-1 {
+    margin: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+}
