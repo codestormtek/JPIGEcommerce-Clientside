@@ -49,7 +49,7 @@ export default function BlogListRightSidebar() {
     const postsPerPage = 4;
 
     useEffect(() => {
-        apiGet<PaginatedResponse>(`/content?limit=3&page=1`)
+        apiGet<PaginatedResponse>(`/content?limit=3&page=1&postType=blog`)
             .then(res => setLatestPosts(res.data || []))
             .catch(() => {});
     }, []);
@@ -59,6 +59,7 @@ export default function BlogListRightSidebar() {
         const params: Record<string, string | number | undefined> = {
             page,
             limit: postsPerPage,
+            postType: 'blog',
         };
         if (searchQuery) params.search = searchQuery;
         if (activeCategoryId) params.categoryId = activeCategoryId;
@@ -75,7 +76,7 @@ export default function BlogListRightSidebar() {
     }, [page, searchQuery, activeCategoryId, activeTagId]);
 
     useEffect(() => {
-        apiGet<PaginatedResponse>(`/content?limit=50`)
+        apiGet<PaginatedResponse>(`/content?limit=50&postType=blog`)
             .then(res => {
                 const catMap = new Map<string, { id: string; name: string; slug: string; count: number }>();
                 const tagMap = new Map<string, { id: string; name: string; slug: string }>();
