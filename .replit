@@ -42,24 +42,28 @@ name = "Admin Panel"
 author = "agent"
 
 [workflows.workflow.metadata]
-outputType = "webview"
+outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "bash -c 'cd Admin.Web && npm run dev'"
-waitForPort = 5000
+waitForPort = 3001
 
 [[workflows.workflow]]
 name = "Frontend"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "bash -c 'cd Frontend.WEB && npm run dev'"
-waitForPort = 3000
+waitForPort = 5000
 
-[workflows.workflow.metadata]
-outputType = "console"
+[[ports]]
+localPort = 3000
+externalPort = 3000
 
 [[ports]]
 localPort = 3001
@@ -70,16 +74,8 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 5904
-externalPort = 3000
-
-[[ports]]
 localPort = 8000
 externalPort = 8000
-
-[[ports]]
-localPort = 3000
-externalPort = 3000
 
 [userenv]
 

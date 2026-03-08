@@ -1,16 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["*.replit.dev", "*.repl.co"],
+  allowedDevOrigins: ["*.replit.dev", "*.repl.co", "127.0.0.1"],
   images: {
     remotePatterns: [
-      // Cloudflare R2 CDN — production media assets
       {
         protocol: "https",
         hostname: "cdn.thejigglingpig.com",
         pathname: "/**",
       },
-      // Local API uploads — dev fallback (Replit uses port 8000)
       {
         protocol: "http",
         hostname: "localhost",
@@ -18,6 +16,14 @@ const nextConfig: NextConfig = {
         pathname: "/uploads/**",
       },
     ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://localhost:8000/api/:path*",
+      },
+    ];
   },
 };
 

@@ -11,9 +11,9 @@ function CategoryMenu() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        apiGet<Category[]>("/products/categories")
-            .then((data) => {
-                setCategories(data);
+        apiGet<Category[] | { data: Category[] }>("/products/categories")
+            .then((res) => {
+                setCategories(Array.isArray(res) ? res : res.data || []);
             })
             .catch(() => {
                 setCategories([]);

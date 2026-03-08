@@ -10,8 +10,8 @@ function ComponentName() {
     const [categories, setCategories] = useState<Category[]>([]);
 
     useEffect(() => {
-        apiGet<Category[]>("/products/categories")
-            .then((data) => setCategories(data))
+        apiGet<Category[] | { data: Category[] }>("/products/categories")
+            .then((res) => setCategories(Array.isArray(res) ? res : res.data || []))
             .catch(() => setCategories([]));
     }, []);
 

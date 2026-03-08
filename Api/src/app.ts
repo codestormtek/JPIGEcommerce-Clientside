@@ -43,7 +43,15 @@ app.set('trust proxy', 1);
 app.use(helmet());
 app.use(
   cors({
-    origin: config.cors.allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (config.cors.allowedOrigins.includes(origin)) return callback(null, true);
+      try {
+        const host = new URL(origin).hostname;
+        if (host.endsWith('.replit.dev') || host.endsWith('.repl.co')) return callback(null, true);
+      } catch {}
+      callback(null, false);
+    },
     credentials: true,
   }),
 );
