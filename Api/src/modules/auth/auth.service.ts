@@ -16,6 +16,7 @@ import {
 } from './auth.schema';
 import * as repo from './auth.repository';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
+import { sendWelcomeEmail, sendAdminNewUserNotification } from '../../lib/registrationEmails';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -78,6 +79,18 @@ export async function register(
     entityId: user.id,
     ctx: { actorId: user.id, ip: meta?.ipAddress, userAgent: meta?.userAgent },
   });
+
+  const emailUser = {
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    emailAddress: user.emailAddress,
+    phoneNumber: (user as Record<string, unknown>).phoneNumber as string | null | undefined,
+    createdAt: user.createdAt,
+  };
+  sendWelcomeEmail(emailUser).catch(() => {});
+  sendAdminNewUserNotification(emailUser).catch(() => {});
+
   return { ...tokens, userId: user.id };
 }
 

@@ -75,6 +75,11 @@ export const config = {
     webhookSecret: process.env.RESEND_WEBHOOK_SECRET ?? '',
   },
 
+  store: {
+    name: 'The Jiggling Pig, LLC',
+    url: process.env.STORE_URL ?? 'https://thejigglingpig.com',
+    adminEmail: process.env.ADMIN_EMAIL ?? 'admin@thejigglingpig.com',
+  },
 
 } as const;
 
