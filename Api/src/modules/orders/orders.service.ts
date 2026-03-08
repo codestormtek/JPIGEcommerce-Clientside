@@ -276,7 +276,7 @@ export async function emailInvoice(orderId: string, emailTo: string) {
       <table width="620" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
         <!-- Header -->
         <tr><td style="background:#1c2b46;padding:32px;text-align:center;">
-          <img src="https://thejugglingpig.com/uploads/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
+          <img src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
                alt="The Jiggling Pig" height="60" style="max-height:60px;" />
           <p style="color:#fff;margin:8px 0 0;font-size:18px;font-weight:bold;">The Jiggling Pig, LLC</p>
         </td></tr>

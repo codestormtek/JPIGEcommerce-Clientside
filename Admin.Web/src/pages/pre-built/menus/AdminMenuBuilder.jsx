@@ -74,7 +74,7 @@ const MenuPreview = ({ menu, sections, items, layout, theme }) => {
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <div style={{ marginBottom: 8 }}>
           <img
-            src="/uploads/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
+            src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
             alt="The Jiggling Pig, LLC"
             style={{ maxHeight: 64, objectFit: "contain" }}
           />

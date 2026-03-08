@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-const LOGO_URL = "/uploads/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png";
+const LOGO_URL = "https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png";
 
 const Logo = () => {
   return (

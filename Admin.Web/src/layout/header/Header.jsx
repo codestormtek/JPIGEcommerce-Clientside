@@ -37,7 +37,7 @@ const Header = ({ fixed, className }) => {
           <div className="nk-header-app-name">
             <div className="nk-header-app-logo">
               <img
-                src="/uploads/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
+                src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
                 alt="The Jiggling Pig"
                 style={{ height: 32, objectFit: "contain" }}
               />
