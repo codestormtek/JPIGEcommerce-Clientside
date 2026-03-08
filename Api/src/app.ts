@@ -34,6 +34,7 @@ import { checklistsRouter } from './modules/checklists/checklists.routes';
 import { carouselRouter } from './modules/carousel/carousel.routes';
 import { scheduledTasksRouter } from './modules/scheduledTasks/scheduledTasks.routes';
 import { pagesRouter } from './modules/pages/pages.routes';
+import { galleryRouter } from './modules/galleries/gallery.routes';
 
 const app = express();
 
@@ -113,6 +114,7 @@ app.use(`${API}/checklists`, checklistsRouter);
 app.use(`${API}/carousel`,   carouselRouter);
 app.use(`${API}/admin/scheduled-tasks`, scheduledTasksRouter);
 app.use(`${API}/pages`, pagesRouter);
+app.use(`${API}/galleries`, galleryRouter);
 
 // ─── 404 + Global error handler ───────────────────────────────────────────────
 app.use(notFoundHandler);

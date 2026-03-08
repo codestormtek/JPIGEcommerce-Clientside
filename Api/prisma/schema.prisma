@@ -317,6 +317,7 @@ model MediaAsset {
   carouselSlides     CarouselSlide[]      @relation("CarouselDesktopImage")
   carouselSlidesMobile CarouselSlide[]    @relation("CarouselMobileImage")
   sitePages          SitePage[]
+  galleryImages      GalleryImage[]
 
   @@map("media_assets")
 }
@@ -1555,5 +1556,41 @@ model TaskExecutionLog {
 
   @@index([taskExecutionId, createdAt])
   @@map("task_execution_logs")
+}
+
+// ─── Galleries ────────────────────────────────────────────────────────────────
+
+model Gallery {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  createdBy      String?
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  isDeleted      Boolean   @default(false)
+
+  name         String
+  slug         String  @unique
+  description  String?
+  isVisible    Boolean @default(true)
+  displayOrder Int     @default(0)
+
+  images GalleryImage[]
+
+  @@map("galleries")
+}
+
+model GalleryImage {
+  id           String   @id @default(uuid())
+  galleryId    String
+  gallery      Gallery  @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  mediaAssetId String
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id])
+  title        String?
+  description  String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@unique([galleryId, mediaAssetId])
+  @@map("gallery_images")
 }
 

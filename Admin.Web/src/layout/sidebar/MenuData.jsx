@@ -160,6 +160,11 @@ const menu = [
       { text: "Add Recipe",  link: "/recipes/create" },
     ],
   },
+  {
+    icon: "img",
+    text: "Galleries",
+    link: "/galleries",
+  },
 
   { heading: "Media" },
   {

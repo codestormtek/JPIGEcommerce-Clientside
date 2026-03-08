@@ -38,6 +38,13 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
 - **Menus**: Menu builder with drag-and-drop sections
 - **Checklists**: Task list manager
 - **Carousel**: Homepage slide management
+- **Galleries**: Photo gallery management with:
+  - Gallery CRUD (name, slug, description, visibility toggle, display order)
+  - Image management per gallery (add/edit/remove images with title, description, sort order)
+  - Images linked to MediaAsset records from Media Library
+  - DB models: `Gallery` (table `galleries`), `GalleryImage` (table `gallery_images`)
+  - API: `Api/src/modules/galleries/` at `/api/v1/galleries` (admin) and `/api/v1/galleries/public` (public)
+  - Admin UI: `Admin.Web/src/pages/pre-built/galleries/AdminGalleryList.jsx`
 - **Subscribers**: Subscriber management with global stats (total, email opt-in, SMS opt-in), CRUD, detail view with subscription topics, search by email/phone, filter by opt-in status
 - **Customers**: Full customer management inspired by NopCommerce:
   - List page (`/customers`): NopCommerce-style search panel (email, name, active, role, registration date range), paginated table with email, name, role badge, phone, active checkmark, registered date, quick edit modal, add/delete customer, export

@@ -97,6 +97,7 @@ import AdminBlogList from "@/pages/pre-built/blog/AdminBlogList";
 import AdminInventoryList from "@/pages/pre-built/inventory/AdminInventoryList";
 import AdminChecklistManager from "@/pages/pre-built/checklists/AdminChecklistManager";
 import AdminCarouselList from "@/pages/pre-built/carousel/AdminCarouselList";
+import AdminGalleryList from "@/pages/pre-built/galleries/AdminGalleryList";
 import AdminNewsList from "@/pages/pre-built/news/AdminNewsList";
 import AdminSubscriberList from "@/pages/pre-built/subscribers/AdminSubscriberList";
 import AdminScheduledTaskList from "@/pages/pre-built/scheduled-tasks/AdminScheduledTaskList";
@@ -219,6 +220,7 @@ const Pages = () => {
               <Route path="inventory" element={<AdminInventoryList />}></Route>
               <Route path="checklists" element={<AdminChecklistManager />}></Route>
               <Route path="carousel" element={<AdminCarouselList />}></Route>
+              <Route path="galleries" element={<AdminGalleryList />}></Route>
               <Route path="scheduled-tasks" element={<AdminScheduledTaskList />}></Route>
               <Route path="site-pages" element={<AdminPageList />}></Route>
               <Route path="metrics" element={<AdminMetricsPage />}></Route>
