@@ -213,6 +213,20 @@ export async function changePassword(
   });
 }
 
+export async function getProfile(userId: string) {
+  const user = await repo.findUserById(userId);
+  if (!user) throw ApiError.notFound('User');
+  return {
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    emailAddress: user.emailAddress,
+    phoneNumber: (user as Record<string, unknown>).phoneNumber as string | null,
+    avatarUrl: (user as Record<string, unknown>).avatarUrl as string | null,
+    role: user.role,
+  };
+}
+
 // ─── Private ──────────────────────────────────────────────────────────────────
 
 async function _issueTokens(

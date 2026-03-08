@@ -89,10 +89,7 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
 }
 
 export async function me(req: AuthRequest, res: Response): Promise<void> {
-  sendSuccess(res, {
-    userId: req.user!.sub,
-    email: req.user!.email,
-    role: req.user!.role,
-  });
+  const user = await service.getProfile(req.user!.sub);
+  sendSuccess(res, user);
 }
 

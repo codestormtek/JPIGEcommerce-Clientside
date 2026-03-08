@@ -19,8 +19,8 @@ export const authRouter = Router();
 // Tighter rate limit for authentication endpoints (brute-force protection)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
-  message: { success: false, error: 'Too many attempts, please try again later' },
+  max: 30,
+  message: { success: false, message: 'Too many attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
 });
