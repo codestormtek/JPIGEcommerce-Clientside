@@ -1,7 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
+import { Prisma } from '@prisma/client';
 import { ApiError } from '../utils/apiError';
 import { logger } from '../utils/logger';
+
+const UNIQUE_FIELD_LABELS: Record<string, string> = {
+  emailAddress: 'email address',
+  email: 'email address',
+  slug: 'slug',
+  sku: 'SKU',
+};
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function errorHandler(
@@ -26,6 +34,18 @@ export function errorHandler(
       success: false,
       error: err.message,
       ...(err.details ? { details: err.details } : {}),
+    });
+    return;
+  }
+
+  // Prisma unique constraint violations
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+    const target = (err.meta?.target as string[]) ?? [];
+    const field = target[0];
+    const label = (field && UNIQUE_FIELD_LABELS[field]) || field || 'value';
+    res.status(409).json({
+      success: false,
+      error: `A record with this ${label} already exists`,
     });
     return;
   }
