@@ -56,7 +56,7 @@ const AccountTabs = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
-  const tabParam = searchParams.get('tab');
+  const tabParam = searchParams?.get('tab') ?? null;
   const [activeTab, setActiveTab] = useState(
     tabParam && VALID_TABS.includes(tabParam) ? tabParam : 'dashboard'
   );

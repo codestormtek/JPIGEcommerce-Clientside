@@ -7,10 +7,8 @@
     "build": "next build",
     "start": "next start -p 3000 -H 0.0.0.0",
     "lint": "next lint",
-    "scss": "npm run scss:public && npm run scss:dashboard",
-    "scss:public": "sass public/assets/scss/style.scss public/assets/css/style.css --load-path=public/assets/scss",
-    "scss:dashboard": "sass public-dashboard/assets/scss/style.scss public-dashboard/assets/css/style.css --load-path=public-dashboard/assets/scss",
-    "scss:watch": "sass --watch public/assets/scss/style.scss:public/assets/css/style.css public-dashboard/assets/scss/style.scss:public-dashboard/assets/css/style.css"
+    "scss": "sass public/assets/scss/style.scss public/assets/css/style.css --load-path=public/assets/scss",
+    "scss:watch": "sass --watch public/assets/scss/style.scss:public/assets/css/style.css"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -19,7 +17,7 @@
     "apexcharts": "^4.7.0",
     "bootstrap": "^5.3.5",
     "html2pdf.js": "^0.14.0",
-    "next": "^16.0.8",
+    "next": "^15.5.12",
     "react": "^19.0.0",
     "react-apexcharts": "^1.7.0",
     "react-bootstrap": "^2.10.9",

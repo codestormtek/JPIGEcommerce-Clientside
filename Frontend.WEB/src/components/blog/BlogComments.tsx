@@ -233,7 +233,7 @@ export default function BlogComments({ postId }: BlogCommentsProps) {
         {user ? (
           <form onSubmit={handleSubmit}>
             <p style={{ color: '#74787C', marginBottom: 16 }}>
-              Commenting as <strong>{user.firstName || user.email}</strong>
+              Commenting as <strong>{(user as { firstName?: string; emailAddress?: string }).firstName || (user as { emailAddress?: string }).emailAddress}</strong>
             </p>
             <textarea
               rows={5}

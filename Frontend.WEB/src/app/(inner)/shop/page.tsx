@@ -11,9 +11,9 @@ import { Product, PaginatedResponse, Brand, Category, getProductImage, getProduc
 
 function ShopContent() {
   const searchParams = useSearchParams();
-  const searchQuery = searchParams.get('search') || '';
-  const urlCategoryId = searchParams.get('categoryId') || '';
-  const urlBrandId = searchParams.get('brandId') || '';
+  const searchQuery = searchParams?.get('search') || '';
+  const urlCategoryId = searchParams?.get('categoryId') || '';
+  const urlBrandId = searchParams?.get('brandId') || '';
 
   const [activeTab, setActiveTab] = useState<string>('tab1');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(urlCategoryId ? [urlCategoryId] : []);

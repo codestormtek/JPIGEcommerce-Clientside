@@ -8,7 +8,7 @@ interface Props {
 
 export default function SearchWrapper({ children }: Props) {
   const searchParams = useSearchParams();
-  const searchQuery = searchParams.get('search')?.toLowerCase() || '';
+  const searchQuery = searchParams?.get('search')?.toLowerCase() || '';
 
   return <>{children(searchQuery)}</>;
 }

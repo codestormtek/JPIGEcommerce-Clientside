@@ -22,7 +22,7 @@ interface PostType {
 function ShopContent() {
   const [activeTab, setActiveTab] = useState<string>('tab2');
   const searchParams = useSearchParams();
-  const searchQuery = searchParams.get('search')?.toLowerCase() || '';
+  const searchQuery = searchParams?.get('search')?.toLowerCase() || '';
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);

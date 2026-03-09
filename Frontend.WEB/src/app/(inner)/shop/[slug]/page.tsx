@@ -14,7 +14,8 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const ProductDetailPage: React.FC = () => {
-  const { slug } = useParams();
+  const params = useParams();
+  const slug = params?.slug as string;
   const { addToCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
