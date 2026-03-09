@@ -1,5 +1,14 @@
 import type { NextConfig } from "next";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const apiHost = (() => {
+  try {
+    return new URL(API_URL).hostname;
+  } catch {
+    return "localhost";
+  }
+})();
+
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["*.replit.dev", "*.repl.co", "127.0.0.1"],
   images: {
@@ -7,6 +16,11 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "cdn.thejigglingpig.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "jpig-api.onrender.com",
         pathname: "/**",
       },
       {
@@ -18,6 +32,15 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/v1$/, '');
+      return [
+        {
+          source: "/api/:path*",
+          destination: `${baseUrl}/api/:path*`,
+        },
+      ];
+    }
     return [
       {
         source: "/api/:path*",
