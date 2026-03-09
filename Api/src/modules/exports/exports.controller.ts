@@ -34,7 +34,7 @@ export async function getExport(req: AuthRequest, res: Response): Promise<void> 
 
 // GET /api/v1/exports/:id/download
 export async function downloadExport(req: AuthRequest, res: Response): Promise<void> {
-  const { job, stream } = await service.downloadExport(req.params['id'] as string);
+  const { job, stream: streamPromise } = await service.downloadExport(req.params['id'] as string);
   const ext = job.storageKey!.split('.').pop() ?? 'bin';
   const mimeType = MIME_MAP[ext] ?? 'application/octet-stream';
   const inline = ext === 'pdf' && req.query['inline'] !== 'false';
@@ -43,6 +43,7 @@ export async function downloadExport(req: AuthRequest, res: Response): Promise<v
 
   res.setHeader('Content-Type', mimeType);
   res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`);
+  const stream = await streamPromise;
   stream.pipe(res);
 }
 

@@ -31,7 +31,9 @@ const FOLDER_PREFIXES: Record<MediaFolder, string> = {
   blog:       getFolderPrefix('blog'),
   news:       getFolderPrefix('news'),
   topics:     getFolderPrefix('topics'),
+  pages:      getFolderPrefix('pages'),
   categories: getFolderPrefix('categories'),
+  galleries:  getFolderPrefix('galleries'),
   media:      getFolderPrefix('media'),
 };
 
