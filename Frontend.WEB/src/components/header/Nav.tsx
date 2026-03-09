@@ -6,37 +6,8 @@ function NavItem() {
         <div>
             <nav>
                 <ul className="parent-nav">
-                    <li className="parent has-dropdown">
-                        <Link className="nav-link" href="#">
-                            Home
-                        </Link>
-                        <ul className="submenu">
-                            <li>
-                                <Link className="sub-b" href="/">
-                                    Home One
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/index-two">
-                                    Home Two
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/index-three">
-                                    Home Three
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/index-four">
-                                    Home Four
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/index-five">
-                                    Home Five
-                                </Link>
-                            </li>
-                        </ul>
+                    <li className="parent">
+                        <Link href="/">Home</Link>
                     </li>
                     <li className="parent">
                         <Link href="/about">About</Link>
@@ -46,7 +17,6 @@ function NavItem() {
                             Shop
                         </Link>
                         <ul className="submenu">
-                            <li className="submenu-title">Shop Products</li>
                             <li>
                                 <Link className="sub-b" href="/shop-grid-top-filter">
                                     JPIG Shop
@@ -134,38 +104,10 @@ function NavItem() {
                         <ul className="submenu">
                             <li>
                                 <Link className="sub-b" href="/blog">
-                                    Blog
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    className="sub-b"
-                                    href="/blog-list-left-sidebar"
-                                >
-                                    Blog List Left Sidebar
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    className="sub-b"
-                                    href="/blog-list-right-sidebar"
-                                >
-
-                                    Blog List Right Sidebar
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/blog/details-profitable-business-makes-your-profit">
-                                    Blog Details
+                                    JPIG Blogs
                                 </Link>
                             </li>
                         </ul>
-                    </li>
-                    <li className="parents">
-                        <Link target='_blank' href="/dashboard">
-                            Dashboard
-                            <span className="badge">New</span>
-                        </Link>
                     </li>
                     <li className="parent">
                         <Link href="/gallery">Gallery</Link>
