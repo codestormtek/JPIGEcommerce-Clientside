@@ -104,6 +104,15 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - Returns `{ primary: MediaAsset, variants: [{ suffix, id, url }] }`
   - Image-only (rejects video mimetypes)
   - Utility: `Api/src/lib/imageResize.ts` — sharp-based resize with cover fit
+- **Site Settings** (`/site-settings`): Dynamic storefront text management
+  - Prisma model: `SiteSetting` (table `site_settings`) with settingKey (unique), settingValue, label, category, updatedAt
+  - API: `Api/src/modules/site-settings/` at `/api/v1/site-settings`
+    - Public: `GET /site-settings/public` (key→value map), `GET /site-settings/public/:key`
+    - Admin: `GET /site-settings` (full records), `PATCH /site-settings/:key`, `PUT /site-settings/bulk`
+  - Admin UI: `AdminSiteSettings.jsx` — grouped by category, inline edit, save changes button
+  - Frontend: `SiteSettingsContext.tsx` provider fetches `/site-settings/public` once on mount
+  - HeaderOne.tsx + HeaderNav.tsx use `useSiteSettings()` for promo banner, countdown, phone, delivery hours, sale banner
+  - Seeded keys: promo_banner_text, promo_banner_countdown, support_phone, support_phone_href, delivery_hours_text, sale_banner_text, sale_banner_link
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
 
 ## Frontend.WEB (Storefront)

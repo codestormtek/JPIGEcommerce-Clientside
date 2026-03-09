@@ -252,6 +252,11 @@ const menu = [
     text: "Scheduled Tasks",
     link: "/scheduled-tasks",
   },
+  {
+    icon: "setting",
+    text: "Site Settings",
+    link: "/site-settings",
+  },
 
   // ─── SAMPLE & DEMO COMPONENTS ─────────────────────────────────────────────
   { heading: "─── Sample / Demo ───" },

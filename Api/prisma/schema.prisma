@@ -1579,6 +1579,17 @@ model Gallery {
   @@map("galleries")
 }
 
+model SiteSetting {
+  id           String   @id @default(uuid())
+  settingKey   String   @unique
+  settingValue String   @default("")
+  label        String   @default("")
+  category     String   @default("general")
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@map("site_settings")
+}
+
 model GalleryImage {
   id           String   @id @default(uuid())
   galleryId    String

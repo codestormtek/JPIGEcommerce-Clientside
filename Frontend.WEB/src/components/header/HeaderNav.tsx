@@ -5,8 +5,10 @@ import Nav from './Nav';
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
 import { Category } from '@/types/api';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
 function ComponentName() {
+    const { settings } = useSiteSettings();
     const [categories, setCategories] = useState<Category[]>([]);
 
     useEffect(() => {
@@ -78,10 +80,10 @@ function ComponentName() {
                                     <a href="#" className="btn-narrow">
                                         Trending Products
                                     </a>
-                                    <button className="rts-btn btn-primary">
-                                        Get 30% Discount Now
+                                    <Link href={settings.sale_banner_link || "/shop-grid-top-filter"} className="rts-btn btn-primary">
+                                        {settings.sale_banner_text || "Get 30% Discount Now"}
                                         <span>Sale</span>
-                                    </button>
+                                    </Link>
                                 </div>
                                 {/* button-area end */}
                             </div>

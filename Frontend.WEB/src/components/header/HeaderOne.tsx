@@ -9,6 +9,7 @@ import Sidebar from "./Sidebar";
 import BackToTop from "@/components/common/BackToTop";
 import { useCompare } from "@/components/header/CompareContext";
 import { useAuth } from "@/context/AuthContext";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiGet, buildQS } from "@/lib/api";
@@ -17,6 +18,7 @@ import { PaginatedResponse, Product } from "@/types/api";
 function HeaderOne() {
   const { compareItems } = useCompare();
   const { user, isAuthenticated, logout } = useAuth();
+  const { settings } = useSiteSettings();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -183,14 +185,14 @@ function HeaderOne() {
                                 <div className="bwtween-area-header-top">
                                     <div className="discount-area">
                                         <p className="disc">
-                                            FREE delivery &amp; 40% Discount for next 3 orders! Place your 1st order in.
+                                            {settings.promo_banner_text || "FREE delivery & 40% Discount for next 3 orders! Place your 1st order in."}
                                         </p>
                                         <div className="countdown">
-                                            <div className="countDown">02/02/2026 10:20:00</div>
+                                            <div className="countDown">{settings.promo_banner_countdown || "02/02/2026 10:20:00"}</div>
                                         </div>
                                     </div>
                                     <div className="contact-number-area">
-                                        <p>Need help? Call Us: <a href="tel:+4733378901">+258 3268 21485</a></p>
+                                        <p>Need help? Call Us: <a href={settings.support_phone_href || "tel:+2583268214855"}>{settings.support_phone || "+258 3268 21485"}</a></p>
                                     </div>
                                 </div>
                             </div>
@@ -210,7 +212,7 @@ function HeaderOne() {
                                             <li><Link href="/account">{isAuthenticated && user ? `Hi, ${user.firstName}` : 'My Account'}</Link></li>
                                             <li><Link href="/wishlist">Wishlist</Link></li>
                                         </ul>
-                                        <p className="para">We deliver to your everyday from 7:00 to 22:00</p>
+                                        <p className="para">{settings.delivery_hours_text || "We deliver to your everyday from 7:00 to 22:00"}</p>
                                     </div>
                                     <div className="nav-sm-left">
                                         <ul className="nav-h_top language">
