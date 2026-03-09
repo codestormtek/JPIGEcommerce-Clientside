@@ -67,7 +67,22 @@ function ComponentName() {
 
     return (
         <div>
-            <div className={`rts-header-nav-area-one header--sticky  ${isSticky ? 'sticky' : ''}`}>
+            <style>{`
+                .rts-header-nav-area-one.nav-custom {
+                    background: rgba(44, 44, 44, 0.7) !important;
+                    border-bottom: none !important;
+                }
+                .nav-custom .nav-area ul li a {
+                    color: #ffffff !important;
+                }
+                .nav-custom .nav-area ul li a:hover {
+                    color: #f47920 !important;
+                }
+                .nav-custom .btn-narrow {
+                    color: #ffffff !important;
+                }
+            `}</style>
+            <div className={`rts-header-nav-area-one header--sticky nav-custom ${isSticky ? 'sticky' : ''}`}>
                 <div className="container">
                     <div className="row">
                         <div className="col-lg-12">
