@@ -58,24 +58,25 @@ function ShopContent() {
       if (maxPrice < 500) params.maxPrice = maxPrice;
 
       const qs = buildQS(params);
-      const res = await apiGet<PaginatedResponse<Product>>(`/products${qs}`);
+      const res: any = await apiGet(`/products${qs}`);
+      const meta = res.meta || {};
       let fetched = res.data || [];
 
       if (selectedCategories.length > 1) {
-        fetched = fetched.filter(p =>
+        fetched = fetched.filter((p: Product) =>
           p.categoryMaps?.some(cm => selectedCategories.includes(cm.category.id))
         );
       }
       if (selectedBrands.length > 1) {
-        fetched = fetched.filter(p =>
+        fetched = fetched.filter((p: Product) =>
           p.brandId && selectedBrands.includes(p.brandId)
         );
       }
 
       setError(null);
       setProducts(fetched);
-      setTotalProducts(res.total || fetched.length);
-      setTotalPages(res.totalPages || 1);
+      setTotalProducts(meta.total || fetched.length);
+      setTotalPages(meta.totalPages || 1);
     } catch (err) {
       setError('Unable to load products. Please try again later.');
       setProducts([]);

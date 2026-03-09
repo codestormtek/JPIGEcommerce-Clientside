@@ -9,30 +9,32 @@ interface BlogGridMainProps {
   ProductImage: string;
   ProductTitle?: string;
   Price?: string;
+  isApiImage?: boolean;
 }
 
-const BlogGridMain: React.FC<BlogGridMainProps> = ({
+const ShopMainList: React.FC<BlogGridMainProps> = ({
   Slug,
   ProductImage,
   ProductTitle,
   Price,
+  isApiImage = false,
 }) => {
 
-  // 🔥 FIXED QUANTITY (React State Only)
   const [qty, setQty] = useState(1);
   const increaseQty = () => setQty(prev => prev + 1);
   const decreaseQty = () => setQty(prev => (prev > 1 ? prev - 1 : 1));
 
-  // cart item
   const { addToCart } = useCart();
+
+  const imageSrc = isApiImage ? ProductImage : `/assets/images/grocery/${ProductImage}`;
 
   const handleAdd = () => {
     addToCart({
       id: Date.now(),
-      image: `/assets/images/grocery/${ProductImage}`,
+      image: imageSrc,
       title: ProductTitle ?? 'Default Product Title',
       price: parseFloat(Price ?? '0'),
-      quantity: qty, // 👈 FIXED
+      quantity: qty,
       active: true,
     });
     toast('Successfully Add To Cart !');
@@ -48,7 +50,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
             </span>
             <i className="fa-solid fa-bookmark" />
           </div>
-          <img src={`/assets/images/grocery/${ProductImage}`} alt="grocery" />
+          <img src={imageSrc} alt="grocery" />
         </a>
 
         <div className="body-content">
@@ -114,4 +116,4 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
   );
 };
 
-export default BlogGridMain;
+export default ShopMainList;

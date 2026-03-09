@@ -13,6 +13,7 @@ interface BlogGridMainProps {
     ProductImage: string;
     ProductTitle?: string;
     Price?: string;
+    isApiImage?: boolean;
 }
 
 const BlogGridMain: React.FC<BlogGridMainProps> = ({
@@ -20,6 +21,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
     ProductImage,
     ProductTitle,
     Price,
+    isApiImage = false,
 }) => {
 
     type ModalType = 'one' | 'two' | 'three' | null;
@@ -27,27 +29,31 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
     const handleClose = () => setActiveModal(null);
 
     const [qty, setQty] = useState(1);
+    const [added, setAdded] = useState(false);
     const increaseQty = () => setQty(prev => prev + 1);
     const decreaseQty = () => setQty(prev => (prev > 1 ? prev - 1 : 1));
 
-    // cart item
     const { addToCart } = useCart();
+
+    const imageSrc = isApiImage ? ProductImage : `/assets/images/grocery/${ProductImage}`;
 
     const handleAdd = () => {
         addToCart({
             id: Date.now(),
-            image: `/assets/images/grocery/${ProductImage}`,
+            image: imageSrc,
             title: ProductTitle ?? 'Default Product Title',
             price: parseFloat(Price ?? '0'),
-            quantity: qty, // 👈 FIXED
+            quantity: qty,
             active: true,
         });
+        setAdded(true);
+        setTimeout(() => setAdded(false), 2000);
     };
 
     const { addToCompare } = useCompare();
     const handleCompare = () => {
         addToCompare({
-            image: `/assets/images/grocery/${ProductImage}`,
+            image: imageSrc,
             name: ProductTitle ?? 'Default Product Title',
             price: Price ?? '0',
             description: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
@@ -62,7 +68,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
     const handleWishlist = () => {
         addToWishlist({
             id: Date.now(),
-            image: `/assets/images/grocery/${ProductImage}`,
+            image: imageSrc,
             title: ProductTitle ?? 'Default Product Title',
             price: parseFloat(Price ?? '0'),
             quantity: 1,
@@ -75,7 +81,6 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
 
     return (
         <>
-            {/* iamge and sction area start */}
             <div className="image-and-action-area-wrapper">
                 <a href={`/shop/${Slug}`} className="thumbnail-preview">
                     <div className="badge">
@@ -85,7 +90,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                         </span>
                         <i className="fa-solid fa-bookmark" />
                     </div>
-                    <img src={`/assets/images/grocery/${ProductImage}`} alt="grocery" />
+                    <img src={imageSrc} alt="grocery" />
                 </a>
 
                 <div className="action-share-option">
@@ -124,7 +129,6 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                 </div>
             </div>
 
-            {/* iamge and sction area end */}
             <div className="body-content">
                 <a href={`/shop/${Slug}`}>
                     <h4 className="title">
@@ -139,7 +143,6 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                     <div className="previous">$36.00</div>
                 </div>
 
-                {/* 🔥 FIXED QUANTITY SYSTEM */}
                 <div className="cart-counter-action">
                     <div className="quantity-edit">
                         <input type="text" className="input" value={qty} readOnly />
@@ -164,12 +167,12 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                             addcart();
                         }}
                     >
-                        <div className="btn-text">Add</div>
+                        <div className="btn-text">{added ? "Added" : "Add"}</div>
                         <div className="arrow-icon">
-                            <i className="fa-regular fa-cart-shopping" />
+                            <i className={`fa-regular ${added ? "fa-check" : "fa-cart-shopping"}`} />
                         </div>
                         <div className="arrow-icon">
-                            <i className="fa-regular fa-cart-shopping" />
+                            <i className={`fa-regular ${added ? "fa-check" : "fa-cart-shopping"}`} />
                         </div>
                     </a>
                 </div>
@@ -178,7 +181,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
             <ProductDetails
                 show={activeModal === 'two'}
                 handleClose={handleClose}
-                productImage={`/assets/images/grocery/${ProductImage}`}
+                productImage={imageSrc}
                 productTitle={ProductTitle ?? 'Default Product Title'}
                 productPrice={Price ?? '0'}
             />
