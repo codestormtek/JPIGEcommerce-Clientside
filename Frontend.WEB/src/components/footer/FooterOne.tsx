@@ -3,13 +3,58 @@ import React from 'react'
 function FooterOne() {
     return (
         <div><>
-            {/* rts footer one area start */}
-            <div className="rts-footer-area pt--80 bg_light-1">
+            <style>{`
+                .rts-footer-area.footer-custom {
+                    background: #2c2c2c !important;
+                }
+                .footer-custom .footer-title {
+                    color: #ffffff !important;
+                }
+                .footer-custom .footer-nav ul li a,
+                .footer-custom .call-area .info span,
+                .footer-custom .call-area .info a,
+                .footer-custom .opening-hour .single p,
+                .footer-custom .opening-hour .single p span,
+                .footer-custom p.disc-news-letter,
+                .footer-custom p.dsic,
+                .footer-custom .social-one-wrapper span,
+                .footer-custom .payment-access span {
+                    color: #909090 !important;
+                }
+                .footer-custom .footer-nav ul li a:hover,
+                .footer-custom .call-area .info a:hover {
+                    color: #f47920 !important;
+                }
+                .footer-custom .call-area .icon i,
+                .footer-custom .social-one-wrapper ul li a i {
+                    color: #f47920 !important;
+                }
+                .footer-custom .social-one-wrapper ul li a {
+                    color: #909090 !important;
+                    border-color: #f47920 !important;
+                }
+                .footer-custom .rts-btn.btn-primary,
+                .footer-custom .footersubscribe-form button {
+                    background: #f47920 !important;
+                    border-color: #f47920 !important;
+                }
+                .rts-copyright-area.copyright-custom {
+                    background: #2c2c2c !important;
+                }
+                .copyright-custom .disc,
+                .copyright-custom .disc a,
+                .copyright-custom .playstore-app-area span {
+                    color: #909090 !important;
+                }
+                .copyright-custom .disc a:hover {
+                    color: #f47920 !important;
+                }
+            `}</style>
+            <div className="rts-footer-area footer-custom pt--80">
                 <div className="container">
                     <div className="row">
                         <div className="col-lg-12">
                             <div className="footer-main-content-wrapper pb--70 pb_sm--30">
-                                {/* single footer area wrapper */}
                                 <div className="single-footer-wized">
                                     <h3 className="footer-title">About Company</h3>
                                     <div className="call-area">
@@ -41,8 +86,6 @@ function FooterOne() {
                                         </div>
                                     </div>
                                 </div>
-                                {/* single footer area wrapper */}
-                                {/* single footer area wrapper */}
                                 <div className="single-footer-wized">
                                     <h3 className="footer-title">Our Stores</h3>
                                     <div className="footer-nav">
@@ -65,8 +108,6 @@ function FooterOne() {
                                         </ul>
                                     </div>
                                 </div>
-                                {/* single footer area wrapper */}
-                                {/* single footer area wrapper */}
                                 <div className="single-footer-wized">
                                     <h3 className="footer-title">Shop Categories</h3>
                                     <div className="footer-nav">
@@ -89,8 +130,6 @@ function FooterOne() {
                                         </ul>
                                     </div>
                                 </div>
-                                {/* single footer area wrapper */}
-                                {/* single footer area wrapper */}
                                 <div className="single-footer-wized">
                                     <h3 className="footer-title">Useful Links</h3>
                                     <div className="footer-nav">
@@ -113,8 +152,6 @@ function FooterOne() {
                                         </ul>
                                     </div>
                                 </div>
-                                {/* single footer area wrapper */}
-                                {/* single footer area wrapper */}
                                 <div className="single-footer-wized">
                                     <h3 className="footer-title">Our Newsletter</h3>
                                     <p className="disc-news-letter">
@@ -133,7 +170,6 @@ function FooterOne() {
                                         I would like to receive news and special offer
                                     </p>
                                 </div>
-                                {/* single footer area wrapper */}
                             </div>
                             <div className="social-and-payment-area-wrapper">
                                 <div className="social-one-wrapper">
@@ -175,9 +211,7 @@ function FooterOne() {
                     </div>
                 </div>
             </div>
-            {/* rts footer one area end */}
-            {/* rts copyright-area start */}
-            <div className="rts-copyright-area">
+            <div className="rts-copyright-area copyright-custom">
                 <div className="container">
                     <div className="row">
                         <div className="col-lg-12">
@@ -195,7 +229,6 @@ function FooterOne() {
                     </div>
                 </div>
             </div>
-            {/* rts copyright-area end */}
         </>
         </div>
     )
