@@ -1,0 +1,351 @@
+Now that you have all three pieces:
+
+API
+
+Webstore frontend UI
+
+Admin dashboard UI
+
+…and Cloudflare is active with your domain, the clean way to test everything in the browser is this:
+
+Recommended deployment layout
+
+Use:
+
+Render for the API
+
+Cloudflare Pages for the webstore
+
+Cloudflare Pages for the admin UI
+
+Cloudflare R2 for images
+
+Cloudflare DNS for routing
+
+So your preview environment becomes:
+
+https://api-new.thejigglingpig.com → API
+
+https://new.thejigglingpig.com → webstore
+
+https://admin-new.thejigglingpig.com → admin dashboard
+
+https://cdn.thejigglingpig.com → images
+
+Step 1 — Deploy the API to Render
+
+Since your API is Node.js, deploy that on Render as a Web Service.
+
+In Render
+
+Create a new Web Service from your GitHub repo.
+
+Set:
+
+Build command
+npm ci && npx prisma generate && npx prisma migrate deploy && npm run build
+
+Start command
+this depends on your project, usually one of these:
+
+npm start
+
+node dist/server.js
+
+node src/server.js
+
+Add environment variables
+
+At minimum:
+
+DATABASE_URL=your_render_internal_postgres_url
+R2_ACCOUNT_ID=your_cloudflare_account_id
+R2_ACCESS_KEY_ID=your_r2_access_key
+R2_SECRET_ACCESS_KEY=your_r2_secret_key
+R2_BUCKET=jpig-media
+R2_PUBLIC_BASE_URL=https://cdn.thejigglingpig.com
+NODE_ENV=production
+
+If your API has CORS, allow:
+
+https://new.thejigglingpig.com
+
+https://admin-new.thejigglingpig.com
+
+Connect Cloudflare DNS to Render
+
+In Cloudflare DNS, you already have:
+
+api-new → jpig-api.onrender.com
+
+That’s correct.
+
+Test in browser
+
+Open:
+
+https://api-new.thejigglingpig.com
+
+Better if you have a health route:
+
+https://api-new.thejigglingpig.com/health
+
+If it returns JSON or a healthy response, your API is live.
+
+Step 2 — Deploy the webstore to Cloudflare Pages
+
+For your React webstore:
+
+In Cloudflare Pages
+
+Create a Pages project from GitHub.
+
+If it is standard React:
+
+Build command: npm ci && npm run build
+
+Output folder:
+
+dist for Vite
+
+build for CRA
+
+Add environment variables
+
+If using Vite:
+
+VITE_API_BASE_URL=https://api-new.thejigglingpig.com
+VITE_CDN_BASE_URL=https://cdn.thejigglingpig.com
+
+If using CRA:
+
+REACT_APP_API_BASE_URL=https://api-new.thejigglingpig.com
+REACT_APP_CDN_BASE_URL=https://cdn.thejigglingpig.com
+Add custom domain in Pages
+
+Inside the Pages project, add:
+
+new.thejigglingpig.com
+
+That step is required so Cloudflare Pages recognizes the custom domain and avoids the 1014 error.
+
+Test in browser
+
+Open:
+
+https://new.thejigglingpig.com
+
+Then verify:
+
+homepage loads
+
+product images load from cdn.thejigglingpig.com
+
+API calls succeed
+
+routing works
+
+Step 3 — Deploy the admin UI to Cloudflare Pages
+
+Do the same for the admin React app.
+
+In Cloudflare Pages
+
+Create another Pages project from GitHub.
+
+Use:
+
+Build command: npm ci && npm run build
+
+Output folder:
+
+dist for Vite
+
+build for CRA
+
+Add environment variables
+
+Example:
+
+VITE_API_BASE_URL=https://api-new.thejigglingpig.com
+VITE_CDN_BASE_URL=https://cdn.thejigglingpig.com
+Add custom domain
+
+Inside the Pages project, add:
+
+admin-new.thejigglingpig.com
+
+Test in browser
+
+Open:
+
+https://admin-new.thejigglingpig.com
+
+Then verify:
+
+login page loads
+
+dashboard loads
+
+API requests work
+
+image upload UI works
+
+saved images resolve through cdn.thejigglingpig.com
+
+Step 4 — Use R2 for images
+
+You already created:
+
+bucket: jpig-media
+
+custom domain: cdn.thejigglingpig.com
+
+So your app should store image paths like:
+
+products/test.jpg
+
+And build public URLs like:
+
+https://cdn.thejigglingpig.com/products/test.jpg
+Browser test
+
+Upload a test file into R2 and open:
+
+https://cdn.thejigglingpig.com/products/test.jpg
+
+If it loads, image delivery is working.
+
+Step 5 — Add CORS in the API
+
+Your API must allow browser requests from the Pages domains.
+
+Example Express setup:
+
+app.use(cors({
+  origin: [
+    "https://new.thejigglingpig.com",
+    "https://admin-new.thejigglingpig.com",
+    "http://localhost:5173",
+    "http://localhost:3000"
+  ],
+  credentials: true
+}));
+
+Without this, the browser may block API calls even if the URL is correct.
+
+Step 6 — Test everything in the browser
+
+Use this order:
+
+API
+
+https://api-new.thejigglingpig.com/health
+
+Store
+
+https://new.thejigglingpig.com
+
+Test:
+
+page loads
+
+products render
+
+API data loads
+
+images load
+
+Admin
+
+https://admin-new.thejigglingpig.com
+
+Test:
+
+login/dashboard
+
+CRUD operations
+
+image upload
+
+save/update flow
+
+Images
+
+https://cdn.thejigglingpig.com/products/test.jpg
+
+Step 7 — Keep production live while testing preview
+
+Your current live site can remain:
+
+thejigglingpig.com
+
+www.thejigglingpig.com
+
+while your preview stack runs on:
+
+new
+
+admin-new
+
+api-new
+
+That is the safest way to test everything before cutover.
+
+What you should have in Cloudflare DNS
+
+You should end up with these important records:
+
+A root → current PeopleHost IP
+
+CNAME www → root
+
+CNAME api-new → Render API host
+
+CNAME new → Cloudflare Pages store project
+
+CNAME admin-new → Cloudflare Pages admin project
+
+R2 cdn.thejigglingpig.com → jpig-media
+
+Simplest testing checklist
+
+Before launch, confirm all of these:
+
+api-new responds
+
+new loads without console errors
+
+admin-new loads without console errors
+
+API calls from both UIs succeed
+
+R2 images load through cdn.thejigglingpig.com
+
+uploads save correctly
+
+database writes work
+
+no CORS errors
+
+no mixed-content or SSL warnings
+
+Best next step
+
+The fastest way forward is:
+
+Deploy API to Render
+
+Deploy Admin UI to Cloudflare Pages
+
+Deploy Storefront to Cloudflare Pages
+
+Test all 4 URLs in browser
+
+Paste your three package.json scripts sections here:
+
+API scripts
+
+Admin UI scripts
+
+Storefront UI scripts
