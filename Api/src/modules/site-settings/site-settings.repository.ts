@@ -10,11 +10,32 @@ export async function findByKey(settingKey: string) {
   return prisma.siteSetting.findUnique({ where: { settingKey } });
 }
 
-export async function upsert(settingKey: string, settingValue: string) {
+export async function findById(id: string) {
+  return prisma.siteSetting.findUnique({ where: { id } });
+}
+
+export async function create(data: {
+  settingKey: string;
+  settingValue: string;
+  label: string;
+  category: string;
+}) {
+  return prisma.siteSetting.create({ data });
+}
+
+export async function update(settingKey: string, data: {
+  settingValue?: string;
+  label?: string;
+  category?: string;
+}) {
   return prisma.siteSetting.update({
     where: { settingKey },
-    data: { settingValue },
+    data,
   });
+}
+
+export async function remove(settingKey: string) {
+  return prisma.siteSetting.delete({ where: { settingKey } });
 }
 
 export async function bulkUpsert(

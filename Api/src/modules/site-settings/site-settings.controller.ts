@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../../types';
-import { sendSuccess } from '../../utils/apiResponse';
+import { sendSuccess, sendCreated, sendNoContent } from '../../utils/apiResponse';
 import * as service from './site-settings.service';
-import type { UpdateSettingInput, BulkUpdateSettingsInput } from './site-settings.schema';
+import type { CreateSettingInput, UpdateSettingInput, BulkUpdateSettingsInput } from './site-settings.schema';
 
 export async function getPublicSettings(_req: Request, res: Response): Promise<void> {
   const settings = await service.getAllSettings();
@@ -23,12 +23,22 @@ export async function getAllSettings(_req: Request, res: Response): Promise<void
   sendSuccess(res, settings);
 }
 
+export async function createSetting(req: AuthRequest, res: Response): Promise<void> {
+  const setting = await service.createSetting(req.body as CreateSettingInput);
+  sendCreated(res, setting, 'Setting created');
+}
+
 export async function updateSetting(req: AuthRequest, res: Response): Promise<void> {
   const setting = await service.updateSetting(
     req.params['key'] as string,
     req.body as UpdateSettingInput
   );
   sendSuccess(res, setting, 'Setting updated');
+}
+
+export async function deleteSetting(req: AuthRequest, res: Response): Promise<void> {
+  await service.deleteSetting(req.params['key'] as string);
+  sendNoContent(res);
 }
 
 export async function bulkUpdateSettings(req: AuthRequest, res: Response): Promise<void> {
