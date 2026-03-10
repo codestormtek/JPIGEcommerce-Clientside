@@ -7,7 +7,7 @@ export default function CateringPage() {
     <div className="demo-one">
       <HeaderOne />
 
-      <div className="rts-contact-main-wrapper-banner bg_image">
+      <div className="rts-catering-banner bg_image">
         <div className="container">
           <div className="row">
             <div className="col-lg-12">

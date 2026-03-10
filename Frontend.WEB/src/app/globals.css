@@ -295,3 +295,9 @@ a {
     border-radius: 0 !important;
   }
 }
+
+.rts-catering-banner {
+  background-image: url(/assets/images/catering/header.jpg);
+  background-size: cover;
+  background-position: center;
+}
