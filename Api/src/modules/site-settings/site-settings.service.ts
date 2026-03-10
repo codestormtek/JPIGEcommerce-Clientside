@@ -33,3 +33,26 @@ export async function deleteSetting(key: string) {
 export async function bulkUpdateSettings(input: BulkUpdateSettingsInput) {
   return repo.bulkUpsert(input.settings);
 }
+
+const DEFAULT_SETTINGS = [
+  { settingKey: 'promo_banner_text', settingValue: 'FREE delivery & 40% Discount for next 3 orders! Place your 1st order in.', label: 'Promo Banner Text', category: 'header' },
+  { settingKey: 'promo_banner_countdown', settingValue: '02/02/2026 10:20:00', label: 'Promo Banner Countdown', category: 'header' },
+  { settingKey: 'support_phone', settingValue: '+258 3268 21485', label: 'Support Phone Number', category: 'header' },
+  { settingKey: 'support_phone_href', settingValue: 'tel:+2583268214855', label: 'Support Phone Link', category: 'header' },
+  { settingKey: 'delivery_hours_text', settingValue: 'We deliver to your everyday from 7:00 to 22:00', label: 'Delivery Hours Text', category: 'header' },
+  { settingKey: 'trending_products_text', settingValue: 'Trending Products', label: 'Trending Products Button Text', category: 'header' },
+  { settingKey: 'trending_products_link', settingValue: '/shop', label: 'Trending Products Button Link', category: 'header' },
+  { settingKey: 'sale_banner_text', settingValue: 'Get 30% Discount Now', label: 'Sale Banner Button Text', category: 'header' },
+  { settingKey: 'sale_banner_link', settingValue: '/shop-grid-top-filter', label: 'Sale Banner Button Link', category: 'header' },
+];
+
+export async function seedDefaultSettings() {
+  for (const def of DEFAULT_SETTINGS) {
+    const existing = await repo.findByKey(def.settingKey);
+    if (!existing) {
+      await repo.create(def);
+    } else if (existing.category === 'general' && def.category !== 'general') {
+      await repo.update(def.settingKey, { category: def.category, label: def.label });
+    }
+  }
+}

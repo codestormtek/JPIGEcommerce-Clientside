@@ -92,9 +92,9 @@ function ComponentName() {
                                 </div>
                                 {/* button-area */}
                                 <div className="right-btn-area">
-                                    <a href="#" className="btn-narrow">
-                                        Trending Products
-                                    </a>
+                                    <Link href={settings.trending_products_link || "/shop"} className="btn-narrow">
+                                        {settings.trending_products_text || "Trending Products"}
+                                    </Link>
                                     <Link href={settings.sale_banner_link || "/shop-grid-top-filter"} className="rts-btn btn-primary">
                                         {settings.sale_banner_text || "Get 30% Discount Now"}
                                         <span>Sale</span>

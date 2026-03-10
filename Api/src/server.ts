@@ -3,12 +3,14 @@ import { config } from './config';
 import { logger } from './utils/logger';
 import prisma from './lib/prisma';
 import { startScheduler } from './jobs/scheduler';
+import { seedDefaultSettings } from './modules/site-settings/site-settings.service';
 
 async function main(): Promise<void> {
   // Verify DB connection before accepting traffic
   await prisma.$connect();
   logger.info('Database connected');
   startScheduler();
+  await seedDefaultSettings().catch((err) => logger.warn('Site settings seed skipped', { err }));
 
   const server = app.listen(config.port, () => {
     logger.info(`🚀 API running on http://localhost:${config.port} [${config.env}]`);
