@@ -462,16 +462,7 @@ const AdminWidgetList = () => {
                 <div className="card-inner">
                   <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
                     <div>
-                      <h5 className="mb-1">{widget.name}</h5>
-                      <div className="d-flex gap-2 align-items-center flex-wrap">
-                        <Badge color="primary" className="text-uppercase fs-11px">{WIDGET_PLACEMENTS.find((p) => p.value === widget.placement)?.label || widget.placement}</Badge>
-                        <Badge color={widget.isVisible ? "success" : "light"} pill>
-                          {widget.isVisible ? "Visible" : "Hidden"}
-                        </Badge>
-                        <span className="text-soft fs-12px">{widget.columns} column{widget.columns !== 1 ? "s" : ""}</span>
-                        <span className="text-soft fs-12px">{widget.items?.length || 0} item{(widget.items?.length || 0) !== 1 ? "s" : ""}</span>
-                      </div>
-                      {widget.description && <p className="text-soft mt-1 mb-0 fs-13px">{widget.description}</p>}
+                      <h5 className="mb-0">{widget.name}</h5>
                     </div>
                     <ul className="nk-block-tools g-2 flex-shrink-0">
                       <li>
@@ -500,7 +491,16 @@ const AdminWidgetList = () => {
                 </div>
 
                 {expandedWidget === widget.id && (
-                  <div className="card-inner border-top pt-3">
+                  <div className="card-inner border-top pt-4">
+                    <div className="d-flex gap-2 align-items-center flex-wrap mb-4">
+                      <Badge color="primary" className="text-uppercase fs-11px">{WIDGET_PLACEMENTS.find((p) => p.value === widget.placement)?.label || widget.placement}</Badge>
+                      <Badge color={widget.isVisible ? "success" : "light"} pill>
+                        {widget.isVisible ? "Visible" : "Hidden"}
+                      </Badge>
+                      <span className="text-soft fs-12px">{widget.columns} column{widget.columns !== 1 ? "s" : ""}</span>
+                      <span className="text-soft fs-12px">{widget.items?.length || 0} item{(widget.items?.length || 0) !== 1 ? "s" : ""}</span>
+                    </div>
+                    {widget.description && <p className="text-soft mt-0 mb-4 fs-13px">{widget.description}</p>}
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <h6 className="mb-0">Widget Items</h6>
                       <Button size="sm" color="primary" onClick={() => openCreateItem(widget.id)}>
