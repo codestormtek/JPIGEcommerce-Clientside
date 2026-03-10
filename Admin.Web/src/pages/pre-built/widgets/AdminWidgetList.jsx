@@ -407,21 +407,29 @@ const AdminWidgetList = () => {
                       </div>
                       {widget.description && <p className="text-soft mt-1 mb-0 fs-13px">{widget.description}</p>}
                     </div>
-                    <div className="d-flex gap-1">
-                      <Button size="sm" color="dim" outline className="btn-outline-info" onClick={() => openPreview(widget)} title="Preview">
-                        <Icon name="eye" />
-                      </Button>
-                      <Button size="sm" color="dim" outline className="btn-outline-primary" onClick={() => setExpandedWidget(expandedWidget === widget.id ? null : widget.id)}>
-                        <Icon name={expandedWidget === widget.id ? "chevron-up" : "chevron-down"} />
-                        {expandedWidget === widget.id ? " Collapse" : " Items"}
-                      </Button>
-                      <Button size="sm" color="dim" outline className="btn-outline-primary" onClick={() => openEditWidget(widget)}>
-                        <Icon name="edit" />
-                      </Button>
-                      <Button size="sm" color="dim" outline className="btn-outline-danger" onClick={() => openDeleteWidget(widget)}>
-                        <Icon name="trash" />
-                      </Button>
-                    </div>
+                    <ul className="nk-block-tools g-2 flex-shrink-0">
+                      <li>
+                        <Button size="sm" outline color="info" onClick={() => openPreview(widget)} title="Preview widget design">
+                          <Icon name="eye" />
+                        </Button>
+                      </li>
+                      <li>
+                        <Button size="sm" outline color="primary" onClick={() => setExpandedWidget(expandedWidget === widget.id ? null : widget.id)}>
+                          <Icon name={expandedWidget === widget.id ? "chevron-up" : "chevron-down"} />
+                          <span className="ms-1">{expandedWidget === widget.id ? "Collapse" : "Items"}</span>
+                        </Button>
+                      </li>
+                      <li>
+                        <Button size="sm" outline color="primary" onClick={() => openEditWidget(widget)} title="Edit widget">
+                          <Icon name="edit" />
+                        </Button>
+                      </li>
+                      <li>
+                        <Button size="sm" outline color="danger" onClick={() => openDeleteWidget(widget)} title="Delete widget">
+                          <Icon name="trash" />
+                        </Button>
+                      </li>
+                    </ul>
                   </div>
                 </div>
 
@@ -463,12 +471,18 @@ const AdminWidgetList = () => {
                                     </div>
                                   </Col>
                                   <Col md="3" className="text-end">
-                                    <Button size="sm" color="dim" outline className="btn-outline-primary me-1" onClick={() => openEditItem(widget.id, item)}>
-                                      <Icon name="edit" />
-                                    </Button>
-                                    <Button size="sm" color="dim" outline className="btn-outline-danger" onClick={() => openDeleteItem(widget.id, item)}>
-                                      <Icon name="trash" />
-                                    </Button>
+                                    <ul className="nk-block-tools g-2 justify-content-end">
+                                      <li>
+                                        <Button size="sm" outline color="primary" onClick={() => openEditItem(widget.id, item)}>
+                                          <Icon name="edit" />
+                                        </Button>
+                                      </li>
+                                      <li>
+                                        <Button size="sm" outline color="danger" onClick={() => openDeleteItem(widget.id, item)}>
+                                          <Icon name="trash" />
+                                        </Button>
+                                      </li>
+                                    </ul>
                                   </Col>
                                 </Row>
                               </div>
@@ -585,14 +599,18 @@ const AdminWidgetList = () => {
                                   {item.subtitle && <span className="text-soft fs-12px ms-1">— {item.subtitle}</span>}
                                 </div>
                               </div>
-                              <div className="d-flex gap-1">
-                                <Button size="sm" color="dim" outline className="btn-outline-primary" onClick={() => openEditItem(editWidget.id, item)}>
-                                  <Icon name="edit" />
-                                </Button>
-                                <Button size="sm" color="dim" outline className="btn-outline-danger" onClick={() => openDeleteItem(editWidget.id, item)}>
-                                  <Icon name="trash" />
-                                </Button>
-                              </div>
+                              <ul className="nk-block-tools g-2">
+                                <li>
+                                  <Button size="sm" outline color="primary" onClick={() => openEditItem(editWidget.id, item)}>
+                                    <Icon name="edit" />
+                                  </Button>
+                                </li>
+                                <li>
+                                  <Button size="sm" outline color="danger" onClick={() => openDeleteItem(editWidget.id, item)}>
+                                    <Icon name="trash" />
+                                  </Button>
+                                </li>
+                              </ul>
                             </div>
                           </div>
                         ))}
