@@ -36,7 +36,7 @@ interface WidgetData {
 interface WidgetProps {
     placement: string;
     className?: string;
-    variant?: 'feature-cards' | 'promo-banners' | 'generic';
+    variant?: 'feature-cards' | 'promo-banners' | 'services' | 'generic';
 }
 
 function getColClass(columns: number): string {
@@ -131,6 +131,27 @@ function PromoBannerItem({ item }: { item: WidgetItemData }) {
     );
 }
 
+function ServiceItem({ item }: { item: WidgetItemData }) {
+    return (
+        <div className="single-feature-area text-center">
+            <div className="icon">
+                {item.mediaAsset?.url ? (
+                    <img src={item.mediaAsset.url} alt={item.title || ''} style={{ width: 43, height: 43, objectFit: 'contain' }} />
+                ) : (
+                    <svg width={43} height={43} viewBox="0 0 43 43" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M36.7029 6.29715C32.642 2.23634 27.2429 0 21.5 0C15.7571 0 10.358 2.23634 6.29715 6.29715C2.23642 10.358 0 15.7571 0 21.5C0 27.2429 2.23642 32.642 6.29715 36.7029C10.358 40.7637 15.7571 43 21.5 43C27.2429 43 32.642 40.7637 36.7029 36.7029C40.7636 32.642 43 27.2429 43 21.5C43 15.7571 40.7636 10.358 36.7029 6.29715ZM21.5 40.4805C11.0341 40.4805 2.51953 31.9659 2.51953 21.5C2.51953 11.0341 11.0341 2.51953 21.5 2.51953C31.9659 2.51953 40.4805 11.0341 40.4805 21.5C40.4805 31.9659 31.9659 40.4805 21.5 40.4805Z" fill="#629D23" />
+                        <path d="M22.8494 20.2402H20.1506C18.6131 20.2402 17.3623 18.9895 17.3623 17.452C17.3623 15.9145 18.6132 14.6638 20.1506 14.6638H25.548C26.2438 14.6638 26.8078 14.0997 26.8078 13.404C26.8078 12.7083 26.2438 12.1442 25.548 12.1442H22.7598V9.35594C22.7598 8.66022 22.1957 8.09618 21.5 8.09618C20.8043 8.09618 20.2402 8.66022 20.2402 9.35594V12.1442H20.1507C17.2239 12.1442 14.8429 14.5253 14.8429 17.452C14.8429 20.3787 17.224 22.7598 20.1507 22.7598H22.8495C24.3869 22.7598 25.6377 24.0106 25.6377 25.548C25.6377 27.0855 24.3869 28.3363 22.8495 28.3363H17.452C16.7563 28.3363 16.1923 28.9004 16.1923 29.5961C16.1923 30.2918 16.7563 30.8559 17.452 30.8559H20.2402V33.6442C20.2402 34.34 20.8043 34.904 21.5 34.904C22.1957 34.904 22.7598 34.34 22.7598 33.6442V30.8559H22.8494C25.7761 30.8559 28.1571 28.4747 28.1571 25.548C28.1571 22.6214 25.7761 20.2402 22.8494 20.2402Z" fill="#629D23" />
+                    </svg>
+                )}
+            </div>
+            <div className="content">
+                {item.title && <h6 className="title">{item.title}</h6>}
+                {item.subtitle && <p className="disc">{item.subtitle}</p>}
+            </div>
+        </div>
+    );
+}
+
 function GenericItem({ item }: { item: WidgetItemData }) {
     const linkUrl = item.buttonUrl || '#';
     const hasCustomSize = item.imageWidth || item.imageHeight;
@@ -204,6 +225,24 @@ export default function Widget({ placement, className, variant = 'generic' }: Wi
                 {widget.items.map((item) => (
                     <PromoBannerItem key={item.id} item={item} />
                 ))}
+            </div>
+        );
+    }
+
+    if (variant === 'services') {
+        return (
+            <div className={className}>
+                <div className="rts-feature-area rts-section-gap">
+                    <div className="container">
+                        <div className="row g-4">
+                            {widget.items.map((item) => (
+                                <div key={item.id} className={colClass}>
+                                    <ServiceItem item={item} />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }

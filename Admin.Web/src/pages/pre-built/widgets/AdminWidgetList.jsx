@@ -8,6 +8,12 @@ import Content from "@/layout/content/Content";
 import Head from "@/layout/head/Head";
 import { apiGet, apiPost, apiPatch, apiDelete, apiUpload } from "@/utils/apiClient";
 
+const WIDGET_PLACEMENTS = [
+  { value: "discount-banners", label: "Discount Widget", description: "Side banners in the Products With Discounts section" },
+  { value: "feature-promos", label: "Advertising Widget", description: "Feature cards row (e.g. promotional banners)" },
+  { value: "homepage-services", label: "Services Widget", description: "Services bar (e.g. Wide Assortment, Easy Returns)" },
+];
+
 const blankWidgetForm = () => ({
   name: "", placement: "", description: "", columns: 4, isVisible: true, displayOrder: 0,
 });
@@ -136,6 +142,37 @@ const WidgetPreviewPromoBanner = ({ item }) => {
   );
 };
 
+const WidgetPreviewServiceCard = ({ item }) => {
+  const hasImage = !!item.mediaAsset?.url;
+  return (
+    <div
+      style={{
+        borderRadius: 8,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        padding: "16px 12px",
+        border: "1px solid #e8e8e8",
+        backgroundColor: item.backgroundColor || "#fff",
+        minHeight: 90,
+      }}
+    >
+      {hasImage ? (
+        <img src={item.mediaAsset.url} alt={item.title || ""} style={{ width: 36, height: 36, objectFit: "contain", marginBottom: 8 }} />
+      ) : item.badge ? (
+        <div style={{ width: 36, height: 36, borderRadius: "50%", border: "2px solid #629D23", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8, fontSize: 16, color: "#629D23" }}>
+          <Icon name="check-circle" />
+        </div>
+      ) : null}
+      {item.title && <h6 style={{ fontSize: 13, marginBottom: 2 }}>{item.title}</h6>}
+      {item.subtitle && <p style={{ fontSize: 11, opacity: 0.6, marginBottom: 0 }}>{item.subtitle}</p>}
+    </div>
+  );
+};
+
 const WidgetPreviewGenericCard = ({ item }) => {
   const hasImage = !!item.mediaAsset?.url;
   return (
@@ -183,6 +220,7 @@ const WidgetPreview = ({ widget, showHidden = false }) => {
   const placement = widget?.placement || "";
   const isFeature = placement.includes("feature") || placement.includes("promo");
   const isBanner = placement.includes("banner") || placement.includes("discount");
+  const isServices = placement.includes("services");
 
   const cols = widget.columns || 4;
   const colWidth = `${100 / cols}%`;
@@ -192,6 +230,18 @@ const WidgetPreview = ({ widget, showHidden = false }) => {
       <div>
         {visibleItems.map((item) => (
           <WidgetPreviewPromoBanner key={item.id} item={item} />
+        ))}
+      </div>
+    );
+  }
+
+  if (isServices) {
+    return (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {visibleItems.map((item) => (
+          <div key={item.id} style={{ flex: `0 0 calc(${colWidth} - 8px)`, minWidth: 140 }}>
+            <WidgetPreviewServiceCard item={item} />
+          </div>
         ))}
       </div>
     );
@@ -405,7 +455,7 @@ const AdminWidgetList = () => {
                     <div>
                       <h5 className="mb-1">{widget.name}</h5>
                       <div className="d-flex gap-2 align-items-center flex-wrap">
-                        <code className="text-soft">{widget.placement}</code>
+                        <Badge color="primary" className="text-uppercase fs-11px">{WIDGET_PLACEMENTS.find((p) => p.value === widget.placement)?.label || widget.placement}</Badge>
                         <Badge color={widget.isVisible ? "success" : "light"} pill>
                           {widget.isVisible ? "Visible" : "Hidden"}
                         </Badge>
@@ -542,9 +592,17 @@ const AdminWidgetList = () => {
                   <input type="text" className="form-control" placeholder="e.g. Weekend Promotions" value={widgetForm.name} onChange={(e) => setWField("name", e.target.value)} />
                 </Col>
                 <Col md="6">
-                  <label className="form-label">Placement Key</label>
-                  <input type="text" className="form-control" placeholder="e.g. homepage-feature-promos" value={widgetForm.placement} onChange={(e) => setWField("placement", e.target.value)} disabled={!!editWidget} />
-                  {!editWidget && <span className="text-soft fs-12px">Lowercase letters, numbers, and hyphens only. Cannot be changed later.</span>}
+                  <label className="form-label">Widget Location</label>
+                  <select className="form-select" value={widgetForm.placement} onChange={(e) => setWField("placement", e.target.value)} disabled={!!editWidget}>
+                    <option value="">— Select Location —</option>
+                    {WIDGET_PLACEMENTS.map((p) => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </select>
+                  {!editWidget && widgetForm.placement && (
+                    <span className="text-soft fs-12px">{WIDGET_PLACEMENTS.find((p) => p.value === widgetForm.placement)?.description || ""}</span>
+                  )}
+                  {!editWidget && <span className="text-soft fs-12px d-block">Cannot be changed after creation.</span>}
                 </Col>
                 <Col md="12">
                   <label className="form-label">Description</label>
@@ -657,7 +715,7 @@ const AdminWidgetList = () => {
                   {previewWidget.isVisible ? "Visible" : "Hidden"}
                 </Badge>
                 <span className="text-soft fs-13px">
-                  Placement: <code>{previewWidget.placement}</code>
+                  Location: <strong>{WIDGET_PLACEMENTS.find((p) => p.value === previewWidget.placement)?.label || previewWidget.placement}</strong>
                 </span>
                 <span className="text-soft fs-13px">
                   {previewWidget.columns} column{previewWidget.columns !== 1 ? "s" : ""}

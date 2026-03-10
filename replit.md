@@ -115,10 +115,15 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - Seeded keys: promo_banner_text, promo_banner_countdown, support_phone, support_phone_href, delivery_hours_text, sale_banner_text, sale_banner_link
 - **Widgets** (`/widgets`): Promotional content section manager
   - Prisma models: `Widget` (table `widgets`) with name, placement (unique key), columns (1-6), description, isVisible, displayOrder; `WidgetItem` (table `widget_items`) with title, subtitle, badge, buttonText, buttonUrl, backgroundColor, sortOrder, isVisible, mediaAssetId (FK to MediaAsset), imageWidth, imageHeight
+  - Predefined widget locations (dropdown in admin):
+    - `discount-banners` → **Discount Widget** — Side banners in the Products With Discounts section (`DiscountProduct.tsx`, variant `promo-banners`)
+    - `feature-promos` → **Advertising Widget** — Feature cards row (`FeatureDiscount.tsx`, variant `feature-cards`)
+    - `homepage-services` → **Services Widget** — Services bar, e.g. Wide Assortment, Easy Returns (`FeatureOne.tsx`, variant `services`)
   - API: `Api/src/modules/widgets/` at `/api/v1/widgets`
     - Public: `GET /widgets/public/:placement` (returns widget with visible items)
     - Admin: CRUD for widgets (`GET /`, `POST /`, `PATCH /:id`, `DELETE /:id`) and items (`POST /:id/items`, `PATCH /:id/items/:itemId`, `DELETE /:id/items/:itemId`)
-  - Admin UI: `AdminWidgetList.jsx` — widget list with expandable items, create/edit/delete widgets and items, image upload, color picker
+  - Admin UI: `AdminWidgetList.jsx` — widget list with expandable items, create/edit/delete widgets and items, image upload with thumbnail preview, color picker, location dropdown
+  - Media upload folder: `widgets` (registered in `MEDIA_FOLDERS` and `FOLDER_PREFIXES`)
   - Frontend: `Widget.tsx` component fetches by placement key, supports 3 variants: `feature-cards` (bg_image cards with badge/title/shop button), `promo-banners` (background image banners), `generic` (simple card grid)
   - FeatureDiscount.tsx and DiscountProduct.tsx now use Widget component with placements `feature-promos` and `discount-banners`
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
