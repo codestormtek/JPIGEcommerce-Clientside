@@ -72,10 +72,18 @@ function ComponentName() {
                     background: rgba(44, 44, 44, 0.7) !important;
                     border-bottom: none !important;
                 }
-                .nav-custom .nav-area ul li a {
+                .nav-custom .nav-area > nav > ul > li > a,
+                .nav-custom .nav-area .parent-nav > li > a {
                     color: #ffffff !important;
                 }
-                .nav-custom .nav-area ul li a:hover {
+                .nav-custom .nav-area > nav > ul > li > a:hover,
+                .nav-custom .nav-area .parent-nav > li > a:hover {
+                    color: #f47920 !important;
+                }
+                .nav-custom .nav-area .submenu li a {
+                    color: #2c2c2c !important;
+                }
+                .nav-custom .nav-area .submenu li a:hover {
                     color: #f47920 !important;
                 }
                 .nav-custom .btn-narrow {
