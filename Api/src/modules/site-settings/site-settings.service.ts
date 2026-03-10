@@ -44,6 +44,14 @@ const DEFAULT_SETTINGS = [
   { settingKey: 'trending_products_link', settingValue: '/shop', label: 'Trending Products Button Link', category: 'header' },
   { settingKey: 'sale_banner_text', settingValue: 'Get 30% Discount Now', label: 'Sale Banner Button Text', category: 'header' },
   { settingKey: 'sale_banner_link', settingValue: '/shop-grid-top-filter', label: 'Sale Banner Button Link', category: 'header' },
+  { settingKey: 'discount_section_title', settingValue: 'Products With Discounts', label: 'Discount Section Title', category: 'homepage_promotions' },
+  { settingKey: 'discount_countdown', settingValue: '12/05/2025 10:20:00', label: 'Discount Countdown Date', category: 'homepage_promotions' },
+  { settingKey: 'discount_banner_1', settingValue: JSON.stringify({ title: '', subtitle: 'Fresh Juice', price_label: 'Only', link: '/shop', image_url: '' }), label: 'Discount Banner 1 (left top)', category: 'homepage_promotions' },
+  { settingKey: 'discount_banner_2', settingValue: JSON.stringify({ title: '', subtitle: 'Fresh Juice', price_label: 'Only', link: '/shop', image_url: '' }), label: 'Discount Banner 2 (left bottom)', category: 'homepage_promotions' },
+  { settingKey: 'feature_card_1', settingValue: JSON.stringify({ badge: 'Weekend Discount', title: 'Drink Fresh Corn Juice', subtitle: 'Good Taste', link: '/shop', image_url: '' }), label: 'Feature Promo Card 1', category: 'homepage_promotions' },
+  { settingKey: 'feature_card_2', settingValue: JSON.stringify({ badge: 'Weekend Discount', title: 'Organic Lemon Flavored', subtitle: 'Banana Chips', link: '/shop', image_url: '' }), label: 'Feature Promo Card 2', category: 'homepage_promotions' },
+  { settingKey: 'feature_card_3', settingValue: JSON.stringify({ badge: 'Weekend Discount', title: 'Nozes Pecanera Brasil', subtitle: 'Chocolate Snacks', link: '/shop', image_url: '' }), label: 'Feature Promo Card 3', category: 'homepage_promotions' },
+  { settingKey: 'feature_card_4', settingValue: JSON.stringify({ badge: 'Weekend Discount', title: 'Strawberry Water Drinks', subtitle: 'Flavors Awesome', link: '/shop', image_url: '' }), label: 'Feature Promo Card 4', category: 'homepage_promotions' },
 ];
 
 export async function seedDefaultSettings() {
