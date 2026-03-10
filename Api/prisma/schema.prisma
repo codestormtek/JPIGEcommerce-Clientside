@@ -47,6 +47,7 @@ model SiteUser {
   exportJobs            ExportJob[]          @relation("RequestedExports")
   dashboards            Dashboard[]          @relation("OwnedDashboards")
   checklists            Checklist[]
+  cateringQuotes        CateringQuote[]
 
   @@map("site_users")
 }
@@ -319,6 +320,8 @@ model MediaAsset {
   sitePages          SitePage[]
   widgetItems        WidgetItem[]
   galleryImages      GalleryImage[]
+  cateringMenuItems  CateringMenuItem[]
+  cateringPackages   CateringPackage[]
 
   @@map("media_assets")
 }
@@ -457,6 +460,7 @@ model ShopOrder {
   shipment                Shipment?
   cateringDeliveryAddress CateringDeliveryAddress?
   promotionUsages         PromotionUsage[]
+  convertedCateringQuote  CateringQuote?
 
   @@map("shop_orders")
 }
@@ -1659,5 +1663,251 @@ model WidgetItem {
   buttonColor      String?
 
   @@map("widget_items")
+}
+
+// ─── Catering System ──────────────────────────────────────────────────────────
+
+enum CateringItemCategory {
+  MEAT
+  SIDE
+  BREAD
+  SAUCE
+  DRINK
+  DESSERT
+}
+
+enum CateringPricingType {
+  PER_LB
+  PER_RACK
+  PER_DOZEN
+  PER_PIECE
+  PER_HALF_PAN
+  PER_FULL_PAN
+  PER_GALLON
+  PER_BOTTLE
+}
+
+enum CateringAppetiteLevel {
+  LIGHT
+  MODERATE
+  HEAVY
+}
+
+enum CateringQuoteStatus {
+  DRAFT
+  PENDING
+  QUOTED
+  APPROVED
+  REJECTED
+  CONVERTED
+  EXPIRED
+}
+
+model CateringMenuItem {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+  isDeleted      Boolean   @default(false)
+
+  name           String
+  category       CateringItemCategory
+  description    String?
+  pricingType    CateringPricingType
+  unitPrice      Decimal   @db.Decimal(10, 2)
+  isPremium      Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  minOrderQty    Decimal?  @db.Decimal(10, 2)
+  maxOrderQty    Decimal?  @db.Decimal(10, 2)
+  portionUnit    String?
+  displayOrder   Int       @default(0)
+
+  mediaAssetId   String?
+  mediaAsset     MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+
+  portionRules   CateringPortionRule[]
+  packageItems   CateringPackageItem[]
+  quoteItems     CateringQuoteItem[]
+
+  @@map("catering_menu_items")
+}
+
+model CateringPortionRule {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  menuItemId     String
+  menuItem       CateringMenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  appetiteLevel  CateringAppetiteLevel
+  qtyPerPerson   Decimal   @db.Decimal(10, 4)
+  unitOfMeasure  String
+  minGuests      Int?
+  maxGuests      Int?
+  notes          String?
+
+  @@unique([menuItemId, appetiteLevel])
+  @@map("catering_portion_rules")
+}
+
+model CateringPackage {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+  isDeleted      Boolean   @default(false)
+
+  name           String
+  slug           String    @unique
+  description    String?
+  includedMeatCount  Int   @default(2)
+  includedSideCount  Int   @default(2)
+  includedSauceCount Int   @default(2)
+  includesRolls  Boolean   @default(true)
+  includesTea    Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  displayOrder   Int       @default(0)
+
+  mediaAssetId   String?
+  mediaAsset     MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+
+  tiers          CateringPackageTier[]
+  items          CateringPackageItem[]
+  quoteItems     CateringQuoteItem[]
+
+  @@map("catering_packages")
+}
+
+model CateringPackageTier {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+
+  packageId      String
+  package        CateringPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  tierLabel      String?
+  minGuests      Int
+  maxGuests      Int
+  pricePerPerson Decimal   @db.Decimal(10, 2)
+  flatPrice      Decimal?  @db.Decimal(10, 2)
+  displayOrder   Int       @default(0)
+
+  @@map("catering_package_tiers")
+}
+
+model CateringPackageItem {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+
+  packageId      String
+  package        CateringPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  menuItemId     String
+  menuItem       CateringMenuItem @relation(fields: [menuItemId], references: [id])
+
+  isRequired     Boolean   @default(false)
+  isDefault      Boolean   @default(false)
+  displayOrder   Int       @default(0)
+
+  @@unique([packageId, menuItemId])
+  @@map("catering_package_items")
+}
+
+model CateringDeliveryZone {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  name           String
+  zipCodes       String[]
+  radiusMiles    Decimal?  @db.Decimal(6, 2)
+  fee            Decimal   @db.Decimal(10, 2)
+  minOrderAmount Decimal?  @db.Decimal(10, 2)
+  isActive       Boolean   @default(true)
+  displayOrder   Int       @default(0)
+
+  @@map("catering_delivery_zones")
+}
+
+model CateringAvailability {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  blockedDate    DateTime? @db.Date
+  maxOrdersPerDay Int      @default(3)
+  leadTimeDays   Int       @default(2)
+  cutoffHour     Int       @default(17)
+  reason         String?
+  isActive       Boolean   @default(true)
+
+  @@map("catering_availability")
+}
+
+model CateringQuote {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  quoteNumber    String    @unique
+  status         CateringQuoteStatus @default(PENDING)
+
+  customerName   String
+  customerEmail  String
+  customerPhone  String?
+  eventDate      DateTime  @db.Date
+  eventTime      String?
+  eventType      String?
+  guestCount     Int
+  appetiteLevel  String    @default("MODERATE")
+  serviceStyle   String    @default("DROP_OFF")
+  deliveryZip    String?
+  deliveryAddress String?
+  deliveryNotes  String?
+  allergyNotes   String?
+  setupRequested Boolean   @default(false)
+  disposableKit  Boolean   @default(false)
+
+  foodSubtotal   Decimal   @db.Decimal(10, 2)
+  deliveryFee    Decimal   @default(0) @db.Decimal(10, 2)
+  setupFee       Decimal   @default(0) @db.Decimal(10, 2)
+  totalEstimate  Decimal   @db.Decimal(10, 2)
+  adminNotes     String?
+
+  userId         String?
+  user           SiteUser? @relation(fields: [userId], references: [id])
+
+  convertedOrderId String? @unique
+  convertedOrder   ShopOrder? @relation(fields: [convertedOrderId], references: [id])
+
+  expiresAt      DateTime?
+
+  items          CateringQuoteItem[]
+
+  @@map("catering_quotes")
+}
+
+model CateringQuoteItem {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+
+  quoteId        String
+  quote          CateringQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  menuItemId     String?
+  menuItem       CateringMenuItem? @relation(fields: [menuItemId], references: [id])
+
+  itemName       String
+  quantity       Decimal   @db.Decimal(10, 2)
+  unitOfMeasure  String
+  unitPrice      Decimal   @db.Decimal(10, 2)
+  lineTotal      Decimal   @db.Decimal(10, 2)
+  isPackageItem  Boolean   @default(false)
+
+  packageId      String?
+  package        CateringPackage? @relation(fields: [packageId], references: [id])
+
+  notes          String?
+
+  @@map("catering_quote_items")
 }
 

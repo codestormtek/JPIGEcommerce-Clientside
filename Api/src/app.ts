@@ -37,6 +37,7 @@ import { pagesRouter } from './modules/pages/pages.routes';
 import { galleryRouter } from './modules/galleries/gallery.routes';
 import { siteSettingsRouter } from './modules/site-settings/site-settings.routes';
 import { widgetsRouter } from './modules/widgets/widgets.routes';
+import { cateringRouter } from './modules/catering/catering.routes';
 
 const app = express();
 
@@ -119,6 +120,7 @@ app.use(`${API}/pages`, pagesRouter);
 app.use(`${API}/galleries`, galleryRouter);
 app.use(`${API}/site-settings`, siteSettingsRouter);
 app.use(`${API}/widgets`, widgetsRouter);
+app.use(`${API}/catering`, cateringRouter);
 
 // ─── 404 + Global error handler ───────────────────────────────────────────────
 app.use(notFoundHandler);

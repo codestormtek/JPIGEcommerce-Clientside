@@ -126,6 +126,21 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - Media upload folder: `widgets` (registered in `MEDIA_FOLDERS` and `FOLDER_PREFIXES`)
   - Frontend: `Widget.tsx` component fetches by placement key, supports 3 variants: `feature-cards` (bg_image cards with badge/title/shop button), `promo-banners` (background image banners), `generic` (simple card grid)
   - FeatureDiscount.tsx and DiscountProduct.tsx now use Widget component with placements `feature-promos` and `discount-banners`
+- **Catering** (`/catering`): BBQ Drop-Off Catering Quote System
+  - **Dashboard** (`/catering`): Stats cards (pending quotes, booked events, projected revenue, prep items), quote queue table with status badges, filters (search, status, event type, date range), today's production panel, quote detail drawer with status workflow
+  - **Menu Items** (`/catering/menu-items`): CRUD for catering-specific menu items (name, category, pricing type, unit price, premium/active toggles, portion unit, display order)
+  - **Packages** (`/catering/packages`): CRUD for catering packages with expandable tier pricing and included items management
+  - **Portion Rules** (`/catering/portion-rules`): CRUD for per-item portion calculations at 3 appetite levels (Light/Moderate/Heavy)
+  - **Delivery Zones** (`/catering/delivery-zones`): CRUD for ZIP-code-based delivery zones with fees and minimum order amounts
+  - **Availability** (`/catering/availability`): Blocked dates, max orders per day, lead time, cutoff hour management
+  - Prisma models: `CateringMenuItem`, `CateringPortionRule`, `CateringPackage`, `CateringPackageTier`, `CateringPackageItem`, `CateringDeliveryZone`, `CateringAvailability`, `CateringQuote`, `CateringQuoteItem`
+  - Enums: `CateringMenuCategory` (MEAT/SIDE/BREAD/SAUCE/DRINK/DESSERT), `CateringPricingType` (PER_LB/PER_RACK/PER_DOZEN/PER_PIECE/PER_HALF_PAN/PER_FULL_PAN/PER_GALLON/PER_BOTTLE), `AppetiteLevel` (LIGHT/MODERATE/HEAVY), `CateringQuoteStatus` (DRAFT/PENDING/QUOTED/APPROVED/REJECTED/CONVERTED/EXPIRED)
+  - API: `Api/src/modules/catering/` at `/api/v1/catering`
+    - Public: `GET /public/menu`, `GET /public/packages`, `POST /public/estimate`, `POST /public/quote`, `GET /public/availability`, `GET /public/delivery-fee`
+    - Admin: CRUD for menu-items, packages, portion-rules, delivery-zones, availability; Quotes list/detail/update/delete; Dashboard stats; Production summary
+  - Quote number format: `JPIG-CAT-000001`; setup fee=$50; disposable kit=$0.75/guest
+  - Quote lifecycle: DRAFT → PENDING → QUOTED → APPROVED → CONVERTED (or REJECTED/EXPIRED)
+  - Seeded data: 15 menu items, 39 portion rules, 5 packages with 4 tiers each, 3 delivery zones, default availability
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
 
 ## Frontend.WEB (Storefront)
@@ -142,6 +157,10 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
 - **Account page**: `src/app/(inner)/account/Accordion.tsx` — auth-gated, live API data via `src/lib/account.ts`. Tabs: Dashboard (greeting, member since, order/review counts), Orders (paginated table, expandable line items, invoice modal with print), Track Order, My Address, Account Details (avatar upload + profile edit + password change), Subscriptions (email/SMS toggles via contact preferences API), Reviews (paginated review cards with star ratings). Types: `UserProfile`, `UserAddress`, `ContactPreference`, `ShopOrder`, `OrderInvoice`, `UserReview` in `types/api.ts`
 - **Avatar system**: Users upload avatar via Account Details tab → `POST /api/v1/users/me/avatar` → stored in R2 `avatars/` folder → `avatarUrl` saved on `SiteUser` record → rendered in account page and blog comments. Fallback: initials-based avatar circle
 - **Gallery page**: `/gallery` — fetches public galleries from `/galleries/public`, displays with `react-image-gallery` (carousel with thumbnails, fullscreen, nav arrows, autoplay). Gallery selector tabs when multiple galleries exist. Component: `src/components/gallery/GalleryViewer.tsx`
+- **Catering page**: `/catering` — multi-step catering quote calculator
+  - Components: `src/components/catering/` — `CateringCalculator.tsx` (main state), `EventDetailsForm.tsx` (Step 1), `OrderingStyleSelector.tsx` (Step 2), `MenuSelector.tsx` (Step 3), `EstimateSidebar.tsx` (live estimate), `QuoteContactForm.tsx` (Step 4)
+  - Flow: Event details → ordering style → menu selection → live estimate sidebar → contact info → submit quote
+  - Fetches from `/api/v1/catering/public/*` endpoints
 - **Image handling**: Components detect CDN URLs (starting with `http`) vs local static paths
 
 ## Dev Notes

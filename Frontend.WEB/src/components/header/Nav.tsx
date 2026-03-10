@@ -110,6 +110,9 @@ function NavItem() {
                         </ul>
                     </li>
                     <li className="parent">
+                        <Link href="/catering">Catering</Link>
+                    </li>
+                    <li className="parent">
                         <Link href="/gallery">Gallery</Link>
                     </li>
                     <li className="parent">

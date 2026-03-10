@@ -91,17 +91,24 @@ const menu = [
 
   { heading: "Catering & Menus" },
   {
+    icon: "opt-dot-alt",
+    text: "Catering",
+    subMenu: [
+      { text: "Dashboard",       link: "/catering" },
+      { text: "Menu Items",      link: "/catering/menu-items" },
+      { text: "Packages",        link: "/catering/packages" },
+      { text: "Portion Rules",   link: "/catering/portion-rules" },
+      { text: "Delivery Zones",  link: "/catering/delivery-zones" },
+      { text: "Availability",    link: "/catering/availability" },
+    ],
+  },
+  {
     icon: "clip",
-    text: "Catering Menus",
+    text: "Food Truck Menus",
     subMenu: [
       { text: "Menu List",    link: "/menus" },
       { text: "Menu Builder", link: "/menus/:id" },
     ],
-  },
-  {
-    icon: "list",
-    text: "Menu Items",
-    link: "/menu-items",
   },
   {
     icon: "map-pin",
