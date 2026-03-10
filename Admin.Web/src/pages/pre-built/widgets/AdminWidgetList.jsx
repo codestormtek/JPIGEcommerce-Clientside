@@ -100,14 +100,14 @@ const WidgetPreviewFeatureCard = ({ item, index }) => {
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 30%, rgba(0,0,0,0.55))", zIndex: 1 }} />
       <div style={{ position: "relative", zIndex: 2 }}>
         {item.badge && (
-          <span style={{ display: "inline-block", background: "#f47920", color: "#fff", padding: "3px 12px", borderRadius: 4, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
+          <span style={{ display: "inline-block", background: "#f47920", color: "#fff", padding: "3px 12px", borderRadius: 4, fontSize: item.badgeFontSize || 12, fontWeight: 600, marginBottom: 8 }}>
             {item.badge}
           </span>
         )}
-        {item.title && <h5 style={{ color: "#fff", marginBottom: 2, fontSize: 16, fontWeight: 600 }}>{item.title}</h5>}
-        {item.subtitle && <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, marginBottom: 8 }}>{item.subtitle}</p>}
+        {item.title && <h5 style={{ color: "#fff", marginBottom: 2, fontSize: item.titleFontSize || 16, fontWeight: 600 }}>{item.title}</h5>}
+        {item.subtitle && <p style={{ color: "rgba(255,255,255,0.85)", fontSize: item.subtitleFontSize || 13, marginBottom: 8 }}>{item.subtitle}</p>}
         {item.buttonText && (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#fff", color: "#333", padding: "4px 14px", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#fff", color: "#333", padding: "4px 14px", borderRadius: 4, fontSize: item.buttonFontSize || 12, fontWeight: 600 }}>
             {item.buttonText} <Icon name="arrow-right" />
           </span>
         )}
@@ -137,9 +137,9 @@ const WidgetPreviewPromoBanner = ({ item }) => {
       }}
     >
       <div style={{ position: "relative", zIndex: 2 }}>
-        {item.title && <h5 style={{ color: "#fff", fontWeight: 600, marginBottom: 2 }}>{item.title}</h5>}
-        {item.subtitle && <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 14, marginBottom: 4 }}>{item.subtitle}</p>}
-        {item.badge && <span style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>{item.badge}</span>}
+        {item.title && <h5 style={{ color: "#fff", fontWeight: 600, marginBottom: 2, fontSize: item.titleFontSize || undefined }}>{item.title}</h5>}
+        {item.subtitle && <p style={{ color: "rgba(255,255,255,0.85)", fontSize: item.subtitleFontSize || 14, marginBottom: 4 }}>{item.subtitle}</p>}
+        {item.badge && <span style={{ fontSize: item.badgeFontSize || 13, color: "rgba(255,255,255,0.7)" }}>{item.badge}</span>}
       </div>
     </div>
   );
@@ -170,8 +170,8 @@ const WidgetPreviewServiceCard = ({ item }) => {
           <Icon name="check-circle" />
         </div>
       ) : null}
-      {item.title && <h6 style={{ fontSize: 13, marginBottom: 2 }}>{item.title}</h6>}
-      {item.subtitle && <p style={{ fontSize: 11, opacity: 0.6, marginBottom: 0 }}>{item.subtitle}</p>}
+      {item.title && <h6 style={{ fontSize: item.titleFontSize || 13, marginBottom: 2 }}>{item.title}</h6>}
+      {item.subtitle && <p style={{ fontSize: item.subtitleFontSize || 11, opacity: 0.6, marginBottom: 0 }}>{item.subtitle}</p>}
     </div>
   );
 };
@@ -196,12 +196,12 @@ const WidgetPreviewGenericCard = ({ item }) => {
       }}
     >
       <div>
-        {item.badge && <Badge color="warning" className="mb-2">{item.badge}</Badge>}
-        {item.title && <h6 style={{ marginBottom: 2 }}>{item.title}</h6>}
-        {item.subtitle && <p style={{ fontSize: 13, opacity: 0.8, marginBottom: 0 }}>{item.subtitle}</p>}
+        {item.badge && <Badge color="warning" className="mb-2" style={item.badgeFontSize ? { fontSize: item.badgeFontSize } : undefined}>{item.badge}</Badge>}
+        {item.title && <h6 style={{ marginBottom: 2, fontSize: item.titleFontSize || undefined }}>{item.title}</h6>}
+        {item.subtitle && <p style={{ fontSize: item.subtitleFontSize || 13, opacity: 0.8, marginBottom: 0 }}>{item.subtitle}</p>}
       </div>
       {item.buttonText && (
-        <span style={{ alignSelf: "flex-start", marginTop: 12, display: "inline-block", background: "#6576ff", color: "#fff", padding: "4px 14px", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
+        <span style={{ alignSelf: "flex-start", marginTop: 12, display: "inline-block", background: "#6576ff", color: "#fff", padding: "4px 14px", borderRadius: 4, fontSize: item.buttonFontSize || 12, fontWeight: 600 }}>
           {item.buttonText}
         </span>
       )}
