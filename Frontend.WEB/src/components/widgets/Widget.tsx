@@ -26,6 +26,10 @@ interface WidgetItemData {
     subtitleFontSize?: number | null;
     badgeFontSize?: number | null;
     buttonFontSize?: number | null;
+    titleColor?: string | null;
+    subtitleColor?: string | null;
+    badgeColor?: string | null;
+    buttonColor?: string | null;
 }
 
 interface WidgetData {
@@ -79,15 +83,15 @@ function FeatureCardItem({ item, index }: { item: WidgetItemData; index: number 
         <div className={`single-feature-card bg_image ${bgClass}`} style={style}>
             <div className="content-area">
                 {item.badge && (
-                    <Link href={linkUrl} className="rts-btn btn-primary" style={item.badgeFontSize ? { fontSize: `${item.badgeFontSize}px` } : undefined}>
+                    <Link href={linkUrl} className="rts-btn btn-primary" style={{ fontSize: item.badgeFontSize ? `${item.badgeFontSize}px` : undefined, color: item.badgeColor || undefined }}>
                         {item.badge}
                     </Link>
                 )}
-                <h3 className="title" style={item.titleFontSize ? { fontSize: `${item.titleFontSize}px` } : undefined}>
+                <h3 className="title" style={{ fontSize: item.titleFontSize ? `${item.titleFontSize}px` : undefined, color: item.titleColor || undefined }}>
                     {item.title}
-                    {item.subtitle && <span style={item.subtitleFontSize ? { fontSize: `${item.subtitleFontSize}px` } : undefined}>{item.subtitle}</span>}
+                    {item.subtitle && <span style={{ fontSize: item.subtitleFontSize ? `${item.subtitleFontSize}px` : undefined, color: item.subtitleColor || undefined }}>{item.subtitle}</span>}
                 </h3>
-                <Link href={linkUrl} className="shop-now-goshop-btn" style={item.buttonFontSize ? { fontSize: `${item.buttonFontSize}px` } : undefined}>
+                <Link href={linkUrl} className="shop-now-goshop-btn" style={{ fontSize: item.buttonFontSize ? `${item.buttonFontSize}px` : undefined, color: item.buttonColor || undefined }}>
                     <span className="text">{item.buttonText || "Shop Now"}</span>
                     <div className="plus-icon">
                         <i className="fa-sharp fa-regular fa-plus" />
@@ -120,14 +124,14 @@ function PromoBannerItem({ item }: { item: WidgetItemData }) {
         <a href={item.buttonUrl || '/shop'} className="single-discount-with-bg" style={style}>
             <div className="inner-content">
                 {item.title && (
-                    <h4 className="title" style={item.titleFontSize ? { fontSize: `${item.titleFontSize}px` } : undefined}>
+                    <h4 className="title" style={{ fontSize: item.titleFontSize ? `${item.titleFontSize}px` : undefined, color: item.titleColor || undefined }}>
                         {item.title}
-                        {item.subtitle && <><br /><span style={item.subtitleFontSize ? { fontSize: `${item.subtitleFontSize}px` } : undefined}>{item.subtitle}</span></>}
+                        {item.subtitle && <><br /><span style={{ fontSize: item.subtitleFontSize ? `${item.subtitleFontSize}px` : undefined, color: item.subtitleColor || undefined }}>{item.subtitle}</span></>}
                     </h4>
                 )}
                 {item.badge && (
                     <div className="price-area">
-                        <span style={item.badgeFontSize ? { fontSize: `${item.badgeFontSize}px` } : undefined}>{item.badge}</span>
+                        <span style={{ fontSize: item.badgeFontSize ? `${item.badgeFontSize}px` : undefined, color: item.badgeColor || undefined }}>{item.badge}</span>
                     </div>
                 )}
             </div>
@@ -149,8 +153,8 @@ function ServiceItem({ item }: { item: WidgetItemData }) {
                 )}
             </div>
             <div className="content">
-                {item.title && <h6 className="title" style={item.titleFontSize ? { fontSize: `${item.titleFontSize}px` } : undefined}>{item.title}</h6>}
-                {item.subtitle && <p className="disc" style={item.subtitleFontSize ? { fontSize: `${item.subtitleFontSize}px` } : undefined}>{item.subtitle}</p>}
+                {item.title && <h6 className="title" style={{ fontSize: item.titleFontSize ? `${item.titleFontSize}px` : undefined, color: item.titleColor || undefined }}>{item.title}</h6>}
+                {item.subtitle && <p className="disc" style={{ fontSize: item.subtitleFontSize ? `${item.subtitleFontSize}px` : undefined, color: item.subtitleColor || undefined }}>{item.subtitle}</p>}
             </div>
         </div>
     );
@@ -177,12 +181,12 @@ function GenericItem({ item }: { item: WidgetItemData }) {
             }}
         >
             <div>
-                {item.badge && <span className="badge bg-warning text-dark mb-2" style={item.badgeFontSize ? { fontSize: `${item.badgeFontSize}px` } : undefined}>{item.badge}</span>}
-                {item.title && <h5 className="mb-1" style={item.titleFontSize ? { fontSize: `${item.titleFontSize}px` } : undefined}>{item.title}</h5>}
-                {item.subtitle && <p className="text-muted mb-2" style={item.subtitleFontSize ? { fontSize: `${item.subtitleFontSize}px` } : undefined}>{item.subtitle}</p>}
+                {item.badge && <span className="badge bg-warning text-dark mb-2" style={{ fontSize: item.badgeFontSize ? `${item.badgeFontSize}px` : undefined, color: item.badgeColor || undefined }}>{item.badge}</span>}
+                {item.title && <h5 className="mb-1" style={{ fontSize: item.titleFontSize ? `${item.titleFontSize}px` : undefined, color: item.titleColor || undefined }}>{item.title}</h5>}
+                {item.subtitle && <p className="text-muted mb-2" style={{ fontSize: item.subtitleFontSize ? `${item.subtitleFontSize}px` : undefined, color: item.subtitleColor || undefined }}>{item.subtitle}</p>}
             </div>
             {item.buttonText && (
-                <Link href={linkUrl} className="btn btn-sm btn-primary mt-2 align-self-start" style={item.buttonFontSize ? { fontSize: `${item.buttonFontSize}px` } : undefined}>
+                <Link href={linkUrl} className="btn btn-sm btn-primary mt-2 align-self-start" style={{ fontSize: item.buttonFontSize ? `${item.buttonFontSize}px` : undefined, color: item.buttonColor || undefined }}>
                     {item.buttonText}
                 </Link>
             )}

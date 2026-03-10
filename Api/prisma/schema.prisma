@@ -1653,6 +1653,11 @@ model WidgetItem {
   badgeFontSize    Int?
   buttonFontSize   Int?
 
+  titleColor       String?
+  subtitleColor    String?
+  badgeColor       String?
+  buttonColor      String?
+
   @@map("widget_items")
 }
 

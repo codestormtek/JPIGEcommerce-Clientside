@@ -22,6 +22,7 @@ const blankItemForm = () => ({
   title: "", subtitle: "", badge: "", buttonText: "", buttonUrl: "",
   backgroundColor: "", sortOrder: 0, isVisible: true, mediaAssetId: "", imageWidth: "", imageHeight: "",
   titleFontSize: "", subtitleFontSize: "", badgeFontSize: "", buttonFontSize: "",
+  titleColor: "", subtitleColor: "", badgeColor: "", buttonColor: "",
   _imagePreviewUrl: "",
 });
 
@@ -100,14 +101,14 @@ const WidgetPreviewFeatureCard = ({ item, index }) => {
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 30%, rgba(0,0,0,0.55))", zIndex: 1 }} />
       <div style={{ position: "relative", zIndex: 2 }}>
         {item.badge && (
-          <span style={{ display: "inline-block", background: "#f47920", color: "#fff", padding: "3px 12px", borderRadius: 4, fontSize: item.badgeFontSize || 12, fontWeight: 600, marginBottom: 8 }}>
+          <span style={{ display: "inline-block", background: "#f47920", color: item.badgeColor || "#fff", padding: "3px 12px", borderRadius: 4, fontSize: item.badgeFontSize || 12, fontWeight: 600, marginBottom: 8 }}>
             {item.badge}
           </span>
         )}
-        {item.title && <h5 style={{ color: "#fff", marginBottom: 2, fontSize: item.titleFontSize || 16, fontWeight: 600 }}>{item.title}</h5>}
-        {item.subtitle && <p style={{ color: "rgba(255,255,255,0.85)", fontSize: item.subtitleFontSize || 13, marginBottom: 8 }}>{item.subtitle}</p>}
+        {item.title && <h5 style={{ color: item.titleColor || "#fff", marginBottom: 2, fontSize: item.titleFontSize || 16, fontWeight: 600 }}>{item.title}</h5>}
+        {item.subtitle && <p style={{ color: item.subtitleColor || "rgba(255,255,255,0.85)", fontSize: item.subtitleFontSize || 13, marginBottom: 8 }}>{item.subtitle}</p>}
         {item.buttonText && (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#fff", color: "#333", padding: "4px 14px", borderRadius: 4, fontSize: item.buttonFontSize || 12, fontWeight: 600 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#fff", color: item.buttonColor || "#333", padding: "4px 14px", borderRadius: 4, fontSize: item.buttonFontSize || 12, fontWeight: 600 }}>
             {item.buttonText} <Icon name="arrow-right" />
           </span>
         )}
@@ -137,9 +138,9 @@ const WidgetPreviewPromoBanner = ({ item }) => {
       }}
     >
       <div style={{ position: "relative", zIndex: 2 }}>
-        {item.title && <h5 style={{ color: "#fff", fontWeight: 600, marginBottom: 2, fontSize: item.titleFontSize || undefined }}>{item.title}</h5>}
-        {item.subtitle && <p style={{ color: "rgba(255,255,255,0.85)", fontSize: item.subtitleFontSize || 14, marginBottom: 4 }}>{item.subtitle}</p>}
-        {item.badge && <span style={{ fontSize: item.badgeFontSize || 13, color: "rgba(255,255,255,0.7)" }}>{item.badge}</span>}
+        {item.title && <h5 style={{ color: item.titleColor || "#fff", fontWeight: 600, marginBottom: 2, fontSize: item.titleFontSize || undefined }}>{item.title}</h5>}
+        {item.subtitle && <p style={{ color: item.subtitleColor || "rgba(255,255,255,0.85)", fontSize: item.subtitleFontSize || 14, marginBottom: 4 }}>{item.subtitle}</p>}
+        {item.badge && <span style={{ fontSize: item.badgeFontSize || 13, color: item.badgeColor || "rgba(255,255,255,0.7)" }}>{item.badge}</span>}
       </div>
     </div>
   );
@@ -170,8 +171,8 @@ const WidgetPreviewServiceCard = ({ item }) => {
           <Icon name="check-circle" />
         </div>
       ) : null}
-      {item.title && <h6 style={{ fontSize: item.titleFontSize || 13, marginBottom: 2 }}>{item.title}</h6>}
-      {item.subtitle && <p style={{ fontSize: item.subtitleFontSize || 11, opacity: 0.6, marginBottom: 0 }}>{item.subtitle}</p>}
+      {item.title && <h6 style={{ fontSize: item.titleFontSize || 13, marginBottom: 2, color: item.titleColor || undefined }}>{item.title}</h6>}
+      {item.subtitle && <p style={{ fontSize: item.subtitleFontSize || 11, opacity: item.subtitleColor ? 1 : 0.6, marginBottom: 0, color: item.subtitleColor || undefined }}>{item.subtitle}</p>}
     </div>
   );
 };
@@ -196,12 +197,12 @@ const WidgetPreviewGenericCard = ({ item }) => {
       }}
     >
       <div>
-        {item.badge && <Badge color="warning" className="mb-2" style={item.badgeFontSize ? { fontSize: item.badgeFontSize } : undefined}>{item.badge}</Badge>}
-        {item.title && <h6 style={{ marginBottom: 2, fontSize: item.titleFontSize || undefined }}>{item.title}</h6>}
-        {item.subtitle && <p style={{ fontSize: item.subtitleFontSize || 13, opacity: 0.8, marginBottom: 0 }}>{item.subtitle}</p>}
+        {item.badge && <Badge color="warning" className="mb-2" style={{ fontSize: item.badgeFontSize || undefined, color: item.badgeColor || undefined }}>{item.badge}</Badge>}
+        {item.title && <h6 style={{ marginBottom: 2, fontSize: item.titleFontSize || undefined, color: item.titleColor || undefined }}>{item.title}</h6>}
+        {item.subtitle && <p style={{ fontSize: item.subtitleFontSize || 13, opacity: item.subtitleColor ? 1 : 0.8, marginBottom: 0, color: item.subtitleColor || undefined }}>{item.subtitle}</p>}
       </div>
       {item.buttonText && (
-        <span style={{ alignSelf: "flex-start", marginTop: 12, display: "inline-block", background: "#6576ff", color: "#fff", padding: "4px 14px", borderRadius: 4, fontSize: item.buttonFontSize || 12, fontWeight: 600 }}>
+        <span style={{ alignSelf: "flex-start", marginTop: 12, display: "inline-block", background: "#6576ff", color: item.buttonColor || "#fff", padding: "4px 14px", borderRadius: 4, fontSize: item.buttonFontSize || 12, fontWeight: 600 }}>
           {item.buttonText}
         </span>
       )}
@@ -374,6 +375,8 @@ const AdminWidgetList = () => {
       imageWidth: item.imageWidth ?? "", imageHeight: item.imageHeight ?? "",
       titleFontSize: item.titleFontSize ?? "", subtitleFontSize: item.subtitleFontSize ?? "",
       badgeFontSize: item.badgeFontSize ?? "", buttonFontSize: item.buttonFontSize ?? "",
+      titleColor: item.titleColor || "", subtitleColor: item.subtitleColor || "",
+      badgeColor: item.badgeColor || "", buttonColor: item.buttonColor || "",
       _imagePreviewUrl: item.mediaAsset?.url || "",
     });
     setItemFormError(null); setItemModal(true);
@@ -394,6 +397,10 @@ const AdminWidgetList = () => {
         subtitleFontSize: itemForm.subtitleFontSize ? Number(itemForm.subtitleFontSize) : null,
         badgeFontSize: itemForm.badgeFontSize ? Number(itemForm.badgeFontSize) : null,
         buttonFontSize: itemForm.buttonFontSize ? Number(itemForm.buttonFontSize) : null,
+        titleColor: itemForm.titleColor || null,
+        subtitleColor: itemForm.subtitleColor || null,
+        badgeColor: itemForm.badgeColor || null,
+        buttonColor: itemForm.buttonColor || null,
       };
       if (editItem) await apiPatch(`/widgets/${itemWidgetId}/items/${editItem.id}`, body);
       else await apiPost(`/widgets/${itemWidgetId}/items`, body);
@@ -749,38 +756,50 @@ const AdminWidgetList = () => {
         <ModalBody>
           {itemFormError && <Alert color="danger" className="mb-3">{itemFormError}</Alert>}
           <Row className="g-3">
-            <Col md="8">
+            <Col md="7">
               <label className="form-label">Title</label>
               <input type="text" className="form-control" placeholder="e.g. Drink Fresh Corn Juice" value={itemForm.title} onChange={(e) => setIField("title", e.target.value)} />
             </Col>
-            <Col md="4">
-              <label className="form-label">Title Font Size</label>
-              <select className="form-select" value={itemForm.titleFontSize} onChange={(e) => setIField("titleFontSize", e.target.value)}>
-                <option value="">Default</option>
-                {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}px</option>)}
-              </select>
+            <Col md="5">
+              <label className="form-label">Title Style</label>
+              <div className="d-flex gap-2 align-items-center">
+                <input type="color" value={itemForm.titleColor || "#ffffff"} onChange={(e) => setIField("titleColor", e.target.value)} style={{ width: 36, height: 36, padding: 2, cursor: "pointer", border: "1px solid #dbdfea", borderRadius: 4 }} title="Title color" />
+                {itemForm.titleColor && <button type="button" className="btn btn-sm btn-icon btn-dim btn-outline-light" onClick={() => setIField("titleColor", "")} title="Reset color" style={{ width: 28, height: 28, padding: 0 }}>&times;</button>}
+                <select className="form-select" value={itemForm.titleFontSize} onChange={(e) => setIField("titleFontSize", e.target.value)} style={{ maxWidth: 90 }}>
+                  <option value="">Size</option>
+                  {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}px</option>)}
+                </select>
+              </div>
             </Col>
-            <Col md="8">
+            <Col md="7">
               <label className="form-label">Subtitle</label>
               <input type="text" className="form-control" placeholder="e.g. Good Taste" value={itemForm.subtitle} onChange={(e) => setIField("subtitle", e.target.value)} />
             </Col>
-            <Col md="4">
-              <label className="form-label">Subtitle Font Size</label>
-              <select className="form-select" value={itemForm.subtitleFontSize} onChange={(e) => setIField("subtitleFontSize", e.target.value)}>
-                <option value="">Default</option>
-                {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}px</option>)}
-              </select>
+            <Col md="5">
+              <label className="form-label">Subtitle Style</label>
+              <div className="d-flex gap-2 align-items-center">
+                <input type="color" value={itemForm.subtitleColor || "#ffffff"} onChange={(e) => setIField("subtitleColor", e.target.value)} style={{ width: 36, height: 36, padding: 2, cursor: "pointer", border: "1px solid #dbdfea", borderRadius: 4 }} title="Subtitle color" />
+                {itemForm.subtitleColor && <button type="button" className="btn btn-sm btn-icon btn-dim btn-outline-light" onClick={() => setIField("subtitleColor", "")} title="Reset color" style={{ width: 28, height: 28, padding: 0 }}>&times;</button>}
+                <select className="form-select" value={itemForm.subtitleFontSize} onChange={(e) => setIField("subtitleFontSize", e.target.value)} style={{ maxWidth: 90 }}>
+                  <option value="">Size</option>
+                  {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}px</option>)}
+                </select>
+              </div>
             </Col>
-            <Col md="8">
+            <Col md="7">
               <label className="form-label">Badge Text</label>
               <input type="text" className="form-control" placeholder="e.g. Weekend Discount" value={itemForm.badge} onChange={(e) => setIField("badge", e.target.value)} />
             </Col>
-            <Col md="4">
-              <label className="form-label">Badge Font Size</label>
-              <select className="form-select" value={itemForm.badgeFontSize} onChange={(e) => setIField("badgeFontSize", e.target.value)}>
-                <option value="">Default</option>
-                {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}px</option>)}
-              </select>
+            <Col md="5">
+              <label className="form-label">Badge Style</label>
+              <div className="d-flex gap-2 align-items-center">
+                <input type="color" value={itemForm.badgeColor || "#ffffff"} onChange={(e) => setIField("badgeColor", e.target.value)} style={{ width: 36, height: 36, padding: 2, cursor: "pointer", border: "1px solid #dbdfea", borderRadius: 4 }} title="Badge color" />
+                {itemForm.badgeColor && <button type="button" className="btn btn-sm btn-icon btn-dim btn-outline-light" onClick={() => setIField("badgeColor", "")} title="Reset color" style={{ width: 28, height: 28, padding: 0 }}>&times;</button>}
+                <select className="form-select" value={itemForm.badgeFontSize} onChange={(e) => setIField("badgeFontSize", e.target.value)} style={{ maxWidth: 90 }}>
+                  <option value="">Size</option>
+                  {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}px</option>)}
+                </select>
+              </div>
             </Col>
             <Col md="6">
               <label className="form-label">Background Color</label>
@@ -790,7 +809,7 @@ const AdminWidgetList = () => {
               </div>
             </Col>
             <Col md="6" />
-            <Col md="4">
+            <Col md="3">
               <label className="form-label">Button Text</label>
               <input type="text" className="form-control" placeholder="e.g. Shop Now" value={itemForm.buttonText} onChange={(e) => setIField("buttonText", e.target.value)} />
             </Col>
@@ -798,12 +817,16 @@ const AdminWidgetList = () => {
               <label className="form-label">Button URL</label>
               <input type="text" className="form-control" placeholder="e.g. /shop" value={itemForm.buttonUrl} onChange={(e) => setIField("buttonUrl", e.target.value)} />
             </Col>
-            <Col md="4">
-              <label className="form-label">Button Font Size</label>
-              <select className="form-select" value={itemForm.buttonFontSize} onChange={(e) => setIField("buttonFontSize", e.target.value)}>
-                <option value="">Default</option>
-                {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}px</option>)}
-              </select>
+            <Col md="5">
+              <label className="form-label">Button Style</label>
+              <div className="d-flex gap-2 align-items-center">
+                <input type="color" value={itemForm.buttonColor || "#ffffff"} onChange={(e) => setIField("buttonColor", e.target.value)} style={{ width: 36, height: 36, padding: 2, cursor: "pointer", border: "1px solid #dbdfea", borderRadius: 4 }} title="Button text color" />
+                {itemForm.buttonColor && <button type="button" className="btn btn-sm btn-icon btn-dim btn-outline-light" onClick={() => setIField("buttonColor", "")} title="Reset color" style={{ width: 28, height: 28, padding: 0 }}>&times;</button>}
+                <select className="form-select" value={itemForm.buttonFontSize} onChange={(e) => setIField("buttonFontSize", e.target.value)} style={{ maxWidth: 90 }}>
+                  <option value="">Size</option>
+                  {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}px</option>)}
+                </select>
+              </div>
             </Col>
           </Row>
 

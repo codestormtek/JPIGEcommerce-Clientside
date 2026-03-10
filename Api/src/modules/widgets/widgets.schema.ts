@@ -37,6 +37,10 @@ export const createWidgetItemSchema = z.object({
   subtitleFontSize:z.number().int().min(8).max(72).optional().nullable(),
   badgeFontSize:   z.number().int().min(8).max(72).optional().nullable(),
   buttonFontSize:  z.number().int().min(8).max(72).optional().nullable(),
+  titleColor:      z.string().max(20).optional().nullable(),
+  subtitleColor:   z.string().max(20).optional().nullable(),
+  badgeColor:      z.string().max(20).optional().nullable(),
+  buttonColor:     z.string().max(20).optional().nullable(),
 });
 export type CreateWidgetItemInput = z.infer<typeof createWidgetItemSchema>;
 
