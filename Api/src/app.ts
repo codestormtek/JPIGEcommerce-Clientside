@@ -36,6 +36,7 @@ import { scheduledTasksRouter } from './modules/scheduledTasks/scheduledTasks.ro
 import { pagesRouter } from './modules/pages/pages.routes';
 import { galleryRouter } from './modules/galleries/gallery.routes';
 import { siteSettingsRouter } from './modules/site-settings/site-settings.routes';
+import { widgetsRouter } from './modules/widgets/widgets.routes';
 
 const app = express();
 
@@ -117,6 +118,7 @@ app.use(`${API}/admin/scheduled-tasks`, scheduledTasksRouter);
 app.use(`${API}/pages`, pagesRouter);
 app.use(`${API}/galleries`, galleryRouter);
 app.use(`${API}/site-settings`, siteSettingsRouter);
+app.use(`${API}/widgets`, widgetsRouter);
 
 // ─── 404 + Global error handler ───────────────────────────────────────────────
 app.use(notFoundHandler);

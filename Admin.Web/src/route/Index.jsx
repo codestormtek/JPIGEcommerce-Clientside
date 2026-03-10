@@ -103,6 +103,7 @@ import AdminSubscriberList from "@/pages/pre-built/subscribers/AdminSubscriberLi
 import AdminScheduledTaskList from "@/pages/pre-built/scheduled-tasks/AdminScheduledTaskList";
 import AdminPageList from "@/pages/pre-built/pages/AdminPageList";
 import AdminSiteSettings from "@/pages/pre-built/site-settings/AdminSiteSettings";
+import AdminWidgetList from "@/pages/pre-built/widgets/AdminWidgetList";
 import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
 import AdminPaymentMethodList from "@/pages/pre-built/payment-methods/AdminPaymentMethodList";
 import MediaManager from "@/pages/pre-built/media/MediaManager";
@@ -226,6 +227,7 @@ const Pages = () => {
               <Route path="site-pages" element={<AdminPageList />}></Route>
               <Route path="metrics" element={<AdminMetricsPage />}></Route>
               <Route path="site-settings" element={<AdminSiteSettings />}></Route>
+              <Route path="widgets" element={<AdminWidgetList />}></Route>
 
               <Route path="kyc-list-regular" element={<KycListRegular />}></Route>
               <Route path="kyc-details-regular/:kycId" element={<KycDetailsRegular />}></Route>

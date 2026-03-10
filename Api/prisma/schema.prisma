@@ -317,6 +317,7 @@ model MediaAsset {
   carouselSlides     CarouselSlide[]      @relation("CarouselDesktopImage")
   carouselSlidesMobile CarouselSlide[]    @relation("CarouselMobileImage")
   sitePages          SitePage[]
+  widgetItems        WidgetItem[]
   galleryImages      GalleryImage[]
 
   @@map("media_assets")
@@ -1603,5 +1604,50 @@ model GalleryImage {
 
   @@unique([galleryId, mediaAssetId])
   @@map("gallery_images")
+}
+
+// ─── Widgets ──────────────────────────────────────────────────────────────────
+
+model Widget {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+  isDeleted      Boolean   @default(false)
+
+  name           String
+  placement      String    @unique
+  description    String?
+  columns        Int       @default(4)
+  isVisible      Boolean   @default(true)
+  displayOrder   Int       @default(0)
+
+  items          WidgetItem[]
+
+  @@map("widgets")
+}
+
+model WidgetItem {
+  id              String    @id @default(uuid())
+  createdAt       DateTime  @default(now())
+
+  widgetId        String
+  widget          Widget    @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+
+  title           String?
+  subtitle        String?
+  badge           String?
+  buttonText      String?
+  buttonUrl       String?
+  backgroundColor String?
+  sortOrder       Int       @default(0)
+  isVisible       Boolean   @default(true)
+
+  mediaAssetId    String?
+  mediaAsset      MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+
+  imageWidth      Int?
+  imageHeight     Int?
+
+  @@map("widget_items")
 }
 

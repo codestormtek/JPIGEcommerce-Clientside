@@ -132,6 +132,11 @@ const menu = [
     link: "/carousel",
   },
   {
+    icon: "grid-alt",
+    text: "Widgets",
+    link: "/widgets",
+  },
+  {
     icon: "pen",
     text: "Blog Posts",
     subMenu: [
