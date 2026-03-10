@@ -15,6 +15,7 @@ const blankWidgetForm = () => ({
 const blankItemForm = () => ({
   title: "", subtitle: "", badge: "", buttonText: "", buttonUrl: "",
   backgroundColor: "", sortOrder: 0, isVisible: true, mediaAssetId: "", imageWidth: "", imageHeight: "",
+  _imagePreviewUrl: "",
 });
 
 const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove, folder }) => {
@@ -313,6 +314,7 @@ const AdminWidgetList = () => {
       backgroundColor: item.backgroundColor || "", sortOrder: item.sortOrder ?? 0,
       isVisible: item.isVisible ?? true, mediaAssetId: item.mediaAssetId || "",
       imageWidth: item.imageWidth ?? "", imageHeight: item.imageHeight ?? "",
+      _imagePreviewUrl: item.mediaAsset?.url || "",
     });
     setItemFormError(null); setItemModal(true);
   };
@@ -706,9 +708,13 @@ const AdminWidgetList = () => {
               <ImageUploadWidget
                 label="Item Image"
                 assetId={itemForm.mediaAssetId}
-                previewUrl={editItem?.mediaAsset?.url || (itemForm.mediaAssetId ? undefined : undefined)}
-                onUploaded={(asset) => setIField("mediaAssetId", asset.id)}
-                onRemove={() => setIField("mediaAssetId", "")}
+                previewUrl={itemForm._imagePreviewUrl || undefined}
+                onUploaded={(asset) => {
+                  setItemForm((f) => ({ ...f, mediaAssetId: asset.id, _imagePreviewUrl: asset.url || "" }));
+                }}
+                onRemove={() => {
+                  setItemForm((f) => ({ ...f, mediaAssetId: "", _imagePreviewUrl: "" }));
+                }}
                 folder="widgets"
               />
             </Col>

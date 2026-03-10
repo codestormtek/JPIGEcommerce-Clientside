@@ -55,11 +55,19 @@ const bgClassMap = ['one', 'two', 'three', 'four', 'five', 'six'];
 
 function FeatureCardItem({ item, index }: { item: WidgetItemData; index: number }) {
     const bgClass = bgClassMap[index % bgClassMap.length];
-    const style: React.CSSProperties = item.mediaAsset?.url
-        ? { backgroundImage: `url(${item.mediaAsset.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-        : item.backgroundColor
-            ? { backgroundColor: item.backgroundColor }
-            : {};
+    const hasCustomSize = item.imageWidth || item.imageHeight;
+    const style: React.CSSProperties = {
+        ...(item.mediaAsset?.url
+            ? { backgroundImage: `url(${item.mediaAsset.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            : item.backgroundColor
+                ? { backgroundColor: item.backgroundColor }
+                : {}),
+        ...(hasCustomSize ? {
+            width: item.imageWidth ? `${item.imageWidth}px` : '100%',
+            height: item.imageHeight ? `${item.imageHeight}px` : undefined,
+            maxWidth: '100%',
+        } : {}),
+    };
 
     const linkUrl = item.buttonUrl || '/shop';
 
@@ -90,11 +98,19 @@ function FeatureCardItem({ item, index }: { item: WidgetItemData; index: number 
 }
 
 function PromoBannerItem({ item }: { item: WidgetItemData }) {
-    const style: React.CSSProperties = item.mediaAsset?.url
-        ? { backgroundImage: `url(${item.mediaAsset.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-        : item.backgroundColor
-            ? { backgroundColor: item.backgroundColor }
-            : {};
+    const hasCustomSize = item.imageWidth || item.imageHeight;
+    const style: React.CSSProperties = {
+        ...(item.mediaAsset?.url
+            ? { backgroundImage: `url(${item.mediaAsset.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            : item.backgroundColor
+                ? { backgroundColor: item.backgroundColor }
+                : {}),
+        ...(hasCustomSize ? {
+            width: item.imageWidth ? `${item.imageWidth}px` : undefined,
+            height: item.imageHeight ? `${item.imageHeight}px` : undefined,
+            maxWidth: '100%',
+        } : {}),
+    };
 
     return (
         <a href={item.buttonUrl || '/shop'} className="single-discount-with-bg" style={style}>
@@ -117,6 +133,7 @@ function PromoBannerItem({ item }: { item: WidgetItemData }) {
 
 function GenericItem({ item }: { item: WidgetItemData }) {
     const linkUrl = item.buttonUrl || '#';
+    const hasCustomSize = item.imageWidth || item.imageHeight;
 
     return (
         <div
@@ -126,7 +143,12 @@ function GenericItem({ item }: { item: WidgetItemData }) {
                 backgroundImage: item.mediaAsset?.url ? `url(${item.mediaAsset.url})` : undefined,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-                minHeight: 200,
+                minHeight: hasCustomSize ? undefined : 200,
+                ...(hasCustomSize ? {
+                    width: item.imageWidth ? `${item.imageWidth}px` : undefined,
+                    height: item.imageHeight ? `${item.imageHeight}px` : undefined,
+                    maxWidth: '100%',
+                } : {}),
             }}
         >
             <div>
