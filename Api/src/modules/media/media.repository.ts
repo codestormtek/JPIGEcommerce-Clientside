@@ -35,6 +35,7 @@ const FOLDER_PREFIXES: Record<MediaFolder, string> = {
   categories: getFolderPrefix('categories'),
   galleries:  getFolderPrefix('galleries'),
   media:      getFolderPrefix('media'),
+  widgets:    getFolderPrefix('widgets'),
 };
 
 const mediaInclude = { metadata: true } as const;

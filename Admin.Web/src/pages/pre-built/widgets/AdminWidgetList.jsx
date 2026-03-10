@@ -20,10 +20,12 @@ const blankItemForm = () => ({
 
 const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove, folder }) => {
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -32,9 +34,11 @@ const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove, f
       const res = await apiUpload("/media/upload-resized", fd);
       const data = res?.data ?? res;
       const asset = data?.primary ?? data;
+      if (!asset?.id) throw new Error("Upload returned no asset");
       onUploaded(asset);
     } catch (err) {
       console.error("Upload failed", err);
+      setUploadError(err?.message || "Upload failed");
     } finally {
       setUploading(false);
     }
@@ -51,11 +55,12 @@ const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove, f
           <input type="file" accept="image/*" hidden onChange={handleFile} />
         </label>
         {assetId && (
-          <Button size="sm" color="danger" onClick={onRemove}>
+          <Button size="sm" color="danger" onClick={() => { onRemove(); setUploadError(null); }}>
             <Icon name="trash" /> Remove
           </Button>
         )}
       </div>
+      {uploadError && <span className="text-danger fs-12px mt-1">{uploadError}</span>}
     </div>
   );
 };
