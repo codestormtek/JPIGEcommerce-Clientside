@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Modal, ModalBody, ModalHeader, Spinner, Alert, Badge } from "reactstrap";
+import { Modal, ModalBody, ModalHeader, Spinner, Alert, Badge, Nav, NavItem, NavLink, TabContent, TabPane } from "reactstrap";
 import {
   Block, BlockBetween, BlockDes, BlockHead, BlockHeadContent, BlockTitle,
   Icon, Row, Col, Button,
@@ -59,6 +59,153 @@ const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove, f
   );
 };
 
+const bgClassMap = ["one", "two", "three", "four", "five", "six"];
+
+const WidgetPreviewFeatureCard = ({ item, index }) => {
+  const bgClass = bgClassMap[index % bgClassMap.length];
+  const hasImage = !!item.mediaAsset?.url;
+  return (
+    <div
+      style={{
+        position: "relative",
+        borderRadius: 8,
+        overflow: "hidden",
+        minHeight: 220,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-end",
+        padding: 20,
+        color: "#fff",
+        backgroundImage: hasImage ? `url(${item.mediaAsset.url})` : undefined,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundColor: hasImage ? undefined : item.backgroundColor || ["#2d6a4f", "#e76f51", "#264653", "#f4a261"][index % 4],
+      }}
+    >
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 30%, rgba(0,0,0,0.55))", zIndex: 1 }} />
+      <div style={{ position: "relative", zIndex: 2 }}>
+        {item.badge && (
+          <span style={{ display: "inline-block", background: "#f47920", color: "#fff", padding: "3px 12px", borderRadius: 4, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
+            {item.badge}
+          </span>
+        )}
+        {item.title && <h5 style={{ color: "#fff", marginBottom: 2, fontSize: 16, fontWeight: 600 }}>{item.title}</h5>}
+        {item.subtitle && <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, marginBottom: 8 }}>{item.subtitle}</p>}
+        {item.buttonText && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#fff", color: "#333", padding: "4px 14px", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
+            {item.buttonText} <Icon name="arrow-right" />
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const WidgetPreviewPromoBanner = ({ item }) => {
+  const hasImage = !!item.mediaAsset?.url;
+  return (
+    <div
+      style={{
+        borderRadius: 8,
+        overflow: "hidden",
+        minHeight: 160,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        padding: 24,
+        color: "#fff",
+        backgroundImage: hasImage ? `url(${item.mediaAsset.url})` : undefined,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundColor: hasImage ? undefined : item.backgroundColor || "#3a506b",
+        marginBottom: 12,
+      }}
+    >
+      <div style={{ position: "relative", zIndex: 2 }}>
+        {item.title && <h5 style={{ color: "#fff", fontWeight: 600, marginBottom: 2 }}>{item.title}</h5>}
+        {item.subtitle && <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 14, marginBottom: 4 }}>{item.subtitle}</p>}
+        {item.badge && <span style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>{item.badge}</span>}
+      </div>
+    </div>
+  );
+};
+
+const WidgetPreviewGenericCard = ({ item }) => {
+  const hasImage = !!item.mediaAsset?.url;
+  return (
+    <div
+      style={{
+        borderRadius: 8,
+        overflow: "hidden",
+        minHeight: 180,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: 20,
+        backgroundImage: hasImage ? `url(${item.mediaAsset.url})` : undefined,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundColor: hasImage ? undefined : item.backgroundColor || "#f5f5f5",
+        color: hasImage ? "#fff" : "#333",
+      }}
+    >
+      <div>
+        {item.badge && <Badge color="warning" className="mb-2">{item.badge}</Badge>}
+        {item.title && <h6 style={{ marginBottom: 2 }}>{item.title}</h6>}
+        {item.subtitle && <p style={{ fontSize: 13, opacity: 0.8, marginBottom: 0 }}>{item.subtitle}</p>}
+      </div>
+      {item.buttonText && (
+        <span style={{ alignSelf: "flex-start", marginTop: 12, display: "inline-block", background: "#6576ff", color: "#fff", padding: "4px 14px", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
+          {item.buttonText}
+        </span>
+      )}
+    </div>
+  );
+};
+
+const WidgetPreview = ({ widget, showHidden = false }) => {
+  const visibleItems = showHidden ? (widget?.items || []) : (widget?.items || []).filter((i) => i.isVisible);
+  if (!visibleItems.length) {
+    return (
+      <div className="text-center text-soft py-5" style={{ border: "2px dashed #e0e0e0", borderRadius: 8 }}>
+        <Icon name="grid-alt" style={{ fontSize: 32, display: "block", marginBottom: 8 }} />
+        No visible items to preview. Add items to see the widget design.
+      </div>
+    );
+  }
+
+  const placement = widget?.placement || "";
+  const isFeature = placement.includes("feature") || placement.includes("promo");
+  const isBanner = placement.includes("banner") || placement.includes("discount");
+
+  const cols = widget.columns || 4;
+  const colWidth = `${100 / cols}%`;
+
+  if (isBanner) {
+    return (
+      <div>
+        {visibleItems.map((item) => (
+          <WidgetPreviewPromoBanner key={item.id} item={item} />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+      {visibleItems.map((item, idx) => (
+        <div key={item.id} style={{ flex: `0 0 calc(${colWidth} - 12px)`, minWidth: 200 }}>
+          {isFeature ? (
+            <WidgetPreviewFeatureCard item={item} index={idx} />
+          ) : (
+            <WidgetPreviewGenericCard item={item} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const AdminWidgetList = () => {
   const [widgets, setWidgets] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -66,6 +213,7 @@ const AdminWidgetList = () => {
   const [success, setSuccess] = useState(null);
 
   const [widgetModal, setWidgetModal] = useState(false);
+  const [widgetTab, setWidgetTab] = useState("info");
   const [editWidget, setEditWidget] = useState(null);
   const [widgetForm, setWidgetForm] = useState(blankWidgetForm());
   const [savingWidget, setSavingWidget] = useState(false);
@@ -88,6 +236,8 @@ const AdminWidgetList = () => {
   const [deletingItem, setDeletingItem] = useState(false);
 
   const [expandedWidget, setExpandedWidget] = useState(null);
+  const [previewModal, setPreviewModal] = useState(false);
+  const [previewWidget, setPreviewWidget] = useState(null);
 
   const loadWidgets = useCallback(async () => {
     setLoading(true); setError(null);
@@ -100,8 +250,19 @@ const AdminWidgetList = () => {
 
   useEffect(() => { loadWidgets(); }, [loadWidgets]);
 
+  const refreshEditWidget = useCallback(async (widgetId) => {
+    try {
+      const res = await apiGet(`/widgets/${widgetId}`);
+      const fresh = res?.data ?? res;
+      if (fresh) {
+        setEditWidget(fresh);
+        setPreviewWidget((prev) => prev?.id === widgetId ? fresh : prev);
+      }
+    } catch {}
+  }, []);
+
   const openCreateWidget = () => {
-    setEditWidget(null); setWidgetForm(blankWidgetForm()); setWidgetFormError(null); setWidgetModal(true);
+    setEditWidget(null); setWidgetForm(blankWidgetForm()); setWidgetFormError(null); setWidgetTab("info"); setWidgetModal(true);
   };
 
   const openEditWidget = (w) => {
@@ -110,7 +271,7 @@ const AdminWidgetList = () => {
       name: w.name || "", placement: w.placement || "", description: w.description || "",
       columns: w.columns ?? 4, isVisible: w.isVisible ?? true, displayOrder: w.displayOrder ?? 0,
     });
-    setWidgetFormError(null); setWidgetModal(true);
+    setWidgetFormError(null); setWidgetTab("info"); setWidgetModal(true);
   };
 
   const saveWidget = async () => {
@@ -172,6 +333,7 @@ const AdminWidgetList = () => {
       else await apiPost(`/widgets/${itemWidgetId}/items`, body);
       setItemModal(false); setSuccess(editItem ? "Item updated." : "Item created.");
       loadWidgets();
+      if (itemWidgetId) refreshEditWidget(itemWidgetId);
     } catch (e) { setItemFormError(e.message); }
     finally { setSavingItem(false); }
   };
@@ -186,9 +348,12 @@ const AdminWidgetList = () => {
       await apiDelete(`/widgets/${deleteItemWidgetId}/items/${deleteItemTarget.id}`);
       setDeleteItemModal(false); setDeleteItemTarget(null); setSuccess("Item deleted.");
       loadWidgets();
+      if (deleteItemWidgetId) refreshEditWidget(deleteItemWidgetId);
     } catch (e) { setError(e.message); }
     finally { setDeletingItem(false); }
   };
+
+  const openPreview = (w) => { setPreviewWidget(w); setPreviewModal(true); };
 
   const setWField = (k, v) => setWidgetForm((f) => ({ ...f, [k]: v }));
   const setIField = (k, v) => setItemForm((f) => ({ ...f, [k]: v }));
@@ -243,6 +408,9 @@ const AdminWidgetList = () => {
                       {widget.description && <p className="text-soft mt-1 mb-0 fs-13px">{widget.description}</p>}
                     </div>
                     <div className="d-flex gap-1">
+                      <Button size="sm" color="dim" outline className="btn-outline-info" onClick={() => openPreview(widget)} title="Preview">
+                        <Icon name="eye" />
+                      </Button>
                       <Button size="sm" color="dim" outline className="btn-outline-primary" onClick={() => setExpandedWidget(expandedWidget === widget.id ? null : widget.id)}>
                         <Icon name={expandedWidget === widget.id ? "chevron-up" : "chevron-down"} />
                         {expandedWidget === widget.id ? " Collapse" : " Items"}
@@ -289,7 +457,7 @@ const AdminWidgetList = () => {
                                     <div className="d-flex gap-2 mt-1 flex-wrap">
                                       {item.badge && <Badge color="warning" pill>{item.badge}</Badge>}
                                       {item.buttonText && <span className="fs-12px text-soft">Button: {item.buttonText}</span>}
-                                      {item.buttonUrl && <span className="fs-12px text-soft">→ {item.buttonUrl}</span>}
+                                      {item.buttonUrl && <span className="fs-12px text-soft">&rarr; {item.buttonUrl}</span>}
                                       <span className="fs-12px text-soft">Order: {item.sortOrder}</span>
                                       <Badge color={item.isVisible ? "success" : "light"} pill>{item.isVisible ? "Visible" : "Hidden"}</Badge>
                                     </div>
@@ -317,53 +485,171 @@ const AdminWidgetList = () => {
         )}
       </Content>
 
-      <Modal isOpen={widgetModal} toggle={() => setWidgetModal(false)} size="lg">
+      {/* ── Widget Create/Edit Modal with Tabs ─────────────────────────────── */}
+      <Modal isOpen={widgetModal} toggle={() => setWidgetModal(false)} size="xl">
         <ModalHeader toggle={() => setWidgetModal(false)}>
           {editWidget ? "Edit Widget" : "Create Widget"}
         </ModalHeader>
         <ModalBody>
           {widgetFormError && <Alert color="danger" className="mb-3">{widgetFormError}</Alert>}
-          <Row className="g-3">
-            <Col md="6">
-              <label className="form-label">Name</label>
-              <input type="text" className="form-control" placeholder="e.g. Weekend Promotions" value={widgetForm.name} onChange={(e) => setWField("name", e.target.value)} />
-            </Col>
-            <Col md="6">
-              <label className="form-label">Placement Key</label>
-              <input type="text" className="form-control" placeholder="e.g. homepage-feature-promos" value={widgetForm.placement} onChange={(e) => setWField("placement", e.target.value)} disabled={!!editWidget} />
-              {!editWidget && <span className="text-soft fs-12px">Lowercase letters, numbers, and hyphens only. Cannot be changed later.</span>}
-            </Col>
-            <Col md="12">
-              <label className="form-label">Description</label>
-              <input type="text" className="form-control" placeholder="Short description of where this widget appears" value={widgetForm.description} onChange={(e) => setWField("description", e.target.value)} />
-            </Col>
-            <Col md="4">
-              <label className="form-label">Columns</label>
-              <select className="form-select" value={widgetForm.columns} onChange={(e) => setWField("columns", Number(e.target.value))}>
-                {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n} column{n !== 1 ? "s" : ""}</option>)}
-              </select>
-            </Col>
-            <Col md="4">
-              <label className="form-label">Display Order</label>
-              <input type="number" className="form-control" value={widgetForm.displayOrder} onChange={(e) => setWField("displayOrder", e.target.value)} />
-            </Col>
-            <Col md="4">
-              <label className="form-label">Visibility</label>
-              <div className="custom-control custom-switch mt-1">
-                <input type="checkbox" className="custom-control-input form-check-input" id="widgetVisible" checked={widgetForm.isVisible} onChange={(e) => setWField("isVisible", e.target.checked)} />
-                <label className="custom-control-label form-check-label" htmlFor="widgetVisible">{widgetForm.isVisible ? "Visible" : "Hidden"}</label>
-              </div>
-            </Col>
-            <Col md="12" className="text-end">
-              <Button color="light" className="me-2" onClick={() => setWidgetModal(false)}>Cancel</Button>
-              <Button color="primary" onClick={saveWidget} disabled={savingWidget}>
-                {savingWidget ? <><Spinner size="sm" className="me-1" /> Saving…</> : editWidget ? "Update Widget" : "Create Widget"}
-              </Button>
-            </Col>
-          </Row>
+          <Nav tabs className="mb-3">
+            <NavItem>
+              <NavLink
+                className={widgetTab === "info" ? "active" : ""}
+                style={{ cursor: "pointer" }}
+                onClick={() => setWidgetTab("info")}
+              >
+                <Icon name="info" className="me-1" /> Widget Information
+              </NavLink>
+            </NavItem>
+            <NavItem>
+              <NavLink
+                className={widgetTab === "design" ? "active" : ""}
+                style={{ cursor: "pointer" }}
+                onClick={() => setWidgetTab("design")}
+              >
+                <Icon name="eye" className="me-1" /> Widget Design
+              </NavLink>
+            </NavItem>
+          </Nav>
+
+          <TabContent activeTab={widgetTab}>
+            <TabPane tabId="info">
+              <Row className="g-3">
+                <Col md="6">
+                  <label className="form-label">Name</label>
+                  <input type="text" className="form-control" placeholder="e.g. Weekend Promotions" value={widgetForm.name} onChange={(e) => setWField("name", e.target.value)} />
+                </Col>
+                <Col md="6">
+                  <label className="form-label">Placement Key</label>
+                  <input type="text" className="form-control" placeholder="e.g. homepage-feature-promos" value={widgetForm.placement} onChange={(e) => setWField("placement", e.target.value)} disabled={!!editWidget} />
+                  {!editWidget && <span className="text-soft fs-12px">Lowercase letters, numbers, and hyphens only. Cannot be changed later.</span>}
+                </Col>
+                <Col md="12">
+                  <label className="form-label">Description</label>
+                  <input type="text" className="form-control" placeholder="Short description of where this widget appears" value={widgetForm.description} onChange={(e) => setWField("description", e.target.value)} />
+                </Col>
+                <Col md="4">
+                  <label className="form-label">Columns</label>
+                  <select className="form-select" value={widgetForm.columns} onChange={(e) => setWField("columns", Number(e.target.value))}>
+                    {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n} column{n !== 1 ? "s" : ""}</option>)}
+                  </select>
+                </Col>
+                <Col md="4">
+                  <label className="form-label">Display Order</label>
+                  <input type="number" className="form-control" value={widgetForm.displayOrder} onChange={(e) => setWField("displayOrder", e.target.value)} />
+                </Col>
+                <Col md="4">
+                  <label className="form-label">Visibility</label>
+                  <div className="custom-control custom-switch mt-1">
+                    <input type="checkbox" className="custom-control-input form-check-input" id="widgetVisible" checked={widgetForm.isVisible} onChange={(e) => setWField("isVisible", e.target.checked)} />
+                    <label className="custom-control-label form-check-label" htmlFor="widgetVisible">{widgetForm.isVisible ? "Visible" : "Hidden"}</label>
+                  </div>
+                </Col>
+              </Row>
+            </TabPane>
+
+            <TabPane tabId="design">
+              {editWidget ? (
+                <div>
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                      <h6 className="mb-1">Live Preview</h6>
+                      <span className="text-soft fs-13px">This shows how the widget will appear on the storefront based on its current items.</span>
+                    </div>
+                    <Button size="sm" color="primary" onClick={() => openCreateItem(editWidget.id)}>
+                      <Icon name="plus" /> Add Item
+                    </Button>
+                  </div>
+                  <div style={{ background: "#f8f9fa", borderRadius: 8, padding: 20, border: "1px solid #e0e0e0" }}>
+                    <WidgetPreview widget={editWidget} />
+                  </div>
+
+                  {editWidget.items?.length > 0 && (
+                    <div className="mt-4">
+                      <h6 className="mb-2">Items ({editWidget.items.length})</h6>
+                      <div className="row g-2">
+                        {editWidget.items.map((item) => (
+                          <div key={item.id} className="col-12">
+                            <div className="d-flex align-items-center justify-content-between p-2 rounded" style={{ background: "#fff", border: "1px solid #eee" }}>
+                              <div className="d-flex align-items-center gap-2">
+                                {item.mediaAsset?.url ? (
+                                  <img src={item.mediaAsset.url} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }} />
+                                ) : (
+                                  <div style={{ width: 40, height: 40, background: item.backgroundColor || "#eee", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <Icon name="img" style={{ fontSize: 14, color: "#bbb" }} />
+                                  </div>
+                                )}
+                                <div>
+                                  <span className="fw-medium fs-13px">{item.title || "(no title)"}</span>
+                                  {item.subtitle && <span className="text-soft fs-12px ms-1">— {item.subtitle}</span>}
+                                </div>
+                              </div>
+                              <div className="d-flex gap-1">
+                                <Button size="sm" color="dim" outline className="btn-outline-primary" onClick={() => openEditItem(editWidget.id, item)}>
+                                  <Icon name="edit" />
+                                </Button>
+                                <Button size="sm" color="dim" outline className="btn-outline-danger" onClick={() => openDeleteItem(editWidget.id, item)}>
+                                  <Icon name="trash" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center text-soft py-5">
+                  <Icon name="eye-off" style={{ fontSize: 32, display: "block", marginBottom: 8 }} />
+                  Save the widget first, then return here to manage its design and preview.
+                </div>
+              )}
+            </TabPane>
+          </TabContent>
+
+          <div className="text-end mt-4 pt-3 border-top">
+            <Button color="light" className="me-2" onClick={() => setWidgetModal(false)}>Cancel</Button>
+            <Button color="primary" onClick={saveWidget} disabled={savingWidget}>
+              {savingWidget ? <><Spinner size="sm" className="me-1" /> Saving…</> : editWidget ? "Update Widget" : "Create Widget"}
+            </Button>
+          </div>
         </ModalBody>
       </Modal>
 
+      {/* ── Widget Preview Lightbox ────────────────────────────────────────── */}
+      <Modal isOpen={previewModal} toggle={() => setPreviewModal(false)} fullscreen>
+        <ModalHeader toggle={() => setPreviewModal(false)}>
+          <Icon name="eye" className="me-2" />
+          {previewWidget?.name || "Widget"} — Preview
+        </ModalHeader>
+        <ModalBody style={{ background: "#f0f0f0" }}>
+          {previewWidget && (
+            <>
+              <div className="d-flex gap-3 mb-3 flex-wrap align-items-center">
+                <Badge color={previewWidget.isVisible ? "success" : "light"} pill>
+                  {previewWidget.isVisible ? "Visible" : "Hidden"}
+                </Badge>
+                <span className="text-soft fs-13px">
+                  Placement: <code>{previewWidget.placement}</code>
+                </span>
+                <span className="text-soft fs-13px">
+                  {previewWidget.columns} column{previewWidget.columns !== 1 ? "s" : ""}
+                </span>
+                <span className="text-soft fs-13px">
+                  {previewWidget.items?.length || 0} item{(previewWidget.items?.length || 0) !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div style={{ maxWidth: 1200, margin: "0 auto", padding: 24 }}>
+                <WidgetPreview widget={previewWidget} />
+              </div>
+            </>
+          )}
+        </ModalBody>
+      </Modal>
+
+      {/* ── Item Create/Edit Modal ─────────────────────────────────────────── */}
       <Modal isOpen={itemModal} toggle={() => setItemModal(false)} size="lg">
         <ModalHeader toggle={() => setItemModal(false)}>
           {editItem ? "Edit Widget Item" : "Add Widget Item"}
@@ -437,6 +723,7 @@ const AdminWidgetList = () => {
         </ModalBody>
       </Modal>
 
+      {/* ── Delete Widget Modal ────────────────────────────────────────────── */}
       <Modal isOpen={deleteModal} toggle={() => setDeleteModal(false)}>
         <ModalHeader toggle={() => setDeleteModal(false)}>Delete Widget</ModalHeader>
         <ModalBody>
@@ -451,6 +738,7 @@ const AdminWidgetList = () => {
         </ModalBody>
       </Modal>
 
+      {/* ── Delete Item Modal ──────────────────────────────────────────────── */}
       <Modal isOpen={deleteItemModal} toggle={() => setDeleteItemModal(false)}>
         <ModalHeader toggle={() => setDeleteItemModal(false)}>Delete Item</ModalHeader>
         <ModalBody>
