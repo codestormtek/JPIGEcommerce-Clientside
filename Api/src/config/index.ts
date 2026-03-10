@@ -75,6 +75,11 @@ export const config = {
     webhookSecret: process.env.RESEND_WEBHOOK_SECRET ?? '',
   },
 
+  telnyx: {
+    apiKey: process.env.TELNYX_API_KEY ?? '',
+    fromNumber: process.env.TELNYX_FROM_NUMBER ?? '',
+  },
+
   store: {
     name: 'The Jiggling Pig, LLC',
     url: process.env.STORE_URL ?? 'https://thejigglingpig.com',

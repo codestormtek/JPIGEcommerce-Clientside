@@ -103,6 +103,14 @@ const menu = [
     ],
   },
   {
+    icon: "signal",
+    text: "Roadside BBQ",
+    subMenu: [
+      { text: "Live Manager",   link: "/live-sessions" },
+      { text: "Alert History",  link: "/live-sessions/history" },
+    ],
+  },
+  {
     icon: "clip",
     text: "Food Truck Menus",
     subMenu: [

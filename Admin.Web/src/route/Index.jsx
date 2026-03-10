@@ -110,6 +110,8 @@ import AdminCateringPackages from "@/pages/pre-built/catering/AdminCateringPacka
 import AdminCateringPortionRules from "@/pages/pre-built/catering/AdminCateringPortionRules";
 import AdminCateringDeliveryZones from "@/pages/pre-built/catering/AdminCateringDeliveryZones";
 import AdminCateringAvailability from "@/pages/pre-built/catering/AdminCateringAvailability";
+import AdminLiveSessionManager from "@/pages/pre-built/live-sessions/AdminLiveSessionManager";
+import AdminAlertHistory from "@/pages/pre-built/live-sessions/AdminAlertHistory";
 import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
 import AdminPaymentMethodList from "@/pages/pre-built/payment-methods/AdminPaymentMethodList";
 import MediaManager from "@/pages/pre-built/media/MediaManager";
@@ -240,6 +242,9 @@ const Pages = () => {
               <Route path="catering/portion-rules" element={<AdminCateringPortionRules />}></Route>
               <Route path="catering/delivery-zones" element={<AdminCateringDeliveryZones />}></Route>
               <Route path="catering/availability" element={<AdminCateringAvailability />}></Route>
+
+              <Route path="live-sessions" element={<AdminLiveSessionManager />}></Route>
+              <Route path="live-sessions/history" element={<AdminAlertHistory />}></Route>
 
               <Route path="kyc-list-regular" element={<KycListRegular />}></Route>
               <Route path="kyc-details-regular/:kycId" element={<KycDetailsRegular />}></Route>

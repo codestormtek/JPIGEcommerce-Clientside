@@ -48,6 +48,8 @@ model SiteUser {
   dashboards            Dashboard[]          @relation("OwnedDashboards")
   checklists            Checklist[]
   cateringQuotes        CateringQuote[]
+  liveSessions          LiveSession[]         @relation("LiveSessionCreator")
+  smsCampaigns          SmsAlertCampaign[]    @relation("SmsCampaignCreator")
 
   @@map("site_users")
 }
@@ -1090,7 +1092,8 @@ model Subscriber {
   optInSms    Boolean   @default(false)
   confirmedAt DateTime?
 
-  subscriptions SubscriberSubscription[]
+  subscriptions   SubscriberSubscription[]
+  smsAlertMessages SmsAlertMessage[]
 
   @@map("subscribers")
 }
@@ -1909,5 +1912,82 @@ model CateringQuoteItem {
   notes          String?
 
   @@map("catering_quote_items")
+}
+
+// ─── Live Sessions (Roadside BBQ) ────────────────────────────────────────────
+
+enum LiveSessionStatus {
+  DRAFT
+  SCHEDULED
+  LIVE
+  CLOSED
+  CANCELLED
+}
+
+model LiveSession {
+  id             String            @id @default(uuid())
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @default(now()) @updatedAt
+
+  title          String
+  locationName   String?
+  address        String?
+  lat            Decimal?          @db.Decimal(10, 7)
+  lng            Decimal?          @db.Decimal(10, 7)
+  mapUrl         String?
+  message        String?
+  startTime      DateTime?
+  endTime        DateTime?
+  status         LiveSessionStatus @default(DRAFT)
+  isPublished    Boolean           @default(false)
+
+  createdByUserId String?
+  createdByUser   SiteUser?        @relation("LiveSessionCreator", fields: [createdByUserId], references: [id])
+
+  smsAlertCampaigns SmsAlertCampaign[]
+
+  @@map("live_sessions")
+}
+
+model SmsAlertCampaign {
+  id              String       @id @default(uuid())
+  createdAt       DateTime     @default(now())
+
+  liveSessionId   String
+  liveSession     LiveSession  @relation(fields: [liveSessionId], references: [id])
+
+  messageBody     String
+  audienceType    String       @default("all")
+  totalRecipients Int          @default(0)
+  totalSent       Int          @default(0)
+  totalFailed     Int          @default(0)
+  sentAt          DateTime?
+
+  createdByUserId String?
+  createdByUser   SiteUser?    @relation("SmsCampaignCreator", fields: [createdByUserId], references: [id])
+
+  messages        SmsAlertMessage[]
+
+  @@map("sms_alert_campaigns")
+}
+
+model SmsAlertMessage {
+  id                String           @id @default(uuid())
+  createdAt         DateTime         @default(now())
+
+  campaignId        String
+  campaign          SmsAlertCampaign @relation(fields: [campaignId], references: [id])
+
+  subscriberId      String?
+  subscriber        Subscriber?      @relation(fields: [subscriberId], references: [id])
+
+  phoneNumber       String
+  messageBody       String
+  providerMessageId String?
+  sendStatus        String           @default("queued")
+  errorMessage      String?
+  sentAt            DateTime?
+
+  @@map("sms_alert_messages")
 }
 

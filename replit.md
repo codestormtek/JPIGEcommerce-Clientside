@@ -141,6 +141,17 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - Quote number format: `JPIG-CAT-000001`; setup fee=$50; disposable kit=$0.75/guest
   - Quote lifecycle: DRAFT → PENDING → QUOTED → APPROVED → CONVERTED (or REJECTED/EXPIRED)
   - Seeded data: 15 menu items, 39 portion rules, 5 packages with 4 tiers each, 3 delivery zones, default availability
+- **Roadside BBQ Live Sessions** (`/live-sessions`)
+  - **Live Manager** (`/live-sessions`): Mobile-first live GPS broadcast manager. Create sessions, capture GPS location, preview on map, Go Live / Close / Send SMS Alert buttons, test SMS, copy directions link, repeat-last-setup shortcut
+  - **Alert History** (`/live-sessions/history`): SMS campaign audit trail — date/time, session, location, message, recipient counts, expandable per-message results, date range filter
+  - Prisma models: `LiveSession`, `SmsAlertCampaign`, `SmsAlertMessage`
+  - Enum: `LiveSessionStatus` (DRAFT/SCHEDULED/LIVE/CLOSED/CANCELLED)
+  - API: `Api/src/modules/live-sessions/` at `/api/v1/live-sessions`
+    - Admin: CRUD sessions, `POST /:id/go-live`, `POST /:id/close`, `POST /:id/send-alert`, `POST /:id/test-sms`, `GET /alerts/history`
+    - Public: `GET /public/current` (current live session), `POST /public/subscribe` (SMS opt-in), `POST /public/unsubscribe`
+  - Session lifecycle: DRAFT → SCHEDULED → LIVE → CLOSED/CANCELLED (only one LIVE at a time, enforced in service)
+  - SMS via Telnyx: `Api/src/lib/telnyx.ts` — env vars `TELNYX_API_KEY`, `TELNYX_FROM_NUMBER` (pending user setup)
+  - Reuses existing `Subscriber` model for SMS recipients (optInSms=true)
 - **Inventory, Orders, Media, Templates, Audit Logs**: Various admin tools
 
 ## Frontend.WEB (Storefront)
@@ -161,6 +172,10 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - Components: `src/components/catering/` — `CateringCalculator.tsx` (main state), `EventDetailsForm.tsx` (Step 1), `OrderingStyleSelector.tsx` (Step 2), `MenuSelector.tsx` (Step 3), `EstimateSidebar.tsx` (live estimate), `QuoteContactForm.tsx` (Step 4)
   - Flow: Event details → ordering style → menu selection → live estimate sidebar → contact info → submit quote
   - Fetches from `/api/v1/catering/public/*` endpoints
+- **BBQ Live page**: `/bbq-live` — public roadside BBQ location page
+  - Components: `src/components/live-location/` — `LiveLocationStatus.tsx` (fetches current session, shows live/offline state), `LiveLocationMap.tsx` (embedded Google Maps iframe), `DirectionsButton.tsx` (links to Google/Apple Maps), `SmsSignupForm.tsx` (text alert opt-in form)
+  - States: Live (location, map, directions, hours, message) | Offline ("not roadside right now" + signup form)
+  - Nav link "BBQ Live" added to `Nav.tsx`
 - **Image handling**: Components detect CDN URLs (starting with `http`) vs local static paths
 
 ## Dev Notes
