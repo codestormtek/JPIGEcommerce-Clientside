@@ -21,8 +21,11 @@ const blankWidgetForm = () => ({
 const blankItemForm = () => ({
   title: "", subtitle: "", badge: "", buttonText: "", buttonUrl: "",
   backgroundColor: "", sortOrder: 0, isVisible: true, mediaAssetId: "", imageWidth: "", imageHeight: "",
+  titleFontSize: "", subtitleFontSize: "", badgeFontSize: "", buttonFontSize: "",
   _imagePreviewUrl: "",
 });
+
+const FONT_SIZE_OPTIONS = [10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 48];
 
 const ImageUploadWidget = ({ label, assetId, previewUrl, onUploaded, onRemove, folder }) => {
   const [uploading, setUploading] = useState(false);
@@ -369,6 +372,8 @@ const AdminWidgetList = () => {
       backgroundColor: item.backgroundColor || "", sortOrder: item.sortOrder ?? 0,
       isVisible: item.isVisible ?? true, mediaAssetId: item.mediaAssetId || "",
       imageWidth: item.imageWidth ?? "", imageHeight: item.imageHeight ?? "",
+      titleFontSize: item.titleFontSize ?? "", subtitleFontSize: item.subtitleFontSize ?? "",
+      badgeFontSize: item.badgeFontSize ?? "", buttonFontSize: item.buttonFontSize ?? "",
       _imagePreviewUrl: item.mediaAsset?.url || "",
     });
     setItemFormError(null); setItemModal(true);
@@ -385,6 +390,10 @@ const AdminWidgetList = () => {
         mediaAssetId: itemForm.mediaAssetId || null,
         imageWidth: itemForm.imageWidth ? Number(itemForm.imageWidth) : null,
         imageHeight: itemForm.imageHeight ? Number(itemForm.imageHeight) : null,
+        titleFontSize: itemForm.titleFontSize ? Number(itemForm.titleFontSize) : null,
+        subtitleFontSize: itemForm.subtitleFontSize ? Number(itemForm.subtitleFontSize) : null,
+        badgeFontSize: itemForm.badgeFontSize ? Number(itemForm.badgeFontSize) : null,
+        buttonFontSize: itemForm.buttonFontSize ? Number(itemForm.buttonFontSize) : null,
       };
       if (editItem) await apiPatch(`/widgets/${itemWidgetId}/items/${editItem.id}`, body);
       else await apiPost(`/widgets/${itemWidgetId}/items`, body);
@@ -733,24 +742,45 @@ const AdminWidgetList = () => {
       </Modal>
 
       {/* ── Item Create/Edit Modal ─────────────────────────────────────────── */}
-      <Modal isOpen={itemModal} toggle={() => setItemModal(false)} size="lg">
+      <Modal isOpen={itemModal} toggle={() => setItemModal(false)} size="xl">
         <ModalHeader toggle={() => setItemModal(false)}>
           {editItem ? "Edit Widget Item" : "Add Widget Item"}
         </ModalHeader>
         <ModalBody>
           {itemFormError && <Alert color="danger" className="mb-3">{itemFormError}</Alert>}
           <Row className="g-3">
-            <Col md="6">
+            <Col md="8">
               <label className="form-label">Title</label>
               <input type="text" className="form-control" placeholder="e.g. Drink Fresh Corn Juice" value={itemForm.title} onChange={(e) => setIField("title", e.target.value)} />
             </Col>
-            <Col md="6">
+            <Col md="4">
+              <label className="form-label">Title Font Size</label>
+              <select className="form-select" value={itemForm.titleFontSize} onChange={(e) => setIField("titleFontSize", e.target.value)}>
+                <option value="">Default</option>
+                {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}px</option>)}
+              </select>
+            </Col>
+            <Col md="8">
               <label className="form-label">Subtitle</label>
               <input type="text" className="form-control" placeholder="e.g. Good Taste" value={itemForm.subtitle} onChange={(e) => setIField("subtitle", e.target.value)} />
             </Col>
-            <Col md="6">
+            <Col md="4">
+              <label className="form-label">Subtitle Font Size</label>
+              <select className="form-select" value={itemForm.subtitleFontSize} onChange={(e) => setIField("subtitleFontSize", e.target.value)}>
+                <option value="">Default</option>
+                {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}px</option>)}
+              </select>
+            </Col>
+            <Col md="8">
               <label className="form-label">Badge Text</label>
               <input type="text" className="form-control" placeholder="e.g. Weekend Discount" value={itemForm.badge} onChange={(e) => setIField("badge", e.target.value)} />
+            </Col>
+            <Col md="4">
+              <label className="form-label">Badge Font Size</label>
+              <select className="form-select" value={itemForm.badgeFontSize} onChange={(e) => setIField("badgeFontSize", e.target.value)}>
+                <option value="">Default</option>
+                {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}px</option>)}
+              </select>
             </Col>
             <Col md="6">
               <label className="form-label">Background Color</label>
@@ -759,15 +789,28 @@ const AdminWidgetList = () => {
                 <input type="text" className="form-control" placeholder="#f47920" value={itemForm.backgroundColor} onChange={(e) => setIField("backgroundColor", e.target.value)} />
               </div>
             </Col>
-            <Col md="6">
+            <Col md="6" />
+            <Col md="4">
               <label className="form-label">Button Text</label>
               <input type="text" className="form-control" placeholder="e.g. Shop Now" value={itemForm.buttonText} onChange={(e) => setIField("buttonText", e.target.value)} />
             </Col>
-            <Col md="6">
+            <Col md="4">
               <label className="form-label">Button URL</label>
               <input type="text" className="form-control" placeholder="e.g. /shop" value={itemForm.buttonUrl} onChange={(e) => setIField("buttonUrl", e.target.value)} />
             </Col>
-            <Col md="12">
+            <Col md="4">
+              <label className="form-label">Button Font Size</label>
+              <select className="form-select" value={itemForm.buttonFontSize} onChange={(e) => setIField("buttonFontSize", e.target.value)}>
+                <option value="">Default</option>
+                {FONT_SIZE_OPTIONS.map((s) => <option key={s} value={s}>{s}px</option>)}
+              </select>
+            </Col>
+          </Row>
+
+          <hr className="my-3" />
+
+          <Row className="g-3">
+            <Col md="5">
               <ImageUploadWidget
                 label="Item Image"
                 assetId={itemForm.mediaAssetId}
@@ -781,32 +824,39 @@ const AdminWidgetList = () => {
                 folder="widgets"
               />
             </Col>
-            <Col md="4">
-              <label className="form-label">Image Width (px)</label>
-              <input type="number" className="form-control" placeholder="Auto" value={itemForm.imageWidth} onChange={(e) => setIField("imageWidth", e.target.value)} />
-            </Col>
-            <Col md="4">
-              <label className="form-label">Image Height (px)</label>
-              <input type="number" className="form-control" placeholder="Auto" value={itemForm.imageHeight} onChange={(e) => setIField("imageHeight", e.target.value)} />
-            </Col>
-            <Col md="4">
-              <label className="form-label">Sort Order</label>
-              <input type="number" className="form-control" value={itemForm.sortOrder} onChange={(e) => setIField("sortOrder", e.target.value)} />
-            </Col>
-            <Col md="4">
-              <label className="form-label">Visibility</label>
-              <div className="custom-control custom-switch mt-1">
-                <input type="checkbox" className="custom-control-input form-check-input" id="itemVisible" checked={itemForm.isVisible} onChange={(e) => setIField("isVisible", e.target.checked)} />
-                <label className="custom-control-label form-check-label" htmlFor="itemVisible">{itemForm.isVisible ? "Visible" : "Hidden"}</label>
-              </div>
-            </Col>
-            <Col md="12" className="text-end">
-              <Button color="light" className="me-2" onClick={() => setItemModal(false)}>Cancel</Button>
-              <Button color="primary" onClick={saveItem} disabled={savingItem}>
-                {savingItem ? <><Spinner size="sm" className="me-1" /> Saving…</> : editItem ? "Update Item" : "Add Item"}
-              </Button>
+            <Col md="7">
+              <Row className="g-3">
+                <Col md="4">
+                  <label className="form-label">Image Width (px)</label>
+                  <input type="number" className="form-control" placeholder="Auto" value={itemForm.imageWidth} onChange={(e) => setIField("imageWidth", e.target.value)} />
+                </Col>
+                <Col md="4">
+                  <label className="form-label">Image Height (px)</label>
+                  <input type="number" className="form-control" placeholder="Auto" value={itemForm.imageHeight} onChange={(e) => setIField("imageHeight", e.target.value)} />
+                </Col>
+                <Col md="4">
+                  <label className="form-label">Sort Order</label>
+                  <input type="number" className="form-control" value={itemForm.sortOrder} onChange={(e) => setIField("sortOrder", e.target.value)} />
+                </Col>
+                <Col md="4">
+                  <label className="form-label">Visibility</label>
+                  <div className="custom-control custom-switch mt-1">
+                    <input type="checkbox" className="custom-control-input form-check-input" id="itemVisible" checked={itemForm.isVisible} onChange={(e) => setIField("isVisible", e.target.checked)} />
+                    <label className="custom-control-label form-check-label" htmlFor="itemVisible">{itemForm.isVisible ? "Visible" : "Hidden"}</label>
+                  </div>
+                </Col>
+              </Row>
             </Col>
           </Row>
+
+          <hr className="my-3" />
+
+          <div className="text-end">
+            <Button color="light" className="me-2" onClick={() => setItemModal(false)}>Cancel</Button>
+            <Button color="primary" onClick={saveItem} disabled={savingItem}>
+              {savingItem ? <><Spinner size="sm" className="me-1" /> Saving…</> : editItem ? "Update Item" : "Add Item"}
+            </Button>
+          </div>
         </ModalBody>
       </Modal>
 

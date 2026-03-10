@@ -1648,6 +1648,11 @@ model WidgetItem {
   imageWidth      Int?
   imageHeight     Int?
 
+  titleFontSize    Int?
+  subtitleFontSize Int?
+  badgeFontSize    Int?
+  buttonFontSize   Int?
+
   @@map("widget_items")
 }
 

@@ -33,6 +33,10 @@ export const createWidgetItemSchema = z.object({
   mediaAssetId:    z.string().uuid().optional().nullable(),
   imageWidth:      z.number().int().positive().optional().nullable(),
   imageHeight:     z.number().int().positive().optional().nullable(),
+  titleFontSize:   z.number().int().min(8).max(72).optional().nullable(),
+  subtitleFontSize:z.number().int().min(8).max(72).optional().nullable(),
+  badgeFontSize:   z.number().int().min(8).max(72).optional().nullable(),
+  buttonFontSize:  z.number().int().min(8).max(72).optional().nullable(),
 });
 export type CreateWidgetItemInput = z.infer<typeof createWidgetItemSchema>;
 

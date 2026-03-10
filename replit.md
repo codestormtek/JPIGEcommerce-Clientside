@@ -114,7 +114,7 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
   - HeaderOne.tsx + HeaderNav.tsx use `useSiteSettings()` for promo banner, countdown, phone, delivery hours, sale banner
   - Seeded keys: promo_banner_text, promo_banner_countdown, support_phone, support_phone_href, delivery_hours_text, sale_banner_text, sale_banner_link
 - **Widgets** (`/widgets`): Promotional content section manager
-  - Prisma models: `Widget` (table `widgets`) with name, placement (unique key), columns (1-6), description, isVisible, displayOrder; `WidgetItem` (table `widget_items`) with title, subtitle, badge, buttonText, buttonUrl, backgroundColor, sortOrder, isVisible, mediaAssetId (FK to MediaAsset), imageWidth, imageHeight
+  - Prisma models: `Widget` (table `widgets`) with name, placement (unique key), columns (1-6), description, isVisible, displayOrder; `WidgetItem` (table `widget_items`) with title, subtitle, badge, buttonText, buttonUrl, backgroundColor, sortOrder, isVisible, mediaAssetId (FK to MediaAsset), imageWidth, imageHeight, titleFontSize, subtitleFontSize, badgeFontSize, buttonFontSize
   - Predefined widget locations (dropdown in admin):
     - `discount-banners` → **Discount Widget** — Side banners in the Products With Discounts section (`DiscountProduct.tsx`, variant `promo-banners`)
     - `feature-promos` → **Advertising Widget** — Feature cards row (`FeatureDiscount.tsx`, variant `feature-cards`)
