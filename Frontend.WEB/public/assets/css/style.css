@@ -429,7 +429,7 @@ var {
 }
 
 /*---------------------------
-	List Style 
+        List Style 
 ---------------------------*/
 ul,
 ol {
@@ -8828,7 +8828,7 @@ textarea:-ms-input-placeholder {
 }
 
 /*=============================
-	Overlay styles 
+        Overlay styles 
 ==============================*/
 [data-overlay],
 [data-black-overlay],
@@ -17027,10 +17027,13 @@ li.with-megamenu:hover .rts-megamenu {
   display: block;
   color: #909090;
 }
-.single-footer-wized .call-area .info .number {
-  color: var(--color-primary);
+.single-footer-wized .call-area .info a.number {
+  color: #f47920 !important;
   font-size: 24px;
   font-weight: 600;
+}
+.single-footer-wized .call-area .info a.number:hover {
+  color: #909090 !important;
 }
 .single-footer-wized .opening-hour .single {
   display: flex;

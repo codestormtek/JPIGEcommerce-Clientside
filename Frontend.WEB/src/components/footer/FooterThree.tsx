@@ -17,7 +17,7 @@ function FooterThree() {
                                         </div>
                                         <div className="info">
                                             <span>Have Question? Call Us 24/7</span>
-                                            <a href="tel:18005131710" className="number" style={{ color: '#f47920' }}>
+                                            <a href="tel:18005131710" className="number" style={{ color: '#f47920', transition: 'color 0.3s' }}>
                                                 1-800-513-1710
                                             </a>
                                         </div>
