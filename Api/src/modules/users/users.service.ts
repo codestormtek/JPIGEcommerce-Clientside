@@ -6,6 +6,8 @@ import {
 } from './users.schema';
 import * as repo from './users.repository';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
+import { sendAdminNewReviewNotification } from '../../lib/notificationEmails';
+import prisma from '../../lib/prisma';
 
 // ─── Admin operations ─────────────────────────────────────────────────────────
 
@@ -109,8 +111,25 @@ export async function listMyReviews(userId: string, input: ListReviewsInput) {
   return repo.findMyReviews(userId, input);
 }
 
-export async function createReview(userId: string, input: CreateReviewInput) {
-  return repo.createReview(userId, input);
+export async function createReview(userId: string, input: CreateReviewInput, ctx?: AuditContext) {
+  const review = await repo.createReview(userId, input);
+
+  // Triggers: audit log + admin notification (fire-and-forget)
+  logAudit({ action: AuditAction.REVIEW_SUBMITTED, entityType: 'UserReview', entityId: review.id, ctx });
+  const [user, product] = await Promise.all([
+    prisma.siteUser.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true, emailAddress: true } }),
+    prisma.product.findUnique({ where: { id: input.productId }, select: { name: true } }),
+  ]);
+  const reviewerName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.emailAddress || 'Anonymous';
+  sendAdminNewReviewNotification({
+    reviewerName,
+    productName: product?.name ?? 'Unknown Product',
+    productId: input.productId,
+    ratingValue: input.ratingValue,
+    comment: input.comment,
+  }).catch(() => {});
+
+  return review;
 }
 
 export async function approveReview(id: string, ctx?: AuditContext) {

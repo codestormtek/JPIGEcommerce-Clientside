@@ -133,7 +133,7 @@ export async function listMyReviews(req: AuthRequest, res: Response): Promise<vo
 
 // POST /api/v1/users/me/reviews
 export async function createReview(req: AuthRequest, res: Response): Promise<void> {
-  const review = await service.createReview(req.user!.sub, req.body as CreateReviewInput);
+  const review = await service.createReview(req.user!.sub, req.body as CreateReviewInput, ctxFromRequest(req, req.user!.sub));
   sendSuccess(res, review, 'Review submitted', 201);
 }
 

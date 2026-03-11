@@ -4,6 +4,8 @@ import {
   AddSubscriptionInput, UpdateSubscriptionInput,
 } from './subscribers.schema';
 import * as repo from './subscribers.repository';
+import { logAudit, AuditAction } from '../../utils/auditLogger';
+import { sendNewsletterConfirmation, sendAdminNewSubscriberNotification } from '../../lib/notificationEmails';
 
 // ─── Subscribers ──────────────────────────────────────────────────────────────
 
@@ -23,7 +25,16 @@ export async function createSubscriber(input: CreateSubscriberInput) {
     const existing = await repo.findSubscriberByEmail(input.email);
     if (existing) throw ApiError.conflict('A subscriber with this email already exists');
   }
-  return repo.createSubscriber(input);
+  const subscriber = await repo.createSubscriber(input);
+
+  // Triggers: audit log + emails (fire-and-forget)
+  logAudit({ action: AuditAction.SUBSCRIBER_ADDED, entityType: 'Subscriber', entityId: subscriber.id });
+  if (input.email) {
+    sendNewsletterConfirmation(input.email).catch(() => {});
+    sendAdminNewSubscriberNotification(input.email).catch(() => {});
+  }
+
+  return subscriber;
 }
 
 export async function updateSubscriber(id: string, input: UpdateSubscriberInput) {

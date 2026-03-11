@@ -6,6 +6,9 @@ import {
   ListCommentsInput, CreateCommentInput,
 } from './content.schema';
 import * as repo from './content.repository';
+import { logAudit, AuditAction } from '../../utils/auditLogger';
+import { sendAdminNewCommentNotification } from '../../lib/notificationEmails';
+import prisma from '../../lib/prisma';
 
 // ─── Posts ────────────────────────────────────────────────────────────────────
 
@@ -102,7 +105,20 @@ export async function createComment(postId: string, userId: string, input: Creat
     const parent = await repo.findCommentById(input.parentId);
     if (!parent || parent.postId !== postId) throw ApiError.badRequest('Invalid parent comment');
   }
-  return repo.createComment(postId, userId, input);
+  const comment = await repo.createComment(postId, userId, input);
+
+  // Triggers: audit log + admin notification (fire-and-forget)
+  logAudit({ action: AuditAction.BLOG_COMMENT_SUBMITTED, entityType: 'ContentComment', entityId: comment.id, ctx: { actorId: userId } });
+  const user = await prisma.siteUser.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true, emailAddress: true } });
+  const commenterName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.emailAddress || 'Anonymous';
+  sendAdminNewCommentNotification({
+    commenterName,
+    postTitle: (post as { title?: string }).title ?? 'Untitled Post',
+    postId,
+    body: input.body,
+  }).catch(() => {});
+
+  return comment;
 }
 
 export async function deleteComment(postId: string, commentId: string, userId: string, role: string) {

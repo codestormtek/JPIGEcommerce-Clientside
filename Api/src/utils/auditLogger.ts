@@ -71,6 +71,15 @@ export const AuditAction = {
 
   // Exports
   EXPORT_REQUESTED: 'EXPORT_REQUESTED',
+
+  // Reviews (user-submitted)
+  REVIEW_SUBMITTED: 'REVIEW_SUBMITTED',
+
+  // Subscribers
+  SUBSCRIBER_ADDED: 'SUBSCRIBER_ADDED',
+
+  // Blog comments
+  BLOG_COMMENT_SUBMITTED: 'BLOG_COMMENT_SUBMITTED',
 } as const;
 
 // ─── Helper: build AuditContext from Express Request ─────────────────────────

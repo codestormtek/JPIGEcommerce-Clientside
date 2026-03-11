@@ -71,7 +71,7 @@ export const config = {
 
   resend: {
     apiKey: process.env.RESEND_API_KEY ?? '',
-    from: process.env.RESEND_FROM ?? 'invoices@thejugglingpig.com',
+    from: process.env.RESEND_FROM ?? 'info@thejigglingpig.com',
     webhookSecret: process.env.RESEND_WEBHOOK_SECRET ?? '',
   },
 
@@ -83,7 +83,7 @@ export const config = {
   store: {
     name: 'The Jiggling Pig, LLC',
     url: process.env.STORE_URL ?? 'https://thejigglingpig.com',
-    adminEmail: process.env.ADMIN_EMAIL ?? 'admin@thejigglingpig.com',
+    adminEmail: process.env.ADMIN_EMAIL ?? 'info@thejigglingpig.com',
   },
 
 } as const;
