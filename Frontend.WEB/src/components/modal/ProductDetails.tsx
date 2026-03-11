@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from "react";
-import Modal from "react-bootstrap/Modal";
 import { useCart } from "@/components/header/CartContext";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -70,7 +69,11 @@ const ProductDetails: React.FC<ModalProps> = ({
     if (show) {
       setActiveImage(thumbnails[0]?.src || productImage);
       setQuantity(1);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
     }
+    return () => { document.body.style.overflow = ''; };
   }, [show, thumbnails, productImage]);
 
   const increaseQuantity = () => setQuantity((prev) => prev + 1);
@@ -91,14 +94,11 @@ const ProductDetails: React.FC<ModalProps> = ({
     toast.success('Successfully Added To Cart!');
   };
 
+  if (!show) return null;
+
   return (
-    <Modal
-      show={show}
-      onHide={handleClose}
-      backdrop="static"
-      keyboard={false}
-      dialogClassName="modal-compare"
-    >
+    <>
+      <div className="product-details-popup-overlay" onClick={handleClose} />
       <div className="product-details-popup-wrapper popup">
         <div className="rts-product-details-section rts-product-details-section2 product-details-popup-section">
           <div className="product-details-popup">
@@ -212,7 +212,7 @@ const ProductDetails: React.FC<ModalProps> = ({
           </div>
         </div>
       </div>
-    </Modal>
+    </>
   );
 };
 

@@ -23119,6 +23119,15 @@ header.header-three .sub-dropdown .submenu.third-lvl.base {
   color: #000;
 }
 
+.product-details-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
 .product-details-popup-wrapper {
   width: 100%;
   position: fixed;
@@ -23144,15 +23153,6 @@ header.header-three .sub-dropdown .submenu.third-lvl.base {
 }
 .product-details-popup-wrapper.popup .product-details-popup {
   pointer-events: all !important;
-}
-.modal .product-details-popup-wrapper.popup {
-  position: relative;
-  top: auto;
-  left: auto;
-  transform: none;
-  height: auto;
-  z-index: auto;
-  transition: none;
 }
 
 .rts-product-details-section.product-details-popup-section {
