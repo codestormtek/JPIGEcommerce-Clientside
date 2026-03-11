@@ -82,7 +82,7 @@ function FooterOne() {
                                                 <a href="/privacy-policy">Privacy Policy</a>
                                             </li>
                                             <li>
-                                                <a href="#">Terms &amp; Conditions</a>
+                                                <a href="/terms-condition">Terms &amp; Conditions</a>
                                             </li>
                                         </ul>
                                     </div>
