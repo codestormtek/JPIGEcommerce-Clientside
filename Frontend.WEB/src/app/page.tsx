@@ -4,7 +4,7 @@ import HeaderOne from "@/components/header/HeaderOne";
 import DiscountProduct from "@/components/product/DiscountProduct";
 import FeatureProduct from "@/components/product/FeatureProduct";
 import WeeklyBestSelling from "@/components/product/WeeklyBestSelling";
-import FeatureDiscount from "@/components/product/FeatureDiscount";
+
 import BlogOne from "@/components/blog/BlogOne";
 import FooterOne from "@/components/footer/FooterOne";
 import { CartProvider } from "@/components/header/CartContext";
@@ -25,7 +25,6 @@ export default function Home() {
           <FeatureProduct />
           <DiscountProduct />
           <WeeklyBestSelling />
-          <FeatureDiscount />
           <BlogOne />
           <FooterOne />
         </div>
