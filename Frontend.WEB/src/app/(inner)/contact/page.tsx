@@ -32,36 +32,20 @@ export default function Home() {
                                 <div className="contact-left-area-main-wrapper">
                                     <h2 className="title">You can ask us questions !</h2>
                                     <p className="disc">
-                                        Contact us for all your questions and opinions, or you can solve
-                                        your problems in a shorter time with our contact offices.
+                                        Whether you need information on our products, need information on our catering; wanting to know where The Jiggling Pig will be &apos;jiggling&apos; at next, reach out with your inquiries.
                                     </p>
                                     <div className="location-single-card">
                                         <div className="icon">
                                             <i className="fa-light fa-location-dot" />
                                         </div>
                                         <div className="information">
-                                            <h3 className="title">Berlin Germany Store</h3>
-                                            <p>259 Daniel Road, FKT 2589 Berlin, Germany.</p>
-                                            <a href="#" className="number">
-                                                +856 (76) 259 6328
+                                            <h3 className="title">Greater Washington DC Area (DMV)</h3>
+                                            <p>Within 50 mile radius of the DC area.</p>
+                                            <a href="tel:18005131710" className="number">
+                                                1-800-513-1710
                                             </a>
-                                            <a href="#" className="email">
-                                                info@example.com
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div className="location-single-card">
-                                        <div className="icon">
-                                            <i className="fa-light fa-location-dot" />
-                                        </div>
-                                        <div className="information">
-                                            <h3 className="title">Frankfurt Germany Store</h3>
-                                            <p>259 Daniel Road, FKT 2589 Berlin, Germany.</p>
-                                            <a href="#" className="number">
-                                                +856 (76) 259 6328
-                                            </a>
-                                            <a href="#" className="email">
-                                                info@example.com
+                                            <a href="mailto:info@thejigglingpig.com" className="email">
+                                                info@thejigglingpig.com
                                             </a>
                                         </div>
                                     </div>
@@ -69,11 +53,11 @@ export default function Home() {
                             </div>
                             <div className="col-lg-8 pl--50 pl_sm--5 pl_md--5">
                                 <iframe
-                                    src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d14602.288851207937!2d90.47855065!3d23.798243149999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sbd!4v1716725338558!5m2!1sen!2sbd"
+                                    src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d398000!2d-77.0369!3d38.9072!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sus!4v1716725338558!5m2!1sen!2sus"
                                     width={600}
                                     height={540}
                                     style={{ border: 0 }}
-                                    allowFullScreen={true} // Fixed here: Set to true or omitted if not needed
+                                    allowFullScreen={true}
                                     loading="lazy"
                                     referrerPolicy="no-referrer-when-downgrade"
                                 />
