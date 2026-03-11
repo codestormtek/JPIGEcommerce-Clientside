@@ -70,19 +70,7 @@ function FooterOne() {
                                     </div>
                                     <div className="opening-hour">
                                         <div className="single">
-                                            <p>
-                                                Monday - Friday: <span>8:00am - 6:00pm</span>
-                                            </p>
-                                        </div>
-                                        <div className="single">
-                                            <p>
-                                                Saturday: <span>8:00am - 6:00pm</span>
-                                            </p>
-                                        </div>
-                                        <div className="single">
-                                            <p>
-                                                Sunday: <span>Service Close</span>
-                                            </p>
+                                            <p>Located in the metro DC area</p>
                                         </div>
                                     </div>
                                 </div>
