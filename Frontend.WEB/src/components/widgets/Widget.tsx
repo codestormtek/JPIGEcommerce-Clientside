@@ -63,13 +63,13 @@ const bgClassMap = ['one', 'two', 'three', 'four', 'five', 'six'];
 
 function FeatureCardItem({ item, index }: { item: WidgetItemData; index: number }) {
     const bgClass = bgClassMap[index % bgClassMap.length];
+    const hasImage = !!item.mediaAsset?.url;
     const hasCustomSize = item.imageWidth || item.imageHeight;
-    const style: React.CSSProperties = {
-        ...(item.mediaAsset?.url
-            ? { backgroundImage: `url(${item.mediaAsset.url})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }
-            : item.backgroundColor
-                ? { backgroundColor: item.backgroundColor }
-                : {}),
+
+    const containerStyle: React.CSSProperties = {
+        position: 'relative',
+        overflow: 'hidden',
+        ...(item.backgroundColor ? { backgroundColor: item.backgroundColor } : {}),
         ...(hasCustomSize ? {
             width: item.imageWidth ? `${item.imageWidth}px` : '100%',
             height: item.imageHeight ? `${item.imageHeight}px` : undefined,
@@ -80,8 +80,23 @@ function FeatureCardItem({ item, index }: { item: WidgetItemData; index: number 
     const linkUrl = item.buttonUrl || '/shop';
 
     return (
-        <div className={`single-feature-card bg_image ${bgClass}`} style={style}>
-            <div className="content-area">
+        <div className={`single-feature-card bg_image ${bgClass}`} style={containerStyle}>
+            {hasImage && (
+                <img
+                    src={item.mediaAsset!.url}
+                    alt={item.title || ''}
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: 'center',
+                    }}
+                />
+            )}
+            <div className="content-area" style={{ position: 'relative', zIndex: 1 }}>
                 {item.badge && (
                     <Link href={linkUrl} className="rts-btn btn-primary" style={{ fontSize: item.badgeFontSize ? `${item.badgeFontSize}px` : undefined, color: item.badgeColor || undefined }}>
                         {item.badge}
@@ -109,7 +124,7 @@ function PromoBannerItem({ item }: { item: WidgetItemData }) {
     const hasCustomSize = item.imageWidth || item.imageHeight;
     const style: React.CSSProperties = {
         ...(item.mediaAsset?.url
-            ? { backgroundImage: `url(${item.mediaAsset.url})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }
+            ? { backgroundImage: `url(${item.mediaAsset.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
             : item.backgroundColor
                 ? { backgroundColor: item.backgroundColor }
                 : {}),
@@ -170,9 +185,8 @@ function GenericItem({ item }: { item: WidgetItemData }) {
             style={{
                 backgroundColor: item.backgroundColor || '#f5f5f5',
                 backgroundImage: item.mediaAsset?.url ? `url(${item.mediaAsset.url})` : undefined,
-                backgroundSize: 'contain',
+                backgroundSize: 'cover',
                 backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
                 minHeight: hasCustomSize ? undefined : 200,
                 ...(hasCustomSize ? {
                     width: item.imageWidth ? `${item.imageWidth}px` : undefined,
