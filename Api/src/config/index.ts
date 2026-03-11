@@ -83,6 +83,7 @@ export const config = {
   store: {
     name: 'The Jiggling Pig, LLC',
     url: process.env.STORE_URL ?? 'https://thejigglingpig.com',
+    adminUrl: process.env.ADMIN_URL ?? 'https://admin-new.thejigglingpig.com',
     adminEmail: process.env.ADMIN_EMAIL ?? 'info@thejigglingpig.com',
   },
 

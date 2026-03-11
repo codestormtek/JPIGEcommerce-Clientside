@@ -1,6 +1,7 @@
 import { ApiError } from '../../utils/apiError';
 import { ListOrdersInput, PlaceOrderInput, UpdateOrderStatusInput } from './orders.schema';
 import { sendEmail } from '../../lib/mailer';
+import { sendSms } from '../../lib/telnyx';
 import { config } from '../../config';
 import * as repo from './orders.repository';
 import * as userRepo from '../users/users.repository';
@@ -9,6 +10,8 @@ import * as stripeService from '../../services/stripeService';
 import { validateCoupon, redeemCoupon } from '../promotions/promotions.service';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
 import { logger } from '../../utils/logger';
+import { sendOrderConfirmationToCustomer, sendAdminNewOrderNotification } from '../../lib/notificationEmails';
+import prisma from '../../lib/prisma';
 
 // ─── User-facing ──────────────────────────────────────────────────────────────
 
@@ -124,6 +127,66 @@ export async function checkout(userId: string, input: PlaceOrderInput, ctx?: Aud
       entityId: order.id,
       ctx: { ...ctx, actorId: userId },
     });
+
+    // ── Step 5: Post-order notifications (fire-and-forget) ───────────────────
+    const n = (v: unknown) => Number(v);
+    const orderNum = `ORD-${order.id.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+
+    prisma.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true, emailAddress: true, phone: true } })
+      .then((usr) => {
+        if (!usr) return;
+        const customerName = [usr.firstName, usr.lastName].filter(Boolean).join(' ') || 'Valued Customer';
+        const shipAddr = (order as unknown as { addresses?: Array<{ addressType: string; fullName?: string; addressLine1?: string; city?: string; region?: string; postalCode?: string }> }).addresses?.find(a => a.addressType === 'shipping');
+        const shippingLine = shipAddr
+          ? [shipAddr.fullName, shipAddr.addressLine1, shipAddr.city, shipAddr.region, shipAddr.postalCode].filter(Boolean).join(', ')
+          : null;
+
+        const lines = (order as unknown as { lines?: Array<{ productNameSnapshot?: string; qty?: number; unitPriceSnapshot?: unknown; lineTotal?: unknown }> }).lines ?? [];
+
+        const notifyPromises: Promise<unknown>[] = [
+          sendOrderConfirmationToCustomer({
+            customerEmail: usr.emailAddress,
+            customerName,
+            orderNumber: orderNum,
+            orderId: order.id,
+            lines: lines.map(l => ({
+              name: l.productNameSnapshot ?? '',
+              qty: l.qty ?? 1,
+              unitPrice: n(l.unitPriceSnapshot),
+              lineTotal: n(l.lineTotal),
+            })),
+            subtotal: n(order.subtotal),
+            discountTotal: n(order.discountTotal),
+            taxTotal: n(order.taxTotal),
+            shippingTotal: n(order.shippingTotal),
+            grandTotal: n(order.grandTotal),
+            currency: order.currency,
+            shippingAddress: shippingLine,
+          }),
+          sendAdminNewOrderNotification({
+            orderNumber: orderNum,
+            orderId: order.id,
+            customerName,
+            customerEmail: usr.emailAddress,
+            grandTotal: n(order.grandTotal),
+            currency: order.currency,
+            itemCount: lines.length,
+          }),
+        ];
+
+        // SMS confirmation if customer has a phone number
+        if (usr.phone) {
+          notifyPromises.push(
+            sendSms(
+              usr.phone,
+              `Hi ${usr.firstName || 'there'}, your order ${orderNum} has been placed! Total: ${order.currency} ${n(order.grandTotal).toFixed(2)}. Visit ${config.store.url}/orders to track it. — ${config.store.name}`,
+            ),
+          );
+        }
+
+        return Promise.all(notifyPromises);
+      })
+      .catch(err => logger.warn('Post-order notifications failed', { orderId: order.id, err }));
 
     return order;
   } catch (err: unknown) {

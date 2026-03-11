@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface CartItem {
   id: number;
+  productItemId: string;
   image: string;
   title: string;
   price: number;
@@ -17,6 +18,7 @@ interface CartContextProps {
   addToWishlist: (item: CartItem) => void;
   removeFromCart: (id: number) => void;
   updateItemQuantity: (id: number, quantity: number) => void;
+  clearCart: () => void;
   isCartLoaded: boolean;
 }
 
@@ -99,6 +101,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     );
   };
 
+  // Clear entire cart
+  const clearCart = () => {
+    setCartItems([]);
+    if (typeof window !== 'undefined') localStorage.removeItem('cart');
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -107,6 +115,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         addToWishlist,
         removeFromCart,
         updateItemQuantity,
+        clearCart,
         isCartLoaded,
       }}
     >

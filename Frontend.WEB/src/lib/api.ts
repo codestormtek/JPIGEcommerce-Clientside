@@ -57,6 +57,37 @@ export function apiDelete<T = unknown>(path: string, opts?: Omit<ApiOptions, "me
   return apiFetch<T>(path, { ...opts, method: "DELETE" });
 }
 
+// ─── Authenticated fetch helpers ──────────────────────────────────────────────
+
+function getAuthHeader(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const token = localStorage.getItem("jpig_access_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export function apiAuthFetch<T = unknown>(path: string, opts: ApiOptions = {}) {
+  return apiFetch<T>(path, {
+    ...opts,
+    headers: { ...getAuthHeader(), ...(opts.headers ?? {}) },
+  });
+}
+
+export function apiAuthGet<T = unknown>(path: string, opts?: Omit<ApiOptions, "method" | "body">) {
+  return apiAuthFetch<T>(path, { ...opts, method: "GET" });
+}
+
+export function apiAuthPost<T = unknown>(path: string, body: unknown, opts?: Omit<ApiOptions, "method" | "body">) {
+  return apiAuthFetch<T>(path, { ...opts, method: "POST", body });
+}
+
+export function apiAuthPatch<T = unknown>(path: string, body: unknown, opts?: Omit<ApiOptions, "method" | "body">) {
+  return apiAuthFetch<T>(path, { ...opts, method: "PATCH", body });
+}
+
+export function apiAuthDelete<T = unknown>(path: string, opts?: Omit<ApiOptions, "method" | "body">) {
+  return apiAuthFetch<T>(path, { ...opts, method: "DELETE" });
+}
+
 export function buildQS(params: Record<string, string | number | boolean | undefined | null>): string {
   const entries = Object.entries(params).filter(
     ([, v]) => v !== undefined && v !== null && v !== ""

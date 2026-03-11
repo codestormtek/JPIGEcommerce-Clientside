@@ -159,6 +159,7 @@ export default function ProductDetailClient({ product, error }: Props) {
   const handleAdd = () => {
     addToCart({
       id: Date.now(),
+      productItemId: selectedItemId ?? '',
       image: activeImage,
       title: product.name,
       price: displayPrice,

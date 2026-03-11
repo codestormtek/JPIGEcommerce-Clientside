@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useCart } from '@/components/header/CartContext';
 
 const CartMain = () => {
-  const { cartItems, removeFromCart, updateItemQuantity } = useCart();
+  const { cartItems, removeFromCart, updateItemQuantity, clearCart: clearAllCart } = useCart();
 
   const [coupon, setCoupon] = useState('');
   const [discount, setDiscount] = useState(0);
@@ -36,14 +37,13 @@ const CartMain = () => {
 
   const clearCart = () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('cartItems');
       localStorage.removeItem('coupon');
       localStorage.removeItem('discount');
     }
     setCoupon('');
     setDiscount(0);
     setCouponMessage('');
-    cartItems.forEach(item => removeFromCart(item.id));
+    clearAllCart();
   };
 
   const finalTotal = subtotal - subtotal * discount;
@@ -160,7 +160,7 @@ const CartMain = () => {
                   <h6 className="price">${finalTotal.toFixed(2)}</h6>
                 </div>
                 <div className="button-area">
-                  <button className="rts-btn btn-primary">Proceed To Checkout</button>
+                  <Link href="/checkout" className="rts-btn btn-primary">Proceed To Checkout</Link>
                 </div>
               </div>
             </div>
