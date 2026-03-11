@@ -10,11 +10,23 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Link from 'next/link';
 
+interface ProductMediaItem {
+  isPrimary: boolean;
+  sortOrder: number;
+  mediaAsset: { url: string; altText?: string | null };
+}
+
 interface BlogGridMainProps {
   Slug: string;
   ProductImage: string;
   ProductTitle?: string;
   Price?: string;
+  productDescription?: string;
+  productSku?: string;
+  productCategories?: string;
+  productBrand?: string;
+  productMedia?: ProductMediaItem[];
+  productInStock?: boolean;
 }
 
 const BlogGridMain: React.FC<BlogGridMainProps> = ({
@@ -22,6 +34,12 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
   ProductImage,
   ProductTitle,
   Price,
+  productDescription,
+  productSku,
+  productCategories,
+  productBrand,
+  productMedia,
+  productInStock = true,
 }) => {
 
   const [domReady, setDomReady] = useState(false);
@@ -196,6 +214,13 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
         productImage={imageSrc}
         productTitle={ProductTitle ?? 'Default Product Title'}
         productPrice={Price ?? '0'}
+        productDescription={productDescription}
+        productSku={productSku}
+        productCategories={productCategories}
+        productBrand={productBrand}
+        productSlug={Slug}
+        productMedia={productMedia}
+        productInStock={productInStock}
       />
     </>
   );

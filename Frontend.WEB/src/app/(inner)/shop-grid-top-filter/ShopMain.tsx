@@ -8,12 +8,24 @@ import ProductDetails from "@/components/modal/ProductDetails";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+interface ProductMediaItem {
+    isPrimary: boolean;
+    sortOrder: number;
+    mediaAsset: { url: string; altText?: string | null };
+}
+
 interface BlogGridMainProps {
     Slug: string;
     ProductImage: string;
     ProductTitle?: string;
     Price?: string;
     isApiImage?: boolean;
+    productDescription?: string;
+    productSku?: string;
+    productCategories?: string;
+    productBrand?: string;
+    productMedia?: ProductMediaItem[];
+    productInStock?: boolean;
 }
 
 const BlogGridMain: React.FC<BlogGridMainProps> = ({
@@ -22,6 +34,12 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
     ProductTitle,
     Price,
     isApiImage = false,
+    productDescription,
+    productSku,
+    productCategories,
+    productBrand,
+    productMedia,
+    productInStock = true,
 }) => {
 
     type ModalType = 'one' | 'two' | 'three' | null;
@@ -184,6 +202,13 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                 productImage={imageSrc}
                 productTitle={ProductTitle ?? 'Default Product Title'}
                 productPrice={Price ?? '0'}
+                productDescription={productDescription}
+                productSku={productSku}
+                productCategories={productCategories}
+                productBrand={productBrand}
+                productSlug={Slug}
+                productMedia={productMedia}
+                productInStock={productInStock}
             />
         </>
     );

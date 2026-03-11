@@ -223,6 +223,12 @@ export default function Home() {
                                     ProductTitle={product.name}
                                     Price={formatPrice(product.price)}
                                     isApiImage={true}
+                                    productDescription={product.description || undefined}
+                                    productSku={product.items?.[0]?.sku || undefined}
+                                    productCategories={product.categoryMaps?.map(cm => cm.category.name).join(', ') || undefined}
+                                    productBrand={product.brand?.name || undefined}
+                                    productMedia={product.media}
+                                    productInStock={(product.items?.[0]?.qtyInStock ?? product.quantity) > 0}
                                   />
                                 </div>
                               </div>
@@ -252,6 +258,10 @@ export default function Home() {
                                     ProductTitle={product.name}
                                     Price={formatPrice(product.price)}
                                     isApiImage={true}
+                                    productDescription={product.description || undefined}
+                                    productSku={product.items?.[0]?.sku || undefined}
+                                    productCategories={product.categoryMaps?.map(cm => cm.category.name).join(', ') || undefined}
+                                    productBrand={product.brand?.name || undefined}
                                   />
                                 </div>
                               </div>

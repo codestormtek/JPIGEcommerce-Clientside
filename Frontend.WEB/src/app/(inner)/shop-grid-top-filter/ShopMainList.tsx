@@ -10,6 +10,10 @@ interface BlogGridMainProps {
   ProductTitle?: string;
   Price?: string;
   isApiImage?: boolean;
+  productDescription?: string;
+  productSku?: string;
+  productCategories?: string;
+  productBrand?: string;
 }
 
 const ShopMainList: React.FC<BlogGridMainProps> = ({
@@ -18,6 +22,10 @@ const ShopMainList: React.FC<BlogGridMainProps> = ({
   ProductTitle,
   Price,
   isApiImage = false,
+  productDescription,
+  productSku,
+  productCategories,
+  productBrand,
 }) => {
 
   const [qty, setQty] = useState(1);
@@ -102,13 +110,10 @@ const ShopMainList: React.FC<BlogGridMainProps> = ({
           </div>
 
           <div className="natural-value">
-            <h6 className="title">Nutritional Values</h6>
-
-            <div className="single"><span>Energy(kcal):</span><span>211</span></div>
-            <div className="single"><span>Protein(g):</span><span>211</span></div>
-            <div className="single"><span>magnetiam(kcal):</span><span>211</span></div>
-            <div className="single"><span>Calory(kcal):</span><span>211</span></div>
-            <div className="single"><span>Vitamine(kcal):</span><span>211</span></div>
+            {productDescription && <p className="mb--10">{productDescription}</p>}
+            {productSku && <div className="single"><span>SKU:</span><span>{productSku}</span></div>}
+            {productCategories && <div className="single"><span>Categories:</span><span>{productCategories}</span></div>}
+            {productBrand && <div className="single"><span>Brand:</span><span>{productBrand}</span></div>}
           </div>
         </div>
       </div>
