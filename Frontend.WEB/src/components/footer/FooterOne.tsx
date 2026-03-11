@@ -84,6 +84,9 @@ function FooterOne() {
                                             <li>
                                                 <a href="/terms-condition">Terms &amp; Conditions</a>
                                             </li>
+                                            <li>
+                                                <a href="/cookies-policy">Cookies Policy</a>
+                                            </li>
                                         </ul>
                                     </div>
                                 </div>
