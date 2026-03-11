@@ -63,8 +63,8 @@ function FooterOne() {
                                         </div>
                                         <div className="info">
                                             <span>Have Question? Call Us 24/7</span>
-                                            <a href="#" className="number">
-                                                +258 3692 2569
+                                            <a href="tel:18005131710" className="number" style={{ color: '#f47920' }}>
+                                                1-800-513-1710
                                             </a>
                                         </div>
                                     </div>
