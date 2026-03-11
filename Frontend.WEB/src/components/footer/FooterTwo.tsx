@@ -163,7 +163,7 @@ function FooterTwo() {
                                     </p>
                                     <div className="payment-processw-area">
                                         <span>Payment Accepts:</span>
-                                        <img src="assets/images/payment/04.png" alt="payment" />
+                                        <img src="https://cdn.thejigglingpig.com/media/2026/03/35509b8d-5593-4e4e-ab96-956e95a78655.png" alt="Payment methods" />
                                     </div>
                                 </div>
                             </div>
