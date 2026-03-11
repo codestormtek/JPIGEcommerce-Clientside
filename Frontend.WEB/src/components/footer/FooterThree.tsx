@@ -1,4 +1,5 @@
 import React from 'react'
+import NewsletterForm from './NewsletterForm'
 
 function FooterThree() {
     return (
@@ -96,13 +97,7 @@ function FooterThree() {
                                         Subscribe to the mailing list to receive updates one <br /> the
                                         new arrivals and other discounts
                                     </p>
-                                    <form className="footersubscribe-form" action="#">
-                                        <input
-                                            type="email"
-                                            placeholder="Your email address"
-                                        />
-                                        <button className="rts-btn btn-primary">Subscribe</button>
-                                    </form>
+                                    <NewsletterForm />
                                     <p className="dsic">
                                         I would like to receive news and special offer
                                     </p>
