@@ -9,16 +9,14 @@ export default function Home() {
 
             <>
                 {/* rts contact main wrapper */}
-                <div className="rts-contact-main-wrapper-banner bg_image">
+                <div className="rts-contact-main-wrapper-banner bg_image" style={{ backgroundImage: 'url(https://cdn.thejigglingpig.com/media/2026/03/494b230d-684b-4c0d-8ed5-b60b7bd7c071.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', height: '407px', display: 'flex', alignItems: 'center' }}>
                     <div className="container">
                         <div className="row">
                             <div className="co-lg-12">
                                 <div className="contact-banner-content">
-                                    <h1 className="title">Ask Us Question</h1>
+                                    <h1 className="title">Contact Jiggling Pig</h1>
                                     <p className="disc">
-                                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque
-                                        pretium mollis ex, vel interdum augue faucibus sit amet. Proin
-                                        tempor purus ac suscipit...
+                                        Whether you need information on our products, need information on our catering; wanting to know where The Jiggling Pig will be &apos;jiggling&apos; at next, reach out with your inquiries.
                                     </p>
                                 </div>
                             </div>
