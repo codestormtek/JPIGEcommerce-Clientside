@@ -79,19 +79,10 @@ function FooterOne() {
                                     <div className="footer-nav">
                                         <ul>
                                             <li>
-                                                <a href="#">Delivery Information</a>
-                                            </li>
-                                            <li>
                                                 <a href="#">Privacy Policy</a>
                                             </li>
                                             <li>
                                                 <a href="#">Terms &amp; Conditions</a>
-                                            </li>
-                                            <li>
-                                                <a href="#">Support Center</a>
-                                            </li>
-                                            <li>
-                                                <a href="#">Careers</a>
                                             </li>
                                         </ul>
                                     </div>
@@ -109,12 +100,6 @@ function FooterOne() {
                                             <li>
                                                 <a href="#">About Us</a>
                                             </li>
-                                            <li>
-                                                <a href="#">Careers</a>
-                                            </li>
-                                            <li>
-                                                <a href="#">Nest Stories</a>
-                                            </li>
                                         </ul>
                                     </div>
                                 </div>
@@ -124,9 +109,6 @@ function FooterOne() {
                                         <ul>
                                             <li>
                                                 <a href="#">Cancellation &amp; Returns</a>
-                                            </li>
-                                            <li>
-                                                <a href="#">Report Infringement</a>
                                             </li>
                                             <li>
                                                 <a href="#">Payments</a>
@@ -205,7 +187,7 @@ function FooterOne() {
                         <div className="col-lg-12">
                             <div className="copyright-between-1">
                                 <p className="disc">
-                                    Copyright 2025 <a href="#">©Ekomart</a>. All rights reserved.
+                                    Copyright 2025 <a href="#">©The Jiggling Pig, LLC</a>. All rights reserved.
                                 </p>
                                 <a href="#" className="playstore-app-area">
                                     <span>Download App</span>

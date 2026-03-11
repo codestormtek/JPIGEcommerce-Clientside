@@ -35,19 +35,10 @@ function FooterThree() {
                                     <div className="footer-nav">
                                         <ul>
                                             <li>
-                                                <a href="#">Delivery Information</a>
-                                            </li>
-                                            <li>
                                                 <a href="#">Privacy Policy</a>
                                             </li>
                                             <li>
                                                 <a href="#">Terms &amp; Conditions</a>
-                                            </li>
-                                            <li>
-                                                <a href="#">Support Center</a>
-                                            </li>
-                                            <li>
-                                                <a href="#">Careers</a>
                                             </li>
                                         </ul>
                                     </div>
@@ -67,12 +58,6 @@ function FooterThree() {
                                             <li>
                                                 <a href="#">About Us</a>
                                             </li>
-                                            <li>
-                                                <a href="#">Careers</a>
-                                            </li>
-                                            <li>
-                                                <a href="#">Nest Stories</a>
-                                            </li>
                                         </ul>
                                     </div>
                                 </div>
@@ -84,9 +69,6 @@ function FooterThree() {
                                         <ul>
                                             <li>
                                                 <a href="#">Cancellation &amp; Returns</a>
-                                            </li>
-                                            <li>
-                                                <a href="#">Report Infringement</a>
                                             </li>
                                             <li>
                                                 <a href="#">Payments</a>
