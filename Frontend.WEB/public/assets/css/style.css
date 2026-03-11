@@ -23145,6 +23145,15 @@ header.header-three .sub-dropdown .submenu.third-lvl.base {
 .product-details-popup-wrapper.popup .product-details-popup {
   pointer-events: all !important;
 }
+.modal .product-details-popup-wrapper.popup {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  height: auto;
+  z-index: auto;
+  transition: none;
+}
 
 .rts-product-details-section.product-details-popup-section {
   position: relative;

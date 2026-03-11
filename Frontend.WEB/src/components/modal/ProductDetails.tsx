@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Modal from "react-bootstrap/Modal";
 import { useCart } from "@/components/header/CartContext";
 import { toast } from 'react-toastify';
@@ -45,23 +45,33 @@ const ProductDetails: React.FC<ModalProps> = ({
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
 
-  const thumbnails = [...(productMedia ?? [])]
-    .sort((a, b) => {
-      if (a.isPrimary && !b.isPrimary) return -1;
-      if (!a.isPrimary && b.isPrimary) return 1;
-      return a.sortOrder - b.sortOrder;
-    })
-    .map((m, i) => ({
-      id: `thumb-${i}`,
-      src: m.mediaAsset.url,
-      alt: m.mediaAsset.altText || productTitle,
-    }));
+  const thumbnails = useMemo(() => {
+    const sorted = [...(productMedia ?? [])]
+      .sort((a, b) => {
+        if (a.isPrimary && !b.isPrimary) return -1;
+        if (!a.isPrimary && b.isPrimary) return 1;
+        return a.sortOrder - b.sortOrder;
+      })
+      .map((m, i) => ({
+        id: `thumb-${i}`,
+        src: m.mediaAsset.url,
+        alt: m.mediaAsset.altText || productTitle,
+      }));
 
-  if (thumbnails.length === 0) {
-    thumbnails.push({ id: 'thumb-default', src: productImage, alt: productTitle });
-  }
+    if (sorted.length === 0) {
+      sorted.push({ id: 'thumb-default', src: productImage, alt: productTitle });
+    }
+    return sorted;
+  }, [productMedia, productImage, productTitle]);
 
-  const [activeImage, setActiveImage] = useState(thumbnails[0]?.src || productImage);
+  const [activeImage, setActiveImage] = useState(productImage);
+
+  useEffect(() => {
+    if (show) {
+      setActiveImage(thumbnails[0]?.src || productImage);
+      setQuantity(1);
+    }
+  }, [show, thumbnails, productImage]);
 
   const increaseQuantity = () => setQuantity((prev) => prev + 1);
   const decreaseQuantity = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
