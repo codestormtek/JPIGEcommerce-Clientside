@@ -9,7 +9,7 @@ export default function Home() {
 
             <>
                 {/* rts contact main wrapper */}
-                <div className="rts-contact-main-wrapper-banner bg_image" style={{ backgroundImage: 'url(https://cdn.thejigglingpig.com/media/2026/03/494b230d-684b-4c0d-8ed5-b60b7bd7c071.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', height: '407px', display: 'flex', alignItems: 'center' }}>
+                <div className="rts-contact-main-wrapper-banner bg_image" style={{ backgroundImage: 'url(https://cdn.thejigglingpig.com/media/2026/03/25a64301-ee0a-46ae-9214-6652e4a0a494.png)', backgroundSize: 'cover', backgroundPosition: 'center', height: '407px', display: 'flex', alignItems: 'center' }}>
                     <div className="container">
                         <div className="row">
                             <div className="co-lg-12">
