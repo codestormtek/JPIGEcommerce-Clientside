@@ -1,14 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import HeaderOne from "@/components/header/HeaderOne";
 import ShortService from "@/components/service/ShortService";
 import RelatedProduct from "@/components/product/RelatedProduct";
 import FooterOne from "@/components/footer/FooterOne";
 import { Product, getProductImage, formatPrice } from "@/types/api";
 import { useCart } from "@/components/header/CartContext";
+import { useAuth } from "@/context/AuthContext";
+import { apiGet, apiPost } from "@/lib/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+interface UserReview {
+  id: string;
+  ratingValue: number;
+  comment?: string | null;
+  createdAt: string;
+  user?: { firstName?: string | null; lastName?: string | null; emailAddress?: string } | null;
+}
 
 interface Props {
   product: Product | null;
@@ -17,6 +27,7 @@ interface Props {
 
 export default function ProductDetailClient({ product, error }: Props) {
   const { addToCart } = useCart();
+  const { user, isAuthenticated } = useAuth();
   const [added, setAdded] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("tab1");
   const [activeImage, setActiveImage] = useState<string>(
@@ -25,6 +36,45 @@ export default function ProductDetailClient({ product, error }: Props) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(
     product?.items?.[0]?.id ?? null
   );
+
+  // Review state
+  const [reviews, setReviews] = useState<UserReview[]>([]);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState("");
+  const [reviewError, setReviewError] = useState("");
+
+  const fetchReviews = useCallback(async () => {
+    if (!product?.id) return;
+    try {
+      const res = await apiGet<{ data: UserReview[]; total: number }>(`/products/${product.id}/reviews`);
+      setReviews(res?.data ?? []);
+    } catch { setReviews([]); }
+  }, [product?.id]);
+
+  useEffect(() => { fetchReviews(); }, [fetchReviews]);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAuthenticated) { setReviewError("Please sign in to submit a review."); return; }
+    if (reviewRating === 0) { setReviewError("Please select a star rating."); return; }
+    setReviewSubmitting(true);
+    setReviewError("");
+    setReviewSuccess("");
+    try {
+      await apiPost("/users/me/reviews", { productId: product!.id, ratingValue: reviewRating, comment: reviewComment });
+      setReviewSuccess("Thank you! Your review has been submitted and is pending approval.");
+      setReviewRating(0);
+      setReviewComment("");
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message ?? "Failed to submit review. Please try again.";
+      setReviewError(msg);
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   if (error || !product) {
     return (
@@ -375,39 +425,85 @@ export default function ProductDetailClient({ product, error }: Props) {
                     {activeTab === "tab3" && (
                       <div>
                         <div className="single-tab-content-shop-details">
+                          {/* Existing approved reviews */}
+                          {reviews.length > 0 && (
+                            <div style={{ marginBottom: 32 }}>
+                              <h5 className="title" style={{ marginBottom: 16 }}>Customer Reviews</h5>
+                              {reviews.map((r) => {
+                                const name = [r.user?.firstName, r.user?.lastName].filter(Boolean).join(" ") || r.user?.emailAddress || "Customer";
+                                return (
+                                  <div key={r.id} style={{ borderBottom: "1px solid #eee", paddingBottom: 16, marginBottom: 16 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                                      <span style={{ color: "#ff8c00", fontSize: 16 }}>
+                                        {"★".repeat(r.ratingValue)}{"☆".repeat(5 - r.ratingValue)}
+                                      </span>
+                                      <strong style={{ fontSize: 14 }}>{name}</strong>
+                                      <span style={{ fontSize: 12, color: "#999" }}>{new Date(r.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                    {r.comment && <p style={{ margin: 0, fontSize: 14, color: "#555" }}>{r.comment}</p>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Submit review form */}
                           <div className="submit-review-area">
-                            <form action="#" className="submit-review-area">
+                            <form onSubmit={handleReviewSubmit} className="submit-review-area">
                               <h5 className="title">Submit Your Review</h5>
                               <div className="your-rating">
                                 <span>Your Rating Of This Product :</span>
-                                <div className="stars">
-                                  <i className="fa-solid fa-star" />
-                                  <i className="fa-solid fa-star" />
-                                  <i className="fa-solid fa-star" />
-                                  <i className="fa-solid fa-star" />
-                                  <i className="fa-solid fa-star" />
+                                <div className="stars" style={{ cursor: "pointer", display: "inline-flex", gap: 4, marginLeft: 8 }}>
+                                  {[1,2,3,4,5].map((star) => (
+                                    <i
+                                      key={star}
+                                      className={`fa-${(hoverRating || reviewRating) >= star ? "solid" : "regular"} fa-star`}
+                                      style={{ color: "#ff8c00", fontSize: 20 }}
+                                      onClick={() => setReviewRating(star)}
+                                      onMouseEnter={() => setHoverRating(star)}
+                                      onMouseLeave={() => setHoverRating(0)}
+                                    />
+                                  ))}
                                 </div>
                               </div>
                               <div className="half-input-wrapper">
                                 <div className="half-input">
                                   <input
                                     type="text"
-                                    placeholder="Your Name*"
+                                    placeholder="Your Name"
+                                    value={user ? [user.firstName, user.lastName].filter(Boolean).join(" ") : ""}
+                                    readOnly={!!user}
+                                    style={{ background: user ? "#f5f5f5" : undefined }}
                                   />
                                 </div>
                                 <div className="half-input">
                                   <input
                                     type="text"
-                                    placeholder="Your Email *"
+                                    placeholder="Your Email"
+                                    value={user?.emailAddress ?? ""}
+                                    readOnly={!!user}
+                                    style={{ background: user ? "#f5f5f5" : undefined }}
                                   />
                                 </div>
                               </div>
                               <textarea
                                 placeholder="Write Your Review"
-                                defaultValue={""}
+                                value={reviewComment}
+                                onChange={(e) => setReviewComment(e.target.value)}
                               />
-                              <button className="rts-btn btn-primary">
-                                SUBMIT REVIEW
+                              {reviewError && <p style={{ color: "#e53935", fontSize: 13, margin: "8px 0 0" }}>{reviewError}</p>}
+                              {reviewSuccess && <p style={{ color: "#2e7d32", fontSize: 13, margin: "8px 0 0" }}>{reviewSuccess}</p>}
+                              {!isAuthenticated && (
+                                <p style={{ fontSize: 13, color: "#777", margin: "8px 0 0" }}>
+                                  You must be <a href="/login" style={{ color: "#ff8c00" }}>signed in</a> to submit a review.
+                                </p>
+                              )}
+                              <button
+                                className="rts-btn btn-primary"
+                                type="submit"
+                                disabled={reviewSubmitting || !isAuthenticated}
+                              >
+                                {reviewSubmitting ? "Submitting..." : "SUBMIT REVIEW"}
                               </button>
                             </form>
                           </div>

@@ -15,6 +15,8 @@ import {
 } from './products.schema';
 import { ctxFromRequest } from '../../utils/auditLogger';
 import * as service from './products.service';
+import { listReviews } from '../users/users.service';
+import { ListReviewsInput } from '../users/users.schema';
 
 // ─── Products ─────────────────────────────────────────────────────────────────
 
@@ -51,6 +53,13 @@ export async function deleteProduct(req: AuthRequest, res: Response): Promise<vo
 }
 
 // ─── ProductItems ─────────────────────────────────────────────────────────────
+
+export async function listProductReviews(req: Request, res: Response): Promise<void> {
+  const page = parseInt((req.query['page'] as string) ?? '1', 10) || 1;
+  const limit = parseInt((req.query['limit'] as string) ?? '10', 10) || 10;
+  const result = await listReviews({ productId: req.params['id'], isApproved: true, page, limit } as ListReviewsInput);
+  sendPaginated(res, result);
+}
 
 export async function getProductItems(req: Request, res: Response): Promise<void> {
   const items = await service.getProductItems(req.params['id'] as string);

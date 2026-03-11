@@ -54,6 +54,9 @@ productsRouter.get('/', validate(listProductsSchema, 'query'), asyncHandler(ctrl
 // GET    /api/v1/products/:id
 productsRouter.get('/:id', asyncHandler(ctrl.getProductById));
 
+// GET    /api/v1/products/:id/reviews  (public — approved only)
+productsRouter.get('/:id/reviews', asyncHandler(ctrl.listProductReviews));
+
 // GET    /api/v1/products/:id/items
 productsRouter.get('/:id/items', asyncHandler(ctrl.getProductItems));
 
