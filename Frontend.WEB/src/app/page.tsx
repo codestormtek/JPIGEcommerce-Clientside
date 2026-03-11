@@ -1,7 +1,7 @@
 import BannerOne from "@/components/banner/BannerOne";
 import FeatureOne from "@/components/feature/FeatureOne";
 import HeaderOne from "@/components/header/HeaderOne";
-import DiscountProduct from "@/components/product/DiscountProduct";
+
 import FeatureProduct from "@/components/product/FeatureProduct";
 import WeeklyBestSelling from "@/components/product/WeeklyBestSelling";
 
@@ -23,7 +23,6 @@ export default function Home() {
           <BannerOne />
           <FeatureOne />
           <FeatureProduct />
-          <DiscountProduct />
           <WeeklyBestSelling />
           <BlogOne />
           <FooterOne />
