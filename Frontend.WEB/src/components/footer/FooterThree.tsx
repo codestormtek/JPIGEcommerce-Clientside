@@ -43,6 +43,9 @@ function FooterThree() {
                                             <li>
                                                 <a href="/cookies-policy">Cookies Policy</a>
                                             </li>
+                                            <li>
+                                                <a href="https://admin-new.thejigglingpig.com" target="_blank" rel="noopener noreferrer">Administration</a>
+                                            </li>
                                         </ul>
                                     </div>
                                 </div>

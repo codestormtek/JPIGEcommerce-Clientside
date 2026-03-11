@@ -70,6 +70,11 @@ const User = () => {
               Login Activity
             </LinkItem>
             <li>
+              <a href="https://jpig-store.onrender.com" target="_blank" rel="noopener noreferrer" className="sm">
+                <em className="icon ni ni-cart"></em><span>Visit Storefront</span>
+              </a>
+            </li>
+            <li>
               <a className={`dark-switch ${theme.skin === 'dark' ? 'active' : ''}`} href="#" 
               onClick={(ev) => {
                 ev.preventDefault();
