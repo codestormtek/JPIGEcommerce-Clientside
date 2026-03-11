@@ -35,7 +35,7 @@ function FooterThree() {
                                     <div className="footer-nav">
                                         <ul>
                                             <li>
-                                                <a href="#">Privacy Policy</a>
+                                                <a href="/privacy-policy">Privacy Policy</a>
                                             </li>
                                             <li>
                                                 <a href="#">Terms &amp; Conditions</a>
