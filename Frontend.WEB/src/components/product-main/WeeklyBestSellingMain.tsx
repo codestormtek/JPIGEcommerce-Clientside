@@ -27,6 +27,7 @@ interface BlogGridMainProps {
   productBrand?: string;
   productMedia?: ProductMediaItem[];
   productInStock?: boolean;
+  onQuickView?: () => void;
 }
 
 const BlogGridMain: React.FC<BlogGridMainProps> = ({
@@ -40,6 +41,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
   productBrand,
   productMedia,
   productInStock = true,
+  onQuickView,
 }) => {
 
   const [domReady, setDomReady] = useState(false);
@@ -150,7 +152,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                 className="single-action openuptip cta-quickview product-details-popup-btn"
                 data-flow="up"
                 title="Quick View"
-                onClick={() => setActiveModal('two')}
+                onClick={() => onQuickView ? onQuickView() : setActiveModal('two')}
               >
                 <i className="fa-regular fa-eye" />
               </span>
@@ -208,20 +210,22 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
       )}
 
       <CompareModal show={activeModal === 'one'} handleClose={handleClose} />
-      <ProductDetails
-        show={activeModal === 'two'}
-        handleClose={handleClose}
-        productImage={imageSrc}
-        productTitle={ProductTitle ?? 'Default Product Title'}
-        productPrice={Price ?? '0'}
-        productDescription={productDescription}
-        productSku={productSku}
-        productCategories={productCategories}
-        productBrand={productBrand}
-        productSlug={Slug}
-        productMedia={productMedia}
-        productInStock={productInStock}
-      />
+      {!onQuickView && (
+        <ProductDetails
+          show={activeModal === 'two'}
+          handleClose={handleClose}
+          productImage={imageSrc}
+          productTitle={ProductTitle ?? 'Default Product Title'}
+          productPrice={Price ?? '0'}
+          productDescription={productDescription}
+          productSku={productSku}
+          productCategories={productCategories}
+          productBrand={productBrand}
+          productSlug={Slug}
+          productMedia={productMedia}
+          productInStock={productInStock}
+        />
+      )}
     </>
   );
 };
