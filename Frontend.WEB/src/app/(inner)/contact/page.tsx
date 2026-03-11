@@ -107,7 +107,7 @@ export default function Home() {
                                         </div>
                                         <div className="col-lg-5 mt_md--30 mt_sm--30">
                                             <div className="thumbnail-area">
-                                                <img src="https://cdn.thejigglingpig.com/media/2026/03/dc054dbd-c639-4768-9f0a-2eefae79aeeb.png" alt="contact_form" style={{ width: '606px', height: '429px', objectFit: 'cover' }} />
+                                                <img src="https://cdn.thejigglingpig.com/media/2026/03/dc054dbd-c639-4768-9f0a-2eefae79aeeb.png" alt="contact_form" style={{ width: '606px', height: '429px', objectFit: 'cover', borderRadius: '12px' }} />
                                             </div>
                                         </div>
                                     </div>
