@@ -66,7 +66,7 @@ function FeatureCardItem({ item, index }: { item: WidgetItemData; index: number 
     const hasCustomSize = item.imageWidth || item.imageHeight;
     const style: React.CSSProperties = {
         ...(item.mediaAsset?.url
-            ? { backgroundImage: `url(${item.mediaAsset.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            ? { backgroundImage: `url(${item.mediaAsset.url})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }
             : item.backgroundColor
                 ? { backgroundColor: item.backgroundColor }
                 : {}),
@@ -109,7 +109,7 @@ function PromoBannerItem({ item }: { item: WidgetItemData }) {
     const hasCustomSize = item.imageWidth || item.imageHeight;
     const style: React.CSSProperties = {
         ...(item.mediaAsset?.url
-            ? { backgroundImage: `url(${item.mediaAsset.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            ? { backgroundImage: `url(${item.mediaAsset.url})`, backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }
             : item.backgroundColor
                 ? { backgroundColor: item.backgroundColor }
                 : {}),
@@ -170,8 +170,9 @@ function GenericItem({ item }: { item: WidgetItemData }) {
             style={{
                 backgroundColor: item.backgroundColor || '#f5f5f5',
                 backgroundImage: item.mediaAsset?.url ? `url(${item.mediaAsset.url})` : undefined,
-                backgroundSize: 'cover',
+                backgroundSize: 'contain',
                 backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
                 minHeight: hasCustomSize ? undefined : 200,
                 ...(hasCustomSize ? {
                     width: item.imageWidth ? `${item.imageWidth}px` : undefined,
