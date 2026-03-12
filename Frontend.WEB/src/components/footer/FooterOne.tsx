@@ -99,7 +99,7 @@ function FooterOne() {
                                     <div className="footer-nav">
                                         <ul>
                                             <li>
-                                                <a href="#">Contact Us</a>
+                                                <a href="/contact">Contact Us</a>
                                             </li>
                                             <li>
                                                 <a href="#">Information</a>
