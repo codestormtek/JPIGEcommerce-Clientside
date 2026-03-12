@@ -15475,6 +15475,10 @@ li.with-megamenu:hover .rts-megamenu {
   background: var(--color-primary);
   color: #fff;
 }
+.btn-border-only.account:hover {
+  background: none;
+  color: #2C3C28;
+}
 @media only screen and (max-width: 767px) {
   .btn-border-only.wishlist {
     display: none;
