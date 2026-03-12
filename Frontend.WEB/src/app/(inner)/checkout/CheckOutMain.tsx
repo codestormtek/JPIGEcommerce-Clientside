@@ -52,7 +52,7 @@ function FieldLabel({ label, required }: { label: string; required?: boolean }) 
 function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }) {
   const stripe = useStripe();
   const elements = useElements();
-  const { cartItems, clearCart } = useCart();
+  const { cartItems, clearCart, isCartLoaded } = useCart();
   const { user, isAuthenticated } = useAuth();
 
   const [form, setForm] = useState({
@@ -276,6 +276,14 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
             </Link>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (!isCartLoaded) {
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 24px', color: '#8094ae', fontSize: 16 }}>
+        Loading your cart…
       </div>
     );
   }

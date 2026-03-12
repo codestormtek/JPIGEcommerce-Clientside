@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { useCart } from '@/components/header/CartContext';
 
 const CartMain = () => {
-  const { cartItems, removeFromCart, updateItemQuantity, clearCart: clearAllCart } = useCart();
+  const { cartItems, removeFromCart, updateItemQuantity, clearCart: clearAllCart, isCartLoaded } = useCart();
+
+  const activeCartItems = cartItems.filter(item => item.active === true);
 
   const [coupon, setCoupon] = useState('');
   const [discount, setDiscount] = useState(0);
@@ -12,7 +14,7 @@ const CartMain = () => {
   const [subtotal, setSubtotal] = useState(0);
 
   useEffect(() => {
-    const total = cartItems.reduce((acc, item) => {
+    const total = activeCartItems.reduce((acc, item) => {
       const price = item.price;
       const quantity = item.quantity || 1;
       return acc + (isNaN(price) ? 0 : price * quantity);
@@ -48,6 +50,24 @@ const CartMain = () => {
 
   const finalTotal = subtotal - subtotal * discount;
 
+  if (!isCartLoaded) {
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 24px', color: '#8094ae', fontSize: 16 }}>
+        Loading your cart…
+      </div>
+    );
+  }
+
+  if (activeCartItems.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 24px' }}>
+        <i className="fa-solid fa-cart-shopping" style={{ fontSize: 48, color: '#ddd', marginBottom: 20, display: 'block' }} />
+        <h3 style={{ color: '#1F1F25', marginBottom: 12 }}>Your Cart is Empty</h3>
+        <Link href="/shop" className="rts-btn btn-primary">Browse Products</Link>
+      </div>
+    );
+  }
+
   return (
     <div className="rts-cart-area rts-section-gap bg_light-1">
       <div className="container">
@@ -75,7 +95,7 @@ const CartMain = () => {
                 <div className="subtotal"><p>SubTotal</p></div>
               </div>
 
-              {cartItems.map(item => (
+              {activeCartItems.map(item => (
                 <div className="single-cart-area-list main item-parent" key={item.id}>
                   <div className="product-main-cart">
                     <div className="close section-activation" onClick={() => removeFromCart(item.id)}>
