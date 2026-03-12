@@ -229,6 +229,7 @@ export default function Home() {
                                     productBrand={product.brand?.name || undefined}
                                     productMedia={product.media}
                                     productInStock={(product.items?.[0]?.qtyInStock ?? product.quantity) > 0}
+                                    ProductItemId={product.items?.[0]?.id}
                                   />
                                 </div>
                               </div>
@@ -262,6 +263,7 @@ export default function Home() {
                                     productSku={product.items?.[0]?.sku || undefined}
                                     productCategories={product.categoryMaps?.map(cm => cm.category.name).join(', ') || undefined}
                                     productBrand={product.brand?.name || undefined}
+                                    ProductItemId={product.items?.[0]?.id}
                                   />
                                 </div>
                               </div>

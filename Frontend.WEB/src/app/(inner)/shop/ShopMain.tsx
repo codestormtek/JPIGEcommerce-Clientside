@@ -16,6 +16,7 @@ interface BlogGridMainProps {
   ProductTitle?: string;
   Price?: string;
   isApiImage?: boolean;
+  ProductItemId?: string;
 }
 
 const BlogGridMain: React.FC<BlogGridMainProps> = ({
@@ -24,6 +25,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
   ProductTitle,
   Price,
   isApiImage = false,
+  ProductItemId,
 }) => {
   type ModalType = "one" | "two" | "three" | null;
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -51,6 +53,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
       price: parseFloat(Price ?? "0"),
       quantity: quantity,
       active: true,
+      productItemId: ProductItemId,
     });
 
     setAdded(true);
@@ -210,6 +213,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
         productImage={imageSrc}
         productTitle={ProductTitle ?? "Default Product Title"}
         productPrice={Price ?? "0"}
+        productItemId={ProductItemId}
       />
     </>
   );

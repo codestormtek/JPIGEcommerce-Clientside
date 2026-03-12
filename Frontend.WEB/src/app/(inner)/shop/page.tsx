@@ -326,6 +326,7 @@ function ShopContent() {
                                     ProductTitle={product.name}
                                     Price={formatPrice(product.price)}
                                     isApiImage={true}
+                                    ProductItemId={product.items?.[0]?.id}
                                   />
                                 </div>
                               </div>
@@ -352,6 +353,7 @@ function ShopContent() {
                                     ProductTitle={product.name}
                                     Price={formatPrice(product.price)}
                                     isApiImage={true}
+                                    ProductItemId={product.items?.[0]?.id}
                                   />
                                 </div>
                               </div>

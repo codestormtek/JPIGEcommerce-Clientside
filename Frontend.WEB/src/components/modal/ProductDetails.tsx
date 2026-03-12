@@ -25,6 +25,7 @@ interface ModalProps {
   productSlug?: string;
   productMedia?: ProductMedia[];
   productInStock?: boolean;
+  productItemId?: string;
 }
 
 const ProductDetails: React.FC<ModalProps> = ({
@@ -40,6 +41,7 @@ const ProductDetails: React.FC<ModalProps> = ({
   productSlug,
   productMedia,
   productInStock = true,
+  productItemId,
 }) => {
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
@@ -90,6 +92,7 @@ const ProductDetails: React.FC<ModalProps> = ({
       price: priceNumber,
       quantity: quantity,
       active: true,
+      productItemId,
     });
     toast.success('Successfully Added To Cart!');
   };

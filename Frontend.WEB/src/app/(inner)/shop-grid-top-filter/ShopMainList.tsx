@@ -14,6 +14,7 @@ interface BlogGridMainProps {
   productSku?: string;
   productCategories?: string;
   productBrand?: string;
+  ProductItemId?: string;
 }
 
 const ShopMainList: React.FC<BlogGridMainProps> = ({
@@ -26,6 +27,7 @@ const ShopMainList: React.FC<BlogGridMainProps> = ({
   productSku,
   productCategories,
   productBrand,
+  ProductItemId,
 }) => {
 
   const [qty, setQty] = useState(1);
@@ -44,6 +46,7 @@ const ShopMainList: React.FC<BlogGridMainProps> = ({
       price: parseFloat(Price ?? '0'),
       quantity: qty,
       active: true,
+      productItemId: ProductItemId,
     });
     toast('Successfully Add To Cart !');
   };

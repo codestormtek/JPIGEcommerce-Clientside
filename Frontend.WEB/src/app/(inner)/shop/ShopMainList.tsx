@@ -10,6 +10,7 @@ interface BlogGridMainProps {
   ProductTitle?: string;
   Price?: string;
   isApiImage?: boolean;
+  ProductItemId?: string;
 }
 
 const ShopMainList: React.FC<BlogGridMainProps> = ({
@@ -18,6 +19,7 @@ const ShopMainList: React.FC<BlogGridMainProps> = ({
   ProductTitle,
   Price,
   isApiImage = false,
+  ProductItemId,
 }) => {
 
   // 🔥 FIXED QUANTITY (React State Only)
@@ -38,6 +40,7 @@ const ShopMainList: React.FC<BlogGridMainProps> = ({
       price: parseFloat(Price ?? '0'),
       quantity: qty,
       active: true,
+      productItemId: ProductItemId,
     });
     toast('Successfully Add To Cart !');
   };
