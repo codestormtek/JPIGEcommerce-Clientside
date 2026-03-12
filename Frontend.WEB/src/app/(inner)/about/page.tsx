@@ -32,16 +32,16 @@ export default function AboutPage() {
             <div className="row">
               <div className="col-lg-12">
 
-                {/* Logo banner */}
-                <div style={{ marginBottom: 32 }}>
-                  <img
-                    src="https://cdn.thejigglingpig.com/media/2026/03/1f35afa2-7dc7-4477-8459-e9f7f4aab0e7.png"
-                    alt="The Jiggling Pig"
-                    style={{ maxWidth: '100%', height: 'auto' }}
-                  />
-                </div>
-
                 <div className="container-privacy-policy">
+
+                  {/* Logo banner */}
+                  <div style={{ marginBottom: 32 }}>
+                    <img
+                      src="https://cdn.thejigglingpig.com/media/2026/03/1f35afa2-7dc7-4477-8459-e9f7f4aab0e7.png"
+                      alt="The Jiggling Pig"
+                      style={{ maxWidth: '100%', height: 'auto' }}
+                    />
+                  </div>
 
                   {/* Story */}
                   <h2 className="title mb--20">The Jiggling Pig Story</h2>
