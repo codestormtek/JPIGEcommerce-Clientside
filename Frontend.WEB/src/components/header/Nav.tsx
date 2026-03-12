@@ -9,8 +9,42 @@ function NavItem() {
                     <li className="parent">
                         <Link href="/">Home</Link>
                     </li>
-                    <li className="parent">
-                        <Link href="/about">About</Link>
+                    <li className="parent has-dropdown">
+                        <Link className="nav-link" href="/about">
+                            About
+                        </Link>
+                        <ul className="submenu">
+                            <li>
+                                <Link className="sub-b" href="/about">
+                                    Our Story
+                                </Link>
+                            </li>
+                            <li>
+                                <Link className="sub-b" href="/gallery">
+                                    Gallery
+                                </Link>
+                            </li>
+                            <li>
+                                <Link className="sub-b" href="/catering">
+                                    Catering
+                                </Link>
+                            </li>
+                            <li>
+                                <Link className="sub-b" href="/bbq-live">
+                                    BBQ Live
+                                </Link>
+                            </li>
+                            <li>
+                                <Link className="sub-b" href="/faq">
+                                    FAQ
+                                </Link>
+                            </li>
+                            <li>
+                                <Link className="sub-b" href="/contact">
+                                    Contact Us
+                                </Link>
+                            </li>
+                        </ul>
                     </li>
                     <li className="parent has-dropdown">
                         <Link className="nav-link" href="#">

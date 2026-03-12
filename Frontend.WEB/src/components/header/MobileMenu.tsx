@@ -23,7 +23,17 @@ const MobileMenu = () => {
                 <li><Link className="main" href="/">Home</Link></li>
 
                 {/* About */}
-                <li><Link className="main" href="/about">About</Link></li>
+                <li className={`has-droupdown ${openMenuIndex === 0 ? 'mm-active' : ''}`}>
+                    <a href="#" className="main" onClick={() => toggleMenu(0)}>About</a>
+                    <ul className={`submenu mm-collapse ${openMenuIndex === 0 ? 'mm-show' : ''}`}>
+                        <li><Link className="mobile-menu-link" href="/about">Our Story</Link></li>
+                        <li><Link className="mobile-menu-link" href="/gallery">Gallery</Link></li>
+                        <li><Link className="mobile-menu-link" href="/catering">Catering</Link></li>
+                        <li><Link className="mobile-menu-link" href="/bbq-live">BBQ Live</Link></li>
+                        <li><Link className="mobile-menu-link" href="/faq">FAQ</Link></li>
+                        <li><Link className="mobile-menu-link" href="/contact">Contact Us</Link></li>
+                    </ul>
+                </li>
 
                 {/* Pages */}
                 <li className={`has-droupdown ${openMenuIndex === 1 ? 'mm-active' : ''}`}>
