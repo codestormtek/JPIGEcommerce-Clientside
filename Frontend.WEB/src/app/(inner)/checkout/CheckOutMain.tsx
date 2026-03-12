@@ -427,9 +427,16 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
               ))}
             </div>
 
-            <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: '14px 16px', background: '#fafafa' }}>
-              <CardElement options={CARD_ELEMENT_OPTIONS} />
-            </div>
+            {!stripe ? (
+              <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: '14px 16px', background: '#fafafa', display: 'flex', alignItems: 'center', gap: 10, color: '#8094ae', fontSize: 14 }}>
+                <i className="fa-solid fa-spinner fa-spin" style={{ color: '#ff8c00' }} />
+                Initializing secure payment...
+              </div>
+            ) : (
+              <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: '14px 16px', background: '#fafafa' }}>
+                <CardElement options={CARD_ELEMENT_OPTIONS} />
+              </div>
+            )}
             <p style={{ fontSize: 12, color: '#aab7c4', marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
               <i className="fa-solid fa-shield-halved" style={{ color: '#629D23' }} />
               Secured by Stripe. Your card details are never stored on our servers.
@@ -460,6 +467,8 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
           >
             {submitting ? (
               <><i className="fa-solid fa-spinner fa-spin" />Processing Payment...</>
+            ) : !stripe ? (
+              <><i className="fa-solid fa-spinner fa-spin" />Initializing Payment...</>
             ) : (
               <><i className="fa-solid fa-lock" />Place Order — ${total.toFixed(2)}</>
             )}
