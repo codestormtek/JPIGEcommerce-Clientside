@@ -75,16 +75,16 @@ function FooterThree() {
                                     <div className="footer-nav">
                                         <ul>
                                             <li>
-                                                <a href="#">Cancellation &amp; Returns</a>
+                                                <a href="/cancellation-returns">Cancellation &amp; Returns</a>
                                             </li>
                                             <li>
-                                                <a href="#">Payments</a>
+                                                <a href="/payments">Payments</a>
                                             </li>
                                             <li>
-                                                <a href="#">Shipping</a>
+                                                <a href="/shipping">Shipping</a>
                                             </li>
                                             <li>
-                                                <a href="#">FAQ</a>
+                                                <a href="/faq">FAQ</a>
                                             </li>
                                         </ul>
                                     </div>
