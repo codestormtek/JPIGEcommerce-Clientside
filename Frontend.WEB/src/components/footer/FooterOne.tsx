@@ -105,7 +105,7 @@ function FooterOne() {
                                                 <a href="#">Information</a>
                                             </li>
                                             <li>
-                                                <a href="#">About Us</a>
+                                                <a href="/about">About Us</a>
                                             </li>
                                         </ul>
                                     </div>
