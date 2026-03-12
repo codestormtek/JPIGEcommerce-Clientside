@@ -78,7 +78,7 @@ export default function AboutPage() {
                 <div style={{ marginTop: 60 }}>
                   <div className="row g-4">
                     <div className="col-lg-3 col-md-6 col-sm-12 col-12">
-                      <div className="single-feature-card bg_image one">
+                      <div className="single-feature-card bg_image one" style={{ backgroundImage: 'url(https://cdn.thejigglingpig.com/media/2026/03/2abbecc4-de1c-429a-9b01-4998cd9155e3.png)' }}>
                         <div className="content-area">
                           <a className="rts-btn btn-primary" href="/shop">Weekend Discount</a>
                           <h3 className="title">Shop Our Smoked<br />Brisket &amp; Ribs</h3>
@@ -91,7 +91,7 @@ export default function AboutPage() {
                       </div>
                     </div>
                     <div className="col-lg-3 col-md-6 col-sm-12 col-12">
-                      <div className="single-feature-card bg_image two">
+                      <div className="single-feature-card bg_image two" style={{ backgroundImage: 'url(https://cdn.thejigglingpig.com/media/2026/03/e375a273-3b41-4ccc-acbc-4ec2e00a53a2.png)' }}>
                         <div className="content-area">
                           <a className="rts-btn btn-primary" href="/shop">Weekend Discount</a>
                           <h3 className="title">Fresh Homemade<br />Sides &amp; Sauces</h3>
@@ -104,7 +104,7 @@ export default function AboutPage() {
                       </div>
                     </div>
                     <div className="col-lg-3 col-md-6 col-sm-12 col-12">
-                      <div className="single-feature-card bg_image three">
+                      <div className="single-feature-card bg_image three" style={{ backgroundImage: 'url(https://cdn.thejigglingpig.com/media/2026/03/76bf7631-29dc-470c-a9b4-27cb37e7692c.png)' }}>
                         <div className="content-area">
                           <a className="rts-btn btn-primary" href="/shop">Weekend Discount</a>
                           <h3 className="title">Slow Smoked<br />Pulled Pork</h3>
@@ -117,7 +117,7 @@ export default function AboutPage() {
                       </div>
                     </div>
                     <div className="col-lg-3 col-md-6 col-sm-12 col-12">
-                      <div className="single-feature-card bg_image four">
+                      <div className="single-feature-card bg_image four" style={{ backgroundImage: 'url(https://cdn.thejigglingpig.com/media/2026/03/123a3935-e0e1-463e-9c43-3887a0c42049.png)' }}>
                         <div className="content-area">
                           <a className="rts-btn btn-primary" href="/shop">Weekend Discount</a>
                           <h3 className="title">Pit Smoked<br />Chicken &amp; Poultry</h3>
