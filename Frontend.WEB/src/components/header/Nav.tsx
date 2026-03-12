@@ -75,64 +75,6 @@ function NavItem() {
                     </li>
                     <li className="parent has-dropdown">
                         <Link className="nav-link" href="#">
-                            Pages
-                        </Link>
-                        <ul className="submenu">
-                            <li>
-                                <Link className="sub-b" href="/dashboard">
-                                    Dashboard
-                                    <span className="badge">( New )</span>
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/about">
-                                    About
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/store">
-                                    Store
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/invoice">
-                                    Invoice
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/contact">
-                                    Contact
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/register">
-                                    Register
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/login">
-                                    Login
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/privacy-policy">
-                                    Privacy Policy
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/cookies-policy">
-                                    Cookies Policy
-                                </Link>
-                            </li>
-                            <li>
-                                <Link className="sub-b" href="/terms-condition">
-                                    Terms &amp; Condition
-                                </Link>
-                            </li>
-                        </ul>
-                    </li>
-                    <li className="parent has-dropdown">
-                        <Link className="nav-link" href="#">
                             Blog
                         </Link>
                         <ul className="submenu">

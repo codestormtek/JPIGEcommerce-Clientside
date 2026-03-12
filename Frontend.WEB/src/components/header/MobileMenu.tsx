@@ -35,22 +35,6 @@ const MobileMenu = () => {
                     </ul>
                 </li>
 
-                {/* Pages */}
-                <li className={`has-droupdown ${openMenuIndex === 1 ? 'mm-active' : ''}`}>
-                    <a href="#" className="main" onClick={() => toggleMenu(1)}>Pages</a>
-                    <ul className={`submenu mm-collapse ${openMenuIndex === 1 ? 'mm-show' : ''}`}>
-                        <li><Link className="mobile-menu-link" href="/about">About</Link></li>
-                        <li><Link className="mobile-menu-link" href="/faq">Faq's</Link></li>
-                        <li><Link className="mobile-menu-link" href="/invoice">Invoice</Link></li>
-                        <li><Link className="mobile-menu-link" href="/contact">Contact</Link></li>
-                        <li><Link className="mobile-menu-link" href="/register">Register</Link></li>
-                        <li><Link className="mobile-menu-link" href="/login">Login</Link></li>
-                        <li><Link className="mobile-menu-link" href="/privacy-policy">Privacy Policy</Link></li>
-                        <li><Link className="mobile-menu-link" href="/cookies-policy">Cookies Policy</Link></li>
-                        <li><Link className="mobile-menu-link" href="/terms-condition">Terms Condition</Link></li>
-                        <li><Link className="mobile-menu-link" href="/404">Error Page</Link></li>
-                    </ul>
-                </li>
 
                 {/* Shop */}
                 <li className={`has-droupdown ${openMenuIndex === 2 ? 'mm-active' : ''}`}>
