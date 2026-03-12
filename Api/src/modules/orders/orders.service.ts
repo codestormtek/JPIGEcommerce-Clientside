@@ -132,7 +132,7 @@ export async function checkout(userId: string, input: PlaceOrderInput, ctx?: Aud
     const n = (v: unknown) => Number(v);
     const orderNum = `ORD-${order.id.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
 
-    prisma.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true, emailAddress: true, phone: true } })
+    prisma.siteUser.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true, emailAddress: true, phoneNumber: true } })
       .then((usr) => {
         if (!usr) return;
         const customerName = [usr.firstName, usr.lastName].filter(Boolean).join(' ') || 'Valued Customer';
@@ -175,10 +175,10 @@ export async function checkout(userId: string, input: PlaceOrderInput, ctx?: Aud
         ];
 
         // SMS confirmation if customer has a phone number
-        if (usr.phone) {
+        if (usr.phoneNumber) {
           notifyPromises.push(
             sendSms(
-              usr.phone,
+              usr.phoneNumber,
               `Hi ${usr.firstName || 'there'}, your order ${orderNum} has been placed! Total: ${order.currency} ${n(order.grandTotal).toFixed(2)}. Visit ${config.store.url}/orders to track it. — ${config.store.name}`,
             ),
           );
@@ -186,7 +186,7 @@ export async function checkout(userId: string, input: PlaceOrderInput, ctx?: Aud
 
         return Promise.all(notifyPromises);
       })
-      .catch(err => logger.warn('Post-order notifications failed', { orderId: order.id, err }));
+      .catch((err: unknown) => logger.warn('Post-order notifications failed', { orderId: order.id, err }));
 
     return order;
   } catch (err: unknown) {
