@@ -37,6 +37,30 @@ export default function ProductDetailClient({ product, error }: Props) {
     product?.items?.[0]?.id ?? null
   );
 
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShare = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const title = product?.name ?? 'Check this out';
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title, url });
+        return;
+      } catch {
+        // user dismissed — do nothing
+        return;
+      }
+    }
+    // Fallback: copy link to clipboard
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    } catch {
+      // ignore
+    }
+  };
+
   // Review state
   const [reviews, setReviews] = useState<UserReview[]>([]);
   const [reviewRating, setReviewRating] = useState(0);
@@ -325,11 +349,16 @@ export default function ProductDetailClient({ product, error }: Props) {
                               </div>
                               <span>Add To Wishlist</span>
                             </div>
-                            <div className="single-share-option">
+                            <div
+                              className="single-share-option"
+                              onClick={handleShare}
+                              style={{ cursor: 'pointer', position: 'relative' }}
+                              title="Share this product"
+                            >
                               <div className="icon">
                                 <i className="fa-solid fa-share" />
                               </div>
-                              <span>Share On social</span>
+                              <span>{shareCopied ? 'Link Copied!' : 'Share On social'}</span>
                             </div>
                             <div className="single-share-option">
                               <div className="icon">
