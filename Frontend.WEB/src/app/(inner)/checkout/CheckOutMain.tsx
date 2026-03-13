@@ -52,7 +52,7 @@ function FieldLabel({ label, required }: { label: string; required?: boolean }) 
 function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }) {
   const stripe = useStripe();
   const elements = useElements();
-  const { cartItems, clearCart, isCartLoaded } = useCart();
+  const { cartItems, clearCart, removeFromCart, isCartLoaded } = useCart();
   const { user, isAuthenticated } = useAuth();
 
   const [form, setForm] = useState({
@@ -88,6 +88,7 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
   const [showCoupon, setShowCoupon] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [itemsWithMissingId, setItemsWithMissingId] = useState<number[]>([]);
   const [orderSuccess, setOrderSuccess] = useState<{ orderNumber: string; grandTotal: number } | null>(null);
   const [agreeTerms, setAgreeTerms] = useState(false);
 
@@ -136,9 +137,11 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
 
     const itemsMissingId = cartItemsForOrder.filter(i => !i.productItemId);
     if (itemsMissingId.length > 0) {
-      setOrderError('Some cart items are missing product info. Please remove them and re-add from the shop page.');
+      setItemsWithMissingId(itemsMissingId.map(i => i.id));
+      setOrderError(`${itemsMissingId.length} cart item(s) are missing product info and must be removed before placing your order.`);
       return;
     }
+    setItemsWithMissingId([]);
 
     const missingFields: string[] = [];
     if (!form.firstName.trim()) missingFields.push('First Name');
@@ -468,6 +471,21 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
           {orderError && (
             <div style={{ background: '#fff5f5', border: '1px solid #fecaca', borderRadius: 6, padding: '12px 16px', marginBottom: 16, color: '#e85347', fontSize: 14, lineHeight: 1.5 }}>
               <i className="fa-solid fa-circle-exclamation" style={{ marginRight: 8 }} />{orderError}
+              {itemsWithMissingId.length > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      itemsWithMissingId.forEach(id => removeFromCart(id));
+                      setItemsWithMissingId([]);
+                      setOrderError('');
+                    }}
+                    style={{ background: '#e85347', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 14px', fontSize: 13, cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    Remove invalid items from cart
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
