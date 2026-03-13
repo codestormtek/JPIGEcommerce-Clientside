@@ -18,7 +18,7 @@ export type ListOrdersInput = z.infer<typeof listOrdersSchema>;
 // ─── Place order (checkout) ───────────────────────────────────────────────────
 
 const orderLineSchema = z.object({
-  productItemId: z.string().uuid('Invalid product item ID'),
+  productItemId: z.string().min(1, 'Product item ID is required'),
   qty: z.number().int().positive('Quantity must be at least 1'),
 });
 
@@ -38,7 +38,7 @@ const orderAddressSchema = z.object({
 export const placeOrderSchema = z.object({
   lines: z.array(orderLineSchema).min(1, 'At least one item is required'),
   addresses: z.array(orderAddressSchema).min(1, 'At least one address is required'),
-  shippingMethodId: z.string().uuid().optional(),
+  shippingMethodId: z.string().min(1).optional(),
   specialInstructions: z.string().optional(),
   currency: z.string().length(3).default('USD'),
   orderType: z.enum(['retail', 'catering']).default('retail'),
