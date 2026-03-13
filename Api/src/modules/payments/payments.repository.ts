@@ -4,7 +4,7 @@ import { ListPaymentsInput } from './payments.schema';
 // ─── Shared include ───────────────────────────────────────────────────────────
 
 const paymentInclude = {
-  order: { select: { id: true, orderNumber: true } },
+  order: { select: { id: true } },
   paymentMethodToken: {
     select: { id: true, brand: true, last4: true, provider: true },
   },

@@ -4,7 +4,7 @@ import { ListShipmentsInput, CreateShipmentInput, UpdateShipmentInput } from './
 // ─── Shared include ───────────────────────────────────────────────────────────
 
 const shipmentInclude = {
-  order: { select: { id: true, orderNumber: true } },
+  order: { select: { id: true } },
   items: {
     include: {
       orderLine: { select: { id: true, qty: true } },
