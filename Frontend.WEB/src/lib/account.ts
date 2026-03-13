@@ -166,3 +166,73 @@ export async function changePassword(
   });
   unwrap(res);
 }
+
+export interface Country {
+  id: string;
+  countryName: string;
+  iso2: string | null;
+}
+
+export async function getCountries(): Promise<Country[]> {
+  const res = await apiFetch<ApiResponse<Country[]>>("/users/countries");
+  return unwrap(res);
+}
+
+export interface SavedAddressNested {
+  id: string;
+  label: string | null;
+  isDefault: boolean;
+  address: {
+    id: string;
+    addressLine1: string;
+    addressLine2: string | null;
+    city: string;
+    region: string | null;
+    postalCode: string | null;
+    countryId: string;
+    country: { id: string; countryName: string; iso2: string | null } | null;
+  };
+}
+
+export async function getMyAddresses(): Promise<SavedAddressNested[]> {
+  const res = await apiFetch<ApiResponse<SavedAddressNested[]>>("/users/me/addresses", {
+    headers: authHeaders(),
+  });
+  return unwrap(res);
+}
+
+export interface AddAddressInput {
+  label?: string;
+  isDefault?: boolean;
+  address: {
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    stateProvince?: string;
+    postalCode?: string;
+    countryId: string;
+  };
+}
+
+export async function addMyAddress(data: AddAddressInput): Promise<SavedAddressNested> {
+  const res = await apiFetch<ApiResponse<SavedAddressNested>>("/users/me/addresses", {
+    method: "POST",
+    body: data,
+    headers: authHeaders(),
+  });
+  return unwrap(res);
+}
+
+export async function deleteMyAddress(addressId: string): Promise<void> {
+  await apiFetch<unknown>(`/users/me/addresses/${addressId}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+}
+
+export async function setDefaultAddress(addressId: string): Promise<void> {
+  await apiFetch<unknown>(`/users/me/addresses/${addressId}/default`, {
+    method: "PATCH",
+    headers: authHeaders(),
+  });
+}

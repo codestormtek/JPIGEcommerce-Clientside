@@ -206,3 +206,8 @@ export async function removeMyPaymentMethod(req: AuthRequest, res: Response): Pr
   );
   sendNoContent(res);
 }
+
+export async function listCountries(_req: Request, res: Response): Promise<void> {
+  const countries = await service.listCountries();
+  sendSuccess(res, countries);
+}

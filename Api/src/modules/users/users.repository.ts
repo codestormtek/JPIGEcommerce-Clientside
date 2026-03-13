@@ -382,3 +382,12 @@ export async function deletePaymentMethod(id: string): Promise<void> {
   await prisma.paymentMethodToken.delete({ where: { id } });
 }
 
+// ─── Countries ────────────────────────────────────────────────────────────────
+
+export async function findAllCountries() {
+  return prisma.country.findMany({
+    select: { id: true, countryName: true, iso2: true },
+    orderBy: { countryName: 'asc' },
+  });
+}
+

@@ -109,6 +109,9 @@ usersRouter.get('/', authenticate, authorize('admin'), validate(listUsersSchema,
 // GET    /api/v1/users/admin/addresses  (must be before /:id to avoid route shadowing)
 usersRouter.get('/admin/addresses', authenticate, authorize('admin'), asyncHandler(ctrl.listAllAddresses));
 
+// GET    /api/v1/users/countries  (public — no auth required)
+usersRouter.get('/countries', asyncHandler(ctrl.listCountries));
+
 // GET    /api/v1/users/:id
 usersRouter.get('/:id', authenticate, authorize('admin'), asyncHandler(ctrl.getUserById));
 

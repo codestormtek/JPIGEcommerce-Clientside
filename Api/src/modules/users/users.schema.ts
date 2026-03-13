@@ -50,7 +50,7 @@ export const upsertAddressSchema = z.object({
     city: z.string().min(1, 'City is required'),
     stateProvince: z.string().optional(),
     postalCode: z.string().optional(),
-    countryId: z.string().uuid('Invalid country ID'),
+    countryId: z.string().min(1, 'Country is required'),
   }),
 });
 

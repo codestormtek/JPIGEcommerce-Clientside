@@ -183,3 +183,7 @@ export async function removeMyPaymentMethod(userId: string, tokenId: string, ctx
   logAudit({ action: AuditAction.PAYMENT_METHOD_REMOVED, entityType: 'PaymentMethodToken', entityId: tokenId, ctx });
 }
 
+export async function listCountries() {
+  return repo.findAllCountries();
+}
+
