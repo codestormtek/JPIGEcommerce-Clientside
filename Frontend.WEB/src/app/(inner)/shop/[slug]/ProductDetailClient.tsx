@@ -8,7 +8,7 @@ import FooterOne from "@/components/footer/FooterOne";
 import { Product, getProductImage, formatPrice } from "@/types/api";
 import { useCart } from "@/components/header/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiAuthPost } from "@/lib/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -64,7 +64,7 @@ export default function ProductDetailClient({ product, error }: Props) {
     setReviewError("");
     setReviewSuccess("");
     try {
-      await apiPost("/users/me/reviews", { productId: product!.id, ratingValue: reviewRating, comment: reviewComment });
+      await apiAuthPost("/users/me/reviews", { productId: product!.id, ratingValue: reviewRating, comment: reviewComment });
       setReviewSuccess("Thank you! Your review has been submitted and is pending approval.");
       setReviewRating(0);
       setReviewComment("");
