@@ -15,6 +15,12 @@ const blankForm = () => ({
   category: "general",
 });
 
+const OFFER_KEYS = [
+  { key: "offer_1", label: "Offer 1", icon: "💳" },
+  { key: "offer_2", label: "Offer 2", icon: "🏷️" },
+  { key: "offer_3", label: "Offer 3", icon: "🚚" },
+];
+
 const AdminSiteSettings = () => {
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,12 +40,27 @@ const AdminSiteSettings = () => {
   const [filterCategory, setFilterCategory] = useState("all");
   const [searchText, setSearchText] = useState("");
 
+  // ── Available Offers quick-edit state ──────────────────────────
+  const [offerValues, setOfferValues] = useState({ offer_1: "", offer_2: "", offer_3: "" });
+  const [offerSaving, setOfferSaving] = useState(false);
+  const [offerSuccess, setOfferSuccess] = useState(null);
+  const [offerError, setOfferError] = useState(null);
+
   const loadSettings = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await apiGet("/site-settings");
-      setSettings(res?.data ?? []);
+      const all = res?.data ?? [];
+      setSettings(all);
+      // Populate offer quick-edit fields
+      const map = {};
+      all.forEach((s) => { map[s.settingKey] = s.settingValue ?? ""; });
+      setOfferValues({
+        offer_1: map["offer_1"] ?? "",
+        offer_2: map["offer_2"] ?? "",
+        offer_3: map["offer_3"] ?? "",
+      });
     } catch (e) {
       setError(e.message);
     } finally {
@@ -50,6 +71,26 @@ const AdminSiteSettings = () => {
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
+
+  const saveOffers = async () => {
+    setOfferSaving(true);
+    setOfferError(null);
+    setOfferSuccess(null);
+    try {
+      await Promise.all(
+        OFFER_KEYS.map(({ key }) =>
+          apiPatch(`/site-settings/${key}`, { settingValue: offerValues[key] })
+        )
+      );
+      setOfferSuccess("Offers saved successfully.");
+      await loadSettings();
+      setTimeout(() => setOfferSuccess(null), 3000);
+    } catch (e) {
+      setOfferError(e.message || "Failed to save offers.");
+    } finally {
+      setOfferSaving(false);
+    }
+  };
 
   const categories = [...new Set(settings.map((s) => s.category || "general"))].sort();
 
@@ -187,6 +228,76 @@ const AdminSiteSettings = () => {
             {success}
           </Alert>
         )}
+
+        {/* ── Available Offers Quick-Edit Card ─────────────────────── */}
+        <Block>
+          <div className="card card-bordered mb-4">
+            <div className="card-inner-group">
+              <div className="card-inner py-3" style={{ background: "#fff8f0", borderBottom: "1px solid #ffe0b2" }}>
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <h6 className="overline-title mb-0" style={{ color: "#e65100" }}>
+                      🏷️ Available Offers
+                    </h6>
+                    <p className="text-soft mb-0 fs-12px mt-1">
+                      These three offer lines appear in the product page sidebar. Edit and save below.
+                    </p>
+                  </div>
+                  <Button
+                    color="warning"
+                    size="sm"
+                    onClick={saveOffers}
+                    disabled={offerSaving}
+                    style={{ minWidth: 110 }}
+                  >
+                    {offerSaving ? (
+                      <><Spinner size="sm" className="me-1" /> Saving…</>
+                    ) : (
+                      <><Icon name="save" className="me-1" />Save Offers</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {offerSuccess && (
+                <Alert color="success" className="mx-3 mt-3 mb-0" toggle={() => setOfferSuccess(null)}>
+                  {offerSuccess}
+                </Alert>
+              )}
+              {offerError && (
+                <Alert color="danger" className="mx-3 mt-3 mb-0" toggle={() => setOfferError(null)}>
+                  {offerError}
+                </Alert>
+              )}
+
+              {OFFER_KEYS.map(({ key, label, icon }) => (
+                <div key={key} className="card-inner py-3">
+                  <Row className="align-items-center g-3">
+                    <Col md="1" className="text-center">
+                      <span style={{ fontSize: 22 }}>{icon}</span>
+                    </Col>
+                    <Col md="2">
+                      <span className="fw-medium">{label}</span>
+                      <br />
+                      <code className="text-soft fs-12px">{key}</code>
+                    </Col>
+                    <Col md="9">
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder={`Text for ${label}…`}
+                        value={offerValues[key] ?? ""}
+                        onChange={(e) =>
+                          setOfferValues((prev) => ({ ...prev, [key]: e.target.value }))
+                        }
+                      />
+                    </Col>
+                  </Row>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Block>
 
         <Block>
           <Row className="mb-3 g-3">

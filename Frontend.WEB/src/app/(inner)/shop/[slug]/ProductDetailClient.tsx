@@ -39,6 +39,27 @@ export default function ProductDetailClient({ product, error }: Props) {
 
   const [shareCopied, setShareCopied] = useState(false);
 
+  const [offers, setOffers] = useState({
+    offer_1: "Get 5% instant discount for the 1st order using our mobile app",
+    offer_2: "Flat $25 off on orders over $100 - use code JPIG25",
+    offer_3: "Free Shipping on all orders over $75",
+  });
+
+  useEffect(() => {
+    apiGet<{ success: boolean; data: Record<string, string> }>("/site-settings/public")
+      .then((res) => {
+        const map = res?.data;
+        if (map) {
+          setOffers((prev) => ({
+            offer_1: map["offer_1"] || prev.offer_1,
+            offer_2: map["offer_2"] || prev.offer_2,
+            offer_3: map["offer_3"] || prev.offer_3,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
     const title = product?.name ?? 'Check this out';
@@ -553,10 +574,7 @@ export default function ProductDetailClient({ product, error }: Props) {
                         <img src="/assets/images/shop/01.svg" alt="icon" />
                       </div>
                       <div className="details">
-                        <p>
-                          Get 5% instant discount for the 1st Flipkart Order
-                          using Ekomart UPI
-                        </p>
+                        <p>{offers.offer_1}</p>
                       </div>
                     </div>
                     <div className="single-offer-area">
@@ -564,10 +582,7 @@ export default function ProductDetailClient({ product, error }: Props) {
                         <img src="/assets/images/shop/02.svg" alt="icon" />
                       </div>
                       <div className="details">
-                        <p>
-                          Flat $250 off on Citi Credit Card EMI Transactions
-                          over $30
-                        </p>
+                        <p>{offers.offer_2}</p>
                       </div>
                     </div>
                     <div className="single-offer-area">
@@ -575,9 +590,7 @@ export default function ProductDetailClient({ product, error }: Props) {
                         <img src="/assets/images/shop/03.svg" alt="icon" />
                       </div>
                       <div className="details">
-                        <p>
-                          Free Worldwide Shipping on all orders over $100
-                        </p>
+                        <p>{offers.offer_3}</p>
                       </div>
                     </div>
                   </div>
