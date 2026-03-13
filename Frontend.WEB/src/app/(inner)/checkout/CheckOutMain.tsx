@@ -6,7 +6,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useCart } from '@/components/header/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiAuthPost } from '@/lib/api';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '');
 
@@ -116,23 +116,19 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
     setRatesLoading(true);
     setRatesError('');
     try {
-      const res = await apiFetch<{ data: { rates: ShippoRate[] } }>('/shipping/rates', {
-        method: 'POST',
-        headers: getAuthHeader(),
-        body: {
-          address: {
-            name: `${form.firstName} ${form.lastName}`.trim() || 'Customer',
-            street1: form.address1,
-            street2: form.address2 || undefined,
-            city: form.city,
-            state: form.state,
-            zip: form.zip,
-            country: form.country || 'US',
-            phone: form.phone || undefined,
-            email: form.email || undefined,
-          },
-          items: cartItemsForOrder.map(i => ({ productItemId: i.productItemId, qty: i.quantity })),
+      const res = await apiAuthPost<{ data: { rates: ShippoRate[] } }>('/shipping/rates', {
+        address: {
+          name: `${form.firstName} ${form.lastName}`.trim() || 'Customer',
+          street1: form.address1,
+          street2: form.address2 || undefined,
+          city: form.city,
+          state: form.state,
+          zip: form.zip,
+          country: form.country || 'US',
+          phone: form.phone || undefined,
+          email: form.email || undefined,
         },
+        items: cartItemsForOrder.map(i => ({ productItemId: i.productItemId, qty: i.quantity })),
       });
       const rates = res.data.rates ?? [];
       setLiveRates(rates);
