@@ -1,0 +1,49 @@
+==> Downloading cache...
+==> Cloning from https://github.com/codestormtek/JPIGEcommerce-Clientside
+==> Checking out commit 51e9b6814291427b2dc264a7815d7a524513a024 in branch main
+==> Downloaded 421MB in 4s. Extraction took 7s.
+==> Using Node.js version 22.22.0 (default)
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm ci && npm run build'...
+added 180 packages, and audited 181 packages in 8s
+31 packages are looking for funding
+  run `npm fund` for details
+1 critical severity vulnerability
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+Run `npm audit` for details.
+> ekomart-nextjs@0.1.0 build
+> next build
+ ⚠ Installing TypeScript as it was not found while loading "next.config.ts".
+Installing devDependencies (npm):
+- typescript
+added 11 packages, and audited 192 packages in 831ms
+35 packages are looking for funding
+  run `npm fund` for details
+1 critical severity vulnerability
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+Run `npm audit` for details.
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /opt/render/project/src/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /opt/render/project/src/Frontend.WEB/package-lock.json
+   ▲ Next.js 15.5.12
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 4.0s
+   Linting and checking validity of types ...
+Failed to compile.
+./src/app/(inner)/checkout/CheckOutMain.tsx:662:51
+Menu
+Type error: Property 'name' does not exist on type 'CartItem'.
+  660 |               <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid #f5f5f5' }}>
+  661 |                 {item.image ? (
+> 662 |                   <img src={item.image} alt={item.name} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, border: '1px solid #eee', flexShrink: 0 }} />
+      |                                                   ^
+  663 |                 ) : (
+  664 |                   <div style={{ width: 56, height: 56, borderRadius: 6, background: '#f5f6fa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+  665 |                     <i className="fa-solid fa-box" style={{ color: '#aab7c4', fontSize: 20 }} />
+Next.js build worker exited with code: 1 and signal: null
+==> Build failed 😞

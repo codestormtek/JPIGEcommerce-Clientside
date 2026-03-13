@@ -659,15 +659,14 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
             {cartItemsForOrder.map(item => (
               <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid #f5f5f5' }}>
                 {item.image ? (
-                  <img src={item.image} alt={item.name} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, border: '1px solid #eee', flexShrink: 0 }} />
+                  <img src={item.image} alt={item.title} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, border: '1px solid #eee', flexShrink: 0 }} />
                 ) : (
                   <div style={{ width: 56, height: 56, borderRadius: 6, background: '#f5f6fa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <i className="fa-solid fa-box" style={{ color: '#aab7c4', fontSize: 20 }} />
                   </div>
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: '#1F1F25', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
-                  {item.variant && <div style={{ fontSize: 12, color: '#8094ae' }}>{item.variant}</div>}
+                  <div style={{ fontWeight: 600, fontSize: 14, color: '#1F1F25', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
                   <div style={{ fontSize: 13, color: '#526484' }}>Qty: {item.quantity}</div>
                 </div>
                 <div style={{ fontWeight: 700, color: '#1F1F25', fontSize: 14, flexShrink: 0 }}>${(item.price * item.quantity).toFixed(2)}</div>
