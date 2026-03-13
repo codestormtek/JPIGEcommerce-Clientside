@@ -35,7 +35,14 @@ export async function apiFetch<T = unknown>(
 
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.message || errBody.error || `API ${method} ${path} failed (${res.status})`);
+    const baseMsg = errBody.message || errBody.error || `Request failed (${res.status})`;
+    if (errBody.details && typeof errBody.details === 'object') {
+      const fieldErrors = Object.entries(errBody.details as Record<string, string[]>)
+        .map(([field, msgs]) => `${field}: ${(msgs as string[]).join(', ')}`)
+        .join('; ');
+      throw new Error(fieldErrors ? `${baseMsg} — ${fieldErrors}` : baseMsg);
+    }
+    throw new Error(baseMsg);
   }
 
   return res.json();

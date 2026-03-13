@@ -140,6 +140,19 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
       return;
     }
 
+    const missingFields: string[] = [];
+    if (!form.firstName.trim()) missingFields.push('First Name');
+    if (!form.lastName.trim()) missingFields.push('Last Name');
+    if (!form.email.trim()) missingFields.push('Email');
+    if (!form.address1.trim()) missingFields.push('Address');
+    if (!form.city.trim()) missingFields.push('City');
+    if (!form.zip.trim()) missingFields.push('ZIP / Postal Code');
+    if (!selectedShipping) missingFields.push('Shipping Method');
+    if (missingFields.length > 0) {
+      setOrderError(`Please fill in the following required fields: ${missingFields.join(', ')}.`);
+      return;
+    }
+
     setSubmitting(true);
     setOrderError('');
 
