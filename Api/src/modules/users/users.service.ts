@@ -94,7 +94,10 @@ export async function setMyDefaultAddress(userId: string, addressId: string): Pr
 // ─── Contact Preference operations ───────────────────────────────────────────
 
 export async function getMyContactPreferences(userId: string) {
-  return repo.getContactPreferences(userId);
+  const existing = await repo.getContactPreferences(userId);
+  if (existing) return existing;
+  // Auto-create with safe defaults on first access
+  return repo.upsertContactPreferences(userId, { optInEmail: false, optInSms: false });
 }
 
 export async function upsertMyContactPreferences(userId: string, input: UpdateContactPreferencesInput) {
