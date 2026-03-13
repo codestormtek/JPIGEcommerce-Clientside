@@ -3,9 +3,9 @@ import { z } from 'zod';
 // ─── Add item ─────────────────────────────────────────────────────────────────
 
 export const addCartItemSchema = z.object({
-  productItemId: z.string().uuid('Invalid product item ID'),
+  productItemId: z.string().min(1, 'Product item ID is required'),
   qty: z.number().int().positive('Quantity must be at least 1'),
-  variationOptionIds: z.array(z.string().uuid()).optional(),
+  variationOptionIds: z.array(z.string()).optional(),
 });
 
 export type AddCartItemInput = z.infer<typeof addCartItemSchema>;

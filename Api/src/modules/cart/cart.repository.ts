@@ -6,7 +6,19 @@ import { AddCartItemInput, UpdateCartItemInput } from './cart.schema';
 const cartInclude = {
   items: {
     include: {
-      productItem: { include: { product: true } },
+      productItem: {
+        include: {
+          product: {
+            include: {
+              productMedia: {
+                where: { isPrimary: true },
+                take: 1,
+                include: { mediaAsset: true },
+              },
+            },
+          },
+        },
+      },
       options: { include: { variationOption: true } },
     },
   },
