@@ -81,3 +81,20 @@ export async function deleteShipment(id: string): Promise<void> {
   await prisma.shipment.delete({ where: { id } });
 }
 
+export async function updateShipmentLabel(id: string, data: {
+  shippoTransactionId: string;
+  trackingNumber: string;
+  carrier: string;
+  labelUrl: string;
+  labelPdf: string;
+  estimatedDelivery?: Date;
+  status: string;
+  shippedAt: Date;
+}) {
+  return prisma.shipment.update({
+    where: { id },
+    data,
+    include: shipmentInclude,
+  });
+}
+

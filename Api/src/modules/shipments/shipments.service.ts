@@ -1,7 +1,10 @@
 import { ApiError } from '../../utils/apiError';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
-import { ListShipmentsInput, CreateShipmentInput, UpdateShipmentInput } from './shipments.schema';
+import { ListShipmentsInput, CreateShipmentInput, UpdateShipmentInput, PurchaseLabelInput } from './shipments.schema';
 import * as repo from './shipments.repository';
+import * as shippoService from '../../services/shippoService';
+import { config } from '../../config';
+import prisma from '../../lib/prisma';
 
 // ─── Shipments ────────────────────────────────────────────────────────────────
 
@@ -70,5 +73,57 @@ export async function deleteShipment(id: string, ctx?: AuditContext): Promise<vo
     entityId: id,
     ctx,
   });
+}
+
+// ─── Purchase Label via Shippo ────────────────────────────────────────────────
+
+export async function purchaseShippoLabel(id: string, input: PurchaseLabelInput, ctx?: AuditContext) {
+  if (!config.shippo.enabled) {
+    throw ApiError.badRequest('Shippo is not configured. Please set SHIPPO_API_KEY.');
+  }
+
+  const shipment = await repo.findShipmentById(id);
+  if (!shipment) throw ApiError.notFound('Shipment');
+
+  if (shipment.labelUrl) {
+    throw ApiError.conflict('A label has already been purchased for this shipment.');
+  }
+
+  // Determine rate ID: prefer override, then order's stored rate, then error
+  const order = await prisma.shopOrder.findUnique({
+    where: { id: shipment.orderId },
+    select: { shippoRateId: true, shippoCarrier: true },
+  });
+
+  const rateId = input.rateId ?? order?.shippoRateId ?? null;
+  if (!rateId) {
+    throw ApiError.badRequest(
+      'No Shippo rate ID found. The customer may have checked out with a flat-rate method. ' +
+      'Please provide a rateId to purchase a label.',
+    );
+  }
+
+  const label = await shippoService.purchaseLabel(rateId);
+
+  const updated = await repo.updateShipmentLabel(id, {
+    shippoTransactionId: label.transactionId,
+    trackingNumber: label.trackingNumber,
+    carrier: label.carrier,
+    labelUrl: label.labelUrl,
+    labelPdf: label.labelPdf,
+    estimatedDelivery: label.eta ? new Date(label.eta) : undefined,
+    status: 'shipped',
+    shippedAt: new Date(),
+  });
+
+  logAudit({
+    action: AuditAction.SHIPMENT_UPDATED,
+    entityType: 'Shipment',
+    entityId: id,
+    afterJson: { trackingNumber: label.trackingNumber, carrier: label.carrier, labelUrl: label.labelUrl },
+    ctx,
+  });
+
+  return updated;
 }
 

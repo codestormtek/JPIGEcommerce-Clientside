@@ -47,3 +47,12 @@ export const updateShipmentSchema = z.object({
 
 export type UpdateShipmentInput = z.infer<typeof updateShipmentSchema>;
 
+// ─── Purchase Label (admin) ───────────────────────────────────────────────────
+
+export const purchaseLabelSchema = z.object({
+  /** Override the rate ID stored on the order; useful if the stored rate has expired */
+  rateId: z.string().optional(),
+});
+
+export type PurchaseLabelInput = z.infer<typeof purchaseLabelSchema>;
+

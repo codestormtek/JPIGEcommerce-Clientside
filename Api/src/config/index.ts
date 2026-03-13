@@ -85,6 +85,22 @@ export const config = {
     url: process.env.STORE_URL ?? 'https://thejigglingpig.com',
     adminUrl: process.env.ADMIN_URL ?? 'https://admin-new.thejigglingpig.com',
     adminEmail: process.env.ADMIN_EMAIL ?? 'info@thejigglingpig.com',
+    // Physical address used as the "from" address for Shippo shipments
+    address: {
+      name: process.env.STORE_SHIP_NAME ?? 'The Jiggling Pig',
+      street1: process.env.STORE_SHIP_STREET1 ?? '',
+      city: process.env.STORE_SHIP_CITY ?? '',
+      state: process.env.STORE_SHIP_STATE ?? '',
+      zip: process.env.STORE_SHIP_ZIP ?? '',
+      country: 'US',
+      phone: process.env.STORE_SHIP_PHONE ?? '',
+      email: process.env.ADMIN_EMAIL ?? 'info@thejigglingpig.com',
+    },
+  },
+
+  shippo: {
+    apiKey: process.env.SHIPPO_API_KEY ?? '',
+    enabled: !!process.env.SHIPPO_API_KEY,
   },
 
 } as const;

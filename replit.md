@@ -17,6 +17,7 @@ Three active services:
 - **Prisma schema**: `Api/prisma/schema.prisma` — uses `EXTERNAL_DATABASE_URL`
 - **API config**: `Api/src/config/index.ts` — default port 8000
 - **Stripe**: Optional — API starts without `STRIPE_SECRET_KEY` (payment routes will fail gracefully with a clear error)
+- **Shippo**: Shipping rate calculation, label purchase, tracking. Requires `SHIPPO_API_KEY` env var. Set `STORE_SHIP_*` env vars for store's physical address (used as "from" address). Without the key, checkout falls back to static flat-rate methods.
 - **Storage**: Cloudflare R2 for media assets
 - **Email**: Resend for transactional emails
 

@@ -97,6 +97,10 @@ const AdminOrderList = () => {
   const [exporting,   setExporting]   = useState(false);
   const [exportError, setExportError] = useState(null);
 
+  // Label purchase
+  const [labelPurchasing, setLabelPurchasing] = useState(false);
+  const [labelError,      setLabelError]      = useState(null);
+
   const searchTimer = useRef(null);
 
   // ─── Load orders ────────────────────────────────────────────────────────────
@@ -248,6 +252,24 @@ const AdminOrderList = () => {
       setEmailError(e.message);
     } finally {
       setEmailSending(false);
+    }
+  };
+
+  const buyShippoLabel = async () => {
+    if (!detailOrder?.shipment?.id) return;
+    setLabelPurchasing(true);
+    setLabelError(null);
+    try {
+      const res = await apiPost(`/shipments/${detailOrder.shipment.id}/label`, {});
+      const updated = res?.data ?? res;
+      setDetailOrder(prev => ({
+        ...prev,
+        shipment: { ...prev.shipment, ...updated },
+      }));
+    } catch (e) {
+      setLabelError(e.message ?? "Failed to purchase label.");
+    } finally {
+      setLabelPurchasing(false);
     }
   };
 
@@ -615,6 +637,73 @@ const AdminOrderList = () => {
                   <div className="mb-3">
                     <h6 className="overline-title text-base mb-1">Special Instructions</h6>
                     <p className="text-soft">{detailOrder.specialInstructions}</p>
+                  </div>
+                )}
+
+                {/* ── Shippo / Shipping Label Section ─────────────────────── */}
+                {detailOrder.shipment && (
+                  <div className="card card-bordered p-3 mb-3">
+                    <h6 className="overline-title text-base mb-3">Shipment &amp; Label</h6>
+
+                    {/* Carrier info from Shippo */}
+                    {(detailOrder.shippoCarrier || detailOrder.shippoServiceLevel) && (
+                      <div className="mb-2 small text-soft">
+                        <strong>Carrier Rate: </strong>
+                        {[detailOrder.shippoCarrier, detailOrder.shippoServiceLevel].filter(Boolean).join(" — ")}
+                      </div>
+                    )}
+
+                    {/* Tracking */}
+                    {detailOrder.shipment.trackingNumber && (
+                      <div className="mb-2 small">
+                        <strong>Tracking: </strong>
+                        <span className="text-soft">{detailOrder.shipment.carrier} — {detailOrder.shipment.trackingNumber}</span>
+                      </div>
+                    )}
+
+                    {/* Label links */}
+                    {detailOrder.shipment.labelUrl && (
+                      <div className="d-flex gap-2 mb-3 flex-wrap">
+                        <a href={detailOrder.shipment.labelUrl} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-primary">
+                          <Icon name="download" className="me-1" /> Download Label (PNG)
+                        </a>
+                        {detailOrder.shipment.labelPdf && detailOrder.shipment.labelPdf !== detailOrder.shipment.labelUrl && (
+                          <a href={detailOrder.shipment.labelPdf} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-secondary">
+                            <Icon name="file-pdf" className="me-1" /> Download Label (PDF)
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Estimated delivery */}
+                    {detailOrder.shipment.estimatedDelivery && (
+                      <div className="mb-2 small text-soft">
+                        <strong>Est. Delivery: </strong>
+                        {new Date(detailOrder.shipment.estimatedDelivery).toLocaleDateString()}
+                      </div>
+                    )}
+
+                    {/* Buy label button — only shown when no label yet and order has Shippo rate */}
+                    {!detailOrder.shipment.labelUrl && (
+                      <div>
+                        {labelError && <div className="alert alert-danger py-1 px-2 mb-2 small">{labelError}</div>}
+                        {detailOrder.shippoRateId ? (
+                          <Button
+                            size="sm"
+                            color="primary"
+                            onClick={buyShippoLabel}
+                            disabled={labelPurchasing}
+                          >
+                            {labelPurchasing ? <><Spinner size="sm" className="me-1" /> Purchasing Label…</> : <><Icon name="package" className="me-1" /> Buy Shipping Label via Shippo</>}
+                          </Button>
+                        ) : (
+                          <p className="text-soft small mb-0">
+                            No Shippo rate was selected at checkout. This order used a flat-rate shipping method.
+                            To generate a label, purchase one manually in your Shippo dashboard.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

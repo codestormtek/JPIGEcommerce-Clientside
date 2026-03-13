@@ -85,9 +85,11 @@ export async function placeOrder(userId: string, input: PlaceOrderInput, taxTota
       return { item, l, lineTotal };
     });
 
-    // Fetch shipping cost
+    // Fetch shipping cost — Shippo rate takes priority over static method
     let shippingTotal = 0;
-    if (input.shippingMethodId) {
+    if (input.shippoRateAmount != null) {
+      shippingTotal = input.shippoRateAmount;
+    } else if (input.shippingMethodId) {
       const sm = await tx.shippingMethod.findUnique({ where: { id: input.shippingMethodId } });
       if (sm) shippingTotal = Number(sm.price);
     }
@@ -109,6 +111,9 @@ export async function placeOrder(userId: string, input: PlaceOrderInput, taxTota
         taxTotal,
         shippingTotal,
         grandTotal,
+        shippoRateId: input.shippoRateId,
+        shippoCarrier: input.shippoCarrier,
+        shippoServiceLevel: input.shippoServiceLevel,
         addresses: { create: input.addresses },
         lines: {
           create: lineData.map(({ item, l, lineTotal }) => ({

@@ -46,6 +46,11 @@ export const placeOrderSchema = z.object({
   paymentMethodTokenId: z.string().uuid().optional(),
   /** Optional coupon code to apply a discount at checkout */
   couponCode: z.string().optional(),
+  /** Shippo rate fields — set when customer selects a live carrier rate at checkout */
+  shippoRateId: z.string().optional(),
+  shippoRateAmount: z.number().nonnegative().optional(),
+  shippoCarrier: z.string().optional(),
+  shippoServiceLevel: z.string().optional(),
 });
 
 export type PlaceOrderInput = z.infer<typeof placeOrderSchema>;

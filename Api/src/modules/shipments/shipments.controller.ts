@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../../types';
 import { sendSuccess, sendCreated, sendNoContent, sendPaginated } from '../../utils/apiResponse';
 import { ctxFromRequest } from '../../utils/auditLogger';
-import { ListShipmentsInput, CreateShipmentInput, UpdateShipmentInput } from './shipments.schema';
+import { ListShipmentsInput, CreateShipmentInput, UpdateShipmentInput, PurchaseLabelInput } from './shipments.schema';
 import * as service from './shipments.service';
 
 // ─── Admin handlers ───────────────────────────────────────────────────────────
@@ -45,6 +45,16 @@ export async function deleteShipment(req: AuthRequest, res: Response): Promise<v
     ctxFromRequest(req, req.user?.sub),
   );
   sendNoContent(res);
+}
+
+// POST /api/v1/shipments/:id/label
+export async function purchaseLabel(req: AuthRequest, res: Response): Promise<void> {
+  const shipment = await service.purchaseShippoLabel(
+    req.params['id'] as string,
+    req.body as PurchaseLabelInput,
+    ctxFromRequest(req, req.user?.sub),
+  );
+  sendSuccess(res, shipment, 'Shipping label purchased successfully');
 }
 
 // ─── Customer-facing handler ──────────────────────────────────────────────────

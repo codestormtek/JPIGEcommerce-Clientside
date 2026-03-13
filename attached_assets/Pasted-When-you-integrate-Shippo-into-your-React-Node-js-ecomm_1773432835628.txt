@@ -1,0 +1,229 @@
+When you integrate Shippo into your React + Node.js ecommerce system, Shippo does not need to know your products directly. Instead, it calculates shipping based on the package you send to its API.
+
+So your system must convert the cart → shipment package.
+
+Think of it like this:
+
+Products in cart
+      ↓
+Your backend calculates package
+      ↓
+Send shipment request to Shippo
+      ↓
+Shippo returns shipping rates
+1. Product Attributes You Need in Your Database
+
+Each product should have shipping-related attributes so your system can calculate the package.
+
+Required Product Fields
+
+At minimum your product table should include:
+
+Attribute	Why Needed
+Weight	Carrier pricing is primarily based on weight
+Length	Package dimension
+Width	Package dimension
+Height	Package dimension
+Shipping Class	Optional grouping (Bottle, Spice, Bulk)
+Fragile flag	Optional for packaging logic
+Requires Separate Box	Optional
+Example Product Record
+
+Sauce Bottle
+
+weight: 1.2 lb
+length: 2.5 in
+width: 2.5 in
+height: 8 in
+shipping_class: "bottle"
+
+Rub Bottle
+
+weight: 0.5 lb
+length: 2.5 in
+width: 2.5 in
+height: 5 in
+shipping_class: "rub"
+2. Package Attributes Shippo Needs
+
+Shippo only cares about the final package.
+
+Your Node backend will send something like:
+
+weight
+length
+width
+height
+distance_unit
+mass_unit
+address_from
+address_to
+
+Example request to Shippo:
+
+{
+  "address_from": {
+    "name": "Jiggling Pig BBQ",
+    "street1": "123 BBQ Lane",
+    "city": "Waldorf",
+    "state": "MD",
+    "zip": "20601",
+    "country": "US"
+  },
+  "address_to": {
+    "name": "Customer",
+    "street1": "45 Main St",
+    "city": "Atlanta",
+    "state": "GA",
+    "zip": "30301",
+    "country": "US"
+  },
+  "parcels": [{
+    "length": "8",
+    "width": "6",
+    "height": "4",
+    "distance_unit": "in",
+    "weight": "2.5",
+    "mass_unit": "lb"
+  }]
+}
+
+Shippo then returns:
+
+USPS Ground Advantage: $6.52
+UPS Ground: $8.13
+USPS Priority: $9.21
+3. How Your App Calculates the Package
+
+Your backend converts the cart items → package.
+
+Example cart:
+
+2x BBQ Sauce
+1x Rub
+
+Your logic might do:
+
+Total weight
+= (2 × 1.2) + (1 × 0.5)
+= 2.9 lbs
+
+Then choose a box size.
+
+Example box table:
+
+Box	Max Weight	Dimensions
+Small	3 lb	8×6×4
+Medium	6 lb	10×8×6
+Large	10 lb	12×10×8
+
+Your system chooses Small Box.
+
+Shippo receives:
+
+weight: 2.9
+dimensions: 8x6x4
+4. Example Checkout Flow
+
+Typical ecommerce shipping flow:
+
+Step 1
+
+Customer enters shipping address.
+
+Step 2
+
+Frontend calls your API
+
+POST /shipping/rates
+Step 3
+
+Your Node API:
+
+Reads cart
+
+Calculates package
+
+Calls Shippo
+
+Returns rates
+
+Step 4
+
+React displays:
+
+USPS Ground Advantage — $6.52
+UPS Ground — $8.13
+USPS Priority — $9.21
+
+Customer selects shipping.
+
+5. Example Database Fields for Shipping
+
+Your Products table should include:
+
+products
+---------
+id
+name
+sku
+price
+
+weight
+length
+width
+height
+
+shipping_class
+requires_separate_box
+fragile
+
+Optional but helpful:
+
+shipping_packages
+-----------------
+id
+name
+length
+width
+height
+max_weight
+6. Best Setup for Your Sauces and Rubs
+
+For your products, I would do this:
+
+Shipping Classes
+SAUCE_BOTTLE
+RUB_BOTTLE
+MERCH
+Default Dimensions
+
+Sauce
+
+weight: 1.25 lb
+dim: 2.5 × 2.5 × 8
+
+Rub
+
+weight: 0.5 lb
+dim: 2.5 × 2.5 × 5
+Boxes
+Small: 8×6×4
+Medium: 10×8×6
+Large: 12×10×8
+
+Your backend packs the box automatically.
+
+7. Pro Tip (Important for Food Products)
+
+Shipping costs for sauces can explode if you let carriers calculate dimensional weight.
+
+Instead:
+
+use standard box sizes
+
+control packing logic yourself
+
+send only one parcel to Shippo
+
+This keeps shipping prices consistent

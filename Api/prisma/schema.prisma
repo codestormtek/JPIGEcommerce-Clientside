@@ -251,8 +251,10 @@ model ProductItem {
   weight     Decimal?
   length     Decimal?
   width      Decimal?
-  height     Decimal?
-  isPublished Boolean @default(true)
+  height        Decimal?
+  shippingClass String?  // SAUCE_BOTTLE | RUB_BOTTLE | MERCH
+  fragile       Boolean  @default(false)
+  isPublished   Boolean  @default(true)
 
   options      ProductItemOption[]
   cartItems    ShoppingCartItem[]
@@ -454,6 +456,9 @@ model ShopOrder {
   eventName              String?
   headcount              Int?
   specialInstructions    String?
+  shippoRateId           String?
+  shippoCarrier          String?
+  shippoServiceLevel     String?
 
   lines                   OrderLine[]
   addresses               OrderAddress[]
@@ -609,12 +614,17 @@ model Shipment {
   id             String    @id @default(uuid())
   orderId        String    @unique
   order          ShopOrder @relation(fields: [orderId], references: [id])
-  carrier        String?
-  trackingNumber String?
-  status         String    @default("pending") // pending|shipped|delivered|cancelled
-  shippedAt      DateTime?
-  deliveredAt    DateTime?
-  items          ShipmentItem[]
+  carrier              String?
+  trackingNumber       String?
+  status               String    @default("pending") // pending|shipped|delivered|cancelled
+  shippedAt            DateTime?
+  deliveredAt          DateTime?
+  shippoRateId         String?
+  shippoTransactionId  String?
+  labelUrl             String?
+  labelPdf             String?
+  estimatedDelivery    DateTime?
+  items                ShipmentItem[]
 
   @@map("shipments")
 }

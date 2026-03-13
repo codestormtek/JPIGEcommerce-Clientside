@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -15,6 +15,17 @@ interface ShippingMethod {
   name: string;
   price: number | string;
   estimatedDays?: number | null;
+}
+
+interface ShippoRate {
+  rateId: string;
+  provider: string;
+  providerImage?: string;
+  servicelevel: string;
+  amount: string;
+  currency: string;
+  estimatedDays: number | null;
+  durationTerms?: string;
 }
 
 interface CouponResult {
@@ -49,7 +60,7 @@ function FieldLabel({ label, required }: { label: string; required?: boolean }) 
   );
 }
 
-function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }) {
+function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }) {
   const stripe = useStripe();
   const elements = useElements();
   const { cartItems, clearCart, removeFromCart, isCartLoaded } = useCart();
@@ -80,7 +91,82 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
     }
   }, [user]);
 
+  // ── Shippo live rates ──────────────────────────────────────────────────────
+  const [liveRates, setLiveRates] = useState<ShippoRate[]>([]);
+  const [ratesLoading, setRatesLoading] = useState(false);
+  const [ratesError, setRatesError] = useState('');
+  const [selectedRateId, setSelectedRateId] = useState('');
+  const [usingLiveRates, setUsingLiveRates] = useState(false);
+  const ratesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Fallback static selection ──────────────────────────────────────────────
   const [selectedShipping, setSelectedShipping] = useState('');
+  useEffect(() => {
+    if (fallbackMethods.length > 0 && !selectedShipping) {
+      setSelectedShipping(fallbackMethods[0].id);
+    }
+  }, [fallbackMethods, selectedShipping]);
+
+  const cartItemsForOrder = cartItems.filter(i => i.active);
+
+  // ── Fetch live Shippo rates when address is complete ───────────────────────
+  const fetchLiveRates = async () => {
+    if (!form.address1 || !form.city || !form.state || !form.zip || cartItemsForOrder.length === 0) return;
+
+    setRatesLoading(true);
+    setRatesError('');
+    try {
+      const res = await apiFetch<{ data: { rates: ShippoRate[] } }>('/shipping/rates', {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: {
+          address: {
+            name: `${form.firstName} ${form.lastName}`.trim() || 'Customer',
+            street1: form.address1,
+            street2: form.address2 || undefined,
+            city: form.city,
+            state: form.state,
+            zip: form.zip,
+            country: form.country || 'US',
+            phone: form.phone || undefined,
+            email: form.email || undefined,
+          },
+          items: cartItemsForOrder.map(i => ({ productItemId: i.productItemId, qty: i.quantity })),
+        },
+      });
+      const rates = res.data.rates ?? [];
+      setLiveRates(rates);
+      setUsingLiveRates(rates.length > 0);
+      if (rates.length > 0) {
+        setSelectedRateId(rates[0].rateId);
+      }
+    } catch {
+      setRatesError('Could not fetch live shipping rates. Please select a shipping option below.');
+      setUsingLiveRates(false);
+    } finally {
+      setRatesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (ratesDebounceRef.current) clearTimeout(ratesDebounceRef.current);
+    if (form.address1 && form.city && form.state && form.zip) {
+      ratesDebounceRef.current = setTimeout(() => {
+        fetchLiveRates();
+      }, 800);
+    } else {
+      setLiveRates([]);
+      setUsingLiveRates(false);
+      setSelectedRateId('');
+    }
+    return () => {
+      if (ratesDebounceRef.current) clearTimeout(ratesDebounceRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.address1, form.city, form.state, form.zip, isAuthenticated]);
+
+  // ── Totals ─────────────────────────────────────────────────────────────────
   const [couponCode, setCouponCode] = useState('');
   const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
   const [couponError, setCouponError] = useState('');
@@ -92,15 +178,11 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
   const [orderSuccess, setOrderSuccess] = useState<{ orderNumber: string; grandTotal: number } | null>(null);
   const [agreeTerms, setAgreeTerms] = useState(false);
 
-  useEffect(() => {
-    if (shippingMethods.length > 0 && !selectedShipping) {
-      setSelectedShipping(shippingMethods[0].id);
-    }
-  }, [shippingMethods, selectedShipping]);
-
-  const cartItemsForOrder = cartItems.filter(i => i.active);
   const subtotal = cartItemsForOrder.reduce((s, i) => s + i.price * i.quantity, 0);
-  const shippingCost = Number(shippingMethods.find(m => m.id === selectedShipping)?.price ?? 0);
+  const selectedRate = liveRates.find(r => r.rateId === selectedRateId) ?? null;
+  const shippingCost = usingLiveRates
+    ? Number(selectedRate?.amount ?? 0)
+    : Number(fallbackMethods.find(m => m.id === selectedShipping)?.price ?? 0);
   const discount = couponResult?.discountAmount ?? 0;
   const total = Math.max(0, subtotal + shippingCost - discount);
 
@@ -150,7 +232,8 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
     if (!form.address1.trim()) missingFields.push('Address');
     if (!form.city.trim()) missingFields.push('City');
     if (!form.zip.trim()) missingFields.push('ZIP / Postal Code');
-    if (!selectedShipping) missingFields.push('Shipping Method');
+    if (usingLiveRates && !selectedRateId) missingFields.push('Shipping Method');
+    if (!usingLiveRates && !selectedShipping) missingFields.push('Shipping Method');
     if (missingFields.length > 0) {
       setOrderError(`Please fill in the following required fields: ${missingFields.join(', ')}.`);
       return;
@@ -201,43 +284,53 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
 
       const paymentMethodTokenId = tokenRes.data.id;
 
+      const orderBody: Record<string, unknown> = {
+        lines: cartItemsForOrder.map(i => ({ productItemId: i.productItemId, qty: i.quantity })),
+        addresses: [
+          {
+            addressType: 'shipping',
+            fullName: `${form.firstName} ${form.lastName}`.trim(),
+            phone: form.phone || undefined,
+            addressLine1: form.address1,
+            addressLine2: form.address2 || undefined,
+            city: form.city,
+            region: form.state,
+            postalCode: form.zip,
+            countryName: 'United States',
+            countryIso2: form.country,
+          },
+          {
+            addressType: 'billing',
+            fullName: `${form.firstName} ${form.lastName}`.trim(),
+            addressLine1: form.address1,
+            addressLine2: form.address2 || undefined,
+            city: form.city,
+            region: form.state,
+            postalCode: form.zip,
+            countryName: 'United States',
+            countryIso2: form.country,
+          },
+        ],
+        couponCode: couponResult?.code ?? undefined,
+        specialInstructions: form.notes || undefined,
+        paymentMethodTokenId,
+        currency: 'USD',
+        orderType: 'retail',
+      };
+
+      if (usingLiveRates && selectedRate) {
+        orderBody.shippoRateId = selectedRate.rateId;
+        orderBody.shippoRateAmount = Number(selectedRate.amount);
+        orderBody.shippoCarrier = selectedRate.provider;
+        orderBody.shippoServiceLevel = selectedRate.servicelevel;
+      } else {
+        orderBody.shippingMethodId = selectedShipping || undefined;
+      }
+
       const orderRes = await apiFetch<{ data: { id: string; grandTotal: string | number } }>('/orders', {
         method: 'POST',
         headers: getAuthHeader(),
-        body: {
-          lines: cartItemsForOrder.map(i => ({ productItemId: i.productItemId, qty: i.quantity })),
-          addresses: [
-            {
-              addressType: 'shipping',
-              fullName: `${form.firstName} ${form.lastName}`.trim(),
-              phone: form.phone || undefined,
-              addressLine1: form.address1,
-              addressLine2: form.address2 || undefined,
-              city: form.city,
-              region: form.state,
-              postalCode: form.zip,
-              countryName: 'United States',
-              countryIso2: form.country,
-            },
-            {
-              addressType: 'billing',
-              fullName: `${form.firstName} ${form.lastName}`.trim(),
-              addressLine1: form.address1,
-              addressLine2: form.address2 || undefined,
-              city: form.city,
-              region: form.state,
-              postalCode: form.zip,
-              countryName: 'United States',
-              countryIso2: form.country,
-            },
-          ],
-          shippingMethodId: selectedShipping || undefined,
-          couponCode: couponResult?.code ?? undefined,
-          specialInstructions: form.notes || undefined,
-          paymentMethodTokenId,
-          currency: 'USD',
-          orderType: 'retail',
-        },
+        body: orderBody,
       });
 
       const orderId = orderRes.data.id;
@@ -405,30 +498,78 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
             </div>
           </div>
 
-          {/* Shipping Method */}
-          {shippingMethods.length > 0 && (
-            <div style={{ background: '#fff', border: '1px solid #eee', borderRadius: 8, padding: '24px', marginBottom: 24 }}>
-              <h5 style={{ fontSize: 17, fontWeight: 700, color: '#1F1F25', marginBottom: 16 }}>Shipping Method</h5>
-              {shippingMethods.map(method => (
-                <label key={method.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: '1px solid #f5f5f5', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name="shippingMethod"
-                    value={method.id}
-                    checked={selectedShipping === method.id}
-                    onChange={() => setSelectedShipping(method.id)}
-                  />
-                  <span style={{ flex: 1, fontWeight: 500, color: '#1F1F25', fontSize: 15 }}>{method.name}</span>
-                  {method.estimatedDays != null && (
-                    <span style={{ fontSize: 13, color: '#8094ae' }}>{method.estimatedDays} day{method.estimatedDays !== 1 ? 's' : ''}</span>
-                  )}
-                  <span style={{ fontWeight: 700, color: Number(method.price) === 0 ? '#629D23' : '#1F1F25', fontSize: 15 }}>
-                    {Number(method.price) === 0 ? 'FREE' : `$${Number(method.price).toFixed(2)}`}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
+          {/* Shipping Method — Live Shippo Rates or Fallback */}
+          <div style={{ background: '#fff', border: '1px solid #eee', borderRadius: 8, padding: '24px', marginBottom: 24 }}>
+            <h5 style={{ fontSize: 17, fontWeight: 700, color: '#1F1F25', marginBottom: 4 }}>Shipping Method</h5>
+
+            {/* Loading state */}
+            {ratesLoading && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 0', color: '#526484', fontSize: 14 }}>
+                <i className="fa-solid fa-spinner fa-spin" style={{ color: '#ff8c00' }} />
+                Getting shipping rates for your address…
+              </div>
+            )}
+
+            {/* Error / hint when address is incomplete */}
+            {!ratesLoading && !usingLiveRates && !ratesError && (
+              <p style={{ fontSize: 13, color: '#8094ae', marginBottom: 12 }}>
+                Fill in your address above to get real-time shipping rates.
+              </p>
+            )}
+
+            {/* Rate fetch error */}
+            {ratesError && !ratesLoading && (
+              <p style={{ fontSize: 13, color: '#e85347', marginBottom: 12 }}>
+                <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: 6 }} />{ratesError}
+              </p>
+            )}
+
+            {/* Live Shippo rates */}
+            {usingLiveRates && !ratesLoading && liveRates.map(rate => (
+              <label key={rate.rateId} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: '1px solid #f5f5f5', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="shippingRate"
+                  value={rate.rateId}
+                  checked={selectedRateId === rate.rateId}
+                  onChange={() => setSelectedRateId(rate.rateId)}
+                />
+                {rate.providerImage && (
+                  <img src={rate.providerImage} alt={rate.provider} style={{ height: 24, objectFit: 'contain' }} />
+                )}
+                <span style={{ flex: 1, color: '#1F1F25', fontSize: 15 }}>
+                  <span style={{ fontWeight: 600 }}>{rate.provider}</span>
+                  <span style={{ color: '#526484', fontWeight: 400 }}> — {rate.servicelevel}</span>
+                </span>
+                {rate.estimatedDays != null && (
+                  <span style={{ fontSize: 13, color: '#8094ae' }}>{rate.estimatedDays} day{rate.estimatedDays !== 1 ? 's' : ''}</span>
+                )}
+                <span style={{ fontWeight: 700, color: '#1F1F25', fontSize: 15 }}>
+                  ${Number(rate.amount).toFixed(2)}
+                </span>
+              </label>
+            ))}
+
+            {/* Fallback static methods when Shippo is unavailable */}
+            {!usingLiveRates && !ratesLoading && fallbackMethods.map(method => (
+              <label key={method.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: '1px solid #f5f5f5', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="shippingMethod"
+                  value={method.id}
+                  checked={selectedShipping === method.id}
+                  onChange={() => setSelectedShipping(method.id)}
+                />
+                <span style={{ flex: 1, fontWeight: 500, color: '#1F1F25', fontSize: 15 }}>{method.name}</span>
+                {method.estimatedDays != null && (
+                  <span style={{ fontSize: 13, color: '#8094ae' }}>{method.estimatedDays} day{method.estimatedDays !== 1 ? 's' : ''}</span>
+                )}
+                <span style={{ fontWeight: 700, color: Number(method.price) === 0 ? '#629D23' : '#1F1F25', fontSize: 15 }}>
+                  {Number(method.price) === 0 ? 'FREE' : `$${Number(method.price).toFixed(2)}`}
+                </span>
+              </label>
+            ))}
+          </div>
 
           {/* Payment — Credit Card Only */}
           <div style={{ background: '#fff', border: '1px solid #eee', borderRadius: 8, padding: '24px', marginBottom: 24 }}>
@@ -497,58 +638,70 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
             disabled={submitting || !stripe}
           >
             {submitting ? (
-              <><i className="fa-solid fa-spinner fa-spin" />Processing Payment...</>
-            ) : !stripe ? (
-              <><i className="fa-solid fa-spinner fa-spin" />Initializing Payment...</>
+              <>
+                <i className="fa-solid fa-spinner fa-spin" />
+                Processing Order…
+              </>
             ) : (
-              <><i className="fa-solid fa-lock" />Place Order — ${total.toFixed(2)}</>
+              <>
+                <i className="fa-solid fa-lock" />
+                Place Order — ${total.toFixed(2)}
+              </>
             )}
           </button>
         </div>
 
         {/* ── RIGHT COLUMN: Order Summary ─────────────────────────────────── */}
         <div className="col-lg-5 order-1 order-lg-2">
-          <div style={{ background: '#fff', border: '1px solid #eee', borderRadius: 8, padding: '24px', position: 'sticky', top: 20 }}>
+          <div style={{ background: '#fff', border: '1px solid #eee', borderRadius: 8, padding: '24px', position: 'sticky', top: 100 }}>
             <h5 style={{ fontSize: 17, fontWeight: 700, color: '#1F1F25', marginBottom: 20 }}>Order Summary</h5>
 
             {cartItemsForOrder.map(item => (
-              <div key={item.id} style={{ display: 'flex', gap: 14, paddingBottom: 16, marginBottom: 16, borderBottom: '1px solid #f5f5f5', alignItems: 'center' }}>
-                <div style={{ width: 56, height: 56, flexShrink: 0, borderRadius: 6, overflow: 'hidden', border: '1px solid #eee', position: 'relative' }}>
-                  <img src={item.image} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <span style={{ position: 'absolute', top: -6, right: -6, background: '#526484', color: '#fff', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{item.quantity}</span>
-                </div>
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid #f5f5f5' }}>
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt={item.name} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, border: '1px solid #eee', flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 56, height: 56, borderRadius: 6, background: '#f5f6fa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <i className="fa-solid fa-box" style={{ color: '#aab7c4', fontSize: 20 }} />
+                  </div>
+                )}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: '#1F1F25', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
-                  {!item.productItemId && (
-                    <p style={{ margin: '2px 0 0', fontSize: 11, color: '#e85347' }}>Re-add from shop to checkout</p>
-                  )}
+                  <div style={{ fontWeight: 600, fontSize: 14, color: '#1F1F25', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
+                  {item.variant && <div style={{ fontSize: 12, color: '#8094ae' }}>{item.variant}</div>}
+                  <div style={{ fontSize: 13, color: '#526484' }}>Qty: {item.quantity}</div>
                 </div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#1F1F25', flexShrink: 0 }}>
-                  ${(item.price * item.quantity).toFixed(2)}
-                </div>
+                <div style={{ fontWeight: 700, color: '#1F1F25', fontSize: 14, flexShrink: 0 }}>${(item.price * item.quantity).toFixed(2)}</div>
               </div>
             ))}
 
-            <div style={{ borderTop: '1px solid #eee', paddingTop: 16 }}>
+            <div style={{ borderTop: '1px solid #e0e0e0', paddingTop: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 14, color: '#526484' }}>
-                <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
+                <span>Subtotal</span>
+                <span>${subtotal.toFixed(2)}</span>
               </div>
-              {selectedShipping && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 14, color: shippingCost === 0 ? '#629D23' : '#526484' }}>
-                  <span>Shipping</span>
-                  <span>{shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}</span>
-                </div>
-              )}
-              {discount > 0 && (
+              {couponResult && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 14, color: '#629D23' }}>
-                  <span>Coupon ({couponResult?.code})</span><span>-${discount.toFixed(2)}</span>
+                  <span>Coupon ({couponResult.code})</span>
+                  <span>−${discount.toFixed(2)}</span>
                 </div>
               )}
-              <p style={{ fontSize: 12, color: '#aab7c4', margin: '4px 0 14px', lineHeight: 1.5 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 14, color: shippingCost === 0 ? '#629D23' : '#526484' }}>
+                <span>Shipping</span>
+                <span>{shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}</span>
+              </div>
+              <div style={{ fontSize: 12, color: '#aab7c4', marginBottom: 16, fontStyle: 'italic' }}>
                 Sales tax calculated at checkout based on your shipping address.
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 20, color: '#1F1F25', borderTop: '2px solid #1c2b46', paddingTop: 14 }}>
-                <span>Total</span><span>${total.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 700, color: '#1F1F25', paddingTop: 12, borderTop: '2px solid #1F1F25' }}>
+                <span>Total</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 20, padding: '12px', background: '#f8fdf5', borderRadius: 6, border: '1px solid #ddeecb' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#526484' }}>
+                <i className="fa-solid fa-shield-halved" style={{ color: '#629D23' }} />
+                <span>Secure checkout. 30-day return policy.</span>
               </div>
             </div>
           </div>
@@ -560,29 +713,17 @@ function CheckoutForm({ shippingMethods }: { shippingMethods: ShippingMethod[] }
 }
 
 export default function CheckOutMain() {
-  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
-  const [loadingMethods, setLoadingMethods] = useState(true);
+  const [fallbackMethods, setFallbackMethods] = useState<ShippingMethod[]>([]);
 
   useEffect(() => {
     apiFetch<{ data: ShippingMethod[] }>('/orders/shipping-methods')
-      .then(res => setShippingMethods(res.data ?? []))
-      .catch(() => {})
-      .finally(() => setLoadingMethods(false));
+      .then(res => setFallbackMethods(res.data ?? []))
+      .catch(() => {});
   }, []);
 
   return (
-    <div className="checkout-area rts-section-gap">
-      <div className="container">
-        {loadingMethods ? (
-          <div style={{ textAlign: 'center', padding: 60 }}>
-            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 32, color: '#ff8c00' }} />
-          </div>
-        ) : (
-          <Elements stripe={stripePromise} options={{ appearance: { theme: 'stripe' } }}>
-            <CheckoutForm shippingMethods={shippingMethods} />
-          </Elements>
-        )}
-      </div>
-    </div>
+    <Elements stripe={stripePromise}>
+      <CheckoutForm fallbackMethods={fallbackMethods} />
+    </Elements>
   );
 }

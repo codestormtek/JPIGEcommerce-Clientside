@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validate.middleware';
 import { asyncHandler } from '../../utils/asyncHandler';
-import { listShipmentsSchema, createShipmentSchema, updateShipmentSchema } from './shipments.schema';
+import { listShipmentsSchema, createShipmentSchema, updateShipmentSchema, purchaseLabelSchema } from './shipments.schema';
 import * as ctrl from './shipments.controller';
 
 export const shipmentsRouter = Router();
@@ -59,5 +59,14 @@ shipmentsRouter.delete(
   authenticate,
   authorize('admin'),
   asyncHandler(ctrl.deleteShipment),
+);
+
+// POST /api/v1/shipments/:id/label  — purchase a Shippo label
+shipmentsRouter.post(
+  '/:id/label',
+  authenticate,
+  authorize('admin'),
+  validate(purchaseLabelSchema),
+  asyncHandler(ctrl.purchaseLabel),
 );
 
