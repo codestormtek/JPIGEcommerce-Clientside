@@ -71,8 +71,8 @@ export type UpdateContactPreferencesInput = z.infer<typeof updateContactPreferen
 // ─── Reviews ──────────────────────────────────────────────────────────────────
 
 export const createReviewSchema = z.object({
-  productId: z.string().uuid('Invalid product ID'),
-  orderLineId: z.string().uuid().optional(),
+  productId: z.string().min(1, 'Product ID is required'),
+  orderLineId: z.string().optional(),
   ratingValue: z.number().int().min(1).max(5),
   comment: z.string().optional(),
 });
@@ -83,7 +83,7 @@ export const listReviewsSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
   isApproved: z.coerce.boolean().optional(),
-  productId: z.string().uuid().optional(),
+  productId: z.string().optional(),
   orderBy: z.enum(['createdAt', 'ratingValue']).default('createdAt'),
   order: z.enum(['asc', 'desc']).default('desc'),
 });
