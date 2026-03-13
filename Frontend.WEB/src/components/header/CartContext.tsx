@@ -25,7 +25,7 @@ interface ApiCartItem {
     id: string;
     product: {
       name: string;
-      productMedia?: Array<{
+      media?: Array<{
         mediaAsset: { url: string };
       }>;
     };
@@ -72,7 +72,7 @@ function getAccessToken(): string | null {
 let _counter = Date.now();
 
 function mapApiItem(apiItem: ApiCartItem): CartItem {
-  const image = apiItem.productItem?.product?.productMedia?.[0]?.mediaAsset?.url ?? '';
+  const image = apiItem.productItem?.product?.media?.[0]?.mediaAsset?.url ?? '';
   return {
     id: ++_counter,
     cartItemId: apiItem.id,

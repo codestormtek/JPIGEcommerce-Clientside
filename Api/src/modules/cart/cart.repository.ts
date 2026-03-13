@@ -10,7 +10,7 @@ const cartInclude = {
         include: {
           product: {
             include: {
-              productMedia: {
+              media: {
                 where: { isPrimary: true },
                 take: 1,
                 include: { mediaAsset: true },
