@@ -22,6 +22,24 @@ interface CartContextProps {
   isCartLoaded: boolean;
 }
 
+const CART_KEY = 'cart';
+
+function readCartFromStorage(): CartItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    return raw ? (JSON.parse(raw) as CartItem[]) : [];
+  } catch {
+    localStorage.removeItem(CART_KEY);
+    return [];
+  }
+}
+
+function writeCartToStorage(items: CartItem[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(CART_KEY, JSON.stringify(items));
+}
+
 const CartContext = createContext<CartContextProps | undefined>(undefined);
 
 export const useCart = () => {
@@ -34,77 +52,76 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartLoaded, setIsCartLoaded] = useState(false);
 
-  // Load from localStorage on first mount
+  // Load from localStorage once on mount (client only)
   useEffect(() => {
-    const storedCart = localStorage.getItem('cart');
-    if (storedCart) {
-      try {
-        setCartItems(JSON.parse(storedCart));
-      } catch (error) {
-        console.error('Failed to parse cart from localStorage:', error);
-        localStorage.removeItem('cart');
-      }
-    }
+    setCartItems(readCartFromStorage());
     setIsCartLoaded(true);
   }, []);
 
-  // Save to localStorage whenever cart changes
-  useEffect(() => {
-    if (isCartLoaded) {
-      localStorage.setItem('cart', JSON.stringify(cartItems));
-    }
-  }, [cartItems, isCartLoaded]);
+  // Helper: compute next state, persist immediately, then update React state
+  const mutate = (updater: (prev: CartItem[]) => CartItem[]) => {
+    setCartItems((prev) => {
+      const next = updater(prev);
+      writeCartToStorage(next);
+      return next;
+    });
+  };
 
-  // Add item to cart (active: true)
   const addToCart = (item: CartItem) => {
-    setCartItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id && i.active === true);
+    mutate((prev) => {
+      const existing = prev.find(
+        (i) => i.productItemId
+          ? i.productItemId === item.productItemId && i.active === true
+          : i.id === item.id && i.active === true
+      );
       if (existing) {
         return prev.map((i) =>
-          i.id === item.id && i.active === true
+          (i.productItemId
+            ? i.productItemId === item.productItemId
+            : i.id === item.id) && i.active === true
             ? { ...i, quantity: i.quantity + item.quantity }
             : i
         );
-      } else {
-        return [...prev, item];
       }
+      return [...prev, item];
     });
   };
 
-  // Add item to wishlist (active: false)
   const addToWishlist = (item: CartItem) => {
-    setCartItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id && i.active === false);
+    mutate((prev) => {
+      const existing = prev.find(
+        (i) => i.productItemId
+          ? i.productItemId === item.productItemId && i.active === false
+          : i.id === item.id && i.active === false
+      );
       if (existing) {
         return prev.map((i) =>
-          i.id === item.id && i.active === false
+          (i.productItemId
+            ? i.productItemId === item.productItemId
+            : i.id === item.id) && i.active === false
             ? { ...i, quantity: i.quantity + item.quantity }
             : i
         );
-      } else {
-        return [...prev, item];
       }
+      return [...prev, item];
     });
   };
 
-  // Remove item by ID
   const removeFromCart = (id: number) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+    mutate((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // Update quantity (cart or wishlist)
   const updateItemQuantity = (id: number, quantity: number) => {
-    setCartItems((prev) =>
+    mutate((prev) =>
       prev.map((item) =>
         item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item
       )
     );
   };
 
-  // Clear entire cart
   const clearCart = () => {
+    if (typeof window !== 'undefined') localStorage.removeItem(CART_KEY);
     setCartItems([]);
-    if (typeof window !== 'undefined') localStorage.removeItem('cart');
   };
 
   return (
