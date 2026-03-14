@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiAuthGet, apiAuthPost, apiAuthPatch, apiAuthDelete } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -103,11 +104,14 @@ export const useCart = () => {
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartLoaded, setIsCartLoaded] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Load cart on mount
+  // Load cart — wait for auth to finish resolving so we always use a valid token
   useEffect(() => {
+    if (authLoading) return; // Don't run until auth (+ token refresh) has completed
+
     async function loadCart() {
-      if (getAccessToken()) {
+      if (isAuthenticated) {
         try {
           const serverItems = await fetchServerCart();
           // Keep any local wishlist items (server has no wishlist)
@@ -123,7 +127,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       setIsCartLoaded(true);
     }
     loadCart();
-  }, []);
+  }, [isAuthenticated, authLoading]);
 
   // Keep wishlist items persisted to localStorage
   useEffect(() => {
