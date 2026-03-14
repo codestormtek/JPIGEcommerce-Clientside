@@ -11,8 +11,6 @@ import {
   Button, RSelect, TooltipComponent,
 } from "@/components/Component";
 import { apiGet, apiPost, apiPatch, apiDelete, apiUpload } from "@/utils/apiClient";
-import { Grid, Willow } from "wx-react-grid";
-import "wx-react-grid/dist/grid.css";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -63,20 +61,14 @@ const AdminProductList = () => {
   const [skuSuccess, setSkuSuccess] = useState(null);
   const [editingSkuId, setEditingSkuId] = useState(null);
   const [editingSkuDraft, setEditingSkuDraft] = useState({});
-  const skuItemsRef = useRef([]);
-  useEffect(() => { skuItemsRef.current = skuItems; }, [skuItems]);
-  const removeSkuItemRef = useRef(null);
-  const toggleSkuPublishedRef = useRef(null);
   // Attributes tab
   const [attrItems, setAttrItems] = useState([]);
   const [attrDraft, setAttrDraft] = useState({ name: "", values: "" });
   const [attrSaving, setAttrSaving] = useState(false);
   const [attrError, setAttrError] = useState(null);
   const [attrSuccess, setAttrSuccess] = useState(null);
-  const attrItemsRef = useRef([]);
-  const editProductRef = useRef(null);
-  useEffect(() => { attrItemsRef.current = attrItems; }, [attrItems]);
-  useEffect(() => { editProductRef.current = editProduct; }, [editProduct]);
+  const [editingAttrId, setEditingAttrId] = useState(null);
+  const [editingAttrDraft, setEditingAttrDraft] = useState({ name: "", values: "" });
   const [skuLoading, setSkuLoading] = useState(false);
   const successTimers = useRef([]);
   // Image tab
@@ -305,80 +297,17 @@ const AdminProductList = () => {
     finally { setSkuSaving(false); }
   };
 
-  useEffect(() => { removeSkuItemRef.current = removeSkuItem; }, [removeSkuItem]);
-
-  const toggleSkuPublished = async (skuId) => {
-    const row = skuItemsRef.current.find((s) => s.id === skuId);
-    if (!row) return;
-    const product = editProductRef.current;
-    if (!product) return;
+  const toggleSkuPublished = async (skuId, currentItems) => {
+    const row = (currentItems ?? skuItems).find((s) => s.id === skuId);
+    if (!row || !editProduct) return;
     try {
-      await apiPatch(`/products/${product.id}/items/${skuId}`, { isPublished: !row.isPublished });
+      await apiPatch(`/products/${editProduct.id}/items/${skuId}`, { isPublished: !row.isPublished });
       setSkuItems((prev) => prev.map((s) => s.id === skuId ? { ...s, isPublished: !s.isPublished } : s));
       setSkuSuccess("SKU updated");
       const t = setTimeout(() => setSkuSuccess(null), 2000);
       successTimers.current.push(t);
     } catch (e) { setSkuError(e.message); }
   };
-  useEffect(() => { toggleSkuPublishedRef.current = toggleSkuPublished; }, [toggleSkuPublished]);
-
-  const skuColumns = [
-    { id: "sku", header: "SKU", width: 120, editor: "text" },
-    { id: "barcode", header: "Barcode", width: 110, editor: "text" },
-    { id: "price", header: "Price ($)", width: 90, editor: "text" },
-    { id: "qtyInStock", header: "Qty", width: 70, editor: "text" },
-    { id: "weight", header: "Wt (oz)", width: 80, editor: "text" },
-    { id: "length", header: "L (in)", width: 70, editor: "text" },
-    { id: "width", header: "W (in)", width: 70, editor: "text" },
-    { id: "height", header: "H (in)", width: 70, editor: "text" },
-    {
-      id: "isPublished",
-      header: "Published",
-      width: 95,
-      template: (item) =>
-        item.isPublished
-          ? `<span style="background:#1ee0ac;color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;cursor:pointer" title="Click to unpublish">Yes</span>`
-          : `<span style="background:#8094ae;color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;cursor:pointer" title="Click to publish">No</span>`,
-    },
-    {
-      id: "_delete",
-      header: "",
-      width: 56,
-      template: () =>
-        `<button title="Delete" style="background:#fff0ef;border:1px solid #e85347;color:#e85347;padding:2px 10px;border-radius:4px;cursor:pointer;font-size:13px;">✕</button>`,
-    },
-  ];
-
-  const initSkuGrid = useCallback((api) => {
-    api.on("update-cell", async ({ id, column, value }) => {
-      const row = skuItemsRef.current.find((s) => s.id === id);
-      if (!row) return;
-      const product = editProductRef.current;
-      if (!product) return;
-      const numCols = ["price", "weight", "length", "width", "height"];
-      const intCols = ["qtyInStock"];
-      let parsed;
-      if (intCols.includes(column)) parsed = value !== "" ? parseInt(value, 10) : undefined;
-      else if (numCols.includes(column)) parsed = value !== "" ? parseFloat(value) : null;
-      else parsed = value || undefined;
-      try {
-        await apiPatch(`/products/${product.id}/items/${id}`, { [column]: parsed });
-        setSkuItems((prev) =>
-          prev.map((s) => s.id === id ? { ...s, [column]: parsed } : s)
-        );
-        setSkuSuccess("SKU updated");
-        const t = setTimeout(() => setSkuSuccess(null), 2000);
-        successTimers.current.push(t);
-      } catch (e) {
-        setSkuError(e.message);
-      }
-    });
-
-    api.on("click", ({ id, column }) => {
-      if (column === "_delete") removeSkuItemRef.current?.(id);
-      if (column === "isPublished") toggleSkuPublishedRef.current?.(id);
-    });
-  }, []);
 
   // ─── Attribute handlers ───────────────────────────────────────────────────────
 
@@ -405,7 +334,7 @@ const AdminProductList = () => {
   const removeAttrItem = async (attrId) => {
     setAttrError(null);
     try {
-      await apiDelete(`/products/${editProductRef.current?.id}/attributes/${attrId}`);
+      await apiDelete(`/products/${editProduct?.id}/attributes/${attrId}`);
       setAttrItems((prev) => prev.filter((a) => a.id !== attrId));
       setAttrSuccess("Attribute removed");
       const t = setTimeout(() => setAttrSuccess(null), 3000);
@@ -413,70 +342,37 @@ const AdminProductList = () => {
     } catch (e) { setAttrError(e.message); }
   };
 
-  const removeAttrItemRef = useRef(removeAttrItem);
-  useEffect(() => { removeAttrItemRef.current = removeAttrItem; }, [removeAttrItem]);
-
-  const attrColumns = [
-    { id: "name", header: "Attribute Name", flexgrow: 1, editor: "text" },
-    { id: "values", header: "Values (comma-separated)", flexgrow: 2, editor: "text" },
-    {
-      id: "_delete",
-      header: "",
-      width: 56,
-      template: () =>
-        `<button title="Delete" style="background:#fff0ef;border:1px solid #e85347;color:#e85347;padding:2px 10px;border-radius:4px;cursor:pointer;font-size:13px;">✕</button>`,
-    },
-  ];
-
-  const initAttrGrid = useCallback((api) => {
-    api.on("update-cell", async ({ id, column, value }) => {
-      const row = attrItemsRef.current.find((a) => a.id === id);
-      if (!row) return;
-      const product = editProductRef.current;
-      if (!product) return;
-      const updatedName = column === "name" ? value : row.name;
-      const rawValues =
-        column === "values"
-          ? value
-          : (row.values ?? []).map((v) => v.value).join(", ");
-      try {
-        await apiPatch(`/products/${product.id}/attributes/${id}`, {
-          name: updatedName,
-          values: rawValues
-            .split(",")
-            .map((v) => v.trim())
-            .filter(Boolean)
-            .map((v) => ({ value: v })),
-        });
-        setAttrItems((prev) =>
-          prev.map((a) =>
-            a.id === id
-              ? {
-                  ...a,
-                  name: updatedName,
-                  values: rawValues
-                    .split(",")
-                    .map((v) => v.trim())
-                    .filter(Boolean)
-                    .map((v) => ({ value: v })),
-                }
-              : a
-          )
-        );
-        setAttrSuccess("Attribute updated");
-        const t = setTimeout(() => setAttrSuccess(null), 2000);
-        successTimers.current.push(t);
-      } catch (e) {
-        setAttrError(e.message);
-      }
+  const startEditAttr = (item) => {
+    setEditingAttrId(item.id);
+    setEditingAttrDraft({
+      name: item.name ?? "",
+      values: (item.values ?? []).map((v) => v.value).join(", "),
     });
+  };
 
-    api.on("click", ({ id, column }) => {
-      if (column === "_delete") {
-        removeAttrItemRef.current(id);
-      }
-    });
-  }, []);
+  const cancelEditAttr = () => { setEditingAttrId(null); setEditingAttrDraft({ name: "", values: "" }); };
+
+  const saveEditAttr = async (attrId) => {
+    setAttrSaving(true); setAttrError(null); setAttrSuccess(null);
+    try {
+      const parsedValues = editingAttrDraft.values
+        .split(",").map((v) => v.trim()).filter(Boolean).map((v) => ({ value: v }));
+      await apiPatch(`/products/${editProduct.id}/attributes/${attrId}`, {
+        name: editingAttrDraft.name,
+        values: parsedValues,
+      });
+      setAttrItems((prev) =>
+        prev.map((a) =>
+          a.id === attrId ? { ...a, name: editingAttrDraft.name, values: parsedValues } : a
+        )
+      );
+      setAttrSuccess("Attribute updated");
+      const t = setTimeout(() => setAttrSuccess(null), 2000);
+      successTimers.current.push(t);
+      cancelEditAttr();
+    } catch (e) { setAttrError(e.message); }
+    finally { setAttrSaving(false); }
+  };
 
   // ─── Image handlers ───────────────────────────────────────────────────────────
 
@@ -952,34 +848,68 @@ const AdminProductList = () => {
                     <div className="text-center py-4"><Spinner size="sm" /> Loading SKU items...</div>
                   ) : (
                     <>
-                      {activeTab === "skus" && (
-                      <Willow>
-                        <Grid
-                          key={skuItems.map((s) => s.id).join(",")}
-                          data={skuItems.map((s) => ({
-                            id: s.id,
-                            sku: s.sku ?? "",
-                            barcode: s.barcode ?? "",
-                            price: s.price ?? "",
-                            qtyInStock: s.qtyInStock ?? "",
-                            weight: s.weight ?? "",
-                            length: s.length ?? "",
-                            width: s.width ?? "",
-                            height: s.height ?? "",
-                            isPublished: s.isPublished ?? false,
-                          }))}
-                          columns={skuColumns}
-                          init={initSkuGrid}
-                          style={{ height: Math.max(120, skuItems.length * 42 + 48) }}
-                        />
-                      </Willow>
-                      )}
+                      <div className="table-responsive mb-3" style={{ maxHeight: 300 }}>
+                        <table className="table table-sm table-bordered align-middle mb-0" style={{ fontSize: 13 }}>
+                          <thead className="table-light">
+                            <tr>
+                              <th>SKU</th><th>Barcode</th><th>Price ($)</th><th>Qty</th><th>Wt (oz)</th><th>L</th><th>W</th><th>H</th>
+                              <th>Published</th><th style={{ width: 90 }}></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {skuItems.map((s) =>
+                              editingSkuId === s.id ? (
+                                <tr key={s.id} className="table-warning">
+                                  <td><input className="form-control form-control-sm" value={editingSkuDraft.sku} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, sku: e.target.value }))} style={{ minWidth: 80 }} /></td>
+                                  <td><input className="form-control form-control-sm" value={editingSkuDraft.barcode} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, barcode: e.target.value }))} style={{ minWidth: 80 }} /></td>
+                                  <td><input className="form-control form-control-sm" type="number" step="0.01" value={editingSkuDraft.price} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, price: e.target.value }))} style={{ minWidth: 70 }} /></td>
+                                  <td><input className="form-control form-control-sm" type="number" value={editingSkuDraft.qtyInStock} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, qtyInStock: e.target.value }))} style={{ minWidth: 55 }} /></td>
+                                  <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.weight} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, weight: e.target.value }))} style={{ minWidth: 55 }} /></td>
+                                  <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.length} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, length: e.target.value }))} style={{ minWidth: 50 }} /></td>
+                                  <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.width} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, width: e.target.value }))} style={{ minWidth: 50 }} /></td>
+                                  <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.height} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, height: e.target.value }))} style={{ minWidth: 50 }} /></td>
+                                  <td>
+                                    <label className="d-flex align-items-center gap-1 mb-0" style={{ cursor: "pointer" }}>
+                                      <input type="checkbox" checked={!!editingSkuDraft.isPublished} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, isPublished: e.target.checked }))} />
+                                      <span className="small">{editingSkuDraft.isPublished ? "Yes" : "No"}</span>
+                                    </label>
+                                  </td>
+                                  <td className="text-nowrap">
+                                    <Button size="sm" color="primary" className="me-1" onClick={() => saveEditSku(s.id)} disabled={skuSaving}>{skuSaving ? <Spinner size="sm" /> : "Save"}</Button>
+                                    <Button size="sm" color="light" onClick={cancelEditSku}>✕</Button>
+                                  </td>
+                                </tr>
+                              ) : (
+                                <tr key={s.id}>
+                                  <td className="fw-medium">{s.sku}</td>
+                                  <td>{s.barcode || <span className="text-muted">—</span>}</td>
+                                  <td>{s.price != null ? `$${Number(s.price).toFixed(2)}` : "—"}</td>
+                                  <td>{s.qtyInStock ?? "—"}</td>
+                                  <td>{s.weight ?? "—"}</td>
+                                  <td>{s.length ?? "—"}</td>
+                                  <td>{s.width ?? "—"}</td>
+                                  <td>{s.height ?? "—"}</td>
+                                  <td>
+                                    <span
+                                      onClick={() => toggleSkuPublished(s.id)}
+                                      style={{ cursor: "pointer", background: s.isPublished ? "#1ee0ac" : "#8094ae", color: "#fff", padding: "2px 10px", borderRadius: 12, fontSize: 12 }}
+                                      title={s.isPublished ? "Click to unpublish" : "Click to publish"}
+                                    >{s.isPublished ? "Yes" : "No"}</span>
+                                  </td>
+                                  <td className="text-nowrap">
+                                    <Button size="sm" color="light" className="me-1 btn-dim" onClick={() => startEditSku(s)}><Icon name="edit" /></Button>
+                                    <Button size="sm" color="danger" className="btn-dim" onClick={() => removeSkuItem(s.id)}><Icon name="trash" /></Button>
+                                  </td>
+                                </tr>
+                              )
+                            )}
+                            {skuItems.length === 0 && (
+                              <tr><td colSpan={10} className="text-center text-muted py-3">No SKUs yet. Add one below.</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
 
-                      {skuItems.length === 0 && (
-                        <p className="text-muted text-center small mt-2">No SKUs yet. Use the form below to add one.</p>
-                      )}
-
-                      <hr className="mt-3 mb-2" />
                       <p className="form-label mb-1 fw-bold">Add New SKU</p>
                       <div className="d-flex flex-wrap gap-2 align-items-center">
                         <input className="form-control form-control-sm" placeholder="SKU *" value={skuDraft.sku} onChange={(e) => setSkuDraft((d) => ({ ...d, sku: e.target.value }))} style={{ width: 120 }} />
@@ -997,9 +927,6 @@ const AdminProductList = () => {
                           {skuSaving ? <Spinner size="sm" /> : <Icon name="plus" />}
                         </Button>
                       </div>
-                      <p className="text-muted small mt-2">
-                        Double-click any cell in the grid to edit inline. Click the Published badge to toggle. Click ✕ to delete.
-                      </p>
                     </>
                   )}
                 </TabPane>
@@ -1009,27 +936,57 @@ const AdminProductList = () => {
                   {attrError && <div className="alert alert-danger py-2 mb-2">{attrError}</div>}
                   {attrSuccess && <div className="alert alert-success py-1 mb-2">{attrSuccess}</div>}
 
-                  {activeTab === "attributes" && (
-                  <Willow>
-                    <Grid
-                      key={attrItems.map((a) => a.id).join(",")}
-                      data={attrItems.map((a) => ({
-                        id: a.id,
-                        name: a.name,
-                        values: (a.values ?? []).map((v) => v.value).join(", "),
-                      }))}
-                      columns={attrColumns}
-                      init={initAttrGrid}
-                      style={{ height: Math.max(120, attrItems.length * 42 + 48) }}
-                    />
-                  </Willow>
-                  )}
+                  <div className="table-responsive mb-3">
+                    <table className="table table-sm table-bordered align-middle mb-0" style={{ fontSize: 13 }}>
+                      <thead className="table-light">
+                        <tr>
+                          <th style={{ width: "35%" }}>Attribute Name</th>
+                          <th>Values (comma-separated)</th>
+                          <th style={{ width: 90 }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {attrItems.map((a) =>
+                          editingAttrId === a.id ? (
+                            <tr key={a.id} className="table-warning">
+                              <td>
+                                <input
+                                  className="form-control form-control-sm"
+                                  value={editingAttrDraft.name}
+                                  onChange={(e) => setEditingAttrDraft((d) => ({ ...d, name: e.target.value }))}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  className="form-control form-control-sm"
+                                  value={editingAttrDraft.values}
+                                  placeholder="e.g. Small, Medium, Large"
+                                  onChange={(e) => setEditingAttrDraft((d) => ({ ...d, values: e.target.value }))}
+                                />
+                              </td>
+                              <td className="text-nowrap">
+                                <Button size="sm" color="primary" className="me-1" onClick={() => saveEditAttr(a.id)} disabled={attrSaving}>{attrSaving ? <Spinner size="sm" /> : "Save"}</Button>
+                                <Button size="sm" color="light" onClick={cancelEditAttr}>✕</Button>
+                              </td>
+                            </tr>
+                          ) : (
+                            <tr key={a.id}>
+                              <td className="fw-medium">{a.name}</td>
+                              <td>{(a.values ?? []).map((v) => v.value).join(", ") || <span className="text-muted">—</span>}</td>
+                              <td className="text-nowrap">
+                                <Button size="sm" color="light" className="me-1 btn-dim" onClick={() => startEditAttr(a)}><Icon name="edit" /></Button>
+                                <Button size="sm" color="danger" className="btn-dim" onClick={() => removeAttrItem(a.id)}><Icon name="trash" /></Button>
+                              </td>
+                            </tr>
+                          )
+                        )}
+                        {attrItems.length === 0 && (
+                          <tr><td colSpan={3} className="text-center text-muted py-3">No attributes yet. Add one below.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
 
-                  {attrItems.length === 0 && (
-                    <p className="text-muted text-center small mt-2">No attributes yet. Use the form below to add one.</p>
-                  )}
-
-                  <hr className="mt-3 mb-2" />
                   <p className="form-label mb-1 fw-bold">Add New Attribute</p>
                   <div className="d-flex gap-2 align-items-center">
                     <input
@@ -1049,9 +1006,7 @@ const AdminProductList = () => {
                       {attrSaving ? <Spinner size="sm" /> : <Icon name="plus" />}
                     </Button>
                   </div>
-                  <p className="text-muted small mt-2">
-                    Double-click any cell in the grid to edit inline. Separate values with commas.
-                  </p>
+                  <p className="text-muted small mt-2">Separate values with commas.</p>
                 </TabPane>
 
                 {/* ── Image ── */}
