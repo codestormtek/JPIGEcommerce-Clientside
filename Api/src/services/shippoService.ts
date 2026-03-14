@@ -66,24 +66,67 @@ export interface ShippoTransaction {
 
 // ─── Package calculation ───────────────────────────────────────────────────────
 
+/**
+ * Returns true if the item (with dims sorted largest-first) can fit inside the
+ * box (also sorted largest-first) in at least one orientation.
+ */
+function itemFitsInBox(
+  itemDims: [number, number, number],
+  boxDims: [number, number, number],
+): boolean {
+  // Both arrays are sorted descending; largest item dim must fit in largest box dim, etc.
+  return itemDims[0] <= boxDims[0] && itemDims[1] <= boxDims[1] && itemDims[2] <= boxDims[2];
+}
+
 export function calculateParcel(items: CartItemDimensions[]) {
   let totalWeightLb = 0;
+
+  // Track the required minimum box dims needed to fit every item's largest face.
+  let reqLength = 0;
+  let reqWidth  = 0;
+  let reqHeight = 0;
 
   for (const item of items) {
     const defaults = (item.shippingClass && SHIPPING_CLASS_DEFAULTS[item.shippingClass])
       ? SHIPPING_CLASS_DEFAULTS[item.shippingClass]
       : FALLBACK_DEFAULTS;
 
-    // Weight stored as oz in DB; convert to lbs
+    // ── Weight (oz → lbs) ──────────────────────────────────────────────────
     const itemWeightLb = item.weightOz != null
       ? (Number(item.weightOz) / 16) * item.qty
       : defaults.weightLb * item.qty;
 
     totalWeightLb += itemWeightLb;
+
+    // ── Dimensions ─────────────────────────────────────────────────────────
+    // Use stored dims if available, fall back to shipping-class / generic defaults.
+    const l = item.length  ?? defaults.length;
+    const w = item.width   ?? defaults.width;
+    const h = item.height  ?? defaults.height;
+
+    // Sort item dims descending so we compare biggest-to-biggest with the box.
+    const [d0, d1, d2] = [l, w, h].sort((a, b) => b - a) as [number, number, number];
+
+    // Each box dimension must be at least as large as the corresponding
+    // sorted item dimension across all items.
+    reqLength = Math.max(reqLength, d0);
+    reqWidth  = Math.max(reqWidth,  d1);
+    reqHeight = Math.max(reqHeight, d2);
   }
 
-  // Pick the smallest box that fits
-  const box = BOXES.find((b) => b.maxWeightLb >= totalWeightLb) ?? BOXES[BOXES.length - 1];
+  // ── Box selection ─────────────────────────────────────────────────────────
+  // Pre-sort each box's dims descending once for the fit check.
+  const boxesSorted = BOXES.map((b) => ({
+    ...b,
+    dims: [b.length, b.width, b.height].sort((a, c) => c - a) as [number, number, number],
+  }));
+
+  const itemDimsRequired: [number, number, number] = [reqLength, reqWidth, reqHeight];
+
+  // Pick the smallest box that satisfies BOTH weight AND dimension constraints.
+  const box = boxesSorted.find(
+    (b) => b.maxWeightLb >= totalWeightLb && itemFitsInBox(itemDimsRequired, b.dims),
+  ) ?? boxesSorted[boxesSorted.length - 1];
 
   return {
     length: String(box.length),
