@@ -108,16 +108,30 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
 
   const cartItemsForOrder = cartItems.filter(i => i.active);
 
+  // Ref to the <form> element so we can read DOM values directly on button click,
+  // which is robust against any React state/hydration timing issues.
+  const formRef = useRef<HTMLFormElement>(null);
+
   // ── Fetch live Shippo rates when address is complete ───────────────────────
   // Accept snapshots as args to avoid stale-closure bugs from the debounce timer
   const fetchLiveRates = async (
     currentForm: typeof form,
     currentItems: typeof cartItemsForOrder,
   ) => {
-    if (!currentForm.address1 || !currentForm.city || !currentForm.state || !currentForm.zip || currentItems.length === 0) return;
+    if (!currentForm.address1 || !currentForm.city || !currentForm.state || !currentForm.zip) {
+      setRatesError('Please fill in your full street address, city, state, and ZIP code first.');
+      return;
+    }
+    if (currentItems.length === 0) {
+      setRatesError('Your cart is still loading — please wait a moment and try again.');
+      return;
+    }
 
     const shippableItems = currentItems.filter(i => i.productItemId);
-    if (shippableItems.length === 0) return;
+    if (shippableItems.length === 0) {
+      setRatesError('Cart items are still loading — please wait a moment and try again.');
+      return;
+    }
 
     setRatesLoading(true);
     setRatesError('');
@@ -167,11 +181,21 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.address1, form.city, form.state, form.zip]);
 
-  // Called on blur of any address field so rates are fetched as soon as the
-  // user finishes entering their address — no debounce, no closure issues.
+  // Called on blur of any address field. Reads values from DOM so it works
+  // even if React state is momentarily out of sync with what's visible.
   const handleAddressBlur = () => {
-    if (form.address1 && form.city && form.state && form.zip && isCartLoaded) {
-      fetchLiveRates({ ...form }, cartItemsForOrder.slice());
+    const domForm = formRef.current;
+    const getVal = (name: string) =>
+      (domForm?.querySelector<HTMLInputElement>(`[name="${name}"]`)?.value ?? '');
+    const merged = {
+      ...form,
+      address1: getVal('address1') || form.address1,
+      city:     getVal('city')     || form.city,
+      state:    getVal('state')    || form.state,
+      zip:      getVal('zip')      || form.zip,
+    };
+    if (merged.address1 && merged.city && merged.state && merged.zip && isCartLoaded) {
+      fetchLiveRates(merged, cartItemsForOrder.slice());
     }
   };
 
@@ -417,7 +441,7 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form ref={formRef} onSubmit={handleSubmit}>
       <div className="row g-5">
 
         {/* ── LEFT COLUMN: Details + Payment ─────────────────────────────── */}
@@ -494,33 +518,50 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
                 <FieldLabel label="ZIP Code" required />
                 <input style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 15 }} name="zip" value={form.zip} onChange={handleInput} onBlur={handleAddressBlur} placeholder="20001" required />
               </div>
-              {/* Get Rates button — visible once all four address fields are filled */}
-              {form.address1 && form.city && form.state && form.zip && (
-                <div className="col-12">
-                  <button
-                    type="button"
-                    onClick={() => fetchLiveRates({ ...form }, cartItemsForOrder.slice())}
-                    disabled={ratesLoading}
-                    style={{
-                      background: ratesLoading ? '#ccc' : '#ff8c00',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 6,
-                      padding: '9px 22px',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      cursor: ratesLoading ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                    }}
-                  >
-                    {ratesLoading
-                      ? <><i className="fa-solid fa-spinner fa-spin" /> Getting rates…</>
-                      : <><i className="fa-solid fa-truck" /> Get Shipping Rates</>}
-                  </button>
-                </div>
-              )}
+              {/* Get Shipping Rates button — always visible so it works even if React
+                  state is out of sync with DOM (e.g., after a hydration recovery).
+                  Values are read directly from the DOM at click time. */}
+              <div className="col-12">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const domForm = formRef.current;
+                    const getVal = (name: string) =>
+                      (domForm?.querySelector<HTMLInputElement>(`[name="${name}"]`)?.value ?? '');
+                    const merged = {
+                      ...form,
+                      firstName: getVal('firstName') || form.firstName,
+                      lastName:  getVal('lastName')  || form.lastName,
+                      email:     getVal('email')     || form.email,
+                      phone:     getVal('phone')     || form.phone,
+                      address1:  getVal('address1')  || form.address1,
+                      address2:  getVal('address2')  || form.address2,
+                      city:      getVal('city')      || form.city,
+                      state:     getVal('state')     || form.state,
+                      zip:       getVal('zip')       || form.zip,
+                    };
+                    fetchLiveRates(merged, cartItemsForOrder.slice());
+                  }}
+                  disabled={ratesLoading}
+                  style={{
+                    background: ratesLoading ? '#ccc' : '#ff8c00',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    padding: '9px 22px',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: ratesLoading ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  {ratesLoading
+                    ? <><i className="fa-solid fa-spinner fa-spin" /> Getting rates…</>
+                    : <><i className="fa-solid fa-truck" /> Get Shipping Rates</>}
+                </button>
+              </div>
               <div className="col-12">
                 <FieldLabel label="Order Notes (optional)" />
                 <textarea
