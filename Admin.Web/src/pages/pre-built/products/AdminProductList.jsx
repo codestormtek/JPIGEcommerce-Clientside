@@ -952,6 +952,7 @@ const AdminProductList = () => {
                     <div className="text-center py-4"><Spinner size="sm" /> Loading SKU items...</div>
                   ) : (
                     <>
+                      {activeTab === "skus" && (
                       <Willow>
                         <Grid
                           key={skuItems.map((s) => s.id).join(",")}
@@ -972,6 +973,7 @@ const AdminProductList = () => {
                           style={{ height: Math.max(120, skuItems.length * 42 + 48) }}
                         />
                       </Willow>
+                      )}
 
                       {skuItems.length === 0 && (
                         <p className="text-muted text-center small mt-2">No SKUs yet. Use the form below to add one.</p>
@@ -1007,6 +1009,7 @@ const AdminProductList = () => {
                   {attrError && <div className="alert alert-danger py-2 mb-2">{attrError}</div>}
                   {attrSuccess && <div className="alert alert-success py-1 mb-2">{attrSuccess}</div>}
 
+                  {activeTab === "attributes" && (
                   <Willow>
                     <Grid
                       key={attrItems.map((a) => a.id).join(",")}
@@ -1020,6 +1023,7 @@ const AdminProductList = () => {
                       style={{ height: Math.max(120, attrItems.length * 42 + 48) }}
                     />
                   </Willow>
+                  )}
 
                   {attrItems.length === 0 && (
                     <p className="text-muted text-center small mt-2">No attributes yet. Use the form below to add one.</p>
