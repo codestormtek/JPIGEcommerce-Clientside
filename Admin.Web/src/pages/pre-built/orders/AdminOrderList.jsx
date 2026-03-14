@@ -694,14 +694,6 @@ const AdminOrderList = () => {
                   </>
                 )}
 
-                {/* Special instructions */}
-                {detailOrder.specialInstructions && (
-                  <div className="mb-3">
-                    <h6 className="overline-title text-base mb-1">Special Instructions</h6>
-                    <p className="text-soft">{detailOrder.specialInstructions}</p>
-                  </div>
-                )}
-
                 {/* ── Packing Info ─────────────────────────────────────────── */}
                 {(() => {
                   const { box, totalWeightLb, itemDetails } = calculatePackingInfo(detailOrder.lines ?? []);
@@ -712,19 +704,18 @@ const AdminOrderList = () => {
                       <h6 className="overline-title text-base mb-3">Packing Info</h6>
 
                       {/* Recommended box hero */}
-                      <div className="d-flex align-items-center gap-3 mb-3">
-                        <div className="rounded text-center py-2 px-3" style={{ background: "#f5f6fa", minWidth: 72 }}>
-                          <Icon name="package" style={{ fontSize: 26, color: "#526484" }} />
-                          <div className="fw-bold small mt-1">{box.name}</div>
+                      <div className="d-flex align-items-center gap-3 mb-3 p-2 rounded" style={{ background: "#f5f6fa" }}>
+                        <div className="text-center flex-shrink-0" style={{ width: 64 }}>
+                          <Icon name="box" style={{ fontSize: 28, color: "#526484" }} />
+                          <div className="fw-bold text-uppercase mt-1" style={{ fontSize: "0.7rem", color: "#526484", letterSpacing: "0.05em" }}>{box.name}</div>
                         </div>
-                        <div>
-                          <div className="fw-bold" style={{ fontSize: "1.05rem" }}>
+                        <div style={{ borderLeft: "1px solid #dde1ea", paddingLeft: "1rem" }}>
+                          <div className="fw-bold text-dark" style={{ fontSize: "1.1rem" }}>
                             {box.length}&Prime; &times; {box.width}&Prime; &times; {box.height}&Prime;
                           </div>
-                          <div className="text-soft small">Recommended box (L &times; W &times; H)</div>
-                          <div className="text-soft small mt-1">
-                            Total weight:{" "}
-                            <strong>{totalOz.toFixed(1)} oz &nbsp;/&nbsp; {totalWeightLb.toFixed(2)} lb</strong>
+                          <div className="text-soft small">Recommended box &mdash; L &times; W &times; H</div>
+                          <div className="small mt-1">
+                            Total weight: <strong>{totalOz.toFixed(1)} oz &nbsp;({totalWeightLb.toFixed(2)} lb)</strong>
                           </div>
                         </div>
                       </div>
@@ -739,7 +730,7 @@ const AdminOrderList = () => {
                               <th className="text-center">Qty</th>
                               <th className="text-end">Weight ea.</th>
                               <th className="text-end">Line Wt.</th>
-                              <th className="text-center">Dims L&Prime;&times;W&Prime;&times;H&Prime;</th>
+                              <th className="text-center">Dims (L&Prime;&times;W&Prime;&times;H&Prime;)</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -773,6 +764,14 @@ const AdminOrderList = () => {
                     </div>
                   );
                 })()}
+
+                {/* Special instructions */}
+                {detailOrder.specialInstructions && (
+                  <div className="mb-3">
+                    <h6 className="overline-title text-base mb-1">Special Instructions</h6>
+                    <p className="text-soft">{detailOrder.specialInstructions}</p>
+                  </div>
+                )}
 
                 {/* ── Shippo / Shipping Label Section ─────────────────────── */}
                 {detailOrder.shipment && (
