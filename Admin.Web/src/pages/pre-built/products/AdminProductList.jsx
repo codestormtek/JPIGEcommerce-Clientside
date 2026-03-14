@@ -11,6 +11,8 @@ import {
   Button, RSelect, TooltipComponent,
 } from "@/components/Component";
 import { apiGet, apiPost, apiPatch, apiDelete, apiUpload } from "@/utils/apiClient";
+import { Grid, Willow } from "wx-react-grid";
+import "wx-react-grid/dist/grid.css";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -67,6 +69,10 @@ const AdminProductList = () => {
   const [attrSaving, setAttrSaving] = useState(false);
   const [attrError, setAttrError] = useState(null);
   const [attrSuccess, setAttrSuccess] = useState(null);
+  const attrItemsRef = useRef([]);
+  const editProductRef = useRef(null);
+  useEffect(() => { attrItemsRef.current = attrItems; }, [attrItems]);
+  useEffect(() => { editProductRef.current = editProduct; }, [editProduct]);
   const [skuLoading, setSkuLoading] = useState(false);
   const successTimers = useRef([]);
   // Image tab
@@ -320,13 +326,78 @@ const AdminProductList = () => {
   const removeAttrItem = async (attrId) => {
     setAttrError(null);
     try {
-      await apiDelete(`/products/${editProduct.id}/attributes/${attrId}`);
+      await apiDelete(`/products/${editProductRef.current?.id}/attributes/${attrId}`);
       setAttrItems((prev) => prev.filter((a) => a.id !== attrId));
       setAttrSuccess("Attribute removed");
       const t = setTimeout(() => setAttrSuccess(null), 3000);
       successTimers.current.push(t);
     } catch (e) { setAttrError(e.message); }
   };
+
+  const removeAttrItemRef = useRef(removeAttrItem);
+  useEffect(() => { removeAttrItemRef.current = removeAttrItem; }, [removeAttrItem]);
+
+  const attrColumns = [
+    { id: "name", header: "Attribute Name", flexgrow: 1, editor: "text" },
+    { id: "values", header: "Values (comma-separated)", flexgrow: 2, editor: "text" },
+    {
+      id: "_delete",
+      header: "",
+      width: 56,
+      template: () =>
+        `<button title="Delete" style="background:#fff0ef;border:1px solid #e85347;color:#e85347;padding:2px 10px;border-radius:4px;cursor:pointer;font-size:13px;">✕</button>`,
+    },
+  ];
+
+  const initAttrGrid = useCallback((api) => {
+    api.on("update-cell", async ({ id, column, value }) => {
+      const row = attrItemsRef.current.find((a) => a.id === id);
+      if (!row) return;
+      const product = editProductRef.current;
+      if (!product) return;
+      const updatedName = column === "name" ? value : row.name;
+      const rawValues =
+        column === "values"
+          ? value
+          : (row.values ?? []).map((v) => v.value).join(", ");
+      try {
+        await apiPatch(`/products/${product.id}/attributes/${id}`, {
+          name: updatedName,
+          values: rawValues
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean)
+            .map((v) => ({ value: v })),
+        });
+        setAttrItems((prev) =>
+          prev.map((a) =>
+            a.id === id
+              ? {
+                  ...a,
+                  name: updatedName,
+                  values: rawValues
+                    .split(",")
+                    .map((v) => v.trim())
+                    .filter(Boolean)
+                    .map((v) => ({ value: v })),
+                }
+              : a
+          )
+        );
+        setAttrSuccess("Attribute updated");
+        const t = setTimeout(() => setAttrSuccess(null), 2000);
+        successTimers.current.push(t);
+      } catch (e) {
+        setAttrError(e.message);
+      }
+    });
+
+    api.on("click", ({ id, column }) => {
+      if (column === "_delete") {
+        removeAttrItemRef.current(id);
+      }
+    });
+  }, []);
 
   // ─── Image handlers ───────────────────────────────────────────────────────────
 
@@ -880,29 +951,50 @@ const AdminProductList = () => {
 
                 {/* ── Attributes ── */}
                 <TabPane tabId="attributes">
-                  {attrError && <div className="alert alert-danger">{attrError}</div>}
-                  {attrSuccess && <div className="alert alert-success py-1">{attrSuccess}</div>}
-                  <div className="table-responsive">
-                    <table className="table table-sm">
-                      <thead><tr><th>Attribute Name</th><th>Values</th><th></th></tr></thead>
-                      <tbody>
-                        {attrItems.length === 0 && <tr><td colSpan={3} className="text-center text-muted py-2">No attributes yet.</td></tr>}
-                        {attrItems.map((attr) => (
-                          <tr key={attr.id}>
-                            <td><strong>{attr.name}</strong></td>
-                            <td>{(attr.values ?? []).map((v) => v.value).join(", ") || "—"}</td>
-                            <td><Button size="xs" color="danger" outline onClick={() => removeAttrItem(attr.id)}><Icon name="trash" /></Button></td>
-                          </tr>
-                        ))}
-                        <tr>
-                          <td><input className="form-control form-control-sm" placeholder="e.g. Size" value={attrDraft.name} onChange={(e) => setAttrDraft((d) => ({ ...d, name: e.target.value }))} /></td>
-                          <td><input className="form-control form-control-sm" placeholder="10oz, 12oz, 16oz" value={attrDraft.values} onChange={(e) => setAttrDraft((d) => ({ ...d, values: e.target.value }))} /></td>
-                          <td><Button size="sm" color="primary" onClick={addAttrItem} disabled={attrSaving || !attrDraft.name}>{attrSaving ? <Spinner size="sm" /> : <Icon name="plus" />}</Button></td>
-                        </tr>
-                      </tbody>
-                    </table>
+                  {attrError && <div className="alert alert-danger py-2 mb-2">{attrError}</div>}
+                  {attrSuccess && <div className="alert alert-success py-1 mb-2">{attrSuccess}</div>}
+
+                  <Willow>
+                    <Grid
+                      key={attrItems.map((a) => a.id).join(",")}
+                      data={attrItems.map((a) => ({
+                        id: a.id,
+                        name: a.name,
+                        values: (a.values ?? []).map((v) => v.value).join(", "),
+                      }))}
+                      columns={attrColumns}
+                      init={initAttrGrid}
+                      style={{ height: Math.max(120, attrItems.length * 42 + 48) }}
+                    />
+                  </Willow>
+
+                  {attrItems.length === 0 && (
+                    <p className="text-muted text-center small mt-2">No attributes yet. Use the form below to add one.</p>
+                  )}
+
+                  <hr className="mt-3 mb-2" />
+                  <p className="form-label mb-1 fw-bold">Add New Attribute</p>
+                  <div className="d-flex gap-2 align-items-center">
+                    <input
+                      className="form-control form-control-sm"
+                      placeholder="e.g. Size"
+                      value={attrDraft.name}
+                      onChange={(e) => setAttrDraft((d) => ({ ...d, name: e.target.value }))}
+                      style={{ maxWidth: 200 }}
+                    />
+                    <input
+                      className="form-control form-control-sm"
+                      placeholder="10oz, 12oz, 16oz"
+                      value={attrDraft.values}
+                      onChange={(e) => setAttrDraft((d) => ({ ...d, values: e.target.value }))}
+                    />
+                    <Button size="sm" color="primary" onClick={addAttrItem} disabled={attrSaving || !attrDraft.name}>
+                      {attrSaving ? <Spinner size="sm" /> : <Icon name="plus" />}
+                    </Button>
                   </div>
-                  <p className="text-muted small mt-1">Separate values with commas (e.g. <em>10oz, 12oz, 16oz</em>). Attributes are saved immediately when you click the <strong>+</strong> button.</p>
+                  <p className="text-muted small mt-2">
+                    Double-click any cell in the grid to edit inline. Separate values with commas.
+                  </p>
                 </TabPane>
 
                 {/* ── Image ── */}
