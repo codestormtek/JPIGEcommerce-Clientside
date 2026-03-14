@@ -813,7 +813,7 @@ const AdminProductList = () => {
         </Modal>
 
         {/* ── Edit Product Modal (tabbed) ───────────────────────────────────── */}
-        <Modal isOpen={editModal} toggle={() => { successTimers.current.forEach(clearTimeout); successTimers.current = []; setEditModal(false); loadProducts(); }} size="xl">
+        <Modal isOpen={editModal} toggle={() => { successTimers.current.forEach(clearTimeout); successTimers.current = []; setEditModal(false); loadProducts(); }} size="xl" className="modal-xxl">
           <ModalBody>
             <a href="#cancel" onClick={(e) => { e.preventDefault(); successTimers.current.forEach(clearTimeout); successTimers.current = []; setEditModal(false); loadProducts(); }} className="close"><em className="icon ni ni-cross-sm" /></a>
             <div className="p-2">
