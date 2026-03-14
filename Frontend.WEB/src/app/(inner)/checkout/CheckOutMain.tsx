@@ -113,6 +113,9 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
   const fetchLiveRates = async () => {
     if (!form.address1 || !form.city || !form.state || !form.zip || cartItemsForOrder.length === 0) return;
 
+    const shippableItems = cartItemsForOrder.filter(i => i.productItemId);
+    if (shippableItems.length === 0) return;
+
     setRatesLoading(true);
     setRatesError('');
     try {
@@ -128,7 +131,7 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
           phone: form.phone || undefined,
           email: form.email || undefined,
         },
-        items: cartItemsForOrder.map(i => ({ productItemId: i.productItemId, qty: i.quantity })),
+        items: shippableItems.map(i => ({ productItemId: i.productItemId as string, qty: i.quantity })),
       });
       const rates = res.data.rates ?? [];
       setLiveRates(rates);
@@ -136,7 +139,8 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
       if (rates.length > 0) {
         setSelectedRateId(rates[0].rateId);
       }
-    } catch {
+    } catch (err) {
+      console.error('[fetchLiveRates] error:', err);
       setRatesError('Could not fetch live shipping rates. Please select a shipping option below.');
       setUsingLiveRates(false);
     } finally {
@@ -160,7 +164,7 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
       if (ratesDebounceRef.current) clearTimeout(ratesDebounceRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.address1, form.city, form.state, form.zip, isAuthenticated]);
+  }, [form.address1, form.city, form.state, form.zip, isAuthenticated, cartItems]);
 
   // ── Totals ─────────────────────────────────────────────────────────────────
   const [couponCode, setCouponCode] = useState('');
