@@ -860,14 +860,14 @@ const AdminProductList = () => {
                             {skuItems.map((s) =>
                               editingSkuId === s.id ? (
                                 <tr key={s.id} className="table-warning">
-                                  <td><input className="form-control form-control-sm" value={editingSkuDraft.sku} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, sku: e.target.value }))} style={{ minWidth: 80 }} /></td>
-                                  <td><input className="form-control form-control-sm" value={editingSkuDraft.barcode} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, barcode: e.target.value }))} style={{ minWidth: 80 }} /></td>
-                                  <td><input className="form-control form-control-sm" type="number" step="0.01" value={editingSkuDraft.price} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, price: e.target.value }))} style={{ minWidth: 70 }} /></td>
-                                  <td><input className="form-control form-control-sm" type="number" value={editingSkuDraft.qtyInStock} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, qtyInStock: e.target.value }))} style={{ minWidth: 55 }} /></td>
-                                  <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.weight} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, weight: e.target.value }))} style={{ minWidth: 55 }} /></td>
-                                  <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.length} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, length: e.target.value }))} style={{ minWidth: 50 }} /></td>
-                                  <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.width} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, width: e.target.value }))} style={{ minWidth: 50 }} /></td>
-                                  <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.height} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, height: e.target.value }))} style={{ minWidth: 50 }} /></td>
+                                  <td><input className="form-control form-control-sm" value={editingSkuDraft.sku} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, sku: e.target.value }))} style={{ width: 80 }} /></td>
+                                  <td><input className="form-control form-control-sm" value={editingSkuDraft.barcode} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, barcode: e.target.value }))} style={{ width: 80 }} /></td>
+                                  <td><input className="form-control form-control-sm" type="number" step="0.01" value={editingSkuDraft.price} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, price: e.target.value }))} style={{ width: 55 }} /></td>
+                                  <td><input className="form-control form-control-sm" type="number" value={editingSkuDraft.qtyInStock} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, qtyInStock: e.target.value }))} style={{ width: 50 }} /></td>
+                                  <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.weight} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, weight: e.target.value }))} style={{ width: 50 }} /></td>
+                                  <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.length} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, length: e.target.value }))} style={{ width: 45 }} /></td>
+                                  <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.width} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, width: e.target.value }))} style={{ width: 45 }} /></td>
+                                  <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.height} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, height: e.target.value }))} style={{ width: 45 }} /></td>
                                   <td>
                                     <label className="d-flex align-items-center gap-1 mb-0" style={{ cursor: "pointer" }}>
                                       <input type="checkbox" checked={!!editingSkuDraft.isPublished} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, isPublished: e.target.checked }))} />

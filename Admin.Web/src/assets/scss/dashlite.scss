@@ -27,13 +27,13 @@
 @import "apps/attach"; 
 
 //////  Apps
-@import "apps/messages";  		// - Support Messages
-@import "apps/inbox";  			// - Inbox/ Mail App
-@import "apps/file-manager";  	// - File Manager
-@import "apps/chats";  			// - Chats
+@import "apps/messages";                // - Support Messages
+@import "apps/inbox";                   // - Inbox/ Mail App
+@import "apps/file-manager";    // - File Manager
+@import "apps/chats";                   // - Chats
 
 ///////  PREVIEW PURPOSE 
-@import "core/preview"; 		// Can be remove on real projoect
+@import "core/preview";                 // Can be remove on real projoect
 
 ///////  UI/MODE OVERRIDE
 @import "core/mode-override";
@@ -45,5 +45,5 @@
 ////////////////////////// END STYLESHEET ////////////////////////////
 // ─── Custom modal widths ─────────────────────────────────────────────────────
 .modal-xxl {
-  max-width: min(1500px, 95vw);
+  max-width: min(1080px, 95vw);
 }
