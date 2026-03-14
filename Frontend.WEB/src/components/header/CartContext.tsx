@@ -113,6 +113,17 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     async function loadCart() {
       if (isAuthenticated) {
         try {
+          // Migrate any active items that were added to localStorage while unauthenticated
+          const localItems = readCartFromStorage().filter(i => i.active && i.productItemId);
+          for (const item of localItems) {
+            try {
+              await apiAuthPost('/cart/items', { productItemId: item.productItemId, qty: item.quantity });
+            } catch {
+              // ignore individual item failures (e.g. out of stock)
+            }
+          }
+
+          // Fetch the canonical server cart (includes freshly migrated items)
           const serverItems = await fetchServerCart();
           // Keep any local wishlist items (server has no wishlist)
           const localWishlist = readCartFromStorage().filter(i => !i.active);
