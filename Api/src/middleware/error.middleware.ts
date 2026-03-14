@@ -20,6 +20,7 @@ export function errorHandler(
 ): void {
   // Zod validation errors
   if (err instanceof ZodError) {
+    logger.warn('Validation error', { details: err.flatten().fieldErrors });
     res.status(400).json({
       success: false,
       error: 'Validation error',
@@ -30,6 +31,11 @@ export function errorHandler(
 
   // Operational API errors
   if (err instanceof ApiError) {
+    if (err.statusCode >= 500) {
+      logger.error('API error', { status: err.statusCode, message: err.message });
+    } else {
+      logger.warn('API error', { status: err.statusCode, message: err.message });
+    }
     res.status(err.statusCode).json({
       success: false,
       error: err.message,

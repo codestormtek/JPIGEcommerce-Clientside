@@ -72,11 +72,42 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export function apiAuthFetch<T = unknown>(path: string, opts: ApiOptions = {}) {
-  return apiFetch<T>(path, {
+async function tryRefreshToken(): Promise<string | null> {
+  try {
+    const refreshToken = localStorage.getItem("jpig_refresh_token");
+    if (!refreshToken) return null;
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { data?: { accessToken?: string }; accessToken?: string };
+    const newToken = data?.data?.accessToken ?? data?.accessToken ?? null;
+    if (newToken) localStorage.setItem("jpig_access_token", newToken);
+    return newToken;
+  } catch {
+    return null;
+  }
+}
+
+export async function apiAuthFetch<T = unknown>(path: string, opts: ApiOptions = {}): Promise<T> {
+  const firstAttempt = await apiFetch<T>(path, {
     ...opts,
     headers: { ...getAuthHeader(), ...(opts.headers ?? {}) },
+  }).catch(async (err: Error) => {
+    if (err.message === "Invalid or expired token" || err.message === "No token provided") {
+      const newToken = await tryRefreshToken();
+      if (newToken) {
+        return apiFetch<T>(path, {
+          ...opts,
+          headers: { Authorization: `Bearer ${newToken}`, ...(opts.headers ?? {}) },
+        });
+      }
+    }
+    throw err;
   });
+  return firstAttempt;
 }
 
 export function apiAuthGet<T = unknown>(path: string, opts?: Omit<ApiOptions, "method" | "body">) {
