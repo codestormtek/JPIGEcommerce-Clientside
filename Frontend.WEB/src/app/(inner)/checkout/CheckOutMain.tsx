@@ -97,7 +97,6 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
   const [ratesError, setRatesError] = useState('');
   const [selectedRateId, setSelectedRateId] = useState('');
   const [usingLiveRates, setUsingLiveRates] = useState(false);
-  const ratesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Fallback static selection ──────────────────────────────────────────────
   const [selectedShipping, setSelectedShipping] = useState('');
@@ -152,27 +151,29 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
     }
   };
 
+  // Clear live rates whenever the destination address changes so stale rates
+  // are never shown after the user edits their address.
+  const prevAddressRef = useRef('');
   useEffect(() => {
-    if (!isCartLoaded) return;
-    if (ratesDebounceRef.current) clearTimeout(ratesDebounceRef.current);
-    // Snapshot current values at effect-run time so the setTimeout callback
-    // always uses the form state that triggered THIS effect, not a later render.
-    const formSnap = { ...form };
-    const itemsSnap = cartItemsForOrder.slice();
-    if (formSnap.address1 && formSnap.city && formSnap.state && formSnap.zip) {
-      ratesDebounceRef.current = setTimeout(() => {
-        fetchLiveRates(formSnap, itemsSnap);
-      }, 800);
-    } else {
-      setLiveRates([]);
-      setUsingLiveRates(false);
-      setSelectedRateId('');
+    const key = `${form.address1}|${form.city}|${form.state}|${form.zip}`;
+    if (key !== prevAddressRef.current) {
+      prevAddressRef.current = key;
+      if (usingLiveRates) {
+        setLiveRates([]);
+        setUsingLiveRates(false);
+        setSelectedRateId('');
+      }
     }
-    return () => {
-      if (ratesDebounceRef.current) clearTimeout(ratesDebounceRef.current);
-    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.address1, form.city, form.state, form.zip, isCartLoaded, cartItems]);
+  }, [form.address1, form.city, form.state, form.zip]);
+
+  // Called on blur of any address field so rates are fetched as soon as the
+  // user finishes entering their address — no debounce, no closure issues.
+  const handleAddressBlur = () => {
+    if (form.address1 && form.city && form.state && form.zip && isCartLoaded) {
+      fetchLiveRates({ ...form }, cartItemsForOrder.slice());
+    }
+  };
 
   // ── Totals ─────────────────────────────────────────────────────────────────
   const [couponCode, setCouponCode] = useState('');
@@ -475,7 +476,7 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
               </div>
               <div className="col-12">
                 <FieldLabel label="Street Address" required />
-                <input style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 15 }} name="address1" value={form.address1} onChange={handleInput} placeholder="123 Main Street" required />
+                <input style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 15 }} name="address1" value={form.address1} onChange={handleInput} onBlur={handleAddressBlur} placeholder="123 Main Street" required />
               </div>
               <div className="col-12">
                 <FieldLabel label="Apt, Suite, Unit (optional)" />
@@ -483,16 +484,43 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
               </div>
               <div className="col-sm-5">
                 <FieldLabel label="City" required />
-                <input style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 15 }} name="city" value={form.city} onChange={handleInput} required />
+                <input style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 15 }} name="city" value={form.city} onChange={handleInput} onBlur={handleAddressBlur} required />
               </div>
               <div className="col-sm-3">
                 <FieldLabel label="State" required />
-                <input style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 15 }} name="state" value={form.state} onChange={handleInput} placeholder="MD" maxLength={2} required />
+                <input style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 15 }} name="state" value={form.state} onChange={handleInput} onBlur={handleAddressBlur} placeholder="MD" maxLength={2} required />
               </div>
               <div className="col-sm-4">
                 <FieldLabel label="ZIP Code" required />
-                <input style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 15 }} name="zip" value={form.zip} onChange={handleInput} placeholder="20001" required />
+                <input style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 15 }} name="zip" value={form.zip} onChange={handleInput} onBlur={handleAddressBlur} placeholder="20001" required />
               </div>
+              {/* Get Rates button — visible once all four address fields are filled */}
+              {form.address1 && form.city && form.state && form.zip && (
+                <div className="col-12">
+                  <button
+                    type="button"
+                    onClick={() => fetchLiveRates({ ...form }, cartItemsForOrder.slice())}
+                    disabled={ratesLoading}
+                    style={{
+                      background: ratesLoading ? '#ccc' : '#ff8c00',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 6,
+                      padding: '9px 22px',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: ratesLoading ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    {ratesLoading
+                      ? <><i className="fa-solid fa-spinner fa-spin" /> Getting rates…</>
+                      : <><i className="fa-solid fa-truck" /> Get Shipping Rates</>}
+                  </button>
+                </div>
+              )}
               <div className="col-12">
                 <FieldLabel label="Order Notes (optional)" />
                 <textarea
