@@ -45,6 +45,68 @@ const statusBadge = (status, map) => {
   return <Badge color={color} className="badge-sm text-capitalize">{status ?? "—"}</Badge>;
 };
 
+// ─── Packing / Box Recommendation (mirrors shippoService logic) ───────────────
+
+const PACKING_CLASS_DEFAULTS = {
+  SAUCE_BOTTLE: { weightLb: 1.25, length: 2.5, width: 2.5, height: 8 },
+  RUB_BOTTLE:   { weightLb: 0.5,  length: 2.5, width: 2.5, height: 5 },
+  MERCH:        { weightLb: 0.75, length: 10,  width: 8,   height: 2 },
+};
+const PACKING_FALLBACK = { weightLb: 1.0, length: 6, width: 4, height: 4 };
+const PACKING_BOXES = [
+  { name: "Small",  maxWeightLb: 3,  length: 8,  width: 6,  height: 4 },
+  { name: "Medium", maxWeightLb: 6,  length: 10, width: 8,  height: 6 },
+  { name: "Large",  maxWeightLb: 10, length: 12, width: 10, height: 8 },
+  { name: "XLarge", maxWeightLb: 20, length: 16, width: 12, height: 10 },
+];
+
+function calculatePackingInfo(lines = []) {
+  let totalWeightLb = 0;
+  let reqLength = 0, reqWidth = 0, reqHeight = 0;
+
+  const itemDetails = lines.map((line) => {
+    const pi  = line.productItem;
+    const def = (pi?.shippingClass && PACKING_CLASS_DEFAULTS[pi.shippingClass])
+      ? PACKING_CLASS_DEFAULTS[pi.shippingClass]
+      : PACKING_FALLBACK;
+
+    const weightOz     = pi?.weight != null ? Number(pi.weight) : null;
+    const weightLbEach = weightOz   != null ? weightOz / 16     : def.weightLb;
+    const lineWeightLb = weightLbEach * line.qty;
+    totalWeightLb += lineWeightLb;
+
+    const l = pi?.length != null ? Number(pi.length) : def.length;
+    const w = pi?.width  != null ? Number(pi.width)  : def.width;
+    const h = pi?.height != null ? Number(pi.height) : def.height;
+
+    const [d0, d1, d2] = [l, w, h].sort((a, b) => b - a);
+    reqLength = Math.max(reqLength, d0);
+    reqWidth  = Math.max(reqWidth,  d1);
+    reqHeight = Math.max(reqHeight, d2);
+
+    return {
+      name:          line.productNameSnapshot || pi?.product?.name || "—",
+      sku:           line.skuSnapshot || pi?.sku || "—",
+      qty:           line.qty,
+      weightOzEach:  weightOz,
+      weightLbEach,
+      lineWeightLb,
+      length: l, width: w, height: h,
+      usedDefaults:  pi?.weight == null || pi?.length == null,
+      shippingClass: pi?.shippingClass,
+    };
+  });
+
+  const req = [reqLength, reqWidth, reqHeight];
+  const box = PACKING_BOXES.find((b) => {
+    if (b.maxWeightLb < totalWeightLb) return false;
+    const bd = [b.length, b.width, b.height].sort((a, c) => c - a);
+    return bd[0] >= req[0] && bd[1] >= req[1] && bd[2] >= req[2];
+  }) ?? PACKING_BOXES[PACKING_BOXES.length - 1];
+
+  return { box, totalWeightLb, itemDetails };
+}
+
 const SortIcon = ({ field, sortField, sort }) => (
   <Icon name={sortField === field ? (sort === "asc" ? "sort-up-fill" : "sort-down-fill") : "sort"} />
 );
@@ -639,6 +701,78 @@ const AdminOrderList = () => {
                     <p className="text-soft">{detailOrder.specialInstructions}</p>
                   </div>
                 )}
+
+                {/* ── Packing Info ─────────────────────────────────────────── */}
+                {(() => {
+                  const { box, totalWeightLb, itemDetails } = calculatePackingInfo(detailOrder.lines ?? []);
+                  const totalOz = totalWeightLb * 16;
+                  const anyDefaults = itemDetails.some((i) => i.usedDefaults);
+                  return (
+                    <div className="card card-bordered p-3 mb-3">
+                      <h6 className="overline-title text-base mb-3">Packing Info</h6>
+
+                      {/* Recommended box hero */}
+                      <div className="d-flex align-items-center gap-3 mb-3">
+                        <div className="rounded text-center py-2 px-3" style={{ background: "#f5f6fa", minWidth: 72 }}>
+                          <Icon name="package" style={{ fontSize: 26, color: "#526484" }} />
+                          <div className="fw-bold small mt-1">{box.name}</div>
+                        </div>
+                        <div>
+                          <div className="fw-bold" style={{ fontSize: "1.05rem" }}>
+                            {box.length}&Prime; &times; {box.width}&Prime; &times; {box.height}&Prime;
+                          </div>
+                          <div className="text-soft small">Recommended box (L &times; W &times; H)</div>
+                          <div className="text-soft small mt-1">
+                            Total weight:{" "}
+                            <strong>{totalOz.toFixed(1)} oz &nbsp;/&nbsp; {totalWeightLb.toFixed(2)} lb</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Per-item breakdown */}
+                      <div className="table-responsive">
+                        <table className="table table-sm table-bordered mb-1" style={{ fontSize: "0.8rem" }}>
+                          <thead className="table-light">
+                            <tr>
+                              <th>Product</th>
+                              <th>SKU</th>
+                              <th className="text-center">Qty</th>
+                              <th className="text-end">Weight ea.</th>
+                              <th className="text-end">Line Wt.</th>
+                              <th className="text-center">Dims L&Prime;&times;W&Prime;&times;H&Prime;</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {itemDetails.map((item, i) => (
+                              <tr key={i}>
+                                <td>{item.name}</td>
+                                <td className="text-soft">{item.sku}</td>
+                                <td className="text-center">{item.qty}</td>
+                                <td className="text-end">
+                                  {item.weightOzEach != null
+                                    ? `${(item.weightOzEach).toFixed(1)} oz`
+                                    : <span className="text-muted">~{(item.weightLbEach * 16).toFixed(1)} oz</span>}
+                                </td>
+                                <td className="text-end">{(item.lineWeightLb * 16).toFixed(1)} oz</td>
+                                <td className="text-center">
+                                  {item.length}&Prime;&times;{item.width}&Prime;&times;{item.height}&Prime;
+                                  {item.usedDefaults && (
+                                    <span className="text-muted ms-1" title="Estimated — no dims on this SKU">*</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {anyDefaults && (
+                        <p className="text-muted mb-0" style={{ fontSize: "0.73rem" }}>
+                          * Dimensions/weight estimated from shipping class defaults. Update SKU data for exact values.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* ── Shippo / Shipping Label Section ─────────────────────── */}
                 {detailOrder.shipment && (
