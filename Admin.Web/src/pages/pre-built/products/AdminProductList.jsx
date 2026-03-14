@@ -63,6 +63,10 @@ const AdminProductList = () => {
   const [skuSuccess, setSkuSuccess] = useState(null);
   const [editingSkuId, setEditingSkuId] = useState(null);
   const [editingSkuDraft, setEditingSkuDraft] = useState({});
+  const skuItemsRef = useRef([]);
+  useEffect(() => { skuItemsRef.current = skuItems; }, [skuItems]);
+  const removeSkuItemRef = useRef(null);
+  const toggleSkuPublishedRef = useRef(null);
   // Attributes tab
   const [attrItems, setAttrItems] = useState([]);
   const [attrDraft, setAttrDraft] = useState({ name: "", values: "" });
@@ -300,6 +304,81 @@ const AdminProductList = () => {
     } catch (e) { setSkuError(e.message); }
     finally { setSkuSaving(false); }
   };
+
+  useEffect(() => { removeSkuItemRef.current = removeSkuItem; }, [removeSkuItem]);
+
+  const toggleSkuPublished = async (skuId) => {
+    const row = skuItemsRef.current.find((s) => s.id === skuId);
+    if (!row) return;
+    const product = editProductRef.current;
+    if (!product) return;
+    try {
+      await apiPatch(`/products/${product.id}/items/${skuId}`, { isPublished: !row.isPublished });
+      setSkuItems((prev) => prev.map((s) => s.id === skuId ? { ...s, isPublished: !s.isPublished } : s));
+      setSkuSuccess("SKU updated");
+      const t = setTimeout(() => setSkuSuccess(null), 2000);
+      successTimers.current.push(t);
+    } catch (e) { setSkuError(e.message); }
+  };
+  useEffect(() => { toggleSkuPublishedRef.current = toggleSkuPublished; }, [toggleSkuPublished]);
+
+  const skuColumns = [
+    { id: "sku", header: "SKU", width: 120, editor: "text" },
+    { id: "barcode", header: "Barcode", width: 110, editor: "text" },
+    { id: "price", header: "Price ($)", width: 90, editor: "text" },
+    { id: "qtyInStock", header: "Qty", width: 70, editor: "text" },
+    { id: "weight", header: "Wt (oz)", width: 80, editor: "text" },
+    { id: "length", header: "L (in)", width: 70, editor: "text" },
+    { id: "width", header: "W (in)", width: 70, editor: "text" },
+    { id: "height", header: "H (in)", width: 70, editor: "text" },
+    {
+      id: "isPublished",
+      header: "Published",
+      width: 95,
+      template: (item) =>
+        item.isPublished
+          ? `<span style="background:#1ee0ac;color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;cursor:pointer" title="Click to unpublish">Yes</span>`
+          : `<span style="background:#8094ae;color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;cursor:pointer" title="Click to publish">No</span>`,
+    },
+    {
+      id: "_delete",
+      header: "",
+      width: 56,
+      template: () =>
+        `<button title="Delete" style="background:#fff0ef;border:1px solid #e85347;color:#e85347;padding:2px 10px;border-radius:4px;cursor:pointer;font-size:13px;">✕</button>`,
+    },
+  ];
+
+  const initSkuGrid = useCallback((api) => {
+    api.on("update-cell", async ({ id, column, value }) => {
+      const row = skuItemsRef.current.find((s) => s.id === id);
+      if (!row) return;
+      const product = editProductRef.current;
+      if (!product) return;
+      const numCols = ["price", "weight", "length", "width", "height"];
+      const intCols = ["qtyInStock"];
+      let parsed;
+      if (intCols.includes(column)) parsed = value !== "" ? parseInt(value, 10) : undefined;
+      else if (numCols.includes(column)) parsed = value !== "" ? parseFloat(value) : null;
+      else parsed = value || undefined;
+      try {
+        await apiPatch(`/products/${product.id}/items/${id}`, { [column]: parsed });
+        setSkuItems((prev) =>
+          prev.map((s) => s.id === id ? { ...s, [column]: parsed } : s)
+        );
+        setSkuSuccess("SKU updated");
+        const t = setTimeout(() => setSkuSuccess(null), 2000);
+        successTimers.current.push(t);
+      } catch (e) {
+        setSkuError(e.message);
+      }
+    });
+
+    api.on("click", ({ id, column }) => {
+      if (column === "_delete") removeSkuItemRef.current?.(id);
+      if (column === "isPublished") toggleSkuPublishedRef.current?.(id);
+    });
+  }, []);
 
   // ─── Attribute handlers ───────────────────────────────────────────────────────
 
@@ -873,78 +952,52 @@ const AdminProductList = () => {
                     <div className="text-center py-4"><Spinner size="sm" /> Loading SKU items...</div>
                   ) : (
                     <>
-                      <div className="table-responsive">
-                        <table className="table table-sm">
-                          <thead><tr><th>SKU</th><th>Barcode</th><th>Price</th><th>Qty</th><th>Weight (oz)</th><th>L × W × H (in)</th><th>Published</th><th></th></tr></thead>
-                          <tbody>
-                            {skuItems.length === 0 && <tr><td colSpan={8} className="text-center text-muted py-2">No SKUs yet.</td></tr>}
-                            {skuItems.map((item) => {
-                              const isEditing = editingSkuId === item.id;
-                              if (isEditing) {
-                                return (
-                                  <tr key={item.id} style={{ background: "#f0f4ff" }}>
-                                    <td><input className="form-control form-control-sm" value={editingSkuDraft.sku} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, sku: e.target.value }))} /></td>
-                                    <td><input className="form-control form-control-sm" value={editingSkuDraft.barcode} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, barcode: e.target.value }))} /></td>
-                                    <td><input className="form-control form-control-sm" type="number" step="0.01" value={editingSkuDraft.price} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, price: e.target.value }))} style={{ width: 80 }} /></td>
-                                    <td><input className="form-control form-control-sm" type="number" value={editingSkuDraft.qtyInStock} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, qtyInStock: e.target.value }))} style={{ width: 70 }} /></td>
-                                    <td><input className="form-control form-control-sm" type="number" step="0.1" value={editingSkuDraft.weight} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, weight: e.target.value }))} style={{ width: 70 }} /></td>
-                                    <td>
-                                      <div className="d-flex gap-1">
-                                        <input className="form-control form-control-sm" type="number" step="0.1" placeholder="L" value={editingSkuDraft.length} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, length: e.target.value }))} style={{ width: 50 }} />
-                                        <input className="form-control form-control-sm" type="number" step="0.1" placeholder="W" value={editingSkuDraft.width} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, width: e.target.value }))} style={{ width: 50 }} />
-                                        <input className="form-control form-control-sm" type="number" step="0.1" placeholder="H" value={editingSkuDraft.height} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, height: e.target.value }))} style={{ width: 50 }} />
-                                      </div>
-                                    </td>
-                                    <td><input type="checkbox" checked={editingSkuDraft.isPublished} onChange={(e) => setEditingSkuDraft((d) => ({ ...d, isPublished: e.target.checked }))} /></td>
-                                    <td>
-                                      <div className="d-flex gap-1">
-                                        <Button size="xs" color="success" onClick={() => saveEditSku(item.id)} disabled={skuSaving} title="Save">
-                                          {skuSaving ? <Spinner size="sm" /> : <Icon name="check" />}
-                                        </Button>
-                                        <Button size="xs" color="light" onClick={cancelEditSku} title="Cancel"><Icon name="cross" /></Button>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
-                              }
-                              return (
-                                <tr key={item.id}>
-                                  <td>{item.sku}</td>
-                                  <td>{item.barcode ?? "—"}</td>
-                                  <td>{fmtPrice(item.price)}</td>
-                                  <td>{item.qtyInStock}</td>
-                                  <td>{item.weight != null ? `${item.weight} oz` : "—"}</td>
-                                  <td>{item.length != null ? `${item.length} × ${item.width ?? "—"} × ${item.height ?? "—"}` : "—"}</td>
-                                  <td><Badge color={item.isPublished ? "success" : "secondary"}>{item.isPublished ? "Yes" : "No"}</Badge></td>
-                                  <td>
-                                    <div className="d-flex gap-1">
-                                      <Button size="xs" color="light" outline onClick={() => startEditSku(item)} title="Edit"><Icon name="edit" /></Button>
-                                      <Button size="xs" color="danger" outline onClick={() => removeSkuItem(item.id)} title="Delete"><Icon name="trash" /></Button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                            <tr>
-                              <td><input className="form-control form-control-sm" placeholder="SKU *" value={skuDraft.sku} onChange={(e) => setSkuDraft((d) => ({ ...d, sku: e.target.value }))} /></td>
-                              <td><input className="form-control form-control-sm" placeholder="Barcode" value={skuDraft.barcode} onChange={(e) => setSkuDraft((d) => ({ ...d, barcode: e.target.value }))} /></td>
-                              <td><input className="form-control form-control-sm" type="number" step="0.01" placeholder="Price *" value={skuDraft.price} onChange={(e) => setSkuDraft((d) => ({ ...d, price: e.target.value }))} /></td>
-                              <td><input className="form-control form-control-sm" type="number" placeholder="Qty" value={skuDraft.qtyInStock} onChange={(e) => setSkuDraft((d) => ({ ...d, qtyInStock: e.target.value }))} /></td>
-                              <td><input className="form-control form-control-sm" type="number" step="0.1" placeholder="oz" value={skuDraft.weight} onChange={(e) => setSkuDraft((d) => ({ ...d, weight: e.target.value }))} style={{ width: 70 }} /></td>
-                              <td style={{ minWidth: 160 }}>
-                                <div className="d-flex gap-1">
-                                  <input className="form-control form-control-sm" type="number" step="0.1" placeholder="L" value={skuDraft.length} onChange={(e) => setSkuDraft((d) => ({ ...d, length: e.target.value }))} style={{ width: 50 }} />
-                                  <input className="form-control form-control-sm" type="number" step="0.1" placeholder="W" value={skuDraft.width} onChange={(e) => setSkuDraft((d) => ({ ...d, width: e.target.value }))} style={{ width: 50 }} />
-                                  <input className="form-control form-control-sm" type="number" step="0.1" placeholder="H" value={skuDraft.height} onChange={(e) => setSkuDraft((d) => ({ ...d, height: e.target.value }))} style={{ width: 50 }} />
-                                </div>
-                              </td>
-                              <td><input type="checkbox" checked={skuDraft.isPublished} onChange={(e) => setSkuDraft((d) => ({ ...d, isPublished: e.target.checked }))} /></td>
-                              <td><Button size="sm" color="primary" onClick={addSkuItem} disabled={skuSaving || !skuDraft.sku || !skuDraft.price}>{skuSaving ? <Spinner size="sm" /> : <Icon name="plus" />}</Button></td>
-                            </tr>
-                          </tbody>
-                        </table>
+                      <Willow>
+                        <Grid
+                          key={skuItems.map((s) => s.id).join(",")}
+                          data={skuItems.map((s) => ({
+                            id: s.id,
+                            sku: s.sku ?? "",
+                            barcode: s.barcode ?? "",
+                            price: s.price ?? "",
+                            qtyInStock: s.qtyInStock ?? "",
+                            weight: s.weight ?? "",
+                            length: s.length ?? "",
+                            width: s.width ?? "",
+                            height: s.height ?? "",
+                            isPublished: s.isPublished ?? false,
+                          }))}
+                          columns={skuColumns}
+                          init={initSkuGrid}
+                          style={{ height: Math.max(120, skuItems.length * 42 + 48) }}
+                        />
+                      </Willow>
+
+                      {skuItems.length === 0 && (
+                        <p className="text-muted text-center small mt-2">No SKUs yet. Use the form below to add one.</p>
+                      )}
+
+                      <hr className="mt-3 mb-2" />
+                      <p className="form-label mb-1 fw-bold">Add New SKU</p>
+                      <div className="d-flex flex-wrap gap-2 align-items-center">
+                        <input className="form-control form-control-sm" placeholder="SKU *" value={skuDraft.sku} onChange={(e) => setSkuDraft((d) => ({ ...d, sku: e.target.value }))} style={{ width: 120 }} />
+                        <input className="form-control form-control-sm" placeholder="Barcode" value={skuDraft.barcode} onChange={(e) => setSkuDraft((d) => ({ ...d, barcode: e.target.value }))} style={{ width: 110 }} />
+                        <input className="form-control form-control-sm" type="number" step="0.01" placeholder="Price *" value={skuDraft.price} onChange={(e) => setSkuDraft((d) => ({ ...d, price: e.target.value }))} style={{ width: 90 }} />
+                        <input className="form-control form-control-sm" type="number" placeholder="Qty" value={skuDraft.qtyInStock} onChange={(e) => setSkuDraft((d) => ({ ...d, qtyInStock: e.target.value }))} style={{ width: 70 }} />
+                        <input className="form-control form-control-sm" type="number" step="0.1" placeholder="oz" value={skuDraft.weight} onChange={(e) => setSkuDraft((d) => ({ ...d, weight: e.target.value }))} style={{ width: 70 }} />
+                        <input className="form-control form-control-sm" type="number" step="0.1" placeholder="L" value={skuDraft.length} onChange={(e) => setSkuDraft((d) => ({ ...d, length: e.target.value }))} style={{ width: 60 }} />
+                        <input className="form-control form-control-sm" type="number" step="0.1" placeholder="W" value={skuDraft.width} onChange={(e) => setSkuDraft((d) => ({ ...d, width: e.target.value }))} style={{ width: 60 }} />
+                        <input className="form-control form-control-sm" type="number" step="0.1" placeholder="H" value={skuDraft.height} onChange={(e) => setSkuDraft((d) => ({ ...d, height: e.target.value }))} style={{ width: 60 }} />
+                        <label className="d-flex align-items-center gap-1 small text-muted mb-0">
+                          <input type="checkbox" checked={skuDraft.isPublished} onChange={(e) => setSkuDraft((d) => ({ ...d, isPublished: e.target.checked }))} /> Published
+                        </label>
+                        <Button size="sm" color="primary" onClick={addSkuItem} disabled={skuSaving || !skuDraft.sku || !skuDraft.price}>
+                          {skuSaving ? <Spinner size="sm" /> : <Icon name="plus" />}
+                        </Button>
                       </div>
-                      <p className="text-muted small mt-1">SKU items are saved immediately when you click the <strong>+</strong> button.</p>
+                      <p className="text-muted small mt-2">
+                        Double-click any cell in the grid to edit inline. Click the Published badge to toggle. Click ✕ to delete.
+                      </p>
                     </>
                   )}
                 </TabPane>
