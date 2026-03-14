@@ -700,7 +700,7 @@ const AdminOrderList = () => {
                   const totalOz = totalWeightLb * 16;
                   const anyDefaults = itemDetails.some((i) => i.usedDefaults);
                   return (
-                    <div className="card card-bordered p-3 mb-3">
+                    <div className="mb-4" style={{ border: "1px solid #dbdfea", borderRadius: "6px", padding: "1rem", background: "#fff" }}>
                       <h6 className="overline-title text-base mb-3">Packing Info</h6>
 
                       {/* Recommended box hero */}
