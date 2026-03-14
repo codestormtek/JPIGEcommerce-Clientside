@@ -110,10 +110,14 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
   const cartItemsForOrder = cartItems.filter(i => i.active);
 
   // ── Fetch live Shippo rates when address is complete ───────────────────────
-  const fetchLiveRates = async () => {
-    if (!form.address1 || !form.city || !form.state || !form.zip || cartItemsForOrder.length === 0) return;
+  // Accept snapshots as args to avoid stale-closure bugs from the debounce timer
+  const fetchLiveRates = async (
+    currentForm: typeof form,
+    currentItems: typeof cartItemsForOrder,
+  ) => {
+    if (!currentForm.address1 || !currentForm.city || !currentForm.state || !currentForm.zip || currentItems.length === 0) return;
 
-    const shippableItems = cartItemsForOrder.filter(i => i.productItemId);
+    const shippableItems = currentItems.filter(i => i.productItemId);
     if (shippableItems.length === 0) return;
 
     setRatesLoading(true);
@@ -121,15 +125,15 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
     try {
       const res = await apiAuthPost<{ data: { rates: ShippoRate[] } }>('/shipping/rates', {
         address: {
-          name: `${form.firstName} ${form.lastName}`.trim() || 'Customer',
-          street1: form.address1,
-          street2: form.address2 || undefined,
-          city: form.city,
-          state: form.state,
-          zip: form.zip,
-          country: form.country || 'US',
-          phone: form.phone || undefined,
-          email: form.email || undefined,
+          name: `${currentForm.firstName} ${currentForm.lastName}`.trim() || 'Customer',
+          street1: currentForm.address1,
+          street2: currentForm.address2 || undefined,
+          city: currentForm.city,
+          state: currentForm.state,
+          zip: currentForm.zip,
+          country: currentForm.country || 'US',
+          phone: currentForm.phone || undefined,
+          email: currentForm.email || undefined,
         },
         items: shippableItems.map(i => ({ productItemId: i.productItemId as string, qty: i.quantity })),
       });
@@ -149,11 +153,15 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
   };
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isCartLoaded) return;
     if (ratesDebounceRef.current) clearTimeout(ratesDebounceRef.current);
-    if (form.address1 && form.city && form.state && form.zip) {
+    // Snapshot current values at effect-run time so the setTimeout callback
+    // always uses the form state that triggered THIS effect, not a later render.
+    const formSnap = { ...form };
+    const itemsSnap = cartItemsForOrder.slice();
+    if (formSnap.address1 && formSnap.city && formSnap.state && formSnap.zip) {
       ratesDebounceRef.current = setTimeout(() => {
-        fetchLiveRates();
+        fetchLiveRates(formSnap, itemsSnap);
       }, 800);
     } else {
       setLiveRates([]);
@@ -164,7 +172,7 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
       if (ratesDebounceRef.current) clearTimeout(ratesDebounceRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.address1, form.city, form.state, form.zip, isAuthenticated, cartItems]);
+  }, [form.address1, form.city, form.state, form.zip, isCartLoaded, cartItems]);
 
   // ── Totals ─────────────────────────────────────────────────────────────────
   const [couponCode, setCouponCode] = useState('');
