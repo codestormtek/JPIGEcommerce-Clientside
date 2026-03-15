@@ -93,6 +93,11 @@ export async function addMyAddress(req: AuthRequest, res: Response): Promise<voi
   sendSuccess(res, address, 'Address added', 201);
 }
 
+export async function updateMyAddress(req: AuthRequest, res: Response): Promise<void> {
+  const address = await service.updateMyAddress(req.user!.sub, req.params['addressId'] as string, req.body as UpsertAddressInput);
+  sendSuccess(res, address, 'Address updated');
+}
+
 export async function removeMyAddress(req: AuthRequest, res: Response): Promise<void> {
   await service.removeMyAddress(req.user!.sub, req.params['addressId'] as string);
   sendNoContent(res);

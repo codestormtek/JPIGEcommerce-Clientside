@@ -45,6 +45,9 @@ usersRouter.get('/me/addresses', authenticate, asyncHandler(ctrl.getMyAddresses)
 // POST   /api/v1/users/me/addresses
 usersRouter.post('/me/addresses', authenticate, validate(upsertAddressSchema), asyncHandler(ctrl.addMyAddress));
 
+// PUT    /api/v1/users/me/addresses/:addressId
+usersRouter.put('/me/addresses/:addressId', authenticate, validate(upsertAddressSchema), asyncHandler(ctrl.updateMyAddress));
+
 // DELETE /api/v1/users/me/addresses/:addressId
 usersRouter.delete('/me/addresses/:addressId', authenticate, asyncHandler(ctrl.removeMyAddress));
 

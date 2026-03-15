@@ -244,6 +244,33 @@ export async function addUserAddress(userId: string, input: UpsertAddressInput) 
   });
 }
 
+export async function updateUserAddress(userId: string, userAddressId: string, input: UpsertAddressInput) {
+  const existing = await prisma.userAddress.findFirst({ where: { id: userAddressId, userId } });
+  if (!existing) throw new Error('Address not found');
+
+  if (input.isDefault) {
+    await prisma.userAddress.updateMany({ where: { userId }, data: { isDefault: false } });
+  }
+
+  await prisma.address.update({
+    where: { id: existing.addressId },
+    data: {
+      addressLine1: input.address.addressLine1,
+      addressLine2: input.address.addressLine2 ?? null,
+      city: input.address.city,
+      region: input.address.stateProvince ?? null,
+      postalCode: input.address.postalCode ?? '',
+      countryId: input.address.countryId,
+    },
+  });
+
+  return prisma.userAddress.update({
+    where: { id: userAddressId },
+    data: { label: input.label, isDefault: input.isDefault },
+    include: { address: { include: { country: true } } },
+  });
+}
+
 export async function deleteUserAddress(userId: string, userAddressId: string): Promise<void> {
   await prisma.userAddress.deleteMany({ where: { id: userAddressId, userId } });
 }

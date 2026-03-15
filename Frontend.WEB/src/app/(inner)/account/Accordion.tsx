@@ -16,8 +16,7 @@ import {
   uploadAvatar,
   getMyAddresses,
   addMyAddress,
-  deleteMyAddress,
-  setDefaultAddress,
+  updateMyAddress,
   getCountries,
 } from '@/lib/account';
 import type {
@@ -170,20 +169,16 @@ const AccountTabs = () => {
   const [addressesLoading, setAddressesLoading] = useState(false);
   const [addressesError, setAddressesError] = useState('');
   const [countries, setCountries] = useState<Country[]>([]);
-  const [showAddressForm, setShowAddressForm] = useState(false);
-  const [addrLabel, setAddrLabel] = useState('');
+  const [editingType, setEditingType] = useState<'billing' | 'shipping' | null>(null);
   const [addrLine1, setAddrLine1] = useState('');
   const [addrLine2, setAddrLine2] = useState('');
   const [addrCity, setAddrCity] = useState('');
   const [addrState, setAddrState] = useState('');
   const [addrZip, setAddrZip] = useState('');
   const [addrCountryId, setAddrCountryId] = useState('');
-  const [addrIsDefault, setAddrIsDefault] = useState(false);
   const [addrSaving, setAddrSaving] = useState(false);
   const [addrMsg, setAddrMsg] = useState('');
   const [addrErr, setAddrErr] = useState('');
-  const [deletingAddressId, setDeletingAddressId] = useState<string | null>(null);
-  const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -363,8 +358,19 @@ const AccountTabs = () => {
     }
   };
 
-  const handleAddAddressSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleOpenEdit = (type: 'billing' | 'shipping', addr: SavedAddressNested | null) => {
+    setAddrErr('');
+    setAddrMsg('');
+    setAddrLine1(addr?.address.addressLine1 ?? '');
+    setAddrLine2(addr?.address.addressLine2 ?? '');
+    setAddrCity(addr?.address.city ?? '');
+    setAddrState(addr?.address.region ?? '');
+    setAddrZip(addr?.address.postalCode ?? '');
+    setAddrCountryId(addr?.address.countryId ?? (countries[0]?.id ?? ''));
+    setEditingType(type);
+  };
+
+  const handleSaveAddress = async (type: 'billing' | 'shipping') => {
     if (!addrLine1.trim() || !addrCity.trim() || !addrCountryId) {
       setAddrErr('Street address, city, and country are required.');
       return;
@@ -373,9 +379,9 @@ const AccountTabs = () => {
     setAddrMsg('');
     setAddrErr('');
     try {
-      const newAddr = await addMyAddress({
-        label: addrLabel.trim() || undefined,
-        isDefault: addrIsDefault,
+      const payload = {
+        label: type,
+        isDefault: false,
         address: {
           addressLine1: addrLine1.trim(),
           addressLine2: addrLine2.trim() || undefined,
@@ -384,50 +390,23 @@ const AccountTabs = () => {
           postalCode: addrZip.trim() || undefined,
           countryId: addrCountryId,
         },
-      });
-      setAddresses((prev) => {
-        const updated = addrIsDefault ? prev.map((a) => ({ ...a, isDefault: false })) : prev;
-        return [...updated, newAddr];
-      });
-      setAddrMsg('Address added!');
-      setShowAddressForm(false);
-      setAddrLabel('');
-      setAddrLine1('');
-      setAddrLine2('');
-      setAddrCity('');
-      setAddrState('');
-      setAddrZip('');
-      setAddrIsDefault(false);
+      };
+      const existing = addresses.find((a) => a.label?.toLowerCase() === type);
+      let saved: SavedAddressNested;
+      if (existing) {
+        saved = await updateMyAddress(existing.id, payload);
+        setAddresses((prev) => prev.map((a) => (a.id === existing.id ? saved : a)));
+      } else {
+        saved = await addMyAddress(payload);
+        setAddresses((prev) => [...prev, saved]);
+      }
+      setAddrMsg(`${type === 'billing' ? 'Billing' : 'Shipping'} address saved!`);
+      setEditingType(null);
       setTimeout(() => setAddrMsg(''), 3000);
     } catch (err: unknown) {
-      setAddrErr(err instanceof Error ? err.message : 'Failed to add address.');
+      setAddrErr(err instanceof Error ? err.message : 'Failed to save address.');
     } finally {
       setAddrSaving(false);
-    }
-  };
-
-  const handleDeleteAddress = async (addressId: string) => {
-    if (!confirm('Remove this address?')) return;
-    setDeletingAddressId(addressId);
-    try {
-      await deleteMyAddress(addressId);
-      setAddresses((prev) => prev.filter((a) => a.id !== addressId));
-    } catch {
-      alert('Failed to remove address.');
-    } finally {
-      setDeletingAddressId(null);
-    }
-  };
-
-  const handleSetDefault = async (addressId: string) => {
-    setSettingDefaultId(addressId);
-    try {
-      await setDefaultAddress(addressId);
-      setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === addressId })));
-    } catch {
-      alert('Failed to set default address.');
-    } finally {
-      setSettingDefaultId(null);
     }
   };
 
@@ -682,198 +661,156 @@ const AccountTabs = () => {
                 </div>
               )}
 
-              {activeTab === 'address' && (
-                <div className="shipping-address-billing-address-account">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                    <h2 className="title" style={{ margin: 0 }}>My Addresses</h2>
-                    {!showAddressForm && (
+              {activeTab === 'address' && (() => {
+                const billingAddr = addresses.find((a) => a.label?.toLowerCase() === 'billing') ?? null;
+                const shippingAddr = addresses.find((a) => a.label?.toLowerCase() === 'shipping') ?? null;
+
+                const AddressForm = ({ type }: { type: 'billing' | 'shipping' }) => (
+                  <div style={{ marginTop: 16 }}>
+                    <div className="single-input" style={{ marginBottom: 10 }}>
+                      <input
+                        type="text"
+                        placeholder="Street Address *"
+                        value={addrLine1}
+                        onChange={(e) => setAddrLine1(e.target.value)}
+                      />
+                    </div>
+                    <div className="single-input" style={{ marginBottom: 10 }}>
+                      <input
+                        type="text"
+                        placeholder="Apt, Suite, Unit (optional)"
+                        value={addrLine2}
+                        onChange={(e) => setAddrLine2(e.target.value)}
+                      />
+                    </div>
+                    <div className="input-half-area" style={{ marginBottom: 10 }}>
+                      <div className="single-input">
+                        <input
+                          type="text"
+                          placeholder="City *"
+                          value={addrCity}
+                          onChange={(e) => setAddrCity(e.target.value)}
+                        />
+                      </div>
+                      <div className="single-input">
+                        <input
+                          type="text"
+                          placeholder="State / Province"
+                          value={addrState}
+                          onChange={(e) => setAddrState(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="input-half-area" style={{ marginBottom: 14 }}>
+                      <div className="single-input">
+                        <input
+                          type="text"
+                          placeholder="ZIP / Postal Code"
+                          value={addrZip}
+                          onChange={(e) => setAddrZip(e.target.value)}
+                        />
+                      </div>
+                      <div className="single-input">
+                        <select
+                          value={addrCountryId}
+                          onChange={(e) => setAddrCountryId(e.target.value)}
+                          style={{ width: '100%', padding: '10px 14px', border: '1px solid #dee2e6', borderRadius: 4, background: '#fff', fontSize: 14, color: '#495057' }}
+                        >
+                          <option value="">Select Country *</option>
+                          {countries.map((c) => (
+                            <option key={c.id} value={c.id}>{c.countryName}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    {addrErr && editingType === type && (
+                      <p style={{ color: '#dc3545', marginBottom: 10, fontSize: 13 }}>{addrErr}</p>
+                    )}
+                    <div style={{ display: 'flex', gap: 10 }}>
                       <button
                         type="button"
                         className="rts-btn btn-primary"
-                        style={{ padding: '8px 20px', fontSize: 14 }}
-                        onClick={() => { setShowAddressForm(true); setAddrErr(''); setAddrMsg(''); }}
+                        style={{ padding: '8px 20px', fontSize: 13 }}
+                        disabled={addrSaving}
+                        onClick={() => handleSaveAddress(type)}
                       >
-                        + Add Address
+                        {addrSaving ? 'Saving...' : 'Save Address'}
                       </button>
-                    )}
+                      <button
+                        type="button"
+                        className="rts-btn btn-border"
+                        style={{ padding: '8px 20px', fontSize: 13 }}
+                        disabled={addrSaving}
+                        onClick={() => { setEditingType(null); setAddrErr(''); }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
+                );
 
-                  {addrMsg && <p style={{ color: '#28a745', marginBottom: 12, fontWeight: 600 }}>{addrMsg}</p>}
-
-                  {showAddressForm && (
-                    <form
-                      onSubmit={handleAddAddressSubmit}
-                      style={{ background: '#f9f9f9', border: '1px solid #e0e0e0', borderRadius: 8, padding: 24, marginBottom: 24 }}
-                    >
-                      <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>New Address</h3>
-                      <div className="input-half-area" style={{ marginBottom: 12 }}>
-                        <div className="single-input">
-                          <input
-                            type="text"
-                            placeholder="Label (e.g. Home, Work)"
-                            value={addrLabel}
-                            onChange={(e) => setAddrLabel(e.target.value)}
-                          />
-                        </div>
-                        <div className="single-input">
-                          <input
-                            type="text"
-                            placeholder="Street Address *"
-                            value={addrLine1}
-                            onChange={(e) => setAddrLine1(e.target.value)}
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div className="single-input" style={{ marginBottom: 12 }}>
-                        <input
-                          type="text"
-                          placeholder="Apt, Suite, Unit (optional)"
-                          value={addrLine2}
-                          onChange={(e) => setAddrLine2(e.target.value)}
-                        />
-                      </div>
-                      <div className="input-half-area" style={{ marginBottom: 12 }}>
-                        <div className="single-input">
-                          <input
-                            type="text"
-                            placeholder="City *"
-                            value={addrCity}
-                            onChange={(e) => setAddrCity(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="single-input">
-                          <input
-                            type="text"
-                            placeholder="State / Province"
-                            value={addrState}
-                            onChange={(e) => setAddrState(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className="input-half-area" style={{ marginBottom: 16 }}>
-                        <div className="single-input">
-                          <input
-                            type="text"
-                            placeholder="ZIP / Postal Code"
-                            value={addrZip}
-                            onChange={(e) => setAddrZip(e.target.value)}
-                          />
-                        </div>
-                        <div className="single-input">
-                          <select
-                            value={addrCountryId}
-                            onChange={(e) => setAddrCountryId(e.target.value)}
-                            required
-                            style={{ width: '100%', padding: '10px 14px', border: '1px solid #dee2e6', borderRadius: 4, background: '#fff', fontSize: 14, color: '#495057' }}
-                          >
-                            <option value="">Select Country *</option>
-                            {countries.map((c) => (
-                              <option key={c.id} value={c.id}>{c.countryName}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <input
-                          type="checkbox"
-                          id="addrIsDefault"
-                          checked={addrIsDefault}
-                          onChange={(e) => setAddrIsDefault(e.target.checked)}
-                          style={{ width: 16, height: 16, cursor: 'pointer' }}
-                        />
-                        <label htmlFor="addrIsDefault" style={{ marginBottom: 0, cursor: 'pointer', fontSize: 14 }}>
-                          Set as default address
-                        </label>
-                      </div>
-                      {addrErr && <p style={{ color: '#dc3545', marginBottom: 12, fontSize: 13 }}>{addrErr}</p>}
-                      <div style={{ display: 'flex', gap: 12 }}>
-                        <button
-                          type="submit"
-                          className="rts-btn btn-primary"
-                          disabled={addrSaving}
-                          style={{ padding: '10px 24px', fontSize: 14 }}
-                        >
-                          {addrSaving ? 'Saving...' : 'Save Address'}
-                        </button>
+                const AddressCard = ({ type, addr, title }: { type: 'billing' | 'shipping'; addr: SavedAddressNested | null; title: string }) => (
+                  <div style={{ border: '1px solid #dee2e6', borderRadius: 8, padding: 24, background: '#fff', minHeight: 180 }}>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: '#181c32' }}>{title}</h3>
+                    {editingType === type ? (
+                      <AddressForm type={type} />
+                    ) : addr ? (
+                      <>
+                        <p style={{ fontSize: 14, lineHeight: 1.8, color: '#444', marginBottom: 16 }}>
+                          {addr.address.addressLine1}<br />
+                          {addr.address.addressLine2 && <>{addr.address.addressLine2}<br /></>}
+                          {addr.address.city}{addr.address.region ? `, ${addr.address.region}` : ''}{addr.address.postalCode ? ` ${addr.address.postalCode}` : ''}<br />
+                          {addr.address.country?.countryName || ''}
+                        </p>
                         <button
                           type="button"
                           className="rts-btn btn-border"
-                          disabled={addrSaving}
-                          style={{ padding: '10px 24px', fontSize: 14 }}
-                          onClick={() => { setShowAddressForm(false); setAddrErr(''); }}
+                          style={{ padding: '6px 20px', fontSize: 13, color: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}
+                          onClick={() => handleOpenEdit(type, addr)}
                         >
-                          Cancel
+                          Edit
                         </button>
-                      </div>
-                    </form>
-                  )}
+                      </>
+                    ) : (
+                      <>
+                        <p style={{ color: '#6c757d', fontSize: 14, marginBottom: 16 }}>
+                          No {title.toLowerCase()} saved.
+                        </p>
+                        <button
+                          type="button"
+                          className="rts-btn btn-primary"
+                          style={{ padding: '6px 20px', fontSize: 13 }}
+                          onClick={() => handleOpenEdit(type, null)}
+                        >
+                          + Add Address
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+
+                return (
+                <div className="shipping-address-billing-address-account">
+                  <h2 className="title" style={{ marginBottom: 24 }}>My Addresses</h2>
+                  {addrMsg && <p style={{ color: '#28a745', marginBottom: 16, fontWeight: 600 }}>{addrMsg}</p>}
 
                   {addressesLoading ? (
                     <p>Loading addresses...</p>
                   ) : addressesError ? (
                     <p style={{ color: '#dc3545' }}>{addressesError}</p>
-                  ) : addresses.length === 0 ? (
-                    <p style={{ color: '#6c757d' }}>No addresses saved. Click &quot;+ Add Address&quot; to add one.</p>
                   ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                      {addresses.map((addr) => (
-                        <div
-                          key={addr.id}
-                          style={{
-                            border: addr.isDefault ? '2px solid #f5a623' : '1px solid #dee2e6',
-                            borderRadius: 8,
-                            padding: 18,
-                            position: 'relative',
-                            background: '#fff',
-                          }}
-                        >
-                          {addr.isDefault && (
-                            <span style={{ position: 'absolute', top: 10, right: 10, fontSize: 11, background: '#f5a623', color: '#fff', borderRadius: 12, padding: '2px 10px', fontWeight: 700 }}>
-                              Default
-                            </span>
-                          )}
-                          {addr.label && (
-                            <p style={{ fontWeight: 700, marginBottom: 6, fontSize: 14 }}>{addr.label}</p>
-                          )}
-                          <p className="address" style={{ marginBottom: 12, fontSize: 14, lineHeight: 1.6 }}>
-                            {addr.address.addressLine1}
-                            {addr.address.addressLine2 && <><br />{addr.address.addressLine2}</>}
-                            <br />
-                            {addr.address.city}
-                            {addr.address.region ? `, ${addr.address.region}` : ''}
-                            {addr.address.postalCode ? ` ${addr.address.postalCode}` : ''}
-                            <br />
-                            {addr.address.country?.countryName || ''}
-                          </p>
-                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            {!addr.isDefault && (
-                              <button
-                                type="button"
-                                className="rts-btn btn-border"
-                                style={{ padding: '5px 14px', fontSize: 12 }}
-                                disabled={settingDefaultId === addr.id}
-                                onClick={() => handleSetDefault(addr.id)}
-                              >
-                                {settingDefaultId === addr.id ? '...' : 'Set Default'}
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              style={{ padding: '5px 14px', fontSize: 12, border: '1px solid #dc3545', color: '#dc3545', borderRadius: 4, background: 'transparent', cursor: 'pointer' }}
-                              disabled={deletingAddressId === addr.id}
-                              onClick={() => handleDeleteAddress(addr.id)}
-                            >
-                              {deletingAddressId === addr.id ? 'Removing...' : 'Remove'}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="row g-4">
+                      <div className="col-lg-6">
+                        <AddressCard type="billing" addr={billingAddr} title="Billing Address" />
+                      </div>
+                      <div className="col-lg-6">
+                        <AddressCard type="shipping" addr={shippingAddr} title="Shipping Address" />
+                      </div>
                     </div>
                   )}
                 </div>
-              )}
+                );
+              })()}
 
               {activeTab === 'account' && (
                 <div className="account-details-area">

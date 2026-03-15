@@ -77,6 +77,13 @@ export async function addMyAddress(userId: string, input: UpsertAddressInput) {
   return repo.addUserAddress(userId, input);
 }
 
+export async function updateMyAddress(userId: string, addressId: string, input: UpsertAddressInput) {
+  const addresses = await repo.getUserAddresses(userId);
+  const found = addresses.find((a: { id: string }) => a.id === addressId);
+  if (!found) throw ApiError.notFound('Address');
+  return repo.updateUserAddress(userId, addressId, input);
+}
+
 export async function removeMyAddress(userId: string, addressId: string): Promise<void> {
   const addresses = await repo.getUserAddresses(userId);
   const found = addresses.find((a: { id: string }) => a.id === addressId);

@@ -223,6 +223,15 @@ export async function addMyAddress(data: AddAddressInput): Promise<SavedAddressN
   return unwrap(res);
 }
 
+export async function updateMyAddress(addressId: string, data: AddAddressInput): Promise<SavedAddressNested> {
+  const res = await apiFetch<ApiResponse<SavedAddressNested>>(`/users/me/addresses/${addressId}`, {
+    method: "PUT",
+    body: data,
+    headers: authHeaders(),
+  });
+  return unwrap(res);
+}
+
 export async function deleteMyAddress(addressId: string): Promise<void> {
   await apiFetch<unknown>(`/users/me/addresses/${addressId}`, {
     method: "DELETE",
