@@ -150,11 +150,12 @@ export interface UserProfile {
 
 export interface OrderLine {
   id: string;
-  productName: string;
+  productNameSnapshot: string;
+  skuSnapshot: string;
   qty: number;
-  unitPrice: number;
+  unitPriceSnapshot: number;
   lineTotal: number;
-  product?: { id: string; name: string };
+  productItem?: { id: string; product?: { id: string; name: string } };
 }
 
 export interface OrderStatus {

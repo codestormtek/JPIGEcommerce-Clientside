@@ -586,9 +586,9 @@ const AccountTabs = () => {
                                           <tbody>
                                             {order.lines.map((line) => (
                                               <tr key={line.id}>
-                                                <td>{line.productName || line.product?.name || 'N/A'}</td>
+                                                <td>{line.productNameSnapshot || line.productItem?.product?.name || 'N/A'}</td>
                                                 <td>{line.qty}</td>
-                                                <td>{formatCurrency(line.unitPrice)}</td>
+                                                <td>{formatCurrency(line.unitPriceSnapshot)}</td>
                                                 <td>{formatCurrency(line.lineTotal)}</td>
                                               </tr>
                                             ))}
