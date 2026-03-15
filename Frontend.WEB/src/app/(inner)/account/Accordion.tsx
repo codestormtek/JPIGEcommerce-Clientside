@@ -750,36 +750,35 @@ const AccountTabs = () => {
                 );
 
                 const AddressCard = ({ type, addr, title }: { type: 'billing' | 'shipping'; addr: SavedAddressNested | null; title: string }) => (
-                  <div style={{ border: '1px solid #dee2e6', borderRadius: 8, padding: 24, background: '#fff', minHeight: 180 }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: '#181c32' }}>{title}</h3>
+                  <div>
+                    <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20, color: '#181c32' }}>{title}</h3>
                     {editingType === type ? (
                       <AddressForm type={type} />
                     ) : addr ? (
                       <>
-                        <p style={{ fontSize: 14, lineHeight: 1.8, color: '#444', marginBottom: 16 }}>
+                        <p style={{ fontSize: 14, lineHeight: 2, color: '#444', marginBottom: 16 }}>
                           {addr.address.addressLine1}<br />
                           {addr.address.addressLine2 && <>{addr.address.addressLine2}<br /></>}
                           {addr.address.city}{addr.address.region ? `, ${addr.address.region}` : ''}{addr.address.postalCode ? ` ${addr.address.postalCode}` : ''}<br />
                           {addr.address.country?.countryName || ''}
                         </p>
-                        <button
-                          type="button"
-                          className="rts-btn btn-border"
-                          style={{ padding: '6px 20px', fontSize: 13, color: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}
-                          onClick={() => handleOpenEdit(type, addr)}
+                        <a
+                          href="#"
+                          style={{ color: 'var(--color-primary)', fontSize: 14, fontWeight: 500, textDecoration: 'none' }}
+                          onClick={(e) => { e.preventDefault(); handleOpenEdit(type, addr); }}
                         >
                           Edit
-                        </button>
+                        </a>
                       </>
                     ) : (
                       <>
-                        <p style={{ color: '#6c757d', fontSize: 14, marginBottom: 16 }}>
+                        <p style={{ color: '#6c757d', fontSize: 14, lineHeight: 1.8, marginBottom: 20 }}>
                           No {title.toLowerCase()} saved.
                         </p>
                         <button
                           type="button"
                           className="rts-btn btn-primary"
-                          style={{ padding: '6px 20px', fontSize: 13 }}
+                          style={{ padding: '8px 22px', fontSize: 13 }}
                           onClick={() => handleOpenEdit(type, null)}
                         >
                           + Add Address
@@ -791,7 +790,7 @@ const AccountTabs = () => {
 
                 return (
                 <div className="shipping-address-billing-address-account">
-                  <h2 className="title" style={{ marginBottom: 24 }}>My Addresses</h2>
+                  <h2 className="title" style={{ marginBottom: 32 }}>My Addresses</h2>
                   {addrMsg && <p style={{ color: '#28a745', marginBottom: 16, fontWeight: 600 }}>{addrMsg}</p>}
 
                   {addressesLoading ? (
@@ -799,8 +798,8 @@ const AccountTabs = () => {
                   ) : addressesError ? (
                     <p style={{ color: '#dc3545' }}>{addressesError}</p>
                   ) : (
-                    <div className="row g-4">
-                      <div className="col-lg-6">
+                    <div className="row">
+                      <div className="col-lg-6" style={{ paddingRight: 40 }}>
                         <AddressCard type="billing" addr={billingAddr} title="Billing Address" />
                       </div>
                       <div className="col-lg-6">
