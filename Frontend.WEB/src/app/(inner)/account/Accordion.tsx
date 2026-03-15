@@ -789,7 +789,7 @@ const AccountTabs = () => {
                 );
 
                 return (
-                <div className="shipping-address-billing-address-account">
+                <div className="shipping-address-billing-address-account" style={{ display: 'block' }}>
                   <h2 className="title" style={{ marginBottom: 32 }}>My Addresses</h2>
                   {addrMsg && <p style={{ color: '#28a745', marginBottom: 16, fontWeight: 600 }}>{addrMsg}</p>}
 
