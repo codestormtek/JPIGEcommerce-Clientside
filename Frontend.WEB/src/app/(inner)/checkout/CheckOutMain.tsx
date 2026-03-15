@@ -7,6 +7,7 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import { useCart } from '@/components/header/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch, apiAuthPost } from '@/lib/api';
+import { getMyAddresses } from '@/lib/account';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '');
 
@@ -90,6 +91,26 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
       }));
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    getMyAddresses().then((addrs) => {
+      const billing  = addrs.find((a) => a.label?.toLowerCase() === 'billing');
+      const shipping = addrs.find((a) => a.label?.toLowerCase() === 'shipping');
+      const addr = billing ?? shipping;
+      if (!addr) return;
+      const a = addr.address;
+      setForm(prev => ({
+        ...prev,
+        address1: a.addressLine1 || prev.address1,
+        address2: a.addressLine2 || prev.address2,
+        city:     a.city        || prev.city,
+        state:    a.region      || prev.state,
+        zip:      a.postalCode  || prev.zip,
+        country:  a.country?.iso2 || prev.country,
+      }));
+    }).catch(() => { /* silently ignore if addresses can't be fetched */ });
+  }, [isAuthenticated]);
 
   // ── Shippo live rates ──────────────────────────────────────────────────────
   const [liveRates, setLiveRates] = useState<ShippoRate[]>([]);
