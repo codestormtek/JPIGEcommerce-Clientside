@@ -128,7 +128,53 @@ export async function checkout(userId: string, input: PlaceOrderInput, ctx?: Aud
       ctx: { ...ctx, actorId: userId },
     });
 
-    // ── Step 5: Post-order notifications (fire-and-forget) ───────────────────
+    // ── Step 5: Auto-save shipping address to user profile (fire-and-forget) ──
+    const checkoutShippingAddr = input.addresses.find((a) => a.addressType === 'shipping');
+    if (checkoutShippingAddr) {
+      (async () => {
+        try {
+          const country = checkoutShippingAddr.countryIso2
+            ? await prisma.country.findFirst({ where: { iso2: { equals: checkoutShippingAddr.countryIso2, mode: 'insensitive' } } })
+            : await prisma.country.findFirst({ where: { countryName: { equals: checkoutShippingAddr.countryName, mode: 'insensitive' } } });
+
+          if (!country) return;
+
+          const existing = await prisma.userAddress.findFirst({ where: { userId, label: 'shipping' } });
+
+          if (existing) {
+            await userRepo.updateUserAddress(userId, existing.id, {
+              label: 'shipping',
+              isDefault: false,
+              address: {
+                addressLine1: checkoutShippingAddr.addressLine1,
+                addressLine2: checkoutShippingAddr.addressLine2,
+                city: checkoutShippingAddr.city,
+                stateProvince: checkoutShippingAddr.region,
+                postalCode: checkoutShippingAddr.postalCode,
+                countryId: country.id,
+              },
+            });
+          } else {
+            await userRepo.addUserAddress(userId, {
+              label: 'shipping',
+              isDefault: false,
+              address: {
+                addressLine1: checkoutShippingAddr.addressLine1,
+                addressLine2: checkoutShippingAddr.addressLine2,
+                city: checkoutShippingAddr.city,
+                stateProvince: checkoutShippingAddr.region,
+                postalCode: checkoutShippingAddr.postalCode,
+                countryId: country.id,
+              },
+            });
+          }
+        } catch (err) {
+          logger.warn('Failed to auto-save shipping address to user profile', { userId, err });
+        }
+      })();
+    }
+
+    // ── Step 6: Post-order notifications (fire-and-forget) ───────────────────
     const n = (v: unknown) => Number(v);
     const orderNum = `ORD-${order.id.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
 
