@@ -10,7 +10,7 @@ const apiHost = (() => {
 })();
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["*.replit.dev", "*.repl.co", "127.0.0.1"],
+  allowedDevOrigins: ["*.replit.dev", "*.riker.replit.dev", "*.repl.co", "127.0.0.1"],
   images: {
     remotePatterns: [
       {
