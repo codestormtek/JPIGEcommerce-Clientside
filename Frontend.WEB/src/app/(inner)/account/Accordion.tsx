@@ -665,6 +665,7 @@ const AccountTabs = () => {
                 const billingAddr = addresses.find((a) => a.label?.toLowerCase() === 'billing') ?? null;
                 const shippingAddr = addresses.find((a) => a.label?.toLowerCase() === 'shipping') ?? null;
 
+                const inputStyle: React.CSSProperties = { height: 50, border: '1px solid #E8E8E8', borderRadius: 4, padding: '0 14px', width: '100%', fontSize: 14, outline: 'none' };
                 const AddressForm = ({ type }: { type: 'billing' | 'shipping' }) => (
                   <div style={{ marginTop: 16 }}>
                     <div className="single-input" style={{ marginBottom: 10 }}>
@@ -673,6 +674,7 @@ const AccountTabs = () => {
                         placeholder="Street Address *"
                         value={addrLine1}
                         onChange={(e) => setAddrLine1(e.target.value)}
+                        style={inputStyle}
                       />
                     </div>
                     <div className="single-input" style={{ marginBottom: 10 }}>
@@ -681,6 +683,7 @@ const AccountTabs = () => {
                         placeholder="Apt, Suite, Unit (optional)"
                         value={addrLine2}
                         onChange={(e) => setAddrLine2(e.target.value)}
+                        style={inputStyle}
                       />
                     </div>
                     <div className="input-half-area" style={{ marginBottom: 10 }}>
@@ -690,6 +693,7 @@ const AccountTabs = () => {
                           placeholder="City *"
                           value={addrCity}
                           onChange={(e) => setAddrCity(e.target.value)}
+                          style={inputStyle}
                         />
                       </div>
                       <div className="single-input">
@@ -698,6 +702,7 @@ const AccountTabs = () => {
                           placeholder="State / Province"
                           value={addrState}
                           onChange={(e) => setAddrState(e.target.value)}
+                          style={inputStyle}
                         />
                       </div>
                     </div>
@@ -708,6 +713,7 @@ const AccountTabs = () => {
                           placeholder="ZIP / Postal Code"
                           value={addrZip}
                           onChange={(e) => setAddrZip(e.target.value)}
+                          style={inputStyle}
                         />
                       </div>
                       <div className="single-input">
