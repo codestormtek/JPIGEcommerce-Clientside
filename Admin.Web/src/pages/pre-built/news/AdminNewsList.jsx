@@ -17,7 +17,9 @@ import "tinymce/tinymce";
 import "tinymce/models/dom/model";
 import "tinymce/themes/silver";
 import "tinymce/icons/default";
-import "tinymce/skins/content/default/content";
+import "tinymce/skins/ui/oxide/skin.css";
+import "tinymce/skins/ui/oxide/content.css";
+import "tinymce/skins/content/default/content.css";
 import "tinymce/plugins/advlist";
 import "tinymce/plugins/autolink";
 import "tinymce/plugins/lists";
@@ -114,6 +116,7 @@ const AdminNewsList = () => {
   const [emailSending, setEmailSending] = useState(false);
   const [emailProgress, setEmailProgress] = useState(null);
   const [emailResult, setEmailResult]   = useState(null);
+  const [testEmail, setTestEmail]       = useState("");
 
   const [previewModal, setPreviewModal] = useState(false);
   const [previewPost, setPreviewPost]   = useState(null);
@@ -194,19 +197,24 @@ const AdminNewsList = () => {
   const openPreview = (post) => { setPreviewPost(post); setPreviewModal(true); };
 
   const openEmailModal = (post) => {
-    setEmailTarget(post); setEmailResult(null); setEmailProgress(null); setEmailModal(true);
+    setEmailTarget(post); setEmailResult(null); setEmailProgress(null); setTestEmail(""); setEmailModal(true);
   };
 
   const doSendEmail = async () => {
     if (!emailTarget) return;
     setEmailSending(true); setEmailResult(null); setEmailProgress({ sent: 0, total: 0, errors: 0 });
     try {
-      const subsRes = await apiGet("/subscribers?limit=500&optInEmail=true");
-      const subscribers = (subsRes?.data ?? subsRes ?? []).filter((s) => s.emailAddress && s.optInEmail !== false);
-      if (subscribers.length === 0) {
-        setEmailResult({ success: false, message: "No subscribers with email opt-in found." });
-        setEmailSending(false);
-        return;
+      let subscribers;
+      if (testEmail.trim()) {
+        subscribers = [{ emailAddress: testEmail.trim() }];
+      } else {
+        const subsRes = await apiGet("/subscribers?limit=500&optInEmail=true");
+        subscribers = (subsRes?.data ?? subsRes ?? []).filter((s) => s.emailAddress && s.optInEmail !== false);
+        if (subscribers.length === 0) {
+          setEmailResult({ success: false, message: "No subscribers with email opt-in found." });
+          setEmailSending(false);
+          return;
+        }
       }
       setEmailProgress({ sent: 0, total: subscribers.length, errors: 0 });
 
@@ -245,7 +253,9 @@ const AdminNewsList = () => {
 
       setEmailResult({
         success: true,
-        message: `Sent to ${sent} subscriber${sent !== 1 ? "s" : ""}${errors > 0 ? ` (${errors} failed)` : ""}.`,
+        message: testEmail.trim()
+          ? `Test email sent to ${testEmail.trim()}.`
+          : `Sent to ${sent} subscriber${sent !== 1 ? "s" : ""}${errors > 0 ? ` (${errors} failed)` : ""}.`,
       });
     } catch (e) {
       setEmailResult({ success: false, message: e.message });
@@ -308,6 +318,8 @@ const AdminNewsList = () => {
   const tinymceInit = {
     height: 420,
     menubar: false,
+    skin: false,
+    content_css: false,
     plugins: "advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount",
     toolbar:
       "undo redo | blocks | bold italic underline strikethrough | forecolor backcolor | " +
@@ -771,9 +783,23 @@ const AdminNewsList = () => {
                   </div>
                 </div>
 
-                <p className="text-muted">
-                  This will send the article as an email to all subscribers who have opted in to receive email communications.
-                </p>
+                <div className="form-group mb-3">
+                  <label className="form-label fw-bold">
+                    Send test to <span className="text-muted fw-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    placeholder="test@example.com"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    disabled={emailSending}
+                  />
+                  <div className="form-note">
+                    Enter an email address to send a preview to just that address.
+                    Leave blank to send to all opted-in subscribers.
+                  </div>
+                </div>
 
                 {emailProgress && emailSending && (
                   <div className="mb-3">
@@ -795,7 +821,9 @@ const AdminNewsList = () => {
                 <div className="d-flex justify-content-end gap-2 mt-3">
                   <Button color="light" onClick={() => setEmailModal(false)} disabled={emailSending}>Cancel</Button>
                   <Button color="primary" onClick={doSendEmail} disabled={emailSending}>
-                    {emailSending ? <><Spinner size="sm" /> Sending…</> : <><Icon name="send" /> <span className="ms-1">Send Now</span></>}
+                    {emailSending
+                      ? <><Spinner size="sm" /> Sending…</>
+                      : <><Icon name="send" /> <span className="ms-1">{testEmail.trim() ? "Send Test Email" : "Send to All Subscribers"}</span></>}
                   </Button>
                 </div>
               </>

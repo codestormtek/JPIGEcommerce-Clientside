@@ -17,7 +17,9 @@ import "tinymce/tinymce";
 import "tinymce/models/dom/model";
 import "tinymce/themes/silver";
 import "tinymce/icons/default";
-import "tinymce/skins/content/default/content";
+import "tinymce/skins/ui/oxide/skin.css";
+import "tinymce/skins/ui/oxide/content.css";
+import "tinymce/skins/content/default/content.css";
 import "tinymce/plugins/advlist";
 import "tinymce/plugins/autolink";
 import "tinymce/plugins/lists";
@@ -240,6 +242,8 @@ const AdminBlogList = () => {
   const tinymceInit = {
     height: 420,
     menubar: false,
+    skin: false,
+    content_css: false,
     plugins: "advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount",
     toolbar:
       "undo redo | blocks | bold italic underline strikethrough | forecolor backcolor | " +
