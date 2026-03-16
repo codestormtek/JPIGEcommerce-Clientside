@@ -664,64 +664,31 @@ const AccountTabs = () => {
               {activeTab === 'address' && (() => {
                 const billingAddr = addresses.find((a) => a.label?.toLowerCase() === 'billing') ?? null;
                 const shippingAddr = addresses.find((a) => a.label?.toLowerCase() === 'shipping') ?? null;
-
                 const inputStyle: React.CSSProperties = { height: 50, border: '1px solid #E8E8E8', borderRadius: 4, padding: '0 14px', width: '100%', fontSize: 14, outline: 'none' };
-                const AddressForm = ({ type }: { type: 'billing' | 'shipping' }) => (
+                const selectStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', border: '1px solid #dee2e6', borderRadius: 4, background: '#fff', fontSize: 14, color: '#495057' };
+
+                const renderAddressForm = (type: 'billing' | 'shipping') => (
                   <div style={{ marginTop: 16 }}>
                     <div className="single-input" style={{ marginBottom: 10 }}>
-                      <input
-                        type="text"
-                        placeholder="Street Address *"
-                        value={addrLine1}
-                        onChange={(e) => setAddrLine1(e.target.value)}
-                        style={inputStyle}
-                      />
+                      <input type="text" placeholder="Street Address *" value={addrLine1} onChange={(e) => setAddrLine1(e.target.value)} style={inputStyle} />
                     </div>
                     <div className="single-input" style={{ marginBottom: 10 }}>
-                      <input
-                        type="text"
-                        placeholder="Apt, Suite, Unit (optional)"
-                        value={addrLine2}
-                        onChange={(e) => setAddrLine2(e.target.value)}
-                        style={inputStyle}
-                      />
+                      <input type="text" placeholder="Apt, Suite, Unit (optional)" value={addrLine2} onChange={(e) => setAddrLine2(e.target.value)} style={inputStyle} />
                     </div>
                     <div className="input-half-area" style={{ marginBottom: 10 }}>
                       <div className="single-input">
-                        <input
-                          type="text"
-                          placeholder="City *"
-                          value={addrCity}
-                          onChange={(e) => setAddrCity(e.target.value)}
-                          style={inputStyle}
-                        />
+                        <input type="text" placeholder="City *" value={addrCity} onChange={(e) => setAddrCity(e.target.value)} style={inputStyle} />
                       </div>
                       <div className="single-input">
-                        <input
-                          type="text"
-                          placeholder="State / Province"
-                          value={addrState}
-                          onChange={(e) => setAddrState(e.target.value)}
-                          style={inputStyle}
-                        />
+                        <input type="text" placeholder="State / Province" value={addrState} onChange={(e) => setAddrState(e.target.value)} style={inputStyle} />
                       </div>
                     </div>
                     <div className="input-half-area" style={{ marginBottom: 14 }}>
                       <div className="single-input">
-                        <input
-                          type="text"
-                          placeholder="ZIP / Postal Code"
-                          value={addrZip}
-                          onChange={(e) => setAddrZip(e.target.value)}
-                          style={inputStyle}
-                        />
+                        <input type="text" placeholder="ZIP / Postal Code" value={addrZip} onChange={(e) => setAddrZip(e.target.value)} style={inputStyle} />
                       </div>
                       <div className="single-input">
-                        <select
-                          value={addrCountryId}
-                          onChange={(e) => setAddrCountryId(e.target.value)}
-                          style={{ width: '100%', padding: '10px 14px', border: '1px solid #dee2e6', borderRadius: 4, background: '#fff', fontSize: 14, color: '#495057' }}
-                        >
+                        <select value={addrCountryId} onChange={(e) => setAddrCountryId(e.target.value)} style={selectStyle}>
                           <option value="">Select Country *</option>
                           {countries.map((c) => (
                             <option key={c.id} value={c.id}>{c.countryName}</option>
@@ -733,33 +700,21 @@ const AccountTabs = () => {
                       <p style={{ color: '#dc3545', marginBottom: 10, fontSize: 13 }}>{addrErr}</p>
                     )}
                     <div style={{ display: 'flex', gap: 10 }}>
-                      <button
-                        type="button"
-                        className="rts-btn btn-primary"
-                        style={{ padding: '8px 20px', fontSize: 13 }}
-                        disabled={addrSaving}
-                        onClick={() => handleSaveAddress(type)}
-                      >
+                      <button type="button" className="rts-btn btn-primary" style={{ padding: '8px 20px', fontSize: 13 }} disabled={addrSaving} onClick={() => handleSaveAddress(type)}>
                         {addrSaving ? 'Saving...' : 'Save Address'}
                       </button>
-                      <button
-                        type="button"
-                        className="rts-btn btn-border"
-                        style={{ padding: '8px 20px', fontSize: 13 }}
-                        disabled={addrSaving}
-                        onClick={() => { setEditingType(null); setAddrErr(''); }}
-                      >
+                      <button type="button" className="rts-btn btn-border" style={{ padding: '8px 20px', fontSize: 13 }} disabled={addrSaving} onClick={() => { setEditingType(null); setAddrErr(''); }}>
                         Cancel
                       </button>
                     </div>
                   </div>
                 );
 
-                const AddressCard = ({ type, addr, title }: { type: 'billing' | 'shipping'; addr: SavedAddressNested | null; title: string }) => (
+                const renderAddressCard = (type: 'billing' | 'shipping', addr: SavedAddressNested | null, title: string) => (
                   <div>
                     <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20, color: '#181c32' }}>{title}</h3>
                     {editingType === type ? (
-                      <AddressForm type={type} />
+                      renderAddressForm(type)
                     ) : addr ? (
                       <>
                         <p style={{ fontSize: 14, lineHeight: 2, color: '#444', marginBottom: 16 }}>
@@ -768,11 +723,7 @@ const AccountTabs = () => {
                           {addr.address.city}{addr.address.region ? `, ${addr.address.region}` : ''}{addr.address.postalCode ? ` ${addr.address.postalCode}` : ''}<br />
                           {addr.address.country?.countryName || ''}
                         </p>
-                        <a
-                          href="#"
-                          style={{ color: 'var(--color-primary)', fontSize: 14, fontWeight: 500, textDecoration: 'none' }}
-                          onClick={(e) => { e.preventDefault(); handleOpenEdit(type, addr); }}
-                        >
+                        <a href="#" style={{ color: 'var(--color-primary)', fontSize: 14, fontWeight: 500, textDecoration: 'none' }} onClick={(e) => { e.preventDefault(); handleOpenEdit(type, addr); }}>
                           Edit
                         </a>
                       </>
@@ -781,12 +732,7 @@ const AccountTabs = () => {
                         <p style={{ color: '#6c757d', fontSize: 14, lineHeight: 1.8, marginBottom: 20 }}>
                           No {title.toLowerCase()} saved.
                         </p>
-                        <button
-                          type="button"
-                          className="rts-btn btn-primary"
-                          style={{ padding: '8px 22px', fontSize: 13 }}
-                          onClick={() => handleOpenEdit(type, null)}
-                        >
+                        <button type="button" className="rts-btn btn-primary" style={{ padding: '8px 22px', fontSize: 13 }} onClick={() => handleOpenEdit(type, null)}>
                           + Add Address
                         </button>
                       </>
@@ -795,25 +741,24 @@ const AccountTabs = () => {
                 );
 
                 return (
-                <div className="shipping-address-billing-address-account" style={{ display: 'block' }}>
-                  <h2 className="title" style={{ marginBottom: 32 }}>My Addresses</h2>
-                  {addrMsg && <p style={{ color: '#28a745', marginBottom: 16, fontWeight: 600 }}>{addrMsg}</p>}
-
-                  {addressesLoading ? (
-                    <p>Loading addresses...</p>
-                  ) : addressesError ? (
-                    <p style={{ color: '#dc3545' }}>{addressesError}</p>
-                  ) : (
-                    <div className="row">
-                      <div className="col-lg-6" style={{ paddingRight: 40 }}>
-                        <AddressCard type="billing" addr={billingAddr} title="Billing Address" />
+                  <div className="shipping-address-billing-address-account" style={{ display: 'block' }}>
+                    <h2 className="title" style={{ marginBottom: 32 }}>My Addresses</h2>
+                    {addrMsg && <p style={{ color: '#28a745', marginBottom: 16, fontWeight: 600 }}>{addrMsg}</p>}
+                    {addressesLoading ? (
+                      <p>Loading addresses...</p>
+                    ) : addressesError ? (
+                      <p style={{ color: '#dc3545' }}>{addressesError}</p>
+                    ) : (
+                      <div className="row">
+                        <div className="col-lg-6" style={{ paddingRight: 40 }}>
+                          {renderAddressCard('billing', billingAddr, 'Billing Address')}
+                        </div>
+                        <div className="col-lg-6">
+                          {renderAddressCard('shipping', shippingAddr, 'Shipping Address')}
+                        </div>
                       </div>
-                      <div className="col-lg-6">
-                        <AddressCard type="shipping" addr={shippingAddr} title="Shipping Address" />
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
                 );
               })()}
 
