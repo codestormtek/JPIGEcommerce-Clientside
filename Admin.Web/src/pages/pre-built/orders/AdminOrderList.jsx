@@ -721,7 +721,7 @@ const AdminOrderList = () => {
                       </div>
 
                       {/* Per-item breakdown */}
-                      <div className="table-responsive">
+                      <div className="table-responsive" style={{ paddingTop: "25px" }}>
                         <table className="table table-sm table-bordered mb-1" style={{ fontSize: "0.8rem" }}>
                           <thead className="table-light">
                             <tr>
