@@ -585,7 +585,7 @@ const AdminOrderList = () => {
         </Block>
 
         {/* ── Detail Modal ────────────────────────────────────────────────── */}
-        <Modal isOpen={detailModal} toggle={() => setDetailModal(false)} size="xl">
+        <Modal isOpen={detailModal} toggle={() => setDetailModal(false)} size="xl" scrollable>
           <ModalHeader toggle={() => setDetailModal(false)}>
             Order Detail {detailOrder ? `#${shortId(detailOrder.id)}` : ""}
           </ModalHeader>
