@@ -683,10 +683,12 @@ const AdminOrderList = () => {
                         <Col md="4" key={addr.id}>
                           <div className="card card-bordered p-3">
                             <div className="text-soft small text-capitalize mb-1">{addr.addressType ?? "Address"}</div>
-                            <div>{addr.line1}</div>
-                            {addr.line2 && <div>{addr.line2}</div>}
-                            <div>{[addr.city, addr.state, addr.postalCode].filter(Boolean).join(", ")}</div>
-                            <div>{addr.country}</div>
+                            {addr.fullName && <div className="fw-bold">{addr.fullName}</div>}
+                            <div>{addr.addressLine1}</div>
+                            {addr.addressLine2 && <div>{addr.addressLine2}</div>}
+                            <div>{[addr.city, addr.region, addr.postalCode].filter(Boolean).join(", ")}</div>
+                            <div>{addr.countryName}</div>
+                            {addr.phone && <div className="text-soft small mt-1">{addr.phone}</div>}
                           </div>
                         </Col>
                       ))}
@@ -932,10 +934,10 @@ const AdminOrderList = () => {
                               <li>
                                 <Icon name="map-pin-fill" />
                                 <span>
-                                  {billingAddr.line1}
-                                  {billingAddr.line2 ? <><br />{billingAddr.line2}</> : null}
+                                  {billingAddr.addressLine1}
+                                  {billingAddr.addressLine2 ? <><br />{billingAddr.addressLine2}</> : null}
                                   <br />
-                                  {[billingAddr.city, billingAddr.state, billingAddr.postalCode].filter(Boolean).join(", ")}
+                                  {[billingAddr.city, billingAddr.region, billingAddr.postalCode].filter(Boolean).join(", ")}
                                 </span>
                               </li>
                             )}
