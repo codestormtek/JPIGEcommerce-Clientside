@@ -1,4 +1,4 @@
-import { prisma } from '../../lib/prisma';
+import prisma from '../../lib/prisma';
 import { ApiError } from '../../utils/apiError';
 import { PaginatedResult } from '../../types';
 import { ListReviewsInput, ListCommentsInput, UpdateReviewApproval } from './reviews.schema';
