@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Content from "@/layout/content/Content";
 import Head from "@/layout/head/Head";
-import { Badge, Modal, ModalBody, ModalHeader, Spinner } from "reactstrap";
+import { Badge, Modal, ModalBody, ModalHeader, Spinner, UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem } from "reactstrap";
 import {
   Block, BlockBetween, BlockHead, BlockHeadContent, BlockTitle,
   Icon, Button, Col, Row,
@@ -224,7 +224,7 @@ function ProductReviewsPanel() {
             <DataTableRow size="lg"><span className="sub-text">Comment</span></DataTableRow>
             <DataTableRow size="sm"><span className="sub-text">Date</span></DataTableRow>
             <DataTableRow size="sm"><span className="sub-text">Status</span></DataTableRow>
-            <DataTableRow className="nk-tb-col-tools text-end" />
+            <DataTableRow className="nk-tb-col-tools text-end"><span className="sub-text">Actions</span></DataTableRow>
           </DataTableHead>
 
           {loading && <div className="text-center py-5"><Spinner color="primary" /></div>}
@@ -252,14 +252,25 @@ function ProductReviewsPanel() {
                 <ul className="nk-tb-actions gx-1">
                   <li><ApproveBtn item={r} onApprove={handleApprove} actionLoading={actionLoading} /></li>
                   <li>
-                    <Button size="sm" color="light" onClick={() => { setDetail(r); setDetailOpen(true); }}>
-                      <Icon name="eye" />
-                    </Button>
-                  </li>
-                  <li>
-                    <Button size="sm" color="danger" outline onClick={() => { setDeleteTarget(r); setDeleteOpen(true); }} disabled={!!actionLoading}>
-                      <Icon name="trash" />
-                    </Button>
+                    <UncontrolledDropdown>
+                      <DropdownToggle tag="a" href="#" className="btn btn-sm btn-icon btn-trigger" onClick={(e) => e.preventDefault()}>
+                        <Icon name="more-h" />
+                      </DropdownToggle>
+                      <DropdownMenu end>
+                        <ul className="link-list-opt no-bdr">
+                          <li>
+                            <DropdownItem tag="a" href="#" onClick={(e) => { e.preventDefault(); setDetail(r); setDetailOpen(true); }}>
+                              <Icon name="eye" /><span>View</span>
+                            </DropdownItem>
+                          </li>
+                          <li>
+                            <DropdownItem tag="a" href="#" className="text-danger" onClick={(e) => { e.preventDefault(); setDeleteTarget(r); setDeleteOpen(true); }}>
+                              <Icon name="trash" /><span>Delete</span>
+                            </DropdownItem>
+                          </li>
+                        </ul>
+                      </DropdownMenu>
+                    </UncontrolledDropdown>
                   </li>
                 </ul>
               </DataTableRow>
@@ -402,7 +413,7 @@ function BlogCommentsPanel() {
             <DataTableRow size="lg"><span className="sub-text">Comment</span></DataTableRow>
             <DataTableRow size="sm"><span className="sub-text">Date</span></DataTableRow>
             <DataTableRow size="sm"><span className="sub-text">Status</span></DataTableRow>
-            <DataTableRow className="nk-tb-col-tools text-end" />
+            <DataTableRow className="nk-tb-col-tools text-end"><span className="sub-text">Actions</span></DataTableRow>
           </DataTableHead>
 
           {loading && <div className="text-center py-5"><Spinner color="primary" /></div>}
@@ -439,14 +450,25 @@ function BlogCommentsPanel() {
                 <ul className="nk-tb-actions gx-1">
                   <li><ApproveBtn item={c} onApprove={handleApprove} actionLoading={actionLoading} /></li>
                   <li>
-                    <Button size="sm" color="light" onClick={() => { setDetail(c); setDetailOpen(true); }}>
-                      <Icon name="eye" />
-                    </Button>
-                  </li>
-                  <li>
-                    <Button size="sm" color="danger" outline onClick={() => { setDeleteTarget(c); setDeleteOpen(true); }} disabled={!!actionLoading}>
-                      <Icon name="trash" />
-                    </Button>
+                    <UncontrolledDropdown>
+                      <DropdownToggle tag="a" href="#" className="btn btn-sm btn-icon btn-trigger" onClick={(e) => e.preventDefault()}>
+                        <Icon name="more-h" />
+                      </DropdownToggle>
+                      <DropdownMenu end>
+                        <ul className="link-list-opt no-bdr">
+                          <li>
+                            <DropdownItem tag="a" href="#" onClick={(e) => { e.preventDefault(); setDetail(c); setDetailOpen(true); }}>
+                              <Icon name="eye" /><span>View</span>
+                            </DropdownItem>
+                          </li>
+                          <li>
+                            <DropdownItem tag="a" href="#" className="text-danger" onClick={(e) => { e.preventDefault(); setDeleteTarget(c); setDeleteOpen(true); }}>
+                              <Icon name="trash" /><span>Delete</span>
+                            </DropdownItem>
+                          </li>
+                        </ul>
+                      </DropdownMenu>
+                    </UncontrolledDropdown>
                   </li>
                 </ul>
               </DataTableRow>
