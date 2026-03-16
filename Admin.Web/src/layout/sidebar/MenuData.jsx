@@ -8,10 +8,7 @@ const menu = [
   {
     icon: "cart",
     text: "Orders",
-    subMenu: [
-      { text: "Order List",   link: "/orders" },
-      { text: "Order Detail", link: "/orders/:id" },
-    ],
+    link: "/orders",
   },
 
   {
@@ -32,10 +29,7 @@ const menu = [
   {
     icon: "package",
     text: "Products",
-    subMenu: [
-      { text: "Product List", link: "/products" },
-      { text: "Add Product",  link: "/products/create" },
-    ],
+    link: "/products",
   },
   {
     icon: "label",
@@ -55,10 +49,7 @@ const menu = [
   {
     icon: "users",
     text: "Customers",
-    subMenu: [
-      { text: "Customer List",   link: "/customers" },
-      { text: "Customer Detail", link: "/customers/:id" },
-    ],
+    link: "/customers",
   },
   {
     icon: "location",
@@ -75,18 +66,12 @@ const menu = [
   {
     icon: "percent",
     text: "Promotions",
-    subMenu: [
-      { text: "Promotion List", link: "/promotions" },
-      { text: "Add Promotion",  link: "/promotions/create" },
-    ],
+    link: "/promotions",
   },
   {
     icon: "ticket-alt",
     text: "Coupons",
-    subMenu: [
-      { text: "Coupon List", link: "/coupons" },
-      { text: "Add Coupon",  link: "/coupons/create" },
-    ],
+    link: "/coupons",
   },
 
   { heading: "Catering & Menus" },
@@ -154,18 +139,12 @@ const menu = [
   {
     icon: "pen",
     text: "Blog Posts",
-    subMenu: [
-      { text: "Post List", link: "/blog" },
-      { text: "Add Post",  link: "/blog/create" },
-    ],
+    link: "/blog",
   },
   {
     icon: "news",
     text: "News Articles",
-    subMenu: [
-      { text: "Article List", link: "/news" },
-      { text: "Add Article",  link: "/news/create" },
-    ],
+    link: "/news",
   },
   {
     icon: "file-text",
@@ -190,10 +169,7 @@ const menu = [
   {
     icon: "img",
     text: "Media Library",
-    subMenu: [
-      { text: "All Files", link: "/media" },
-      { text: "Upload",    link: "/media/upload" },
-    ],
+    link: "/media",
   },
 
   { heading: "Communications" },
@@ -247,10 +223,7 @@ const menu = [
   {
     icon: "user-add",
     text: "Admin Users",
-    subMenu: [
-      { text: "User List", link: "/admin/users" },
-      { text: "Add Admin", link: "/admin/users/create" },
-    ],
+    link: "/admin/users",
   },
   {
     icon: "truck",
