@@ -52,6 +52,7 @@ export const sendEmailSchema = z.object({
   subject: z.string().min(1, 'Subject is required'),
   bodyHtml: z.string().min(1, 'Body is required'),
   bodyText: z.string().optional(),
+  headers: z.record(z.string()).optional(),
 });
 
 export type SendEmailInput = z.infer<typeof sendEmailSchema>;

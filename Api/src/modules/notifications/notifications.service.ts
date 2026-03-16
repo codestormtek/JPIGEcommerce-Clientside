@@ -38,6 +38,7 @@ export async function sendManualEmail(input: SendEmailInput) {
     subject: input.subject,
     html: input.bodyHtml,
     text: input.bodyText,
+    headers: input.headers,
   });
 
   return prisma.messageOutbox.create({

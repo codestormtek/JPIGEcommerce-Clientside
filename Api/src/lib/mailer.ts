@@ -9,6 +9,7 @@ export interface SendEmailOptions {
   subject: string;
   html: string;
   text?: string;
+  headers?: Record<string, string>;
 }
 
 export async function sendEmail(opts: SendEmailOptions): Promise<string | null> {
@@ -23,6 +24,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<string | null> 
     subject: opts.subject,
     html: opts.html,
     text: opts.text,
+    headers: opts.headers,
   });
 
   if (error) {

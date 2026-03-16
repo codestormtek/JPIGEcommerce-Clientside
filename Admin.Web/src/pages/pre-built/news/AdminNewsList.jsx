@@ -222,18 +222,35 @@ const AdminNewsList = () => {
         ? `<img src="${emailTarget.featuredMediaAsset.url}" alt="${emailTarget.title}" style="max-width:100%;height:auto;border-radius:8px;margin-bottom:16px;" />`
         : "";
       const subject = `News: ${emailTarget.title}`;
+      const storeUrl = "https://thejigglingpig.com";
+      const unsubscribeUrl = `${storeUrl}/unsubscribe`;
       const bodyHtml = `
         <div style="max-width:640px;margin:0 auto;font-family:sans-serif;color:#333;">
-          <h1 style="color:#1a1a2e;margin-bottom:8px;">${emailTarget.title}</h1>
-          <p style="color:#6c757d;font-size:13px;margin-bottom:16px;">Published ${fmtDateTime(emailTarget.publishedAt)}</p>
-          ${imgTag}
-          ${emailTarget.excerpt ? `<p style="font-size:15px;color:#555;font-style:italic;border-left:3px solid #6576ff;padding-left:12px;margin-bottom:16px;">${emailTarget.excerpt}</p>` : ""}
-          <div style="font-size:15px;line-height:1.7;">${emailTarget.bodyHtml}</div>
-          <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
-          <p style="font-size:12px;color:#999;">You received this because you subscribed to news updates from The Jiggling Pig.</p>
+          <div style="background:#1a1a2e;padding:20px 32px;border-radius:8px 8px 0 0;">
+            <span style="color:#fff;font-size:20px;font-weight:700;letter-spacing:1px;">The Jiggling Pig</span>
+          </div>
+          <div style="padding:32px;background:#fff;border:1px solid #eee;border-top:none;">
+            <h1 style="color:#1a1a2e;margin:0 0 8px;">${emailTarget.title}</h1>
+            <p style="color:#6c757d;font-size:13px;margin-bottom:20px;">Published ${fmtDateTime(emailTarget.publishedAt)}</p>
+            ${imgTag}
+            ${emailTarget.excerpt ? `<p style="font-size:15px;color:#555;font-style:italic;border-left:3px solid #d4452a;padding-left:12px;margin-bottom:20px;">${emailTarget.excerpt}</p>` : ""}
+            <div style="font-size:15px;line-height:1.7;">${emailTarget.bodyHtml}</div>
+            <div style="margin-top:32px;text-align:center;">
+              <a href="${storeUrl}" style="display:inline-block;background:#d4452a;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:600;">Visit Our Store</a>
+            </div>
+          </div>
+          <div style="padding:20px 32px;background:#f8f9fa;border:1px solid #eee;border-top:none;border-radius:0 0 8px 8px;text-align:center;">
+            <p style="font-size:12px;color:#999;margin:0 0 6px;">You received this email because you subscribed to news updates from The Jiggling Pig.</p>
+            <p style="font-size:12px;color:#999;margin:0 0 6px;">The Jiggling Pig, LLC &bull; thejigglingpig.com</p>
+            <p style="font-size:12px;margin:0;">
+              <a href="${unsubscribeUrl}" style="color:#6c757d;">Unsubscribe</a>
+              &nbsp;&bull;&nbsp;
+              <a href="${storeUrl}/privacy" style="color:#6c757d;">Privacy Policy</a>
+            </p>
+          </div>
         </div>
       `;
-      const bodyText = stripHtml(emailTarget.bodyHtml);
+      const bodyText = `${emailTarget.title}\n\n${stripHtml(emailTarget.bodyHtml)}\n\n---\nYou received this because you subscribed to The Jiggling Pig news updates.\nTo unsubscribe visit: ${unsubscribeUrl}`;
 
       let sent = 0, errors = 0;
       for (const sub of subscribers) {
@@ -243,6 +260,10 @@ const AdminNewsList = () => {
             subject,
             bodyHtml,
             bodyText,
+            headers: {
+              "List-Unsubscribe": `<${unsubscribeUrl}>, <mailto:unsubscribe@thejigglingpig.com?subject=unsubscribe>`,
+              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            },
           });
           sent++;
         } catch {
