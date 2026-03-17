@@ -228,6 +228,9 @@ const AdminRecipeList = () => {
   const [productSearching, setProductSearching] = useState(false);
   const [linkingProduct,   setLinkingProduct]   = useState(false);
 
+  // ── Batch calculator state ───────────────────────────────────────────
+  const [batchScale, setBatchScale] = useState(1);
+
   const searchTimer = useRef(null);
   const productSearchTimer = useRef(null);
 
@@ -299,6 +302,7 @@ const AdminRecipeList = () => {
     setLinkedProducts([]);
     setProductSearch("");
     setProductResults([]);
+    setBatchScale(1);
     setView("editor");
   };
 
@@ -328,6 +332,7 @@ const AdminRecipeList = () => {
     setLinkedProducts((recipe.productMaps ?? []).map((m) => m.product));
     setProductSearch("");
     setProductResults([]);
+    setBatchScale(1);
     setView("editor");
   };
 
@@ -648,9 +653,8 @@ const AdminRecipeList = () => {
                       </Col>
                     </Row>
 
-                    {/* Product / Packaging row */}
-                    {["Sauce", "Rub", "Dry Mix", "Drink"].includes(form.category) && (
-                      <Row className="g-3 mb-4">
+                    {/* Product / Packaging row – always visible */}
+                    <Row className="g-3 mb-4">
                         <Col size="3">
                           <div className="form-group">
                             <label className="form-label text-uppercase small fw-bold text-muted">Total Yield</label>
@@ -717,7 +721,6 @@ const AdminRecipeList = () => {
                           </div>
                         </Col>
                       </Row>
-                    )}
 
                     {/* Ingredients */}
                     <div className="mb-4">
@@ -816,11 +819,16 @@ const AdminRecipeList = () => {
                     </div>
 
                     {/* Linked Products */}
-                    {editingRecipe?.id && (
-                      <div className="mb-4">
-                        <h6 className="fw-bold mb-3 text-nowrap" style={{ borderBottom: "2px solid #e9ecef", paddingBottom: 8 }}>
-                          <Icon name="package" className="me-1" />Linked Products
-                        </h6>
+                    <div className="mb-4">
+                      <h6 className="fw-bold mb-3 text-nowrap" style={{ borderBottom: "2px solid #e9ecef", paddingBottom: 8 }}>
+                        <Icon name="package" className="me-1" />Linked Products
+                      </h6>
+                    {!editingRecipe?.id ? (
+                      <div className="alert alert-light border d-flex align-items-center gap-2 py-2 px-3 mb-0" style={{ borderStyle: "dashed !important" }}>
+                        <em className="icon ni ni-info text-info fs-5" />
+                        <span className="small text-muted">Save this recipe first, then you can link it to a store product.</span>
+                      </div>
+                    ) : (<>
                         {linkedProducts.length > 0 && (
                           <div className="mb-3">
                             {linkedProducts.map((p) => (
@@ -874,8 +882,8 @@ const AdminRecipeList = () => {
                         {linkedProducts.length === 0 && !productSearch && (
                           <p className="text-soft small mt-2 mb-0">No products linked yet. Search above to link a product to this recipe.</p>
                         )}
-                      </div>
-                    )}
+                    </>)}
+                    </div>
 
                   </div>{/* /card-inner */}
                 </div>{/* /card */}
@@ -982,7 +990,119 @@ const AdminRecipeList = () => {
                       )}
                     </div>
                   </div>
-                </div>
+
+                  {/* ── Batch Calculator ─────────────────────────────────── */}
+                  {form.ingredients.some((i) => i.ingredientName.trim() && i.quantity !== "") && (
+                    <div className="card card-bordered shadow-sm mt-3">
+                      <div className="card-inner py-3">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                          <div>
+                            <h6 className="fw-bold mb-0">
+                              <em className="icon ni ni-calc me-1" />Batch Calculator
+                            </h6>
+                            <p className="text-soft small mb-0">Scale ingredient quantities for any batch size.</p>
+                          </div>
+                          <div className="d-flex gap-1">
+                            {[1, 2, 5, 10].map((n) => (
+                              <button
+                                key={n}
+                                type="button"
+                                className={`btn btn-sm ${batchScale === n ? "btn-primary" : "btn-outline-light"}`}
+                                onClick={() => setBatchScale(n)}
+                              >{n}×</button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="row g-2 mb-3">
+                          <div className="col-6">
+                            <label className="form-label small text-muted mb-1">Scale Factor</label>
+                            <div className="input-group input-group-sm">
+                              <input
+                                type="number"
+                                min="0.1"
+                                step="0.1"
+                                className="form-control"
+                                value={batchScale}
+                                onChange={(e) => setBatchScale(Math.max(0.1, parseFloat(e.target.value) || 1))}
+                              />
+                              <span className="input-group-text">×</span>
+                            </div>
+                          </div>
+                          {form.yieldOz && form.containerSizeOz && (
+                            <div className="col-6">
+                              <label className="form-label small text-muted mb-1">Target Containers</label>
+                              <input
+                                type="number"
+                                min="1"
+                                className="form-control form-control-sm"
+                                value={Math.round(parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz) * batchScale * 10) / 10}
+                                onChange={(e) => {
+                                  const target = parseFloat(e.target.value) || 1;
+                                  const base = parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz);
+                                  setBatchScale(Math.max(0.1, Math.round((target / base) * 100) / 100));
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {(form.yieldOz || form.containerSizeOz) && (
+                          <div className="mb-3 p-2 rounded d-flex flex-wrap gap-3" style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
+                            {form.yieldOz && (
+                              <div>
+                                <span className="small text-muted d-block">Scaled Yield</span>
+                                <strong>{Math.round(parseFloat(form.yieldOz) * batchScale * 10) / 10} oz</strong>
+                              </div>
+                            )}
+                            {form.yieldOz && form.containerSizeOz && (
+                              <div>
+                                <span className="small text-muted d-block">Containers</span>
+                                <strong className="text-success">
+                                  {Math.floor(parseFloat(form.yieldOz) * batchScale / parseFloat(form.containerSizeOz) * 10) / 10} × {form.containerSizeOz}oz
+                                </strong>
+                              </div>
+                            )}
+                            {batchScale !== 1 && (
+                              <div>
+                                <span className="small text-muted d-block">Multiplier</span>
+                                <strong className="text-primary">{batchScale}×</strong>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <h6 className="fw-bold small mb-2" style={{ color: "#6b5a4e" }}>
+                          Ingredients {batchScale !== 1 && <Badge color="primary" pill className="ms-1">{batchScale}× batch</Badge>}
+                        </h6>
+                        <div style={{ maxHeight: 260, overflowY: "auto" }}>
+                          <table className="table table-sm table-borderless mb-0">
+                            <tbody>
+                              {form.ingredients.filter((i) => i.ingredientName.trim()).map((i) => {
+                                const scaledQty = i.quantity !== "" ? Math.round(parseFloat(i.quantity) * batchScale * 1000) / 1000 : "";
+                                const changed = batchScale !== 1 && i.quantity !== "";
+                                return (
+                                  <tr key={i.uid}>
+                                    <td className="ps-0 text-muted small">{i.ingredientName}</td>
+                                    <td className={`text-end pe-0 fw-semibold small ${changed ? "text-primary" : ""}`}>
+                                      {scaledQty} {i.unit}
+                                      {changed && (
+                                        <span className="text-muted ms-1" style={{ fontSize: 10 }}>
+                                          (base: {i.quantity})
+                                        </span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                </div>{/* /sticky */}
               </Col>{/* /right panel */}
 
             </Row>
