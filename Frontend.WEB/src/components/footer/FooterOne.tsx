@@ -1,7 +1,11 @@
+'use client';
 import React from 'react'
 import NewsletterForm from './NewsletterForm'
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
 function FooterOne() {
+    const { settings } = useSiteSettings();
+    const s = (key: string, fallback: string) => settings[key] || fallback;
     return (
         <div><>
             <style>{`
@@ -64,14 +68,14 @@ function FooterOne() {
                                         </div>
                                         <div className="info">
                                             <span>Have Question? Call Us 24/7</span>
-                                            <a href="tel:18005131710" className="number" style={{ color: '#f47920', transition: 'color 0.3s' }}>
-                                                1-800-513-1710
+                                            <a href={s('footer_phone_href', 'tel:18005131710')} className="number" style={{ color: '#f47920', transition: 'color 0.3s' }}>
+                                                {s('footer_phone', '1-800-513-1710')}
                                             </a>
                                         </div>
                                     </div>
                                     <div className="opening-hour">
                                         <div className="single">
-                                            <p>Located in the metro DC area</p>
+                                            <p>{s('footer_location', 'Located in the metro DC area')}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -132,8 +136,7 @@ function FooterOne() {
                                 <div className="single-footer-wized">
                                     <h3 className="footer-title">Our Newsletter</h3>
                                     <p className="disc-news-letter">
-                                        Subscribe to the mailing list to receive updates one <br /> the
-                                        new arrivals and other discounts
+                                        {s('footer_newsletter_text', 'Subscribe to the mailing list to receive updates on the new arrivals and other discounts')}
                                     </p>
                                     <NewsletterForm />
                                     <p className="dsic">

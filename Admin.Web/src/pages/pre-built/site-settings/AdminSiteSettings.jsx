@@ -21,6 +21,20 @@ const OFFER_KEYS = [
   { key: "offer_3", label: "Offer 3", icon: "🚚" },
 ];
 
+const FEATURE_STRIP_KEYS = [
+  { titleKey: "feature_strip_1_title", descKey: "feature_strip_1_desc", label: "Box 1 – Best Prices" },
+  { titleKey: "feature_strip_2_title", descKey: "feature_strip_2_desc", label: "Box 2 – Return Policy" },
+  { titleKey: "feature_strip_3_title", descKey: "feature_strip_3_desc", label: "Box 3 – Support" },
+  { titleKey: "feature_strip_4_title", descKey: "feature_strip_4_desc", label: "Box 4 – Daily Deal" },
+];
+
+const FOOTER_KEYS = [
+  { key: "footer_phone", label: "Phone Number (displayed)", placeholder: "e.g. 1-800-513-1710" },
+  { key: "footer_phone_href", label: "Phone Link (href)", placeholder: "e.g. tel:18005131710" },
+  { key: "footer_location", label: "Location Text", placeholder: "e.g. Located in the metro DC area" },
+  { key: "footer_newsletter_text", label: "Newsletter Tagline", placeholder: "e.g. Subscribe to the mailing list…" },
+];
+
 const AdminSiteSettings = () => {
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +60,18 @@ const AdminSiteSettings = () => {
   const [offerSuccess, setOfferSuccess] = useState(null);
   const [offerError, setOfferError] = useState(null);
 
+  // ── Feature Strip quick-edit state ─────────────────────────────
+  const [featureStripValues, setFeatureStripValues] = useState({});
+  const [featureStripSaving, setFeatureStripSaving] = useState(false);
+  const [featureStripSuccess, setFeatureStripSuccess] = useState(null);
+  const [featureStripError, setFeatureStripError] = useState(null);
+
+  // ── Footer quick-edit state ─────────────────────────────────────
+  const [footerValues, setFooterValues] = useState({});
+  const [footerSaving, setFooterSaving] = useState(false);
+  const [footerSuccess, setFooterSuccess] = useState(null);
+  const [footerError, setFooterError] = useState(null);
+
   const loadSettings = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -53,14 +79,25 @@ const AdminSiteSettings = () => {
       const res = await apiGet("/site-settings");
       const all = res?.data ?? [];
       setSettings(all);
-      // Populate offer quick-edit fields
       const map = {};
       all.forEach((s) => { map[s.settingKey] = s.settingValue ?? ""; });
+      // Populate offer quick-edit fields
       setOfferValues({
         offer_1: map["offer_1"] ?? "",
         offer_2: map["offer_2"] ?? "",
         offer_3: map["offer_3"] ?? "",
       });
+      // Populate feature strip fields
+      const fsVals = {};
+      FEATURE_STRIP_KEYS.forEach(({ titleKey, descKey }) => {
+        fsVals[titleKey] = map[titleKey] ?? "";
+        fsVals[descKey] = map[descKey] ?? "";
+      });
+      setFeatureStripValues(fsVals);
+      // Populate footer fields
+      const ftVals = {};
+      FOOTER_KEYS.forEach(({ key }) => { ftVals[key] = map[key] ?? ""; });
+      setFooterValues(ftVals);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -89,6 +126,43 @@ const AdminSiteSettings = () => {
       setOfferError(e.message || "Failed to save offers.");
     } finally {
       setOfferSaving(false);
+    }
+  };
+
+  const saveFeatureStrip = async () => {
+    setFeatureStripSaving(true);
+    setFeatureStripError(null);
+    setFeatureStripSuccess(null);
+    try {
+      const allKeys = FEATURE_STRIP_KEYS.flatMap(({ titleKey, descKey }) => [titleKey, descKey]);
+      await Promise.all(
+        allKeys.map((key) => apiPatch(`/site-settings/${key}`, { settingValue: featureStripValues[key] }))
+      );
+      setFeatureStripSuccess("Feature strip saved successfully.");
+      await loadSettings();
+      setTimeout(() => setFeatureStripSuccess(null), 3000);
+    } catch (e) {
+      setFeatureStripError(e.message || "Failed to save feature strip.");
+    } finally {
+      setFeatureStripSaving(false);
+    }
+  };
+
+  const saveFooter = async () => {
+    setFooterSaving(true);
+    setFooterError(null);
+    setFooterSuccess(null);
+    try {
+      await Promise.all(
+        FOOTER_KEYS.map(({ key }) => apiPatch(`/site-settings/${key}`, { settingValue: footerValues[key] }))
+      );
+      setFooterSuccess("Footer settings saved successfully.");
+      await loadSettings();
+      setTimeout(() => setFooterSuccess(null), 3000);
+    } catch (e) {
+      setFooterError(e.message || "Failed to save footer settings.");
+    } finally {
+      setFooterSaving(false);
     }
   };
 
@@ -290,6 +364,139 @@ const AdminSiteSettings = () => {
                         onChange={(e) =>
                           setOfferValues((prev) => ({ ...prev, [key]: e.target.value }))
                         }
+                      />
+                    </Col>
+                  </Row>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Block>
+
+        {/* ── Feature Strip Quick-Edit Card ─────────────────────────── */}
+        <Block>
+          <div className="card card-bordered mb-4">
+            <div className="card-inner-group">
+              <div className="card-inner py-3" style={{ background: "#f0f8f0", borderBottom: "1px solid #c8e6c9" }}>
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <h6 className="overline-title mb-0" style={{ color: "#2e7d32" }}>
+                      🟧 Orange Feature Strip
+                    </h6>
+                    <p className="text-soft mb-0 fs-12px mt-1">
+                      The four orange boxes displayed below the hero section on the storefront.
+                    </p>
+                  </div>
+                  <Button
+                    color="success"
+                    size="sm"
+                    onClick={saveFeatureStrip}
+                    disabled={featureStripSaving}
+                    style={{ minWidth: 130 }}
+                  >
+                    {featureStripSaving ? (
+                      <><Spinner size="sm" className="me-1" /> Saving…</>
+                    ) : (
+                      <><Icon name="save" className="me-1" />Save Strip</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+              {featureStripSuccess && (
+                <Alert color="success" className="mx-3 mt-3 mb-0" toggle={() => setFeatureStripSuccess(null)}>
+                  {featureStripSuccess}
+                </Alert>
+              )}
+              {featureStripError && (
+                <Alert color="danger" className="mx-3 mt-3 mb-0" toggle={() => setFeatureStripError(null)}>
+                  {featureStripError}
+                </Alert>
+              )}
+              {FEATURE_STRIP_KEYS.map(({ titleKey, descKey, label }) => (
+                <div key={titleKey} className="card-inner py-3">
+                  <div className="fw-medium mb-2">{label}</div>
+                  <Row className="g-2">
+                    <Col md="4">
+                      <label className="form-label fs-12px text-soft mb-1">Title</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Heading text…"
+                        value={featureStripValues[titleKey] ?? ""}
+                        onChange={(e) => setFeatureStripValues((prev) => ({ ...prev, [titleKey]: e.target.value }))}
+                      />
+                    </Col>
+                    <Col md="8">
+                      <label className="form-label fs-12px text-soft mb-1">Description</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Supporting text…"
+                        value={featureStripValues[descKey] ?? ""}
+                        onChange={(e) => setFeatureStripValues((prev) => ({ ...prev, [descKey]: e.target.value }))}
+                      />
+                    </Col>
+                  </Row>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Block>
+
+        {/* ── Footer Quick-Edit Card ────────────────────────────────── */}
+        <Block>
+          <div className="card card-bordered mb-4">
+            <div className="card-inner-group">
+              <div className="card-inner py-3" style={{ background: "#f3f3f3", borderBottom: "1px solid #ddd" }}>
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <h6 className="overline-title mb-0" style={{ color: "#424242" }}>
+                      🦶 Footer Text
+                    </h6>
+                    <p className="text-soft mb-0 fs-12px mt-1">
+                      Contact details and newsletter tagline shown in the storefront footer.
+                    </p>
+                  </div>
+                  <Button
+                    color="secondary"
+                    size="sm"
+                    onClick={saveFooter}
+                    disabled={footerSaving}
+                    style={{ minWidth: 130 }}
+                  >
+                    {footerSaving ? (
+                      <><Spinner size="sm" className="me-1" /> Saving…</>
+                    ) : (
+                      <><Icon name="save" className="me-1" />Save Footer</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+              {footerSuccess && (
+                <Alert color="success" className="mx-3 mt-3 mb-0" toggle={() => setFooterSuccess(null)}>
+                  {footerSuccess}
+                </Alert>
+              )}
+              {footerError && (
+                <Alert color="danger" className="mx-3 mt-3 mb-0" toggle={() => setFooterError(null)}>
+                  {footerError}
+                </Alert>
+              )}
+              {FOOTER_KEYS.map(({ key, label, placeholder }) => (
+                <div key={key} className="card-inner py-3">
+                  <Row className="align-items-center g-3">
+                    <Col md="3">
+                      <span className="fw-medium">{label}</span>
+                      <br />
+                      <code className="text-soft fs-12px">{key}</code>
+                    </Col>
+                    <Col md="9">
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder={placeholder}
+                        value={footerValues[key] ?? ""}
+                        onChange={(e) => setFooterValues((prev) => ({ ...prev, [key]: e.target.value }))}
                       />
                     </Col>
                   </Row>

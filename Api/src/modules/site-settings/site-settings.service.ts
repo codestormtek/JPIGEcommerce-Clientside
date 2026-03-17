@@ -52,6 +52,18 @@ const DEFAULT_SETTINGS = [
   { settingKey: 'feature_card_2', settingValue: JSON.stringify({ badge: 'Weekend Discount', title: 'Organic Lemon Flavored', subtitle: 'Banana Chips', link: '/shop', image_url: '' }), label: 'Feature Promo Card 2', category: 'homepage_promotions' },
   { settingKey: 'feature_card_3', settingValue: JSON.stringify({ badge: 'Weekend Discount', title: 'Nozes Pecanera Brasil', subtitle: 'Chocolate Snacks', link: '/shop', image_url: '' }), label: 'Feature Promo Card 3', category: 'homepage_promotions' },
   { settingKey: 'feature_card_4', settingValue: JSON.stringify({ badge: 'Weekend Discount', title: 'Strawberry Water Drinks', subtitle: 'Flavors Awesome', link: '/shop', image_url: '' }), label: 'Feature Promo Card 4', category: 'homepage_promotions' },
+  { settingKey: 'feature_strip_1_title', settingValue: 'Best Prices & Offers', label: 'Feature Strip 1 – Title', category: 'feature_strip' },
+  { settingKey: 'feature_strip_1_desc', settingValue: 'We offer the best BBQ prices and special deals for our customers.', label: 'Feature Strip 1 – Description', category: 'feature_strip' },
+  { settingKey: 'feature_strip_2_title', settingValue: '100% Return Policy', label: 'Feature Strip 2 – Title', category: 'feature_strip' },
+  { settingKey: 'feature_strip_2_desc', settingValue: 'Not satisfied? We make it right with our hassle-free return policy.', label: 'Feature Strip 2 – Description', category: 'feature_strip' },
+  { settingKey: 'feature_strip_3_title', settingValue: 'Support 24/7', label: 'Feature Strip 3 – Title', category: 'feature_strip' },
+  { settingKey: 'feature_strip_3_desc', settingValue: 'Our team is here around the clock to help with any questions.', label: 'Feature Strip 3 – Description', category: 'feature_strip' },
+  { settingKey: 'feature_strip_4_title', settingValue: 'Great Offer Daily Deal', label: 'Feature Strip 4 – Title', category: 'feature_strip' },
+  { settingKey: 'feature_strip_4_desc', settingValue: 'Check back daily for fresh deals and limited-time BBQ specials.', label: 'Feature Strip 4 – Description', category: 'feature_strip' },
+  { settingKey: 'footer_phone', settingValue: '1-800-513-1710', label: 'Footer Phone Number (display)', category: 'footer' },
+  { settingKey: 'footer_phone_href', settingValue: 'tel:18005131710', label: 'Footer Phone Link (href)', category: 'footer' },
+  { settingKey: 'footer_location', settingValue: 'Located in the metro DC area', label: 'Footer Location Text', category: 'footer' },
+  { settingKey: 'footer_newsletter_text', settingValue: 'Subscribe to the mailing list to receive updates on the new arrivals and other discounts', label: 'Footer Newsletter Tagline', category: 'footer' },
 ];
 
 export async function seedDefaultSettings() {

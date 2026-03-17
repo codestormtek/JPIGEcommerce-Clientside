@@ -1,6 +1,11 @@
+'use client';
 import React from 'react';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
-function ComponentName() {
+function ShortService() {
+  const { settings } = useSiteSettings();
+  const s = (key: string, fallback: string) => settings[key] || fallback;
+
   return (
     <div>
       <div className="rts-shorts-service-area rts-section-gap bg_primary">
@@ -29,10 +34,8 @@ function ComponentName() {
                   </svg>
                 </div>
                 <div className="information">
-                  <h4 className="title">Best Prices &amp; Offers</h4>
-                  <p className="disc">
-                    We prepared special discounts you on grocery products.
-                  </p>
+                  <h4 className="title">{s('feature_strip_1_title', 'Best Prices & Offers')}</h4>
+                  <p className="disc">{s('feature_strip_1_desc', 'We offer the best BBQ prices and special deals for our customers.')}</p>
                 </div>
               </div>
               {/* single service area end */}
@@ -60,10 +63,8 @@ function ComponentName() {
                   </svg>
                 </div>
                 <div className="information">
-                  <h4 className="title">100% Return Policy</h4>
-                  <p className="disc">
-                    We prepared special discounts you on grocery products.
-                  </p>
+                  <h4 className="title">{s('feature_strip_2_title', '100% Return Policy')}</h4>
+                  <p className="disc">{s('feature_strip_2_desc', 'Not satisfied? We make it right with our hassle-free return policy.')}</p>
                 </div>
               </div>
               {/* single service area end */}
@@ -107,10 +108,8 @@ function ComponentName() {
                   </svg>
                 </div>
                 <div className="information">
-                  <h4 className="title">Support 24/7</h4>
-                  <p className="disc">
-                    We prepared special discounts you on grocery products.
-                  </p>
+                  <h4 className="title">{s('feature_strip_3_title', 'Support 24/7')}</h4>
+                  <p className="disc">{s('feature_strip_3_desc', 'Our team is here around the clock to help with any questions.')}</p>
                 </div>
               </div>
               {/* single service area end */}
@@ -146,10 +145,8 @@ function ComponentName() {
                   </svg>
                 </div>
                 <div className="information">
-                  <h4 className="title">Great Offer Daily Deal</h4>
-                  <p className="disc">
-                    We prepared special discounts you on grocery products.
-                  </p>
+                  <h4 className="title">{s('feature_strip_4_title', 'Great Offer Daily Deal')}</h4>
+                  <p className="disc">{s('feature_strip_4_desc', 'Check back daily for fresh deals and limited-time BBQ specials.')}</p>
                 </div>
               </div>
               {/* single service area end */}
@@ -162,4 +159,4 @@ function ComponentName() {
   );
 }
 
-export default ComponentName;
+export default ShortService;
