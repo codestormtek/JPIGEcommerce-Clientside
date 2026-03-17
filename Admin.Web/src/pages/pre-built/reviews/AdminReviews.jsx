@@ -28,10 +28,29 @@ function StarRating({ value }) {
   );
 }
 
-function ApprovalBadge({ approved }) {
-  return approved
-    ? <Badge color="success" className="badge-sm">Approved</Badge>
-    : <Badge color="warning" className="badge-sm">Pending</Badge>;
+function ApprovalToggle({ item, onApprove, actionLoading }) {
+  const loading = !!(actionLoading === item.id + "_approve" || actionLoading === item.id + "_disapprove");
+  return (
+    <div className="d-flex align-items-center gap-2">
+      <div className="custom-control custom-switch">
+        <input
+          type="checkbox"
+          className="custom-control-input"
+          id={`approval-${item.id}`}
+          checked={!!item.isApproved}
+          onChange={(e) => onApprove(item, e.target.checked)}
+          disabled={loading || !!actionLoading}
+        />
+        <label className="custom-control-label" htmlFor={`approval-${item.id}`} />
+      </div>
+      {loading
+        ? <Spinner size="sm" />
+        : <span className={`small fw-medium ${item.isApproved ? "text-success" : "text-warning"}`}>
+            {item.isApproved ? "Approved" : "Pending"}
+          </span>
+      }
+    </div>
+  );
 }
 
 function fmtDate(d) {
@@ -41,22 +60,6 @@ function fmtDate(d) {
 
 function customerName(user) {
   return [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "—";
-}
-
-// ─── Shared Action Buttons ────────────────────────────────────────────────────
-
-function ApproveBtn({ item, onApprove, actionLoading, suffix = "" }) {
-  const approving = actionLoading === item.id + "_approve" + suffix;
-  const disapproving = actionLoading === item.id + "_disapprove" + suffix;
-  return !item.isApproved ? (
-    <Button size="sm" color="success" outline onClick={() => onApprove(item, true)} disabled={!!actionLoading}>
-      {approving ? <Spinner size="sm" /> : <><Icon name="check" className="me-1" />Approve</>}
-    </Button>
-  ) : (
-    <Button size="sm" color="warning" outline onClick={() => onApprove(item, false)} disabled={!!actionLoading}>
-      {disapproving ? <Spinner size="sm" /> : <><Icon name="cross" className="me-1" />Disapprove</>}
-    </Button>
-  );
 }
 
 // ─── Delete Confirm Modal ─────────────────────────────────────────────────────
@@ -247,10 +250,11 @@ function ProductReviewsPanel() {
                 </span>
               </DataTableRow>
               <DataTableRow size="sm"><span className="text-soft small">{fmtDate(r.createdAt)}</span></DataTableRow>
-              <DataTableRow size="sm"><ApprovalBadge approved={r.isApproved} /></DataTableRow>
+              <DataTableRow size="sm">
+                <ApprovalToggle item={r} onApprove={handleApprove} actionLoading={actionLoading} />
+              </DataTableRow>
               <DataTableRow className="nk-tb-col-tools text-end">
                 <ul className="nk-tb-actions gx-1">
-                  <li><ApproveBtn item={r} onApprove={handleApprove} actionLoading={actionLoading} /></li>
                   <li>
                     <UncontrolledDropdown>
                       <DropdownToggle tag="a" href="#" className="btn btn-sm btn-icon btn-trigger" onClick={(e) => e.preventDefault()}>
@@ -310,7 +314,9 @@ function ProductReviewsPanel() {
               </Col>
               <Col xs="12">
                 <div className="data-label">Status</div>
-                <div className="mt-1"><ApprovalBadge approved={detail.isApproved} /></div>
+                <div className="mt-2">
+                  <ApprovalToggle item={detail} onApprove={handleApprove} actionLoading={actionLoading} />
+                </div>
               </Col>
               <Col xs="12">
                 <div className="data-label mb-1">Comment</div>
@@ -322,7 +328,6 @@ function ProductReviewsPanel() {
               </Col>
             </Row>
             <div className="d-flex gap-2 flex-wrap">
-              <ApproveBtn item={detail} onApprove={handleApprove} actionLoading={actionLoading} suffix="_modal" />
               <Button color="danger" outline onClick={() => { setDetailOpen(false); setDeleteTarget(detail); setDeleteOpen(true); }}>
                 <Icon name="trash" className="me-1" />Delete
               </Button>
@@ -445,10 +450,11 @@ function BlogCommentsPanel() {
                 </span>
               </DataTableRow>
               <DataTableRow size="sm"><span className="text-soft small">{fmtDate(c.createdAt)}</span></DataTableRow>
-              <DataTableRow size="sm"><ApprovalBadge approved={c.isApproved} /></DataTableRow>
+              <DataTableRow size="sm">
+                <ApprovalToggle item={c} onApprove={handleApprove} actionLoading={actionLoading} />
+              </DataTableRow>
               <DataTableRow className="nk-tb-col-tools text-end">
                 <ul className="nk-tb-actions gx-1">
-                  <li><ApproveBtn item={c} onApprove={handleApprove} actionLoading={actionLoading} /></li>
                   <li>
                     <UncontrolledDropdown>
                       <DropdownToggle tag="a" href="#" className="btn btn-sm btn-icon btn-trigger" onClick={(e) => e.preventDefault()}>
@@ -502,7 +508,9 @@ function BlogCommentsPanel() {
               </Col>
               <Col xs="6">
                 <div className="data-label">Status</div>
-                <div className="mt-1"><ApprovalBadge approved={detail.isApproved} /></div>
+                <div className="mt-2">
+                  <ApprovalToggle item={detail} onApprove={handleApprove} actionLoading={actionLoading} />
+                </div>
               </Col>
               {detail.parent && (
                 <Col xs="12">
@@ -520,7 +528,6 @@ function BlogCommentsPanel() {
               </Col>
             </Row>
             <div className="d-flex gap-2 flex-wrap">
-              <ApproveBtn item={detail} onApprove={handleApprove} actionLoading={actionLoading} suffix="_modal" />
               <Button color="danger" outline onClick={() => { setDetailOpen(false); setDeleteTarget(detail); setDeleteOpen(true); }}>
                 <Icon name="trash" className="me-1" />Delete
               </Button>
