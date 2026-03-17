@@ -1,0 +1,198 @@
+Great — you’re at the final cutover step. Since your infrastructure is already built (Cloudflare + Render + R2), going live mostly means changing DNS and environment variables carefully so traffic stops going to PeopleHost and starts going to your new stack.
+
+I’ll walk you through the safest production rollout.
+
+Your New Production Architecture
+
+This is what you want after the switch:
+
+thejigglingpig.com        → Cloudflare Pages (storefront)
+www.thejigglingpig.com    → Cloudflare Pages (storefront)
+
+api.thejigglingpig.com    → Render API
+
+admin.thejigglingpig.com  → Cloudflare Pages (admin dashboard)
+
+cdn.thejigglingpig.com    → Cloudflare R2 (images)
+
+So everything sits behind Cloudflare DNS.
+
+Step 1 — Prepare Environment Variables (VERY IMPORTANT)
+
+Before switching DNS, make sure your apps use production URLs.
+
+Storefront (.env)
+
+Example:
+
+VITE_API_URL=https://api.thejigglingpig.com
+VITE_CDN_URL=https://cdn.thejigglingpig.com
+Admin Dashboard (.env)
+VITE_API_URL=https://api.thejigglingpig.com
+API (.env on Render)
+FRONTEND_URL=https://thejigglingpig.com
+ADMIN_URL=https://admin.thejigglingpig.com
+CDN_URL=https://cdn.thejigglingpig.com
+Step 2 — Add Production Domains to Cloudflare Pages
+
+Open Cloudflare → Pages → Your Projects
+
+For the Storefront project
+
+Add domains:
+
+thejigglingpig.com
+www.thejigglingpig.com
+
+For the Admin dashboard project
+
+Add domain:
+
+admin.thejigglingpig.com
+
+Cloudflare will generate DNS records automatically.
+
+Step 3 — Add the API Domain
+
+In Cloudflare DNS, add:
+
+Type: CNAME
+Name: api
+Target: your-render-api-url.onrender.com
+Proxy: ON
+
+Example:
+
+api.thejigglingpig.com → jpig-api.onrender.com
+Step 4 — Remove PeopleHost DNS Records
+
+Right now your root domain probably points to PeopleHost.
+
+Find these records and remove or replace them:
+
+A  thejigglingpig.com → PeopleHost IP
+CNAME www → PeopleHost
+
+Replace them with the Cloudflare Pages targets.
+
+Cloudflare Pages usually creates something like:
+
+thejigglingpig.com → <pages project>
+www → <pages project>
+Step 5 — Keep Email Records
+
+Do NOT remove these DNS records:
+
+MX
+TXT (SPF)
+TXT (DKIM)
+TXT (DMARC)
+mail.thejigglingpig.com
+
+Those control email delivery.
+
+Step 6 — Confirm Your R2 CDN Record
+
+You already have this (good):
+
+cdn.thejigglingpig.com → R2 bucket
+
+Example image URL should work:
+
+https://cdn.thejigglingpig.com/products/rib-rub.jpg
+
+Test that before launch.
+
+Step 7 — Configure API CORS
+
+Your API must allow your frontend domains.
+
+Example in Node:
+
+app.use(cors({
+  origin: [
+    "https://thejigglingpig.com",
+    "https://www.thejigglingpig.com",
+    "https://admin.thejigglingpig.com"
+  ],
+  credentials: true
+}));
+Step 8 — Test Everything BEFORE Switching DNS
+
+Use the temporary domains first.
+
+Test:
+
+Storefront
+https://new.thejigglingpig.com
+Admin
+https://admin-new.thejigglingpig.com
+API
+https://api-new.thejigglingpig.com/health
+
+Confirm:
+
+✔ products load
+✔ checkout works
+✔ admin login works
+✔ image uploads work
+✔ SMS / email notifications work
+
+Step 9 — Switch the Domain
+
+Once everything is confirmed:
+
+1️⃣ Update DNS root record
+2️⃣ Update www record
+3️⃣ Wait for propagation
+
+Typical time:
+
+1–5 minutes (Cloudflare)
+Step 10 — Monitor Logs After Launch
+
+Check:
+
+Render logs
+Render → Logs → API
+Cloudflare
+Analytics → Traffic
+
+Watch for:
+
+500 errors
+CORS issues
+missing images
+payment errors
+Step 11 — Keep PeopleHost Running for 24 Hours
+
+Do not cancel immediately.
+
+Keep it active for:
+
+24–48 hours
+
+This protects you from DNS caching issues.
+
+Your Final Live Stack
+Cloudflare
+│
+├── Storefront → Cloudflare Pages
+├── Admin UI → Cloudflare Pages
+├── API → Render
+├── Images → Cloudflare R2
+├── SMS → Telnyx
+└── Email → Resend / Zoho
+
+This is a modern production architecture used by many SaaS and ecommerce systems.
+
+Before You Flip the Switch
+
+Check these 6 things:
+
+✔ API environment variables correct
+✔ CORS configured
+✔ R2 images working
+✔ Render API domain working
+✔ Cloudflare Pages domain added
+✔ DNS records ready
