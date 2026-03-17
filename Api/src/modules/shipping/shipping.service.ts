@@ -4,6 +4,43 @@ import { config } from '../../config';
 import * as shippo from '../../services/shippoService';
 import { GetRatesInput } from './shipping.schema';
 
+// ─── Shipping class defaults & boxes (mirrors shippoService constants) ─────────
+
+const SHIPPING_CLASS_DEFAULTS = [
+  { name: 'Sauce Bottle', key: 'SAUCE_BOTTLE', weightLb: 1.25, length: 2.5, width: 2.5, height: 8 },
+  { name: 'Rub Bottle',   key: 'RUB_BOTTLE',   weightLb: 0.5,  length: 2.5, width: 2.5, height: 5 },
+  { name: 'Merch',        key: 'MERCH',         weightLb: 0.75, length: 10,  width: 8,   height: 2 },
+];
+
+const BOXES = [
+  { name: 'Small',  maxWeightLb: 3,  length: 8,  width: 6,  height: 4 },
+  { name: 'Medium', maxWeightLb: 6,  length: 10, width: 8,  height: 6 },
+  { name: 'Large',  maxWeightLb: 10, length: 12, width: 10, height: 8 },
+  { name: 'XLarge', maxWeightLb: 20, length: 16, width: 12, height: 10 },
+];
+
+export function getShippingConfig() {
+  const addr = config.store.address;
+  return {
+    shippo: {
+      enabled: config.shippo.enabled,
+      keyConfigured: !!config.shippo.apiKey,
+    },
+    originAddress: {
+      name:    addr.name,
+      street1: addr.street1,
+      city:    addr.city,
+      state:   addr.state,
+      zip:     addr.zip,
+      country: addr.country,
+      phone:   addr.phone,
+      email:   addr.email,
+    },
+    boxes:                BOXES,
+    shippingClassDefaults: SHIPPING_CLASS_DEFAULTS,
+  };
+}
+
 export async function getShippingRates(input: GetRatesInput) {
   if (!config.shippo.enabled) {
     throw ApiError.badRequest('Live shipping rates are not configured. Please contact support.');
