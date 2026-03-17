@@ -24,6 +24,9 @@ liveSessionsRouter.post('/public/unsubscribe', validate(publicUnsubscribeSchema)
 liveSessionsRouter.get('/alerts/history', authenticate, authorize('admin'), validate(alertHistorySchema, 'query'), asyncHandler(ctrl.alertHistory));
 liveSessionsRouter.get('/subscribers/count', authenticate, authorize('admin'), asyncHandler(ctrl.subscriberCount));
 
+// POST /api/v1/live-sessions/sms/test — standalone SMS test (no session required)
+liveSessionsRouter.post('/sms/test', authenticate, authorize('admin'), validate(testSmsSchema), asyncHandler(ctrl.testSms));
+
 liveSessionsRouter.post('/', authenticate, authorize('admin'), validate(createLiveSessionSchema), asyncHandler(ctrl.createSession));
 liveSessionsRouter.get('/', authenticate, authorize('admin'), validate(listLiveSessionsSchema, 'query'), asyncHandler(ctrl.listSessions));
 liveSessionsRouter.get('/:id', authenticate, authorize('admin'), asyncHandler(ctrl.getSession));

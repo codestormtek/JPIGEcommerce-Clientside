@@ -196,6 +196,11 @@ const menu = [
     text: "Notifications",
     link: "/notification-subs",
   },
+  {
+    icon: "mobile",
+    text: "SMS Tester",
+    link: "/sms-tester",
+  },
 
   { heading: "Reports & Analytics" },
   {

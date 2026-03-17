@@ -116,6 +116,7 @@ import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
 import AdminReviews from "@/pages/pre-built/reviews/AdminReviews";
 import AdminPaymentMethodList from "@/pages/pre-built/payment-methods/AdminPaymentMethodList";
 import AdminShippingMethods from "@/pages/pre-built/shipping-methods/AdminShippingMethods";
+import AdminSmsTester from "@/pages/pre-built/sms-tester/AdminSmsTester";
 import MediaManager from "@/pages/pre-built/media/MediaManager";
 import AdminMetricsPage from "@/pages/pre-built/metrics/AdminMetricsPage";
 import KycListRegular from "@/pages/pre-built/kyc-list-regular/KycListRegular";
@@ -231,6 +232,7 @@ const Pages = () => {
               <Route path="news" element={<AdminNewsList />}></Route>
               <Route path="news/create" element={<AdminNewsList />}></Route>
               <Route path="subscribers" element={<AdminSubscriberList />}></Route>
+              <Route path="sms-tester" element={<AdminSmsTester />}></Route>
               <Route path="inventory" element={<AdminInventoryList />}></Route>
               <Route path="checklists" element={<AdminChecklistManager />}></Route>
               <Route path="carousel" element={<AdminCarouselList />}></Route>
