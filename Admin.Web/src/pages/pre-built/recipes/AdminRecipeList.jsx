@@ -22,7 +22,7 @@ const fmtTime = (min) => (min ? `${min} min` : "—");
 const CATEGORIES = ["Appetizer", "Soup", "Salad", "Entrée", "Side Dish", "Dessert", "Beverage", "Sauce", "Rub", "Dry Mix", "Drink", "Breakfast", "Other"];
 const SERVING_PRESETS = { Sauce: { qty: 1.5, unit: "tbsp" }, Rub: { qty: 1, unit: "tbsp" }, "Dry Mix": { qty: 1, unit: "tbsp" }, Drink: { qty: 8, unit: "oz" } };
 const CONTAINER_SIZES = [4, 6, 8, 10, 12, 16, 20, 24, 32, 64];
-const UNITS = ["cup", "tbsp", "tsp", "oz", "lb", "g", "kg", "ml", "l", "piece", "slice", "clove", "bunch", "pinch", "each"];
+const UNITS = ["cup", "tbsp", "tsp", "oz", "lb", "g", "kg", "ml", "l", "stick", "gal", "pt", "qt", "#10 can", "piece", "slice", "clove", "bunch", "pinch", "each"];
 
 const FRACTIONS = [
   { label: "",    value: 0      },
