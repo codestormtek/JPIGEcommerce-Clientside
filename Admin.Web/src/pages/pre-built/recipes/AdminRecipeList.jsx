@@ -537,6 +537,82 @@ const AdminRecipeList = () => {
     w.print();
   };
 
+  const printRecipe = () => {
+    if (!form.name.trim()) return;
+
+    const metaBadges = [
+      form.prepTimeMinutes !== "" ? `<span class="badge badge-light">Prep: ${form.prepTimeMinutes} min</span>` : "",
+      form.cookTimeMinutes !== "" ? `<span class="badge badge-light">Cook: ${form.cookTimeMinutes} min</span>` : "",
+      form.servings         !== "" ? `<span class="badge badge-light">${form.servings} servings</span>` : "",
+      form.category               ? `<span class="badge badge-warn">${form.category}</span>` : "",
+      form.yieldOz                ? `<span class="badge badge-info">Yield: ${form.yieldOz} oz</span>` : "",
+      form.yieldOz && form.containerSizeOz
+        ? `<span class="badge badge-green">${Math.floor((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 10) / 10} × ${form.containerSizeOz}oz containers</span>` : "",
+      form.servingSizeQty && form.servingSizeUnit
+        ? `<span class="badge badge-light">Serving: ${form.servingSizeQty} ${form.servingSizeUnit}</span>` : "",
+    ].filter(Boolean).join("");
+
+    const validIngredients = form.ingredients.filter((i) => i.ingredientName.trim());
+    const ingredientsHtml = validIngredients.length
+      ? `<h2>Ingredients</h2><ul>${validIngredients.map((i) =>
+          `<li><strong>${displayQty(i.quantity, i.fraction)} ${i.unit}</strong> &mdash; ${i.ingredientName}</li>`
+        ).join("")}</ul>` : "";
+
+    const validSteps = form.steps.filter((s) => s.instruction.trim());
+    const stepsHtml = validSteps.length
+      ? `<h2>Instructions</h2><ol>${validSteps.map((s) =>
+          `<li>${s.instruction}</li>`
+        ).join("")}</ol>` : "";
+
+    const tags = form.tags ? form.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+    const tagsHtml = tags.length
+      ? `<div class="tags">${tags.map((t) => `<span class="tag">${t}</span>`).join("")}</div>` : "";
+
+    const linkedHtml = linkedProducts.length
+      ? `<div class="linked-section"><p class="linked-header">Linked Products</p><div class="tags">${
+          linkedProducts.map((p) => `<span class="linked-item">${p.name}${p.price != null ? ` — $${Number(p.price).toFixed(2)}` : ""}</span>`).join("")
+        }</div></div>` : "";
+
+    const html = `<!DOCTYPE html><html><head><title>${form.name}</title><style>
+      *, *::before, *::after { box-sizing: border-box; }
+      body { font-family: Georgia, "Times New Roman", serif; padding: 40px 48px; margin: 0; color: #222; max-width: 680px; }
+      h1  { font-size: 28px; font-weight: 900; color: #6b5a4e; margin: 0 0 6px; }
+      .desc { color: #777; font-size: 13px; margin: 0 0 14px; font-style: italic; }
+      .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+      .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; font-family: Arial, sans-serif; }
+      .badge-light { background: #f1f1f1; color: #333; border: 1px solid #ddd; }
+      .badge-warn  { background: #e67e22; color: #fff; }
+      .badge-info  { background: #2980b9; color: #fff; }
+      .badge-green { background: #27ae60; color: #fff; }
+      h2 { font-size: 16px; font-weight: 700; color: #6b5a4e; border-bottom: 2px solid #e8ded5; padding-bottom: 4px; margin: 22px 0 10px; }
+      ul { padding-left: 0; list-style: none; margin: 0 0 8px; }
+      ul li { font-size: 13px; padding: 5px 0; border-bottom: 1px solid #f2ece8; }
+      ul li strong { color: #333; }
+      ol { padding-left: 20px; margin: 0 0 8px; }
+      ol li { font-size: 13px; padding: 5px 2px; border-bottom: 1px solid #f2ece8; line-height: 1.6; }
+      .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+      .tag { background: #eee; color: #555; padding: 2px 9px; border-radius: 12px; font-size: 11px; font-family: Arial, sans-serif; text-transform: capitalize; }
+      .linked-section { margin-top: 20px; border-top: 1px solid #e8ded5; padding-top: 14px; }
+      .linked-header { font-size: 14px; font-weight: 700; color: #6b5a4e; margin: 0 0 8px; font-family: Arial, sans-serif; }
+      .linked-item { background: #eef4ff; color: #1d4ed8; padding: 2px 9px; border-radius: 12px; font-size: 11px; font-family: Arial, sans-serif; }
+      @media print { body { padding: 20px 28px; } @page { margin: 1.5cm; } }
+    </style></head><body>
+      <h1>${form.name}</h1>
+      ${form.description ? `<p class="desc">${form.description}</p>` : ""}
+      ${metaBadges ? `<div class="meta">${metaBadges}</div>` : ""}
+      ${ingredientsHtml}
+      ${stepsHtml}
+      ${tagsHtml}
+      ${linkedHtml}
+    </body></html>`;
+
+    const w = window.open("", "_blank", "width=720,height=900");
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.print();
+  };
+
   // ── Linked Products helpers ──────────────────────────────────────────────
 
   const searchProducts = (query) => {
@@ -942,7 +1018,7 @@ const AdminRecipeList = () => {
                           {analyzing ? <Spinner size="sm" /> : <><Icon name="bar-chart" /><span>Analyze Recipe</span></>}
                         </Button>
                       )}
-                      <Button color="danger" size="sm" onClick={() => window.print()}>
+                      <Button color="danger" size="sm" onClick={printRecipe} disabled={!form.name.trim()}>
                         <Icon name="printer" /><span>Print Recipe</span>
                       </Button>
                     </div>
