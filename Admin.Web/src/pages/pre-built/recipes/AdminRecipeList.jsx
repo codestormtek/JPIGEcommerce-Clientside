@@ -24,7 +24,36 @@ const SERVING_PRESETS = { Sauce: { qty: 1.5, unit: "tbsp" }, Rub: { qty: 1, unit
 const CONTAINER_SIZES = [4, 6, 8, 10, 12, 16, 20, 24, 32, 64];
 const UNITS = ["cup", "tbsp", "tsp", "oz", "lb", "g", "kg", "ml", "l", "piece", "slice", "clove", "bunch", "pinch", "each"];
 
-const blankIngredient = () => ({ uid: uid(), ingredientName: "", quantity: "", unit: "cup", sortOrder: 0 });
+const FRACTIONS = [
+  { label: "",    value: 0      },
+  { label: "1/8", value: 1/8   },
+  { label: "1/4", value: 1/4   },
+  { label: "3/8", value: 3/8   },
+  { label: "1/2", value: 1/2   },
+  { label: "5/8", value: 5/8   },
+  { label: "3/4", value: 3/4   },
+  { label: "7/8", value: 7/8   },
+  { label: "1/3", value: 1/3   },
+  { label: "2/3", value: 2/3   },
+];
+const fractionToDecimal = (label) => (FRACTIONS.find((f) => f.label === label)?.value ?? 0);
+const decimalToFraction = (dec) => {
+  if (!dec || Math.abs(dec) < 0.01) return "";
+  let best = ""; let bestDiff = Infinity;
+  for (const f of FRACTIONS.slice(1)) {
+    const diff = Math.abs(f.value - dec);
+    if (diff < bestDiff) { bestDiff = diff; best = f.label; }
+  }
+  return bestDiff < 0.05 ? best : "";
+};
+const combinedQty = (quantity, fraction) => parseFloat(quantity || 0) + fractionToDecimal(fraction || "");
+const displayQty  = (quantity, fraction) => {
+  const whole    = parseFloat(quantity || 0);
+  const fracPart = fraction ? ` ${fraction}` : "";
+  return whole > 0 ? `${whole}${fracPart}` : fraction || "";
+};
+
+const blankIngredient = () => ({ uid: uid(), ingredientName: "", quantity: "", fraction: "", unit: "cup", sortOrder: 0 });
 const blankStep       = (n) => ({ uid: uid(), stepNumber: n, instruction: "" });
 const blankForm = () => ({
   name: "", description: "", prepTimeMinutes: "", cookTimeMinutes: "",
@@ -42,7 +71,7 @@ const SortIcon = ({ field, sortField, sort }) => (
 
 // ─── Sortable ingredient row (drag handle + fields) ───────────────────────────
 
-const SortableIngredientRow = ({ ing, UNITS, updateIngredient, removeIngredient, isOnly }) => {
+const SortableIngredientRow = ({ ing, updateIngredient, removeIngredient, isOnly }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ing.uid });
   const style = {
     transition,
@@ -70,13 +99,22 @@ const SortableIngredientRow = ({ ing, UNITS, updateIngredient, removeIngredient,
       <input
         type="number"
         min="0"
-        step="0.01"
+        step="1"
         className="form-control form-control-sm flex-shrink-0"
-        style={{ width: 70 }}
-        placeholder="Qty"
+        style={{ width: 60 }}
+        placeholder="#"
         value={ing.quantity}
         onChange={(e) => updateIngredient(ing.uid, "quantity", e.target.value)}
       />
+      <select
+        className="form-select form-select-sm flex-shrink-0"
+        style={{ width: 72 }}
+        value={ing.fraction}
+        onChange={(e) => updateIngredient(ing.uid, "fraction", e.target.value)}
+        title="Fraction"
+      >
+        {FRACTIONS.map((f) => <option key={f.label} value={f.label}>{f.label || "—"}</option>)}
+      </select>
       <select
         className="form-select form-select-sm flex-shrink-0"
         style={{ width: 90 }}
@@ -322,7 +360,12 @@ const AdminRecipeList = () => {
       servingSizeQty:  recipe.servingSizeQty ?? "",
       servingSizeUnit: recipe.servingSizeUnit ?? "",
       ingredients: recipe.ingredients?.length
-        ? recipe.ingredients.map((i) => ({ uid: uid(), ingredientName: i.ingredientName, quantity: String(i.quantity), unit: i.unit, sortOrder: i.sortOrder }))
+        ? recipe.ingredients.map((i) => {
+            const raw  = parseFloat(i.quantity) || 0;
+            const whole = Math.floor(raw);
+            const frac  = decimalToFraction(Math.round((raw - whole) * 10000) / 10000);
+            return { uid: uid(), ingredientName: i.ingredientName, quantity: whole > 0 ? String(whole) : "", fraction: frac, unit: i.unit, sortOrder: i.sortOrder };
+          })
         : [blankIngredient()],
       steps: recipe.steps?.length
         ? recipe.steps.map((s) => ({ uid: uid(), stepNumber: s.stepNumber, instruction: s.instruction }))
@@ -382,8 +425,8 @@ const AdminRecipeList = () => {
     setSaving(true); setFormError(null);
     try {
       const validIngredients = form.ingredients
-        .filter((i) => i.ingredientName.trim() && i.quantity !== "" && parseFloat(i.quantity) > 0)
-        .map((i, idx) => ({ ingredientName: i.ingredientName.trim(), quantity: parseFloat(i.quantity), unit: i.unit || "each", sortOrder: idx }));
+        .filter((i) => i.ingredientName.trim() && combinedQty(i.quantity, i.fraction) > 0)
+        .map((i, idx) => ({ ingredientName: i.ingredientName.trim(), quantity: combinedQty(i.quantity, i.fraction), unit: i.unit || "each", sortOrder: idx }));
       const validSteps = form.steps
         .filter((s) => s.instruction.trim())
         .map((s, idx) => ({ stepNumber: idx + 1, instruction: s.instruction.trim() }));
@@ -740,7 +783,6 @@ const AdminRecipeList = () => {
                             <SortableIngredientRow
                               key={ing.uid}
                               ing={ing}
-                              UNITS={UNITS}
                               updateIngredient={updateIngredient}
                               removeIngredient={removeIngredient}
                               isOnly={form.ingredients.length === 1}
@@ -945,7 +987,7 @@ const AdminRecipeList = () => {
                               <ul className="list-unstyled small mb-3">
                                 {form.ingredients.filter((i) => i.ingredientName.trim()).map((i) => (
                                   <li key={i.uid} className="mb-1">
-                                    <span className="fw-semibold">{i.quantity} {i.unit}</span> — {i.ingredientName}
+                                    <span className="fw-semibold">{displayQty(i.quantity, i.fraction)} {i.unit}</span> — {i.ingredientName}
                                   </li>
                                 ))}
                               </ul>
@@ -992,7 +1034,7 @@ const AdminRecipeList = () => {
                   </div>
 
                   {/* ── Batch Calculator ─────────────────────────────────── */}
-                  {form.ingredients.some((i) => i.ingredientName.trim() && i.quantity !== "") && (
+                  {form.ingredients.some((i) => i.ingredientName.trim() && combinedQty(i.quantity, i.fraction) > 0) && (
                     <div className="card card-bordered shadow-sm mt-3">
                       <div className="card-inner py-3">
                         <div className="d-flex justify-content-between align-items-center mb-3">
@@ -1079,16 +1121,17 @@ const AdminRecipeList = () => {
                           <table className="table table-sm table-borderless mb-0">
                             <tbody>
                               {form.ingredients.filter((i) => i.ingredientName.trim()).map((i) => {
-                                const scaledQty = i.quantity !== "" ? Math.round(parseFloat(i.quantity) * batchScale * 1000) / 1000 : "";
-                                const changed = batchScale !== 1 && i.quantity !== "";
+                                const baseQty   = combinedQty(i.quantity, i.fraction);
+                                const scaledNum = baseQty > 0 ? Math.round(baseQty * batchScale * 1000) / 1000 : "";
+                                const changed   = batchScale !== 1 && baseQty > 0;
                                 return (
                                   <tr key={i.uid}>
                                     <td className="ps-0 text-muted small">{i.ingredientName}</td>
                                     <td className={`text-end pe-0 fw-semibold small ${changed ? "text-primary" : ""}`}>
-                                      {scaledQty} {i.unit}
+                                      {scaledNum} {i.unit}
                                       {changed && (
                                         <span className="text-muted ms-1" style={{ fontSize: 10 }}>
-                                          (base: {i.quantity})
+                                          (base: {displayQty(i.quantity, i.fraction)})
                                         </span>
                                       )}
                                     </td>
