@@ -108,7 +108,7 @@ const SortableIngredientRow = ({ ing, updateIngredient, removeIngredient, isOnly
       />
       <select
         className="form-select form-select-sm flex-shrink-0"
-        style={{ width: 72 }}
+        style={{ width: 90 }}
         value={ing.fraction}
         onChange={(e) => updateIngredient(ing.uid, "fraction", e.target.value)}
         title="Fraction"
@@ -126,7 +126,7 @@ const SortableIngredientRow = ({ ing, updateIngredient, removeIngredient, isOnly
       <input
         type="text"
         className="form-control form-control-sm flex-grow-1"
-        style={{ minWidth: 0 }}
+        style={{ minWidth: 0, maxWidth: 180 }}
         placeholder="Ingredient name"
         value={ing.ingredientName}
         onChange={(e) => updateIngredient(ing.uid, "ingredientName", e.target.value)}
