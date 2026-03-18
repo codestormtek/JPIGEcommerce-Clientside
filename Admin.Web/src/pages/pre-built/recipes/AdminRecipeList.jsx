@@ -790,17 +790,12 @@ const AdminRecipeList = () => {
                           <div className="form-group">
                             <label className="form-label text-uppercase small fw-bold text-muted">Container Size</label>
                             <div className="input-group">
-                              <select className="form-select" value={form.containerSizeOz}
+                              <select className="form-select" value={String(form.containerSizeOz)}
                                 onChange={(e) => setForm((f) => ({ ...f, containerSizeOz: e.target.value }))}>
                                 <option value="">Select...</option>
-                                {CONTAINER_SIZES.map((s) => <option key={s} value={s}>{s} oz</option>)}
+                                {CONTAINER_SIZES.map((s) => <option key={s} value={String(s)}>{s} oz</option>)}
                               </select>
                             </div>
-                            {form.yieldOz && form.containerSizeOz && (
-                              <small className="text-success fw-bold mt-1 d-block">
-                                = {Math.floor((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 10) / 10} containers
-                              </small>
-                            )}
                           </div>
                         </Col>
                         <Col size="3">
@@ -828,13 +823,15 @@ const AdminRecipeList = () => {
                         <Col size="3">
                           <div className="form-group">
                             <label className="form-label text-uppercase small fw-bold text-muted">Containers</label>
-                            <div className="py-2 px-3 rounded" style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-                              {form.yieldOz && form.containerSizeOz ? (
+                            <div className="py-2 px-3 rounded" style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0", minHeight: 38, display: "flex", alignItems: "center" }}>
+                              {parseFloat(form.yieldOz) > 0 && parseFloat(form.containerSizeOz) > 0 ? (
                                 <span className="fw-bold" style={{ color: "#166534" }}>
-                                  {Math.floor((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 10) / 10} x {form.containerSizeOz}oz
+                                  {Math.round((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 100) / 100} × {form.containerSizeOz}oz
                                 </span>
+                              ) : parseFloat(form.containerSizeOz) > 0 ? (
+                                <span className="text-muted small">Enter Total Yield to calculate</span>
                               ) : (
-                                <span className="text-muted small">Set yield & size</span>
+                                <span className="text-muted small">Select a container size</span>
                               )}
                             </div>
                           </div>
