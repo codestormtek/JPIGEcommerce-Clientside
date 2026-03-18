@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Dropzone from "react-dropzone";
-import { Modal, ModalBody, Spinner, Badge } from "reactstrap";
+import { Modal, ModalBody, Spinner, Badge, UncontrolledDropdown, DropdownToggle, DropdownMenu, DropdownItem } from "reactstrap";
 import Head from "@/layout/head/Head";
 import ContentAlt from "@/layout/content/ContentAlt";
 import { Icon, Button, PaginationComponent } from "@/components/Component";
@@ -331,99 +331,76 @@ const MediaManager = () => {
           </div>
         </div>
 
-        {/* 2-column body */}
-        <div className="nk-fmg-body">
-
-          {/* ── Sidebar ──────────────────────────────────────────────── */}
-          <div
-            className="nk-fmg-nav toggle-expand-content"
-            style={{ minWidth: 220, borderRight: "1px solid #dbdfea", overflowY: "auto" }}
-          >
-            {/* Quick filters */}
-            <ul className="nk-fmg-menu">
-              {QUICK_FILTERS.map((qf) => (
-                <li key={qf.label} className={activeQuick === qf.label ? "active" : ""}>
-                  <a href="#!" onClick={(e) => { e.preventDefault(); selectQuick(qf); }}>
-                    <Icon name={qf.icon} /><span>{qf.label}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-
-            <div className="nk-fmg-nav-divider" />
-
-            <div className="px-3 py-1">
-              <span className="overline-title overline-title-alt" style={{ fontSize: 10 }}>
-                Folders
-              </span>
-            </div>
-
-            {foldersLoading ? (
-              <div className="text-center py-2"><Spinner size="sm" color="primary" /></div>
-            ) : (
-              <ul className="nk-fmg-menu">
+        {/* ── Folder + type filter bar ──────────────────────────────── */}
+        <div className="px-4 py-2 d-flex align-items-center gap-3 flex-wrap" style={{ borderBottom: "1px solid #dbdfea" }}>
+          {/* Folder dropdown */}
+          <UncontrolledDropdown>
+            <DropdownToggle tag="button" className="btn btn-light btn-outline-light d-flex align-items-center gap-2">
+              {foldersLoading
+                ? <Spinner size="sm" />
+                : <Icon name={activeFolder ? folderIcon(activeFolder) : "folder"} />}
+              <span>{activeLabel()}</span>
+              <Icon name="chevron-down" />
+            </DropdownToggle>
+            <DropdownMenu style={{ maxHeight: 360, overflowY: "auto" }}>
+              <ul className="link-list-opt no-bdr">
+                {/* Quick filters */}
+                {QUICK_FILTERS.map((qf) => (
+                  <li key={qf.label} className={activeQuick === qf.label ? "active" : ""}>
+                    <DropdownItem onClick={() => selectQuick(qf)}>
+                      <Icon name={qf.icon} /><span>{qf.label}</span>
+                    </DropdownItem>
+                  </li>
+                ))}
+                {folders.length > 0 && (
+                  <li className="divider" />
+                )}
+                {/* Dynamic folders */}
                 {topLevel.map((folder) => (
                   <React.Fragment key={folder.slug}>
                     <li className={activeFolder === folder.slug && !activeQuick ? "active" : ""}>
-                      <a
-                        href="#!"
-                        onClick={(e) => { e.preventDefault(); selectFolder(folder.slug); }}
-                        className="d-flex align-items-center justify-content-between pe-2"
-                      >
-                        <span>
-                          <Icon name={folderIcon(folder.slug)} />
-                          <span className="ms-1">{folder.name}</span>
-                        </span>
+                      <DropdownItem onClick={() => selectFolder(folder.slug)}>
+                        <Icon name={folderIcon(folder.slug)} /><span>{folder.name}</span>
                         {!folder.isSystem && (
-                          <button
-                            className="btn btn-icon btn-xs text-danger"
-                            style={{ opacity: 0.4 }}
+                          <span
+                            className="ms-auto text-danger"
+                            style={{ fontSize: 12 }}
+                            onClick={(e) => { e.stopPropagation(); setPendingDelFolder(folder); }}
                             title="Delete folder"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPendingDelFolder(folder); }}
                           >
                             <Icon name="trash" />
-                          </button>
+                          </span>
                         )}
-                      </a>
+                      </DropdownItem>
                     </li>
                     {children(folder.slug).map((child) => (
-                      <li
-                        key={child.slug}
-                        className={activeFolder === child.slug && !activeQuick ? "active" : ""}
-                        style={{ paddingLeft: 16 }}
-                      >
-                        <a
-                          href="#!"
-                          onClick={(e) => { e.preventDefault(); selectFolder(child.slug); }}
-                          className="d-flex align-items-center justify-content-between pe-2"
-                        >
-                          <span>
-                            <Icon name="corner-down-right" />
-                            <span className="ms-1">{child.name}</span>
-                          </span>
-                          <button
-                            className="btn btn-icon btn-xs text-danger"
-                            style={{ opacity: 0.4 }}
+                      <li key={child.slug} className={activeFolder === child.slug && !activeQuick ? "active" : ""}>
+                        <DropdownItem onClick={() => selectFolder(child.slug)} style={{ paddingLeft: 28 }}>
+                          <Icon name="corner-down-right" /><span>{child.name}</span>
+                          <span
+                            className="ms-auto text-danger"
+                            style={{ fontSize: 12 }}
+                            onClick={(e) => { e.stopPropagation(); setPendingDelFolder(child); }}
                             title="Delete folder"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPendingDelFolder(child); }}
                           >
                             <Icon name="trash" />
-                          </button>
-                        </a>
+                          </span>
+                        </DropdownItem>
                       </li>
                     ))}
                   </React.Fragment>
                 ))}
               </ul>
-            )}
-          </div>
+            </DropdownMenu>
+          </UncontrolledDropdown>
+        </div>
 
-          {/* ── Main content ─────────────────────────────────────────── */}
-          <div className="nk-fmg-body-content" style={{ flex: 1, overflowY: "auto" }}>
+        {/* ── Main content ──────────────────────────────────────────── */}
+        <div className="nk-fmg-body-content">
             <div className="nk-block-head nk-block-head-sm">
-              <div className="nk-block-between">
+              <div className="nk-block-between position-relative">
                 <div className="nk-block-head-content">
-                  <h5 className="nk-block-title">{activeLabel()}</h5>
+                  <h5 className="nk-block-title page-title">{activeLabel()}</h5>
                   <p className="text-muted small mb-0">
                     {meta.total} item{meta.total !== 1 ? "s" : ""}
                   </p>
@@ -582,7 +559,6 @@ const MediaManager = () => {
               </div>
             )}
           </div>
-        </div>
       </ContentAlt>
 
       {/* ── Upload Modal ────────────────────────────────────────────────── */}
