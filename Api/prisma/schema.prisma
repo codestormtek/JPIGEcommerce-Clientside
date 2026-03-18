@@ -311,7 +311,8 @@ model MediaAsset {
 
   url       String
   altText   String?
-  mediaType String  @default("image") // image|video
+  mediaType String  @default("image") // image|video|document
+  folder    String?                   // slug path, e.g. "products" or "recipes/bbq"
 
   metadata           MediaAssetMetadata?
   productMedia       ProductMedia[]
@@ -341,6 +342,17 @@ model MediaAssetMetadata {
   createdAt      DateTime   @default(now())
 
   @@map("media_asset_metadata")
+}
+
+model MediaFolder {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  name       String
+  slug       String   @unique // path key used in R2, e.g. "recipes" or "recipes/bbq"
+  parentSlug String?           // null = top-level folder
+  isSystem   Boolean  @default(false) // system folders cannot be deleted
+
+  @@map("media_folders")
 }
 
 // ─── Carousel Slides ──────────────────────────────────────────────────────────

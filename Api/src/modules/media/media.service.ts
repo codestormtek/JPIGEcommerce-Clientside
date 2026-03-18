@@ -32,31 +32,46 @@ export async function deleteMedia(id: string) {
 
 // ─── File upload ───────────────────────────────────────────────────────────────
 
-const ALLOWED_UPLOAD_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm']);
+const ALLOWED_IMAGE_MIME  = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+const ALLOWED_VIDEO_MIME  = new Set(['video/mp4', 'video/webm']);
+const ALLOWED_DOC_MIME = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain',
+  'text/csv',
+]);
+const ALLOWED_UPLOAD_TYPES = new Set([...ALLOWED_IMAGE_MIME, ...ALLOWED_VIDEO_MIME, ...ALLOWED_DOC_MIME]);
+
+function detectMediaType(mimeType: string): 'image' | 'video' | 'document' {
+  if (ALLOWED_IMAGE_MIME.has(mimeType)) return 'image';
+  if (ALLOWED_VIDEO_MIME.has(mimeType)) return 'video';
+  return 'document';
+}
 
 /**
  * Save an uploaded file under the chosen folder and create a MediaAsset record.
- * @param file   Multer file from the request
- * @param folder Sub-directory key ('products' | 'avatars' | 'carousel' | 'blog' | 'news' | 'topics' | 'media')
+ * Accepts any folder slug — system or user-created.
  */
-export async function uploadMediaFile(file: Express.Multer.File, folder: MediaFolder = 'media') {
+export async function uploadMediaFile(file: Express.Multer.File, folderSlug: string = 'media') {
   if (!ALLOWED_UPLOAD_TYPES.has(file.mimetype)) {
     throw ApiError.badRequest(`File type "${file.mimetype}" is not allowed.`);
   }
-  // Validate folder key against the known list
-  if (!MEDIA_FOLDERS.includes(folder)) {
-    throw ApiError.badRequest(`Unknown folder "${folder}".`);
-  }
-  const ext = path.extname(file.originalname) || '.jpg';
+  const ext = path.extname(file.originalname) || '.bin';
   const now = new Date();
-  const storageKey = `${folder}/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${randomUUID()}${ext}`;
+  const storageKey = `${folderSlug}/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${randomUUID()}${ext}`;
   await saveFile(storageKey, file.buffer);
   const url = getPublicUrl(storageKey);
-  const mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
+  const mediaType = detectMediaType(file.mimetype);
   return repo.createMedia({
     url,
     altText: file.originalname,
     mediaType,
+    folder: folderSlug,
     metadata: {
       mimeType: file.mimetype,
       fileSizeBytes: file.size,
@@ -122,5 +137,31 @@ export async function uploadWithResize(
     primary: primary.asset,
     variants: results.map(r => ({ suffix: r.suffix, id: r.asset.id, url: r.asset.url })),
   };
+}
+
+// ─── Folder management ────────────────────────────────────────────────────────
+
+export async function listFolders() {
+  return repo.listFolders();
+}
+
+export async function createFolder(input: import('./media.schema').CreateFolderInput) {
+  const existing = await repo.findFolderBySlug(input.slug);
+  if (existing) throw ApiError.conflict(`A folder with slug "${input.slug}" already exists.`);
+  return repo.createFolder(input);
+}
+
+export async function updateFolder(slug: string, input: import('./media.schema').UpdateFolderInput) {
+  const folder = await repo.findFolderBySlug(slug);
+  if (!folder) throw ApiError.notFound('Folder');
+  if (folder.isSystem) throw ApiError.badRequest('System folders cannot be renamed.');
+  return repo.updateFolder(slug, input);
+}
+
+export async function deleteFolder(slug: string) {
+  const folder = await repo.findFolderBySlug(slug);
+  if (!folder) throw ApiError.notFound('Folder');
+  if (folder.isSystem) throw ApiError.badRequest('System folders cannot be deleted.');
+  return repo.deleteFolder(slug);
 }
 

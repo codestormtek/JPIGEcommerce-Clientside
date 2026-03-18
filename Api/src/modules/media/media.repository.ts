@@ -1,12 +1,8 @@
 import prisma from '../../lib/prisma';
-import { ListMediaInput, CreateMediaInput, UpdateMediaInput, MediaFolder } from './media.schema';
+import { ListMediaInput, CreateMediaInput, UpdateMediaInput, MediaFolder, CreateFolderInput, UpdateFolderInput, MEDIA_FOLDERS } from './media.schema';
 import { getFolderPrefix } from '../../lib/storage';
 
 // ─── BigInt serialization ─────────────────────────────────────────────────────
-// Prisma maps BIGINT columns to JS BigInt.  JSON.stringify cannot handle BigInt,
-// so we convert fileSizeBytes to a plain number before leaving the repository.
-// File sizes will never exceed Number.MAX_SAFE_INTEGER (~9 PB) so this is safe.
-
 type WithMetadata = { metadata: { fileSizeBytes: bigint | null } | null };
 
 function serializeAsset<T extends WithMetadata>(asset: T): T {
@@ -23,8 +19,8 @@ function serializeAsset<T extends WithMetadata>(asset: T): T {
   };
 }
 
-/** Maps every folder key to the URL prefix for the active storage provider. */
-const FOLDER_PREFIXES: Record<MediaFolder, string> = {
+/** URL prefixes for system (hard-coded) folders */
+const SYSTEM_PREFIXES: Record<MediaFolder, string> = {
   products:   getFolderPrefix('products'),
   avatars:    getFolderPrefix('avatars'),
   carousel:   getFolderPrefix('carousel'),
@@ -47,7 +43,19 @@ export async function findMedia(input: ListMediaInput) {
   const skip = (page - 1) * limit;
   const where: Record<string, unknown> = { isDeleted: false };
   if (mediaType) where['mediaType'] = mediaType;
-  if (folder)    where['url'] = { startsWith: FOLDER_PREFIXES[folder] };
+  if (folder) {
+    const isSystem = (MEDIA_FOLDERS as readonly string[]).includes(folder);
+    if (isSystem) {
+      const prefix = SYSTEM_PREFIXES[folder as MediaFolder];
+      // Support both old assets (identified by URL) and new ones (explicit folder field)
+      where['OR'] = [
+        { folder },
+        { folder: null, url: { startsWith: prefix } },
+      ];
+    } else {
+      where['folder'] = folder;
+    }
+  }
 
   const [raw, total] = await Promise.all([
     prisma.mediaAsset.findMany({
@@ -135,5 +143,52 @@ export async function softDeleteMedia(id: string) {
     where: { id },
     data: { isDeleted: true },
   });
+}
+
+// ─── Folder CRUD ──────────────────────────────────────────────────────────────
+
+export async function listFolders() {
+  return prisma.mediaFolder.findMany({ orderBy: [{ parentSlug: 'asc' }, { name: 'asc' }] });
+}
+
+export async function findFolderBySlug(slug: string) {
+  return prisma.mediaFolder.findUnique({ where: { slug } });
+}
+
+export async function createFolder(input: CreateFolderInput) {
+  return prisma.mediaFolder.create({ data: { ...input, isSystem: false } });
+}
+
+export async function updateFolder(slug: string, input: UpdateFolderInput) {
+  return prisma.mediaFolder.update({ where: { slug }, data: input });
+}
+
+export async function deleteFolder(slug: string) {
+  return prisma.mediaFolder.delete({ where: { slug } });
+}
+
+/** Seed system folders once on startup. */
+export async function seedSystemFolders() {
+  const systemFolders = [
+    { name: 'Products',    slug: 'products',   parentSlug: null },
+    { name: 'Categories',  slug: 'categories', parentSlug: null },
+    { name: 'Avatars',     slug: 'avatars',    parentSlug: null },
+    { name: 'Carousel',    slug: 'carousel',   parentSlug: null },
+    { name: 'Blog',        slug: 'blog',       parentSlug: null },
+    { name: 'News',        slug: 'news',       parentSlug: null },
+    { name: 'Topics',      slug: 'topics',     parentSlug: null },
+    { name: 'Pages',       slug: 'pages',      parentSlug: null },
+    { name: 'Galleries',   slug: 'galleries',  parentSlug: null },
+    { name: 'Widgets',     slug: 'widgets',    parentSlug: null },
+    { name: 'General',     slug: 'media',      parentSlug: null },
+    { name: 'Documents',   slug: 'documents',  parentSlug: null },
+  ];
+  for (const folder of systemFolders) {
+    await prisma.mediaFolder.upsert({
+      where:  { slug: folder.slug },
+      update: {},
+      create: { ...folder, isSystem: true },
+    });
+  }
 }
 
