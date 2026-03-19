@@ -666,7 +666,14 @@ const MediaManager = () => {
             >
               <option value="">None (top-level)</option>
               {topLevel.map((f) => (
-                <option key={f.slug} value={f.slug}>{f.name}</option>
+                <React.Fragment key={f.slug}>
+                  <option value={f.slug}>{f.name}</option>
+                  {children(f.slug).map((child) => (
+                    <option key={child.slug} value={child.slug}>
+                      {"\u00a0\u00a0\u00a0\u00a0↳ "}{child.name}
+                    </option>
+                  ))}
+                </React.Fragment>
               ))}
             </select>
           </div>
