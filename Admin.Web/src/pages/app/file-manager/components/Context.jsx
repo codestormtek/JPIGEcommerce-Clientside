@@ -84,9 +84,15 @@ function folderToFile(folder) {
 
 const FileManagerProvider = ({ ...props }) => {
   const [folders, setFolders] = useState([]);
-  const [assets, setAssets] = useState([]);
+
+  // rootAssets: assets with no folder (shown at root level)
+  const [rootAssets, setRootAssets] = useState([]);
+  // folderAssets: assets fetched from API for the currently open folder
+  const [folderAssets, setFolderAssets] = useState([]);
+
   const [deletedAssets, setDeletedAssets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [folderLoading, setFolderLoading] = useState(false);
   const [filesView, setFilesView] = useState('grid');
   const [asideVisibility, setAsideVisibility] = useState(false);
   const [recoveryFilter, setRecoveryFilter] = useState(false);
@@ -99,6 +105,9 @@ const FileManagerProvider = ({ ...props }) => {
 
   const allFilesRef = useRef([]);
   const deletedRef = useRef([]);
+  // Ref to always have the latest currentFolder in async callbacks
+  const currentFolderRef = useRef(null);
+  useEffect(() => { currentFolderRef.current = currentFolder; }, [currentFolder]);
 
   // ── Data fetching ────────────────────────────────────────────────────────────
 
@@ -111,12 +120,27 @@ const FileManagerProvider = ({ ...props }) => {
     }
   }, []);
 
-  const loadAssets = useCallback(async () => {
+  // Load assets that belong to no folder (root level) — fetch all and filter client-side
+  const loadRootAssets = useCallback(async () => {
     try {
       const res = await apiGet('/media?limit=100&order=desc');
-      setAssets((res.data || []).map(assetToFile));
+      setRootAssets((res.data || []).filter(a => !a.folder).map(assetToFile));
     } catch (e) {
-      console.error('Failed to load assets', e);
+      console.error('Failed to load root assets', e);
+    }
+  }, []);
+
+  // Load assets for a specific folder — uses server-side OR logic for system folders
+  const loadFolderAssets = useCallback(async (slug) => {
+    setFolderLoading(true);
+    try {
+      const res = await apiGet(`/media?folder=${encodeURIComponent(slug)}&limit=100&order=desc`);
+      setFolderAssets((res.data || []).map(assetToFile));
+    } catch (e) {
+      console.error('Failed to load folder assets', e);
+      setFolderAssets([]);
+    } finally {
+      setFolderLoading(false);
     }
   }, []);
 
@@ -130,30 +154,31 @@ const FileManagerProvider = ({ ...props }) => {
   }, []);
 
   useEffect(() => {
-    Promise.all([loadFolders(), loadAssets(), loadDeleted()]).finally(() => setLoading(false));
-  }, [loadFolders, loadAssets, loadDeleted]);
+    Promise.all([loadFolders(), loadRootAssets(), loadDeleted()]).finally(() => setLoading(false));
+  }, [loadFolders, loadRootAssets, loadDeleted]);
 
   // ── Computed file lists ──────────────────────────────────────────────────────
 
   const allFolderFiles = folders.map(folderToFile);
   const currentSlug = currentFolder?.slug || null;
 
-  // Files visible at the current navigation level
+  // Folders visible at the current navigation level
   const visibleFolders = currentSlug === null
     ? allFolderFiles.filter(f => !f.parentSlug)
     : allFolderFiles.filter(f => f.parentSlug === currentSlug);
 
-  const visibleAssets = currentSlug === null
-    ? assets.filter(a => !a.folder)
-    : assets.filter(a => a.folder === currentSlug);
+  // Assets visible at the current navigation level
+  // At root: use rootAssets (assets with no folder)
+  // In a folder: use folderAssets (fetched from API with ?folder=slug)
+  const visibleAssets = currentSlug === null ? rootAssets : folderAssets;
 
   const filesWithStarred = [...visibleFolders, ...visibleAssets].map(f => ({
     ...f,
     starred: starredIds.has(f.id),
   }));
 
-  // All files flat (for star toggle in quick access, and for toTrash lookup)
-  const allFilesFlat = [...allFolderFiles, ...assets].map(f => ({
+  // Flat list of all folders + root assets for Starred view and lookup
+  const allFilesFlat = [...allFolderFiles, ...rootAssets, ...folderAssets].map(f => ({
     ...f,
     starred: starredIds.has(f.id),
   }));
@@ -164,58 +189,54 @@ const FileManagerProvider = ({ ...props }) => {
     starred: starredIds.has(f.id),
   }));
 
-  // Keep refs up to date for use inside async callbacks
   allFilesRef.current = allFilesFlat;
   deletedRef.current = deletedFiles;
-
-  const fileManager = {
-    search,
-    data,
-    files: filesWithStarred,
-    allFiles: allFilesFlat,     // all files regardless of current folder (for Starred view)
-    deletedFiles,
-    folders,
-    loading,
-    filesView,
-    asideVisibility,
-    recoveryFilter,
-    currentFolder,              // null = root | { slug, name, parentSlug }
-    currentPlan: 'planid01',
-    contentHeight,
-  };
 
   // ── Actions ──────────────────────────────────────────────────────────────────
 
   const fileManagerUpdate = {
 
     reload: async () => {
-      await Promise.all([loadFolders(), loadAssets(), loadDeleted()]);
+      await Promise.all([loadFolders(), loadRootAssets(), loadDeleted()]);
+      if (currentFolderRef.current) {
+        await loadFolderAssets(currentFolderRef.current.slug);
+      }
     },
 
-    // Navigate into a folder
-    navigateFolder: (folderObj) => {
-      setCurrentFolder(folderObj ? { slug: folderObj.slug, name: folderObj.name, parentSlug: folderObj.parentSlug } : null);
+    // Navigate into a folder — fetches folder's assets from the API
+    navigateFolder: async (folderObj) => {
+      if (!folderObj) {
+        setCurrentFolder(null);
+        setFolderAssets([]);
+        setSearch('');
+        return;
+      }
+      setCurrentFolder({ slug: folderObj.slug, name: folderObj.name, parentSlug: folderObj.parentSlug });
       setSearch('');
+      await loadFolderAssets(folderObj.slug);
     },
 
     // Navigate back to parent or root
-    navigateUp: () => {
-      if (!currentFolder) return;
-      if (currentFolder.parentSlug) {
-        const parent = folders.find(f => f.slug === currentFolder.parentSlug);
+    navigateUp: async () => {
+      if (!currentFolderRef.current) return;
+      if (currentFolderRef.current.parentSlug) {
+        const parent = folders.find(f => f.slug === currentFolderRef.current.parentSlug);
         if (parent) {
           setCurrentFolder({ slug: parent.slug, name: parent.name, parentSlug: parent.parentSlug });
           setSearch('');
+          await loadFolderAssets(parent.slug);
           return;
         }
       }
       setCurrentFolder(null);
+      setFolderAssets([]);
       setSearch('');
     },
 
     // Reset to root (called on sidebar route change)
     resetNavigation: () => {
       setCurrentFolder(null);
+      setFolderAssets([]);
       setSearch('');
     },
 
@@ -243,7 +264,12 @@ const FileManagerProvider = ({ ...props }) => {
           } else {
             await apiPatch(`/media/${id}`, { isDeleted: false });
           }
-          await Promise.all([loadAssets(), loadDeleted()]);
+          await loadDeleted();
+          if (currentFolderRef.current) {
+            await loadFolderAssets(currentFolderRef.current.slug);
+          } else {
+            await loadRootAssets();
+          }
         }
       } catch (err) {
         console.error('Trash/Restore failed', err);
@@ -273,23 +299,57 @@ const FileManagerProvider = ({ ...props }) => {
       if (folderSlug) fd.append('folder', folderSlug);
       if (altText) fd.append('altText', altText);
       await apiUpload('/media/upload', fd);
-      await loadAssets();
+      // Reload the correct asset list based on where the file was uploaded
+      if (folderSlug) {
+        await loadFolderAssets(folderSlug);
+        // If we're in a different folder than where we uploaded, also update current view
+        if (currentFolderRef.current && currentFolderRef.current.slug !== folderSlug) {
+          await loadFolderAssets(currentFolderRef.current.slug);
+        }
+      } else {
+        await loadRootAssets();
+      }
     },
 
     updateAlt: async (id, altText) => {
       await apiPatch(`/media/${id}`, { altText });
-      await loadAssets();
+      if (currentFolderRef.current) {
+        await loadFolderAssets(currentFolderRef.current.slug);
+      } else {
+        await loadRootAssets();
+      }
     },
 
     moveToFolder: async (id, folderSlug) => {
       await apiPatch(`/media/${id}`, { folder: folderSlug || null });
-      await loadAssets();
+      // Refresh current view since the asset may have moved out
+      if (currentFolderRef.current) {
+        await loadFolderAssets(currentFolderRef.current.slug);
+      } else {
+        await loadRootAssets();
+      }
     },
 
     deleteFolder: async (slug) => {
       await apiDelete(`/media/folders/${slug}`);
       await loadFolders();
     },
+  };
+
+  const fileManager = {
+    search,
+    data,
+    files: filesWithStarred,
+    allFiles: allFilesFlat,
+    deletedFiles,
+    folders,
+    loading: loading || folderLoading,
+    filesView,
+    asideVisibility,
+    recoveryFilter,
+    currentFolder,
+    currentPlan: 'planid01',
+    contentHeight,
   };
 
   return (
