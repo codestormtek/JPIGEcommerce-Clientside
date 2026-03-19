@@ -6,7 +6,7 @@ const Starred = () => {
 
   const {fileManager} = useFileManager();
   
-  const files = [...fileManager.files.filter((item) => item.starred === true  && !item.deleted)]
+  const files = [...fileManager.allFiles.filter((item) => item.starred === true && !item.deleted)]
   return (
     <>
         <Files files={files}  fixedView="list"  />

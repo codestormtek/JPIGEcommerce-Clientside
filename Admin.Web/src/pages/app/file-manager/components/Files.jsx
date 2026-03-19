@@ -13,6 +13,13 @@ import Move from "../modals/Move";
 
 const File = ({item, fileView, page}) => {
     const {fileManagerUpdate} = useFileManagerUpdate();
+
+    const handleFolderOpen = (ev) => {
+        ev.preventDefault();
+        if (item.type === 'folder') {
+            fileManagerUpdate.navigateFolder(item);
+        }
+    };
     
     const [detailModal, setDetailModal] = useState(false);  
     const [shareModal, setShareModal] = useState(false);
@@ -47,7 +54,9 @@ const File = ({item, fileView, page}) => {
         <>
             <div className="nk-file-item nk-file">
                 <div className="nk-file-info">
-                    <div className="nk-file-title">
+                    <div className={`nk-file-title${item.type === 'folder' ? ' cursor-pointer' : ''}`}
+                        onClick={item.type === 'folder' ? handleFolderOpen : undefined}
+                        style={item.type === 'folder' ? { cursor: 'pointer' } : {}}>
                         <div className="nk-file-icon">
                             <span className="nk-file-icon-type">{icons[item.icon]}</span>
                         </div>
@@ -59,6 +68,7 @@ const File = ({item, fileView, page}) => {
                                         href="#folder"
                                         onClick={(ev) => {
                                             ev.preventDefault();
+                                            ev.stopPropagation();
                                             fileManagerUpdate.toggleStarred(item.id);
                                         }}
                                         className={item.starred ? "active" : ""}

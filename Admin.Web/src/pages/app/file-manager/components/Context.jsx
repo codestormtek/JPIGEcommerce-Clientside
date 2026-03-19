@@ -94,6 +94,9 @@ const FileManagerProvider = ({ ...props }) => {
   const [contentHeight, setContentHeight] = useState(0);
   const [starredIds, setStarredIds] = useState(new Set());
 
+  // currentFolder: null = root, or { slug, name, parentSlug }
+  const [currentFolder, setCurrentFolder] = useState(null);
+
   const allFilesRef = useRef([]);
   const deletedRef = useRef([]);
 
@@ -130,11 +133,27 @@ const FileManagerProvider = ({ ...props }) => {
     Promise.all([loadFolders(), loadAssets(), loadDeleted()]).finally(() => setLoading(false));
   }, [loadFolders, loadAssets, loadDeleted]);
 
-  // ── Combined file lists ──────────────────────────────────────────────────────
+  // ── Computed file lists ──────────────────────────────────────────────────────
 
-  const folderFiles = folders.map(folderToFile);
+  const allFolderFiles = folders.map(folderToFile);
+  const currentSlug = currentFolder?.slug || null;
 
-  const filesWithStarred = [...folderFiles, ...assets].map(f => ({
+  // Files visible at the current navigation level
+  const visibleFolders = currentSlug === null
+    ? allFolderFiles.filter(f => !f.parentSlug)
+    : allFolderFiles.filter(f => f.parentSlug === currentSlug);
+
+  const visibleAssets = currentSlug === null
+    ? assets.filter(a => !a.folder)
+    : assets.filter(a => a.folder === currentSlug);
+
+  const filesWithStarred = [...visibleFolders, ...visibleAssets].map(f => ({
+    ...f,
+    starred: starredIds.has(f.id),
+  }));
+
+  // All files flat (for star toggle in quick access, and for toTrash lookup)
+  const allFilesFlat = [...allFolderFiles, ...assets].map(f => ({
     ...f,
     starred: starredIds.has(f.id),
   }));
@@ -145,19 +164,22 @@ const FileManagerProvider = ({ ...props }) => {
     starred: starredIds.has(f.id),
   }));
 
-  allFilesRef.current = filesWithStarred;
+  // Keep refs up to date for use inside async callbacks
+  allFilesRef.current = allFilesFlat;
   deletedRef.current = deletedFiles;
 
   const fileManager = {
     search,
     data,
     files: filesWithStarred,
+    allFiles: allFilesFlat,     // all files regardless of current folder (for Starred view)
     deletedFiles,
     folders,
     loading,
     filesView,
     asideVisibility,
     recoveryFilter,
+    currentFolder,              // null = root | { slug, name, parentSlug }
     currentPlan: 'planid01',
     contentHeight,
   };
@@ -168,6 +190,33 @@ const FileManagerProvider = ({ ...props }) => {
 
     reload: async () => {
       await Promise.all([loadFolders(), loadAssets(), loadDeleted()]);
+    },
+
+    // Navigate into a folder
+    navigateFolder: (folderObj) => {
+      setCurrentFolder(folderObj ? { slug: folderObj.slug, name: folderObj.name, parentSlug: folderObj.parentSlug } : null);
+      setSearch('');
+    },
+
+    // Navigate back to parent or root
+    navigateUp: () => {
+      if (!currentFolder) return;
+      if (currentFolder.parentSlug) {
+        const parent = folders.find(f => f.slug === currentFolder.parentSlug);
+        if (parent) {
+          setCurrentFolder({ slug: parent.slug, name: parent.name, parentSlug: parent.parentSlug });
+          setSearch('');
+          return;
+        }
+      }
+      setCurrentFolder(null);
+      setSearch('');
+    },
+
+    // Reset to root (called on sidebar route change)
+    resetNavigation: () => {
+      setCurrentFolder(null);
+      setSearch('');
     },
 
     toggleStarred: (id) => {

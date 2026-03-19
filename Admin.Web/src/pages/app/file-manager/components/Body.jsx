@@ -1,4 +1,5 @@
-import React, {useState, useLayoutEffect} from 'react'
+import React, {useState, useLayoutEffect, useEffect} from 'react'
+import { useLocation } from 'react-router-dom';
 
 import ViewFilter, {options as viewOptions} from './ViewFilter';
 import Files from './Files';
@@ -19,6 +20,7 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
     const [uploadModal, setUploadModal] = useState(false);
 
     const [search, setSearch] = useState(false);
+    const location = useLocation();
 
     const toggleSearch = () => {
         setSearch(!search);
@@ -34,6 +36,11 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
     useLayoutEffect(() => {
         fileManagerUpdate.search('')
     }, []);
+
+    // Reset folder navigation whenever the sidebar route changes
+    useEffect(() => {
+        fileManagerUpdate.resetNavigation();
+    }, [location.pathname]);
 
     const searchResult = [ ...fileManager.files.filter(item => !item.deleted && item.name.toLowerCase().includes(fileManager.search.toLowerCase())) ]
     
@@ -106,8 +113,23 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
             <BlockHead size="sm">
                 <BlockBetween className="position-relative">
                     <BlockHeadContent>
-                        {(title && fileManager.search === '') && title} 
-                        {fileManager.search !== '' && <BlockTitle page>Search for : <span className="fw-normal ms-2 text-muted">{fileManager.search}</span></BlockTitle>}
+                        {fileManager.search !== '' ? (
+                            <BlockTitle page>Search for : <span className="fw-normal ms-2 text-muted">{fileManager.search}</span></BlockTitle>
+                        ) : fileManager.currentFolder ? (
+                            <div className="d-flex align-items-center gap-2">
+                                <a
+                                    href="#back"
+                                    onClick={(ev) => { ev.preventDefault(); fileManagerUpdate.navigateUp(); }}
+                                    className="btn btn-sm btn-icon btn-trigger"
+                                    title="Go back"
+                                >
+                                    <Icon name="arrow-left" />
+                                </a>
+                                <BlockTitle page>{fileManager.currentFolder.name}</BlockTitle>
+                            </div>
+                        ) : (
+                            title && title
+                        )}
                     </BlockHeadContent>
                     <BlockHeadContent>
                         <ul className="nk-block-tools g-1">
