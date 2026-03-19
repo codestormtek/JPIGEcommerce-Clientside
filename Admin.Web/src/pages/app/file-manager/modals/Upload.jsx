@@ -11,7 +11,7 @@ const Upload = ({ toggle }) => {
   const { fileManager } = useFileManager();
 
   const [files, setFiles] = useState([]);
-  const [folderSlug, setFolderSlug] = useState('');
+  const [folderSlug, setFolderSlug] = useState(fileManager.currentFolder?.slug || '');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
