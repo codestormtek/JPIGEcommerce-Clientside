@@ -31,6 +31,8 @@ All secrets managed via Replit Secrets panel. Non-sensitive config set as shared
 
 ## Admin Pages
 - **File Manager** (`/app-file-manager`): Fully wired to API — real folders + assets loaded from `GET /media/folders` and `GET /media`. Context (`Context.jsx`) provides: createFolder, uploadFile (with folder selector), moveToFolder, updateAlt (inline edit), soft-delete + restore, client-side star toggle. Recovery tab shows soft-deleted assets fetched with `includeDeleted=true`. Details modal shows image/video preview + URL copy. Upload modal supports multi-file + folder targeting. API: added `includeDeleted` param to `GET /media`, added `isDeleted` field to `PATCH /media/:id` (restore support).
+  - **Folder navigation**: Clicking a folder navigates into it (fetches assets via `GET /media?folder=slug`), breadcrumb title + back arrow shown, sidebar nav resets to root.
+  - **Create Document** button: TinyMCE WYSIWYG editor modal lets you write a document, choose PDF (jsPDF+html2canvas) or DOCX (docx package with HTML parser), choose a destination folder (auto-selects current folder), then uploads the generated file to R2 via the media API. Packages: `jspdf`, `html2canvas`, `docx`.
 - **Products**: Full CRUD with brands, categories, attributes, SKUs, images
 - **Blog**: CRUD for blog posts with TinyMCE editor, categories, tags, featured images
 - **News**: CRUD for news articles (same content API with `postType: "news"`), plus:

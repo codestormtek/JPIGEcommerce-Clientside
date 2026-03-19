@@ -6,6 +6,7 @@ import Files from './Files';
 
 import Upload from "../modals/Upload";
 import CreateFolder from "../modals/CreateFolder";
+import CreateDocument from "../modals/CreateDocument";
 
 import { useFileManager, useFileManagerUpdate } from "./Context";
 
@@ -18,6 +19,7 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
 
     const [createModal, setCreateModal] = useState(false);
     const [uploadModal, setUploadModal] = useState(false);
+    const [docModal, setDocModal] = useState(false);
 
     const [search, setSearch] = useState(false);
     const location = useLocation();
@@ -100,6 +102,11 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
                         </ul>
                     </DropdownMenu>
                     </UncontrolledDropdown>
+                </li>
+                <li>
+                    <Button color="light" onClick={() => setDocModal(true)}>
+                    <Icon name="file-text"></Icon> <span>Create Document</span>
+                    </Button>
                 </li>
                 <li>
                     <Button color="primary" onClick={() => toggleUploadModal()}>
@@ -278,6 +285,9 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
         </Modal>
         <Modal isOpen={uploadModal} size="md" toggle={toggleUploadModal}>
             <Upload toggle={toggleUploadModal} />
+        </Modal>
+        <Modal isOpen={docModal} size="xl" toggle={() => setDocModal(false)}>
+            <CreateDocument toggle={() => setDocModal(false)} />
         </Modal>
     </>
   )
