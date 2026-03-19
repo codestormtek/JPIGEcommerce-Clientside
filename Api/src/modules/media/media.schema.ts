@@ -20,12 +20,13 @@ export const ALLOWED_DOCUMENT_MIME = new Set([
 
 // ─── List media ───────────────────────────────────────────────────────────────
 export const listMediaSchema = z.object({
-  page:      z.coerce.number().int().positive().default(1),
-  limit:     z.coerce.number().int().positive().max(100).default(40),
-  mediaType: z.enum(['image', 'video', 'document']).optional(),
-  folder:    z.string().optional(),
-  orderBy:   z.enum(['createdAt', 'url']).default('createdAt'),
-  order:     z.enum(['asc', 'desc']).default('desc'),
+  page:           z.coerce.number().int().positive().default(1),
+  limit:          z.coerce.number().int().positive().max(100).default(40),
+  mediaType:      z.enum(['image', 'video', 'document']).optional(),
+  folder:         z.string().optional(),
+  orderBy:        z.enum(['createdAt', 'url']).default('createdAt'),
+  order:          z.enum(['asc', 'desc']).default('desc'),
+  includeDeleted: z.coerce.boolean().default(false),
 });
 export type ListMediaInput = z.infer<typeof listMediaSchema>;
 
@@ -46,7 +47,9 @@ export const createMediaSchema = z.object({
 export type CreateMediaInput = z.infer<typeof createMediaSchema>;
 
 // ─── Update media asset ────────────────────────────────────────────────────────
-export const updateMediaSchema = createMediaSchema.partial();
+export const updateMediaSchema = createMediaSchema.partial().extend({
+  isDeleted: z.boolean().optional(),
+});
 export type UpdateMediaInput = z.infer<typeof updateMediaSchema>;
 
 // ─── Folder CRUD ──────────────────────────────────────────────────────────────

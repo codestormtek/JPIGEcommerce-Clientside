@@ -1,26 +1,38 @@
 import React, { useState } from "react";
 import { Icon } from "@/components/Component";
-import { useFileManager } from "../components/Context";
-import icons from "../components/Icons"
+import { Button, Spinner } from "reactstrap";
+import { useFileManager, useFileManagerUpdate } from "../components/Context";
+import icons from "../components/Icons";
 
 const Move = ({ file, toggle, toggleCreate }) => {
+  const { fileManager } = useFileManager();
+  const { fileManagerUpdate } = useFileManagerUpdate();
 
-  const {fileManager} = useFileManager();
+  const [selected, setSelected] = useState(file.folder || '');
+  const [moving, setMoving] = useState(false);
+  const [error, setError] = useState('');
 
-  const [selected, setSelected] = useState("");
+  const folderList = fileManager.files.filter(f => f.type === 'folder' && !f.deleted);
+
+  const handleMove = async () => {
+    if (file.type === 'folder') { toggle(); return; }
+    setMoving(true);
+    setError('');
+    try {
+      await fileManagerUpdate.moveToFolder(file.id, selected || null);
+      toggle();
+    } catch (err) {
+      setError(err.message || 'Move failed.');
+    } finally {
+      setMoving(false);
+    }
+  };
 
   return (
     <React.Fragment>
       <div className="modal-header align-center border-bottom-0">
-        <h5 className="modal-title">Move item to...</h5>
-        <a
-          href="#close"
-          onClick={(ev) => {
-            ev.preventDefault();
-            toggle();
-          }}
-          className="close"
-        >
+        <h5 className="modal-title">Move item to…</h5>
+        <a href="#close" onClick={(ev) => { ev.preventDefault(); toggle(); }} className="close">
           <Icon name="cross-sm"></Icon>
         </a>
       </div>
@@ -29,55 +41,69 @@ const Move = ({ file, toggle, toggleCreate }) => {
           <li className="breadcrumb-item">Files</li>
           <li className="breadcrumb-item">{file.name}</li>
         </ul>
-        <div className="nk-fmg-listing is-scrollable">
-          <div className="nk-files nk-files-view-list is-compact">
-            <div className="nk-files-list">
-              {fileManager.files.filter((item) => item.type === "folder" && !item.deleted)
-                .map((item) => {
-                  return (
-                    <div
-                      className={`nk-file-item nk-file ${item.id === selected ? "selected" : ""}`}
-                      key={item.id}
-                      onClick={() => setSelected(item.id)}
-                    >
-                      <div className="nk-file-info">
-                        <a className="nk-file-link" href="#link" onClick={(ev) => ev.preventDefault()}>
-                          <div className="nk-file-title">
-                            <div className="nk-file-icon"><div className="nk-file-icon-type">{icons[item.icon]}</div></div>
-                            <div className="nk-file-name">
-                              <div className="nk-file-name-text">
-                                <span className="title">{item.name}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </a>
+
+        {file.type === 'folder' ? (
+          <p className="text-muted small">Folders cannot be moved.</p>
+        ) : (
+          <div className="nk-fmg-listing is-scrollable">
+            <div className="nk-files nk-files-view-list is-compact">
+              <div className="nk-files-list">
+                <div
+                  className={`nk-file-item nk-file ${selected === '' ? 'selected' : ''}`}
+                  onClick={() => setSelected('')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="nk-file-info">
+                    <div className="nk-file-title">
+                      <div className="nk-file-icon">
+                        <div className="nk-file-icon-type">{icons['folder']}</div>
                       </div>
-                      <div className="nk-file-actions">
-                        <a
-                          href="#link"
-                          onClick={(ev) => ev.preventDefault()}
-                          className="btn btn-sm btn-icon btn-trigger"
-                        >
-                          <Icon name="chevron-right"></Icon>
-                        </a>
+                      <div className="nk-file-name">
+                        <div className="nk-file-name-text"><span className="title">Root (no folder)</span></div>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                </div>
+                {folderList.map(item => (
+                  <div
+                    className={`nk-file-item nk-file ${item.slug === selected ? 'selected' : ''}`}
+                    key={item.id}
+                    onClick={() => setSelected(item.slug)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="nk-file-info">
+                      <a className="nk-file-link" href="#link" onClick={(ev) => ev.preventDefault()}>
+                        <div className="nk-file-title">
+                          <div className="nk-file-icon">
+                            <div className="nk-file-icon-type">{icons[item.icon]}</div>
+                          </div>
+                          <div className="nk-file-name">
+                            <div className="nk-file-name-text"><span className="title">{item.name}</span></div>
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                    <div className="nk-file-actions">
+                      <a href="#link" onClick={(ev) => ev.preventDefault()} className="btn btn-sm btn-icon btn-trigger">
+                        <Icon name="chevron-right"></Icon>
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {error && <div className="text-danger small mt-2">{error}</div>}
       </div>
+
       <div className="modal-footer bg-light">
         <div className="modal-footer-between">
           <div className="g">
             <a
               href="link"
-              onClick={(ev) => {
-                ev.preventDefault();
-                toggle();
-                toggleCreate();
-              }}
+              onClick={(ev) => { ev.preventDefault(); toggle(); toggleCreate(); }}
               className="link link-primary"
             >
               Create New Folder
@@ -86,28 +112,14 @@ const Move = ({ file, toggle, toggleCreate }) => {
           <div className="g">
             <ul className="btn-toolbar g-3">
               <li>
-                <a
-                  href="#file-share"
-                  onClick={(ev) => {
-                    ev.preventDefault();
-                    toggle();
-                  }}
-                  className="btn btn-outline-light btn-white"
-                >
+                <a href="#cancel" onClick={(ev) => { ev.preventDefault(); toggle(); }} className="btn btn-outline-light btn-white">
                   Cancel
                 </a>
               </li>
               <li>
-                <a
-                  href="link"
-                  onClick={(ev) => {
-                    ev.preventDefault();
-                    toggle();
-                  }}
-                  className="btn btn-primary"
-                >
-                  Move
-                </a>
+                <Button color="primary" onClick={handleMove} disabled={moving || file.type === 'folder'}>
+                  {moving ? <Spinner size="sm" /> : 'Move'}
+                </Button>
               </li>
             </ul>
           </div>

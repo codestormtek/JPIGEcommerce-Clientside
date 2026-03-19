@@ -39,9 +39,9 @@ const mediaInclude = { metadata: true } as const;
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 export async function findMedia(input: ListMediaInput) {
-  const { page, limit, mediaType, folder, orderBy, order } = input;
+  const { page, limit, mediaType, folder, orderBy, order, includeDeleted } = input;
   const skip = (page - 1) * limit;
-  const where: Record<string, unknown> = { isDeleted: false };
+  const where: Record<string, unknown> = includeDeleted ? { isDeleted: true } : { isDeleted: false };
   if (mediaType) where['mediaType'] = mediaType;
   if (folder) {
     const isSystem = (MEDIA_FOLDERS as readonly string[]).includes(folder);
@@ -107,7 +107,9 @@ export async function createMedia(input: CreateMediaInput) {
 }
 
 export async function updateMedia(id: string, input: UpdateMediaInput) {
-  const { metadata, ...data } = input;
+  const { metadata, isDeleted, ...rest } = input;
+  const data: Record<string, unknown> = { ...rest };
+  if (isDeleted !== undefined) data['isDeleted'] = isDeleted;
 
   if (metadata) {
     await prisma.mediaAssetMetadata.upsert({

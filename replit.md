@@ -30,6 +30,7 @@ Three active services:
 All secrets managed via Replit Secrets panel. Non-sensitive config set as shared env vars. See `Api/.env.example` for the full list of variables.
 
 ## Admin Pages
+- **File Manager** (`/app-file-manager`): Fully wired to API — real folders + assets loaded from `GET /media/folders` and `GET /media`. Context (`Context.jsx`) provides: createFolder, uploadFile (with folder selector), moveToFolder, updateAlt (inline edit), soft-delete + restore, client-side star toggle. Recovery tab shows soft-deleted assets fetched with `includeDeleted=true`. Details modal shows image/video preview + URL copy. Upload modal supports multi-file + folder targeting. API: added `includeDeleted` param to `GET /media`, added `isDeleted` field to `PATCH /media/:id` (restore support).
 - **Products**: Full CRUD with brands, categories, attributes, SKUs, images
 - **Blog**: CRUD for blog posts with TinyMCE editor, categories, tags, featured images
 - **News**: CRUD for news articles (same content API with `postType: "news"`), plus:
