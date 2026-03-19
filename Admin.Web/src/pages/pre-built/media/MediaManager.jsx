@@ -332,31 +332,32 @@ const MediaManager = () => {
                         <React.Fragment key={folder.slug}>
                           <li className={activeFolder === folder.slug && !activeQuick ? "active" : ""}>
                             <DropdownItem onClick={() => selectFolder(folder.slug)}>
-                              <Icon name={folderIcon(folder.slug)} /><span>{folder.name}</span>
+                              <Icon name={folderIcon(folder.slug)} />
+                              <span className="ms-1">{folder.name}</span>
                               {!folder.isSystem && (
-                                <span
-                                  className="ms-auto text-danger"
-                                  style={{ fontSize: 12 }}
+                                <em
+                                  className="icon ni ni-trash ms-auto text-danger"
+                                  style={{ fontSize: 13 }}
                                   onClick={(e) => { e.stopPropagation(); setPendingDelFolder(folder); }}
                                   title="Delete folder"
-                                >
-                                  <Icon name="trash" />
-                                </span>
+                                />
                               )}
                             </DropdownItem>
                           </li>
                           {children(folder.slug).map((child) => (
                             <li key={child.slug} className={activeFolder === child.slug && !activeQuick ? "active" : ""}>
-                              <DropdownItem onClick={() => selectFolder(child.slug)} style={{ paddingLeft: 28 }}>
-                                <Icon name="corner-down-right" /><span>{child.name}</span>
-                                <span
-                                  className="ms-auto text-danger"
-                                  style={{ fontSize: 12 }}
+                              <DropdownItem
+                                onClick={() => selectFolder(child.slug)}
+                                style={{ paddingLeft: 24, fontSize: "0.875em", color: "#526484" }}
+                              >
+                                <em className="icon ni ni-arrow-right-up" style={{ fontSize: 11, marginRight: 4 }} />
+                                <span>{child.name}</span>
+                                <em
+                                  className="icon ni ni-trash ms-auto text-danger"
+                                  style={{ fontSize: 13 }}
                                   onClick={(e) => { e.stopPropagation(); setPendingDelFolder(child); }}
                                   title="Delete folder"
-                                >
-                                  <Icon name="trash" />
-                                </span>
+                                />
                               </DropdownItem>
                             </li>
                           ))}
