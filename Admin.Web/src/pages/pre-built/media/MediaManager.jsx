@@ -310,6 +310,63 @@ const MediaManager = () => {
           <div className="nk-fmg-actions">
             <ul className="nk-block-tools g-2">
               <li>
+                <UncontrolledDropdown>
+                  <DropdownToggle tag="button" className="btn btn-light btn-outline-light d-flex align-items-center gap-2">
+                    {foldersLoading
+                      ? <Spinner size="sm" />
+                      : <Icon name={activeFolder ? folderIcon(activeFolder) : "folder"} />}
+                    <span>{activeLabel()}</span>
+                    <Icon name="chevron-down" />
+                  </DropdownToggle>
+                  <DropdownMenu style={{ maxHeight: 360, overflowY: "auto" }}>
+                    <ul className="link-list-opt no-bdr">
+                      {QUICK_FILTERS.map((qf) => (
+                        <li key={qf.label} className={activeQuick === qf.label ? "active" : ""}>
+                          <DropdownItem onClick={() => selectQuick(qf)}>
+                            <Icon name={qf.icon} /><span>{qf.label}</span>
+                          </DropdownItem>
+                        </li>
+                      ))}
+                      {folders.length > 0 && <li className="divider" />}
+                      {topLevel.map((folder) => (
+                        <React.Fragment key={folder.slug}>
+                          <li className={activeFolder === folder.slug && !activeQuick ? "active" : ""}>
+                            <DropdownItem onClick={() => selectFolder(folder.slug)}>
+                              <Icon name={folderIcon(folder.slug)} /><span>{folder.name}</span>
+                              {!folder.isSystem && (
+                                <span
+                                  className="ms-auto text-danger"
+                                  style={{ fontSize: 12 }}
+                                  onClick={(e) => { e.stopPropagation(); setPendingDelFolder(folder); }}
+                                  title="Delete folder"
+                                >
+                                  <Icon name="trash" />
+                                </span>
+                              )}
+                            </DropdownItem>
+                          </li>
+                          {children(folder.slug).map((child) => (
+                            <li key={child.slug} className={activeFolder === child.slug && !activeQuick ? "active" : ""}>
+                              <DropdownItem onClick={() => selectFolder(child.slug)} style={{ paddingLeft: 28 }}>
+                                <Icon name="corner-down-right" /><span>{child.name}</span>
+                                <span
+                                  className="ms-auto text-danger"
+                                  style={{ fontSize: 12 }}
+                                  onClick={(e) => { e.stopPropagation(); setPendingDelFolder(child); }}
+                                  title="Delete folder"
+                                >
+                                  <Icon name="trash" />
+                                </span>
+                              </DropdownItem>
+                            </li>
+                          ))}
+                        </React.Fragment>
+                      ))}
+                    </ul>
+                  </DropdownMenu>
+                </UncontrolledDropdown>
+              </li>
+              <li>
                 <Button
                   color="light"
                   outline
@@ -329,70 +386,6 @@ const MediaManager = () => {
               </li>
             </ul>
           </div>
-        </div>
-
-        {/* ── Folder + type filter bar ──────────────────────────────── */}
-        <div className="px-4 py-2 d-flex align-items-center gap-3 flex-wrap" style={{ borderBottom: "1px solid #dbdfea" }}>
-          {/* Folder dropdown */}
-          <UncontrolledDropdown>
-            <DropdownToggle tag="button" className="btn btn-light btn-outline-light d-flex align-items-center gap-2">
-              {foldersLoading
-                ? <Spinner size="sm" />
-                : <Icon name={activeFolder ? folderIcon(activeFolder) : "folder"} />}
-              <span>{activeLabel()}</span>
-              <Icon name="chevron-down" />
-            </DropdownToggle>
-            <DropdownMenu style={{ maxHeight: 360, overflowY: "auto" }}>
-              <ul className="link-list-opt no-bdr">
-                {/* Quick filters */}
-                {QUICK_FILTERS.map((qf) => (
-                  <li key={qf.label} className={activeQuick === qf.label ? "active" : ""}>
-                    <DropdownItem onClick={() => selectQuick(qf)}>
-                      <Icon name={qf.icon} /><span>{qf.label}</span>
-                    </DropdownItem>
-                  </li>
-                ))}
-                {folders.length > 0 && (
-                  <li className="divider" />
-                )}
-                {/* Dynamic folders */}
-                {topLevel.map((folder) => (
-                  <React.Fragment key={folder.slug}>
-                    <li className={activeFolder === folder.slug && !activeQuick ? "active" : ""}>
-                      <DropdownItem onClick={() => selectFolder(folder.slug)}>
-                        <Icon name={folderIcon(folder.slug)} /><span>{folder.name}</span>
-                        {!folder.isSystem && (
-                          <span
-                            className="ms-auto text-danger"
-                            style={{ fontSize: 12 }}
-                            onClick={(e) => { e.stopPropagation(); setPendingDelFolder(folder); }}
-                            title="Delete folder"
-                          >
-                            <Icon name="trash" />
-                          </span>
-                        )}
-                      </DropdownItem>
-                    </li>
-                    {children(folder.slug).map((child) => (
-                      <li key={child.slug} className={activeFolder === child.slug && !activeQuick ? "active" : ""}>
-                        <DropdownItem onClick={() => selectFolder(child.slug)} style={{ paddingLeft: 28 }}>
-                          <Icon name="corner-down-right" /><span>{child.name}</span>
-                          <span
-                            className="ms-auto text-danger"
-                            style={{ fontSize: 12 }}
-                            onClick={(e) => { e.stopPropagation(); setPendingDelFolder(child); }}
-                            title="Delete folder"
-                          >
-                            <Icon name="trash" />
-                          </span>
-                        </DropdownItem>
-                      </li>
-                    ))}
-                  </React.Fragment>
-                ))}
-              </ul>
-            </DropdownMenu>
-          </UncontrolledDropdown>
         </div>
 
         {/* ── Main content ──────────────────────────────────────────── */}
