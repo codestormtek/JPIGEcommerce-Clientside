@@ -24,6 +24,21 @@ const SERVING_PRESETS = { Sauce: { qty: 1.5, unit: "tbsp" }, Rub: { qty: 1, unit
 const CONTAINER_SIZES = [4, 6, 8, 10, 12, 16, 20, 24, 32, 64];
 const UNITS = ["cup", "tbsp", "tsp", "oz", "lb", "g", "kg", "ml", "l", "stick", "gal", "pt", "qt", "#10 can", "piece", "slice", "clove", "bunch", "pinch", "each"];
 
+const UNIT_TO_OZ = {
+  cup: 8, tbsp: 0.5, tsp: 1 / 6, oz: 1, lb: 16,
+  g: 0.035274, kg: 35.274, ml: 0.033814, l: 33.814,
+  gal: 128, pt: 16, qt: 32, stick: 4,
+};
+
+const calcTotalYieldOz = (ingredients) => {
+  const total = ingredients.reduce((sum, ing) => {
+    const qty    = combinedQty(ing.quantity, ing.fraction);
+    const factor = UNIT_TO_OZ[ing.unit] ?? 0;
+    return sum + qty * factor;
+  }, 0);
+  return Math.round(total);
+};
+
 const FRACTIONS = [
   { label: "",    value: 0      },
   { label: "1/8", value: 1/8   },
@@ -408,6 +423,13 @@ const AdminRecipeList = () => {
     useSensor(KeyboardSensor)
   );
 
+  // Auto-calculate Total Yield from ingredient weights/volumes
+  useEffect(() => {
+    const computed = calcTotalYieldOz(form.ingredients);
+    const next = computed > 0 ? String(computed) : "";
+    setForm((f) => f.yieldOz !== next ? { ...f, yieldOz: next } : f);
+  }, [form.ingredients]);
+
   const addStep = () =>
     setForm((f) => ({ ...f, steps: [...f.steps, blankStep(f.steps.length + 1)] }));
   const removeStep = (id) =>
@@ -778,12 +800,15 @@ const AdminRecipeList = () => {
                           <div className="form-group">
                             <label className="form-label text-uppercase small fw-bold text-muted">Total Yield</label>
                             <div className="input-group">
-                              <input type="number" min="0" step="0.1" className="form-control" placeholder="96"
+                              <input type="number" min="0" step="0.1" className="form-control"
+                                placeholder="Auto"
                                 value={form.yieldOz}
-                                onChange={(e) => setForm((f) => ({ ...f, yieldOz: e.target.value }))}
+                                disabled
+                                style={{ backgroundColor: "#f8f9fa", cursor: "not-allowed" }}
                               />
                               <span className="input-group-text">oz</span>
                             </div>
+                            <small className="text-muted mt-1 d-block">Auto-calculated from ingredients</small>
                           </div>
                         </Col>
                         <Col size="3">
@@ -829,7 +854,7 @@ const AdminRecipeList = () => {
                                   {Math.round((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 100) / 100} × {form.containerSizeOz}oz
                                 </span>
                               ) : parseFloat(form.containerSizeOz) > 0 ? (
-                                <span className="text-muted small">Enter Total Yield to calculate</span>
+                                <span className="text-muted small">Add ingredients to calculate</span>
                               ) : (
                                 <span className="text-muted small">Select a container size</span>
                               )}
