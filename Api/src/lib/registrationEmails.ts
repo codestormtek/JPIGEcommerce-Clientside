@@ -36,6 +36,50 @@ async function logToOutbox(data: {
   });
 }
 
+export async function sendPendingApprovalEmail(user: NewUserInfo): Promise<void> {
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Valued Customer';
+  const subject = `Your ${config.store.name} account is pending approval`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#f9f9f9;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #e0e0e0;">
+    <div style="background:#ff8c00;padding:24px;text-align:center;">
+      <img src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png" alt="${config.store.name}" style="max-height:60px;" />
+    </div>
+    <div style="padding:32px 24px;">
+      <h1 style="color:#1F1F25;font-size:22px;margin:0 0 16px;">Thanks for registering, ${fullName}!</h1>
+      <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 16px;">
+        Your account at <strong>${config.store.name}</strong> has been created and is currently <strong>pending approval</strong>.
+      </p>
+      <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 24px;">
+        Our team will review your registration and activate your account shortly. You will receive another email as soon as your account is approved and ready to use.
+      </p>
+      <p style="color:#999;font-size:13px;line-height:1.5;margin:24px 0 0;border-top:1px solid #eee;padding-top:16px;">
+        If you didn't create this account, please ignore this email or contact us at
+        <a href="mailto:${config.store.adminEmail}" style="color:#ff8c00;">${config.store.adminEmail}</a>.
+      </p>
+    </div>
+    <div style="background:#f5f5f5;padding:16px 24px;text-align:center;font-size:12px;color:#999;">
+      &copy; ${new Date().getFullYear()} ${config.store.name}. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const text = `Hi ${fullName},\n\nYour account at ${config.store.name} is pending admin approval. We'll email you once it's activated.\n\nIf you didn't create this account, please contact us at ${config.store.adminEmail}.`;
+
+  try {
+    const providerId = await sendEmail({ to: user.emailAddress, subject, html, text });
+    await logToOutbox({ toAddress: user.emailAddress, subject, bodyHtml: html, bodyText: text, templateKey: 'customer.pending-approval', providerMessageId: providerId });
+    logger.info('Pending approval email sent', { userId: user.id, to: user.emailAddress });
+  } catch (err) {
+    logger.error('Failed to send pending approval email', { userId: user.id, error: err });
+    await logToOutbox({ toAddress: user.emailAddress, subject, bodyHtml: html, bodyText: text, templateKey: 'customer.pending-approval', providerMessageId: null }).catch(() => {});
+  }
+}
+
 export async function sendWelcomeEmail(user: NewUserInfo): Promise<void> {
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Valued Customer';
   const subject = `Welcome to ${config.store.name}!`;
@@ -144,11 +188,17 @@ export async function sendAdminNewUserNotification(user: NewUserInfo): Promise<v
           <td style="padding:8px 12px;border:1px solid #eee;">${registeredAt}</td>
         </tr>
       </table>
-      <div style="margin-top:24px;text-align:center;">
-        <a href="${config.store.url}/admin/customers/${user.id}" style="display:inline-block;background:#ff8c00;color:#fff;text-decoration:none;padding:10px 24px;border-radius:6px;font-weight:600;font-size:14px;">
-          View Customer
+      <div style="margin-top:24px;text-align:center;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="https://admin.thejigglingpig.com/customers/${user.id}" style="display:inline-block;background:#ff8c00;color:#fff;text-decoration:none;padding:10px 24px;border-radius:6px;font-weight:600;font-size:14px;">
+          Approve Account
+        </a>
+        <a href="https://admin.thejigglingpig.com/customers" style="display:inline-block;background:#e5e7eb;color:#374151;text-decoration:none;padding:10px 24px;border-radius:6px;font-weight:600;font-size:14px;">
+          View All Customers
         </a>
       </div>
+      <p style="color:#888;font-size:13px;text-align:center;margin:16px 0 0;">
+        This account is <strong>pending approval</strong> and cannot log in until you activate it.
+      </p>
     </div>
     <div style="background:#f5f5f5;padding:12px 24px;text-align:center;font-size:12px;color:#999;">
       ${config.store.name} — Admin Notification

@@ -40,8 +40,8 @@ export async function login(emailAddress: string, password: string): Promise<Aut
   return unwrap(res);
 }
 
-export async function register(data: RegisterData): Promise<AuthTokens> {
-  const res = await apiPost<ApiResponse<AuthTokens>>("/auth/register", data);
+export async function register(data: RegisterData): Promise<{ userId: string; pending: true }> {
+  const res = await apiPost<ApiResponse<{ userId: string; pending: true }>>("/auth/register", data);
   return unwrap(res);
 }
 

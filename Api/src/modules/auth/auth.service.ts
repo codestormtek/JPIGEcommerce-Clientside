@@ -16,7 +16,7 @@ import {
 } from './auth.schema';
 import * as repo from './auth.repository';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
-import { sendWelcomeEmail, sendAdminNewUserNotification } from '../../lib/registrationEmails';
+import { sendPendingApprovalEmail, sendAdminNewUserNotification } from '../../lib/registrationEmails';
 
 // ─── Disposable email blocklist ───────────────────────────────────────────────
 
@@ -83,7 +83,7 @@ export interface AuthTokens {
 export async function register(
   input: RegisterInput,
   meta?: { userAgent?: string; ipAddress?: string },
-): Promise<AuthTokens & { userId: string }> {
+): Promise<{ userId: string; pending: true }> {
   if (isDisposableEmail(input.emailAddress)) {
     throw ApiError.badRequest('Please use a permanent email address to register.');
   }
@@ -100,8 +100,7 @@ export async function register(
     phoneNumber: input.phoneNumber,
   });
 
-  const tokens = await _issueTokens(user.id, user.role as UserRole, meta);
-  logger.info('User registered', { userId: user.id });
+  logger.info('User registered (pending approval)', { userId: user.id });
   logAudit({
     action: AuditAction.USER_REGISTERED,
     entityType: 'SiteUser',
@@ -117,10 +116,10 @@ export async function register(
     phoneNumber: (user as Record<string, unknown>).phoneNumber as string | null | undefined,
     createdAt: user.createdAt,
   };
-  sendWelcomeEmail(emailUser).catch(() => {});
+  sendPendingApprovalEmail(emailUser).catch(() => {});
   sendAdminNewUserNotification(emailUser).catch(() => {});
 
-  return { ...tokens, userId: user.id };
+  return { userId: user.id, pending: true };
 }
 
 export async function login(
@@ -128,7 +127,8 @@ export async function login(
   meta?: { userAgent?: string; ipAddress?: string },
 ): Promise<AuthTokens & { userId: string }> {
   const user = await repo.findUserByEmail(input.emailAddress);
-  if (!user || !user.isActive) throw ApiError.unauthorized('Invalid email or password');
+  if (!user) throw ApiError.unauthorized('Invalid email or password');
+  if (!user.isActive) throw ApiError.unauthorized('Your account is pending approval. You will receive an email once an admin has activated your account.');
 
   const valid = await bcrypt.compare(input.password, user.passwordHash);
   if (!valid) throw ApiError.unauthorized('Invalid email or password');

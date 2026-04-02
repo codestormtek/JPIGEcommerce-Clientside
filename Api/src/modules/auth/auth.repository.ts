@@ -30,6 +30,7 @@ export async function createUser(data: {
       passwordHash: data.passwordHash,
       phoneNumber: data.phoneNumber,
       role: 'user',
+      isActive: false, // pending admin approval
     },
   });
 }

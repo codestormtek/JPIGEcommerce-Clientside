@@ -97,13 +97,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [storeTokens, fetchUser]);
 
   const register = useCallback(async (data: RegisterData) => {
-    const tokens = await authApi.register(data);
-    if (!tokens?.accessToken || !tokens?.refreshToken) {
-      throw new Error("Registration failed — no tokens received");
-    }
-    storeTokens(tokens);
-    await fetchUser(tokens.accessToken);
-  }, [storeTokens, fetchUser]);
+    // Registration now returns pending status — no tokens issued until admin approves
+    await authApi.register(data);
+  }, []);
 
   const logout = useCallback(async () => {
     const refreshToken = localStorage.getItem(TOKEN_KEYS.refresh);

@@ -19,6 +19,7 @@ export default function Home() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -36,7 +37,7 @@ export default function Home() {
     setLoading(true);
     try {
       await register({ emailAddress, password, firstName, lastName, website: "" });
-      router.push("/");
+      setRegistered(true);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || "Registration failed. Please try again.");
@@ -87,7 +88,24 @@ export default function Home() {
                       style={{ height: 80, maxWidth: 'none' }}
                     />
                   </div>
-                  <h3 className="title">Register Into Your Account</h3>
+                  <h3 className="title">{registered ? "Registration Submitted!" : "Register Into Your Account"}</h3>
+
+                  {registered ? (
+                    <div style={{ textAlign: "center", padding: "16px 0 8px" }}>
+                      <div style={{ fontSize: 56, marginBottom: 12 }}>✅</div>
+                      <p style={{ fontSize: 16, color: "#374151", lineHeight: 1.7, marginBottom: 8 }}>
+                        <strong>Your account is pending approval.</strong>
+                      </p>
+                      <p style={{ fontSize: 14, color: "#6b7280", lineHeight: 1.7, marginBottom: 24 }}>
+                        We&apos;ve sent a confirmation to <strong>{emailAddress}</strong>.<br />
+                        An admin will review and activate your account shortly.
+                      </p>
+                      <Link href="/" className="rts-btn btn-primary" style={{ display: "inline-block" }}>
+                        Return to Home
+                      </Link>
+                    </div>
+                  ) : (
+                  <>
                   {error && (
                     <div style={{ color: "red", marginBottom: "15px", textAlign: "center" }}>
                       {error}
@@ -162,6 +180,8 @@ export default function Home() {
                       </p>
                     </div>
                   </form>
+                  </>
+                  )}
                 </div>
               </div>
             </div>

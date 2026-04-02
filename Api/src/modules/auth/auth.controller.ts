@@ -29,8 +29,8 @@ export async function register(req: Request, res: Response): Promise<void> {
   const result = await service.register(input, requestMeta(req));
   sendSuccess(
     res,
-    { accessToken: result.accessToken, refreshToken: result.refreshToken, userId: result.userId },
-    'Account created successfully',
+    { userId: result.userId, pending: true },
+    'Account created successfully. Your account is pending admin approval — you will receive an email once it is activated.',
     201,
   );
 }

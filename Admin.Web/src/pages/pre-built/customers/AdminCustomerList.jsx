@@ -78,6 +78,10 @@ const AdminCustomerList = () => {
   const [exporting, setExporting] = useState(null);
   const [exportError, setExportError] = useState(null);
 
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkDeleteModal, setBulkDeleteModal] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
   const loadCustomers = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -105,7 +109,7 @@ const AdminCustomerList = () => {
     }
   }, [currentPage, itemPerPage, sort, filterEmail, filterFirstName, filterLastName, filterRole, filterActive, filterDateFrom, filterDateTo]);
 
-  useEffect(() => { loadCustomers(); }, [loadCustomers]);
+  useEffect(() => { loadCustomers(); setSelectedIds(new Set()); }, [loadCustomers]);
 
   const doSearch = (e) => {
     e.preventDefault();
@@ -164,8 +168,11 @@ const AdminCustomerList = () => {
         phoneNumber: addForm.phoneNumber || undefined,
       });
       const newUserId = res?.data?.userId ?? res?.userId;
-      if (addForm.role === "admin" && newUserId) {
-        await apiPatch(`/users/${newUserId}`, { role: "admin" });
+      if (newUserId) {
+        // Admin-created users are activated immediately; optionally promote to admin
+        const patch = { isActive: true };
+        if (addForm.role === "admin") patch.role = "admin";
+        await apiPatch(`/users/${newUserId}`, patch);
       }
       setAddModal(false);
       loadCustomers();
@@ -200,6 +207,45 @@ const AdminCustomerList = () => {
       await apiPatch(`/users/${user.id}`, { isActive: !user.isActive });
       loadCustomers();
     } catch {}
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const allSelected = customers.length > 0 && customers.every((c) => selectedIds.has(c.id));
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        customers.forEach((c) => next.delete(c.id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        customers.forEach((c) => next.add(c.id));
+        return next;
+      });
+    }
+  };
+
+  const doBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all([...selectedIds].map((id) => apiDelete(`/users/${id}`)));
+      setSelectedIds(new Set());
+      setBulkDeleteModal(false);
+      loadCustomers();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBulkDeleting(false);
+    }
   };
 
   const doExport = async (format) => {
@@ -350,6 +396,18 @@ const AdminCustomerList = () => {
 
             {error && <div className="alert alert-danger m-3">{error}</div>}
 
+            {selectedIds.size > 0 && (
+              <div className="d-flex align-items-center gap-3 px-3 py-2" style={{ background: "#fff8f0", borderBottom: "1px solid #fed7aa" }}>
+                <span className="fw-medium text-dark">{selectedIds.size} user{selectedIds.size !== 1 ? "s" : ""} selected</span>
+                <Button color="danger" size="sm" onClick={() => setBulkDeleteModal(true)}>
+                  <Icon name="trash" className="me-1" />Delete Selected
+                </Button>
+                <a href="#clear" className="link link-secondary ms-auto small" onClick={(e) => { e.preventDefault(); setSelectedIds(new Set()); }}>
+                  Clear selection
+                </a>
+              </div>
+            )}
+
             {loading ? (
               <div className="text-center py-5"><Spinner color="primary" /></div>
             ) : (
@@ -357,7 +415,16 @@ const AdminCustomerList = () => {
                 <DataTableBody compact>
                   <DataTableHead>
                     <DataTableRow className="nk-tb-col-check">
-                      <span className="sub-text">#</span>
+                      <div className="custom-control custom-checkbox">
+                        <input
+                          type="checkbox"
+                          className="custom-control-input form-check-input"
+                          id="chk-all"
+                          checked={allSelected}
+                          onChange={toggleSelectAll}
+                        />
+                        <label className="custom-control-label" htmlFor="chk-all" />
+                      </div>
                     </DataTableRow>
                     <DataTableRow><span className="sub-text">Email</span></DataTableRow>
                     <DataTableRow size="md"><span className="sub-text">Name</span></DataTableRow>
@@ -368,10 +435,19 @@ const AdminCustomerList = () => {
                     <DataTableRow className="nk-tb-col-tools text-end"><span className="sub-text">Edit</span></DataTableRow>
                   </DataTableHead>
 
-                  {customers.length > 0 ? customers.map((item, idx) => (
-                    <DataTableItem key={item.id}>
+                  {customers.length > 0 ? customers.map((item) => (
+                    <DataTableItem key={item.id} className={selectedIds.has(item.id) ? "selected" : ""}>
                       <DataTableRow className="nk-tb-col-check">
-                        <span className="text-muted small">{(currentPage - 1) * itemPerPage + idx + 1}</span>
+                        <div className="custom-control custom-checkbox">
+                          <input
+                            type="checkbox"
+                            className="custom-control-input form-check-input"
+                            id={`chk-${item.id}`}
+                            checked={selectedIds.has(item.id)}
+                            onChange={() => toggleSelect(item.id)}
+                          />
+                          <label className="custom-control-label" htmlFor={`chk-${item.id}`} />
+                        </div>
                       </DataTableRow>
                       <DataTableRow>
                         <div className="user-card">
@@ -392,9 +468,9 @@ const AdminCustomerList = () => {
                       </DataTableRow>
                       <DataTableRow size="sm">
                         {item.isActive ? (
-                          <Icon name="check-circle-fill" className="text-success" />
+                          <Badge color="success" pill>Active</Badge>
                         ) : (
-                          <Icon name="cross-circle-fill" className="text-danger" />
+                          <Badge color="warning" pill style={{ color: "#92400e" }}>Pending Approval</Badge>
                         )}
                       </DataTableRow>
                       <DataTableRow size="lg">
@@ -416,9 +492,9 @@ const AdminCustomerList = () => {
                                   <li onClick={() => openEditModal(item)}><DropdownItem tag="a" href="#edit" onClick={(ev) => ev.preventDefault()}><Icon name="edit" /><span>Quick Edit</span></DropdownItem></li>
                                   <li className="divider" />
                                   <li onClick={() => toggleActive(item)}>
-                                    <DropdownItem tag="a" href="#toggle" onClick={(ev) => ev.preventDefault()}>
-                                      <Icon name={item.isActive ? "na" : "check-circle"} />
-                                      <span>{item.isActive ? "Deactivate" : "Activate"}</span>
+                                    <DropdownItem tag="a" href="#toggle" onClick={(ev) => ev.preventDefault()} className={!item.isActive ? "text-success fw-bold" : ""}>
+                                      <Icon name={item.isActive ? "na" : "check-circle-fill"} className={!item.isActive ? "text-success" : ""} />
+                                      <span>{item.isActive ? "Deactivate" : "Approve Account"}</span>
                                     </DropdownItem>
                                   </li>
                                   <li onClick={() => confirmDelete(item)}>
@@ -573,6 +649,21 @@ const AdminCustomerList = () => {
                   </ul>
                 </Col>
               </Row>
+            </div>
+          </ModalBody>
+        </Modal>
+
+        {/* Bulk Delete Confirmation */}
+        <Modal isOpen={bulkDeleteModal} className="modal-dialog-centered" size="sm" toggle={() => setBulkDeleteModal(false)}>
+          <ModalBody className="text-center py-4">
+            <Icon name="alert-circle" className="nk-modal-icon icon-circle icon-circle-xxl ni-4x bg-danger" />
+            <h5 className="mt-3">Delete {selectedIds.size} User{selectedIds.size !== 1 ? "s" : ""}?</h5>
+            <p className="small text-muted">This will permanently remove the selected accounts. This cannot be undone.</p>
+            <div className="mt-3">
+              <Button color="danger" disabled={bulkDeleting} onClick={doBulkDelete}>
+                {bulkDeleting ? <Spinner size="sm" /> : `Yes, Delete ${selectedIds.size}`}
+              </Button>
+              <Button className="ms-2 btn-dim" color="light" onClick={() => setBulkDeleteModal(false)}>Cancel</Button>
             </div>
           </ModalBody>
         </Modal>
