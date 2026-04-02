@@ -18,6 +18,7 @@ interface RegisterData {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
+  website?: string;
 }
 
 function unwrap<T>(res: ApiResponse<T> | T): T {

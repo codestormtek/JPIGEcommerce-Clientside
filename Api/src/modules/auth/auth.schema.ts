@@ -12,6 +12,8 @@ export const registerSchema = z.object({
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number'),
   phoneNumber: z.string().optional(),
+  // Honeypot: must be absent or empty — bots fill it, humans don't
+  website: z.string().max(0, 'Registration failed. Please try again.').optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

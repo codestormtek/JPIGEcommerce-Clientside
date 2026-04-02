@@ -18,6 +18,31 @@ import * as repo from './auth.repository';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
 import { sendWelcomeEmail, sendAdminNewUserNotification } from '../../lib/registrationEmails';
 
+// ─── Disposable email blocklist ───────────────────────────────────────────────
+
+const DISPOSABLE_DOMAINS = new Set([
+  'mailinator.com','guerrillamail.com','guerrillamail.net','guerrillamail.org',
+  'guerrillamail.de','guerrillamail.biz','guerrillamail.info',
+  'temp-mail.org','throwam.com','trashmail.com','trashmail.me','trashmail.net',
+  'yopmail.com','yopmail.fr','cool.fr.nf','jetable.fr.nf','nospam.ze.tc',
+  'nomail.xl.cx','mega.zik.dj','speed.1s.fr','courriel.fr.nf','moncourrier.fr.nf',
+  'monemail.fr.nf','monmail.fr.nf','dispostable.com','sharklasers.com',
+  'guerrillamailblock.com','grr.la','guerrillamail.info','spam4.me',
+  'mailnull.com','spamgourmet.com','spamgourmet.net','spamgourmet.org',
+  'maildrop.cc','discard.email','spamthisplease.com','fakeinbox.com',
+  'mailnesia.com','mailnull.com','throwam.com','33mail.com',
+  'getairmail.com','filzmail.com','throwam.com','armyspy.com',
+  'cuvox.de','dayrep.com','einrot.com','fleckens.hu','gustr.com',
+  'jourrapide.com','rhyta.com','superrito.com','teleworm.us','teleworm.com',
+  'tempinbox.com','spamhere.net','spamherelots.com','inboxalias.com',
+  'noclickemail.com','mvrht.com','tempinbox.com',
+]);
+
+function isDisposableEmail(email: string): boolean {
+  const domain = email.split('@')[1]?.toLowerCase();
+  return !!domain && DISPOSABLE_DOMAINS.has(domain);
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Generates a cryptographically random opaque token and its SHA-256 hash. */
@@ -59,6 +84,10 @@ export async function register(
   input: RegisterInput,
   meta?: { userAgent?: string; ipAddress?: string },
 ): Promise<AuthTokens & { userId: string }> {
+  if (isDisposableEmail(input.emailAddress)) {
+    throw ApiError.badRequest('Please use a permanent email address to register.');
+  }
+
   const existing = await repo.findUserByEmail(input.emailAddress);
   if (existing) throw ApiError.conflict('An account with this email already exists');
 

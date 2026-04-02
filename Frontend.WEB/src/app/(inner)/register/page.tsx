@@ -29,9 +29,13 @@ export default function Home() {
       return;
     }
 
+    // Honeypot check — if this field has a value, a bot filled it in
+    const honeypot = (e.currentTarget as HTMLFormElement).elements.namedItem("website") as HTMLInputElement | null;
+    if (honeypot?.value) return;
+
     setLoading(true);
     try {
-      await register({ emailAddress, password, firstName, lastName });
+      await register({ emailAddress, password, firstName, lastName, website: "" });
       router.push("/");
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -90,6 +94,11 @@ export default function Home() {
                     </div>
                   )}
                   <form onSubmit={handleSubmit} className="registration-form">
+                    {/* Honeypot — invisible to humans, bots fill it and get blocked */}
+                    <div style={{ position: "absolute", left: "-9999px", top: "-9999px", opacity: 0, pointerEvents: "none", height: 0, overflow: "hidden" }} aria-hidden="true">
+                      <label htmlFor="website">Website</label>
+                      <input type="text" id="website" name="website" tabIndex={-1} autoComplete="off" />
+                    </div>
                     <div className="input-wrapper">
                       <label htmlFor="firstName">First Name*</label>
                       <input

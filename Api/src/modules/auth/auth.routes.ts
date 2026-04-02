@@ -25,12 +25,21 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Very strict rate limit for registration — max 5 new accounts per IP per hour
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: { success: false, message: 'Too many registration attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // ─── Public routes ────────────────────────────────────────────────────────────
 
 // POST /api/v1/auth/register
 authRouter.post(
   '/register',
-  authLimiter,
+  registerLimiter,
   validate(registerSchema),
   asyncHandler(ctrl.register),
 );
