@@ -16,6 +16,12 @@ export const ALLOWED_DOCUMENT_MIME = new Set([
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'text/plain',
   'text/csv',
+  // Adobe design files
+  'application/postscript',        // .eps and .ai (most common MIME from OS/browser)
+  'application/illustrator',       // .ai — Adobe Illustrator
+  'application/vnd.adobe.illustrator', // .ai — alternative
+  'image/x-eps',                   // .eps — alternative
+  'image/eps',                     // .eps — alternative
 ]);
 
 // ─── List media ───────────────────────────────────────────────────────────────

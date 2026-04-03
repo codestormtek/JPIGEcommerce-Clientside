@@ -44,6 +44,12 @@ const ALLOWED_DOC_MIME = new Set([
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'text/plain',
   'text/csv',
+  // Adobe design files
+  'application/postscript',
+  'application/illustrator',
+  'application/vnd.adobe.illustrator',
+  'image/x-eps',
+  'image/eps',
 ]);
 const ALLOWED_UPLOAD_TYPES = new Set([...ALLOWED_IMAGE_MIME, ...ALLOWED_VIDEO_MIME, ...ALLOWED_DOC_MIME]);
 
@@ -53,12 +59,25 @@ function detectMediaType(mimeType: string): 'image' | 'video' | 'document' {
   return 'document';
 }
 
+// Extensions whose MIME type some OS/browsers report as application/octet-stream
+const DESIGN_EXT_FALLBACK = new Map<string, string>([
+  ['eps', 'application/postscript'],
+  ['ai',  'application/illustrator'],
+  ['ps',  'application/postscript'],
+]);
+
 /**
  * Save an uploaded file under the chosen folder and create a MediaAsset record.
  * Accepts any folder slug — system or user-created.
  */
 export async function uploadMediaFile(file: Express.Multer.File, folderSlug: string = 'media') {
-  if (!ALLOWED_UPLOAD_TYPES.has(file.mimetype)) {
+  // Resolve MIME for design files that some OS/browsers send as octet-stream
+  const rawExt = path.extname(file.originalname).replace('.', '').toLowerCase();
+  const resolvedMime = (file.mimetype === 'application/octet-stream' && DESIGN_EXT_FALLBACK.has(rawExt))
+    ? DESIGN_EXT_FALLBACK.get(rawExt)!
+    : file.mimetype;
+
+  if (!ALLOWED_UPLOAD_TYPES.has(resolvedMime)) {
     throw ApiError.badRequest(`File type "${file.mimetype}" is not allowed.`);
   }
   const ext = path.extname(file.originalname) || '.bin';
@@ -66,14 +85,14 @@ export async function uploadMediaFile(file: Express.Multer.File, folderSlug: str
   const storageKey = `${folderSlug}/${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${randomUUID()}${ext}`;
   await saveFile(storageKey, file.buffer);
   const url = getPublicUrl(storageKey);
-  const mediaType = detectMediaType(file.mimetype);
+  const mediaType = detectMediaType(resolvedMime);
   return repo.createMedia({
     url,
     altText: file.originalname,
     mediaType,
     folder: folderSlug,
     metadata: {
-      mimeType: file.mimetype,
+      mimeType: resolvedMime,
       fileSizeBytes: file.size,
     },
   });

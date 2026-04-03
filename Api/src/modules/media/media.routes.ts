@@ -9,17 +9,23 @@ import * as ctrl from './media.controller';
 
 export const mediaRouter = Router();
 
-const ALLOWED_MIME = [
+const ALLOWED_MIME = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp',
   'video/mp4', 'video/webm',
   ...ALLOWED_DOCUMENT_MIME,
-];
+]);
+
+// Extensions whose MIME type some OS/browsers report as application/octet-stream
+const ALLOWED_EXT_FALLBACK = new Set(['eps', 'ai', 'ps']);
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB for documents
   fileFilter: (_req, file, cb) => {
-    cb(null, ALLOWED_MIME.includes(file.mimetype));
+    if (ALLOWED_MIME.has(file.mimetype)) return cb(null, true);
+    // Allow known design-file extensions even when the OS sends octet-stream
+    const ext = (file.originalname.split('.').pop() || '').toLowerCase();
+    cb(null, ALLOWED_EXT_FALLBACK.has(ext));
   },
 });
 

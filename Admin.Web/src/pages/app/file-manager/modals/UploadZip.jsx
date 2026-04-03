@@ -7,6 +7,35 @@ import { useFileManager, useFileManagerUpdate } from "../components/Context";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
+// Extension → MIME type map for types where browsers often fall back to
+// application/octet-stream (Adobe files, etc.)
+const EXT_MIME_MAP = {
+  eps:  "application/postscript",
+  ai:   "application/illustrator",
+  ps:   "application/postscript",
+  pdf:  "application/pdf",
+  doc:  "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls:  "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ppt:  "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  csv:  "text/csv",
+  txt:  "text/plain",
+  jpg:  "image/jpeg",
+  jpeg: "image/jpeg",
+  png:  "image/png",
+  gif:  "image/gif",
+  webp: "image/webp",
+  mp4:  "video/mp4",
+  webm: "video/webm",
+};
+
+function mimeForFilename(name) {
+  const ext = name.split(".").pop()?.toLowerCase() || "";
+  return EXT_MIME_MAP[ext] || "application/octet-stream";
+}
+
 function toSlug(str) {
   return str
     .toLowerCase()
@@ -239,8 +268,9 @@ const UploadZip = ({ toggle }) => {
         setProgress({ done, total, current: `Uploading: ${file.name}` });
 
         const buffer = await file.zipEntry.async("arraybuffer");
-        const blob = new Blob([buffer]);
-        const fileObj = new File([blob], file.name);
+        const mime = mimeForFilename(file.name);
+        const blob = new Blob([buffer], { type: mime });
+        const fileObj = new File([blob], file.name, { type: mime });
         await fileManagerUpdate.uploadFile(fileObj, folderSlug);
         done++;
         setProgress({ done, total, current: `Uploaded: ${file.name}` });
