@@ -34,6 +34,7 @@
     "html-react-parser": "^5.2.5",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
+    "jszip": "^3.10.1",
     "nouislider-react": "^3.4.2",
     "quill": "^2.0.3",
     "rc-tree": "^5.13.1",

@@ -5,6 +5,7 @@ import ViewFilter, {options as viewOptions} from './ViewFilter';
 import Files from './Files';
 
 import Upload from "../modals/Upload";
+import UploadZip from "../modals/UploadZip";
 import CreateFolder from "../modals/CreateFolder";
 import CreateDocument from "../modals/CreateDocument";
 
@@ -19,6 +20,7 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
 
     const [createModal, setCreateModal] = useState(false);
     const [uploadModal, setUploadModal] = useState(false);
+    const [zipModal, setZipModal] = useState(false);
     const [docModal, setDocModal] = useState(false);
 
     const [search, setSearch] = useState(false);
@@ -84,6 +86,19 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
                             >
                             <Icon name="upload-cloud"></Icon>
                             <span>Upload File</span>
+                            </DropdownItem>
+                        </li>
+                        <li>
+                            <DropdownItem
+                            tag="a"
+                            href="#upload-zip"
+                            onClick={(ev) => {
+                                ev.preventDefault();
+                                setZipModal(true);
+                            }}
+                            >
+                            <Icon name="file-zip"></Icon>
+                            <span>Import ZIP</span>
                             </DropdownItem>
                         </li>
                         <li>
@@ -210,6 +225,19 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
                                     <li>
                                         <DropdownItem
                                         tag="a"
+                                        href="#upload-zip"
+                                        onClick={(ev) => {
+                                            ev.preventDefault();
+                                            setZipModal(true);
+                                        }}
+                                        >
+                                        <Icon name="file-zip"></Icon>
+                                        <span>Import ZIP</span>
+                                        </DropdownItem>
+                                    </li>
+                                    <li>
+                                        <DropdownItem
+                                        tag="a"
                                         href="#upload"
                                         onClick={(ev) => {
                                             ev.preventDefault();
@@ -285,6 +313,9 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
         </Modal>
         <Modal isOpen={uploadModal} size="md" toggle={toggleUploadModal}>
             <Upload toggle={toggleUploadModal} />
+        </Modal>
+        <Modal isOpen={zipModal} size="md" toggle={() => setZipModal(false)}>
+            <UploadZip toggle={() => setZipModal(false)} />
         </Modal>
         <Modal isOpen={docModal} size="xl" toggle={() => setDocModal(false)}>
             <CreateDocument toggle={() => setDocModal(false)} />
