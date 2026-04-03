@@ -4,6 +4,11 @@ import { useFileManager, useFileManagerUpdate } from "../components/Context";
 import icons from './Icons';
 import { Modal, DropdownItem, DropdownMenu, DropdownToggle, UncontrolledDropdown } from "reactstrap";
 import { Icon } from "@/components/Component";
+import CreateFolder from "../modals/CreateFolder";
+import Details from "../modals/Details";
+import Share from "../modals/Share";
+import Copy from "../modals/Copy";
+import Move from "../modals/Move";
 
 function fmtSize(mb) {
   if (!mb || mb === 0) return '0 KB';
@@ -11,12 +16,6 @@ function fmtSize(mb) {
   if (mb < 1) return `${(mb * 1024).toFixed(1)} KB`;
   return `${mb} MB`;
 }
-
-import CreateFolder from "../modals/CreateFolder";
-import Details from "../modals/Details";
-import Share from "../modals/Share";
-import Copy from "../modals/Copy";
-import Move from "../modals/Move";
 
 const File = ({item, fileView, page}) => {
     const {fileManagerUpdate} = useFileManagerUpdate();
