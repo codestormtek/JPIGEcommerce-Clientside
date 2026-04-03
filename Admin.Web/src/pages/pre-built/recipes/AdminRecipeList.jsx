@@ -181,7 +181,7 @@ const NutritionLabel = ({ data, recipeName }) => {
     ? `About ${servingsPerContainer} serving${servingsPerContainer !== 1 ? "s" : ""} per container`
     : `${servings} serving${servings !== 1 ? "s" : ""} per recipe`;
 
-  const labelStyle = { border: "2px solid #000", padding: "4px 8px", fontFamily: "Arial, Helvetica, sans-serif", maxWidth: 360 };
+  const labelStyle = { border: "2px solid #000", padding: "4px 8px", fontFamily: "Arial, Helvetica, sans-serif", maxWidth: 360, color: "#000", backgroundColor: "#fff" };
   const hrThick = { borderTop: "8px solid #000", margin: "2px 0" };
   const hrMed = { borderTop: "3px solid #000", margin: "2px 0" };
   const hrThin = { borderTop: "1px solid #000", margin: "1px 0" };
@@ -573,32 +573,49 @@ const AdminRecipeList = () => {
     const el = document.getElementById("nutrition-label-print");
     if (!el) return;
     setDownloadingPng(true);
+
+    // Render the label into a clean offscreen div so admin panel CSS
+    // doesn't bleed in (blue text, wrong fonts, etc.)
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = [
+      "position:fixed",
+      "top:-99999px",
+      "left:-99999px",
+      "background:#fff",
+      "padding:12px",
+      "font-family:Arial,Helvetica,sans-serif",
+      "color:#000",
+      "display:inline-block",
+      "line-height:normal",
+    ].join(";");
+    wrapper.innerHTML = el.innerHTML;
+    // Force every child element to black text so admin theme colours can't win
+    wrapper.querySelectorAll("*").forEach((node) => {
+      node.style.color = "#000";
+      node.style.fontFamily = "Arial, Helvetica, sans-serif";
+    });
+    document.body.appendChild(wrapper);
+
     try {
-      // Measure the actual rendered label (first child) to avoid capturing scroll overflow
-      const labelEl = el.firstElementChild || el;
-      const { width, height } = labelEl.getBoundingClientRect();
-      const canvas = await html2canvas(el, {
-        scale: 3,
+      // scrollWidth / scrollHeight gives the FULL rendered size, not just viewport
+      const fullW = wrapper.scrollWidth;
+      const fullH = wrapper.scrollHeight;
+      const SCALE = 4; // 4× = ~288 dpi equivalent, crisp for print
+      const canvas = await html2canvas(wrapper, {
+        scale: SCALE,
         backgroundColor: "#ffffff",
         useCORS: true,
-        width: Math.ceil(width),
-        height: Math.ceil(height),
-        windowWidth: Math.ceil(width),
-        windowHeight: Math.ceil(height),
-        scrollX: 0,
-        scrollY: 0,
+        logging: false,
+        width: fullW,
+        height: fullH,
       });
-      // Crop to exact label size at 3× scale
-      const cropped = document.createElement("canvas");
-      cropped.width = Math.ceil(width) * 3;
-      cropped.height = Math.ceil(height) * 3;
-      cropped.getContext("2d").drawImage(canvas, 0, 0);
       const link = document.createElement("a");
       const recipeName = (form.name || "nutrition-label").replace(/[^a-z0-9]/gi, "-").toLowerCase();
       link.download = `${recipeName}-nutrition-label.png`;
-      link.href = cropped.toDataURL("image/png");
+      link.href = canvas.toDataURL("image/png");
       link.click();
     } finally {
+      document.body.removeChild(wrapper);
       setDownloadingPng(false);
     }
   };
