@@ -75,27 +75,42 @@ function unitToGrams(quantity: number, unit: string): number {
   return qty * factor;
 }
 
+function buildUsdaSearchUrl(query: string, reliableOnly: boolean): string {
+  const url = new URL(`${USDA_BASE}/foods/search`);
+  url.searchParams.set('query', query);
+  url.searchParams.set('pageSize', '10');
+  if (reliableOnly) {
+    url.searchParams.append('dataType', 'Foundation');
+    url.searchParams.append('dataType', 'SR Legacy');
+    url.searchParams.append('dataType', 'Survey (FNDDS)');
+  }
+  url.searchParams.set('api_key', USDA_API_KEY);
+  return url.toString();
+}
+
 async function searchUSDA(query: string): Promise<{ description: string; fdcId: number; nutrients: any[] } | null> {
   if (!USDA_API_KEY) throw ApiError.internal('USDA_API_KEY is not configured');
 
   // First pass: only reliable data types with full nutrient coverage
-  const reliableTypes = 'Foundation,SR%20Legacy,Survey%20(FNDDS)';
-  const reliableUrl = `${USDA_BASE}/foods/search?query=${encodeURIComponent(query)}&pageSize=10&dataType=${reliableTypes}&api_key=${USDA_API_KEY}`;
-  const reliableRes = await fetch(reliableUrl);
-  if (!reliableRes.ok) {
-    throw ApiError.internal(`USDA API error: ${reliableRes.status} ${reliableRes.statusText}`);
+  let foods: any[] = [];
+  try {
+    const reliableRes = await fetch(buildUsdaSearchUrl(query, true));
+    if (reliableRes.ok) {
+      const reliableData = await reliableRes.json() as any;
+      foods = reliableData.foods ?? [];
+    }
+  } catch {
+    // network error on first pass — fall through to second pass
   }
-  const reliableData = await reliableRes.json() as any;
-  let foods: any[] = reliableData.foods ?? [];
 
   // Second pass: fall back to all types if no reliable match found
   if (foods.length === 0) {
-    const fallbackUrl = `${USDA_BASE}/foods/search?query=${encodeURIComponent(query)}&pageSize=10&api_key=${USDA_API_KEY}`;
-    const fallbackRes = await fetch(fallbackUrl);
-    if (fallbackRes.ok) {
-      const fallbackData = await fallbackRes.json() as any;
-      foods = fallbackData.foods ?? [];
+    const fallbackRes = await fetch(buildUsdaSearchUrl(query, false));
+    if (!fallbackRes.ok) {
+      throw ApiError.internal(`USDA API error: ${fallbackRes.status} ${fallbackRes.statusText}`);
     }
+    const fallbackData = await fallbackRes.json() as any;
+    foods = fallbackData.foods ?? [];
   }
 
   if (foods.length === 0) return null;

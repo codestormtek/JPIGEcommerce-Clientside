@@ -566,11 +566,29 @@ const AdminRecipeList = () => {
     if (!el) return;
     setDownloadingPng(true);
     try {
-      const canvas = await html2canvas(el, { scale: 3, backgroundColor: "#ffffff", useCORS: true });
+      // Measure the actual rendered label (first child) to avoid capturing scroll overflow
+      const labelEl = el.firstElementChild || el;
+      const { width, height } = labelEl.getBoundingClientRect();
+      const canvas = await html2canvas(el, {
+        scale: 3,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        width: Math.ceil(width),
+        height: Math.ceil(height),
+        windowWidth: Math.ceil(width),
+        windowHeight: Math.ceil(height),
+        scrollX: 0,
+        scrollY: 0,
+      });
+      // Crop to exact label size at 3× scale
+      const cropped = document.createElement("canvas");
+      cropped.width = Math.ceil(width) * 3;
+      cropped.height = Math.ceil(height) * 3;
+      cropped.getContext("2d").drawImage(canvas, 0, 0);
       const link = document.createElement("a");
       const recipeName = (form.name || "nutrition-label").replace(/[^a-z0-9]/gi, "-").toLowerCase();
       link.download = `${recipeName}-nutrition-label.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = cropped.toDataURL("image/png");
       link.click();
     } finally {
       setDownloadingPng(false);
