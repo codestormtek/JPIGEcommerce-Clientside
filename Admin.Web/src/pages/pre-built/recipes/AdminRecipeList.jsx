@@ -173,6 +173,14 @@ const NutritionLabel = ({ data, recipeName }) => {
     return d ? Math.round(pv(key) / d * 100) : 0;
   };
 
+  // If container size is set, show servings per container; otherwise per recipe
+  const servingsPerContainer = data.containersYielded
+    ? Math.round(servings / data.containersYielded)
+    : null;
+  const servingsLine = servingsPerContainer
+    ? `About ${servingsPerContainer} serving${servingsPerContainer !== 1 ? "s" : ""} per container`
+    : `${servings} serving${servings !== 1 ? "s" : ""} per recipe`;
+
   const labelStyle = { border: "2px solid #000", padding: "4px 8px", fontFamily: "Arial, Helvetica, sans-serif", maxWidth: 360 };
   const hrThick = { borderTop: "8px solid #000", margin: "2px 0" };
   const hrMed = { borderTop: "3px solid #000", margin: "2px 0" };
@@ -185,7 +193,7 @@ const NutritionLabel = ({ data, recipeName }) => {
       <div style={{ fontSize: 11 }}>{recipeName || "Recipe"}</div>
       <div style={hrThick} />
       <div style={{ ...rowStyle, fontSize: 11 }}>
-        <span>{servings} serving{servings > 1 ? "s" : ""} per recipe</span>
+        <span>{servingsLine}</span>
       </div>
       <div style={{ ...rowStyle, fontWeight: 700, fontSize: 14 }}>
         <span>Serving size</span>
