@@ -113,6 +113,7 @@ import AdminCateringAvailability from "@/pages/pre-built/catering/AdminCateringA
 import AdminLiveSessionManager from "@/pages/pre-built/live-sessions/AdminLiveSessionManager";
 import AdminAlertHistory from "@/pages/pre-built/live-sessions/AdminAlertHistory";
 import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
+import AdminPromotionList from "@/pages/pre-built/promotions/AdminPromotionList";
 import AdminReviews from "@/pages/pre-built/reviews/AdminReviews";
 import AdminPaymentMethodList from "@/pages/pre-built/payment-methods/AdminPaymentMethodList";
 import AdminShippingMethods from "@/pages/pre-built/shipping-methods/AdminShippingMethods";
@@ -223,6 +224,7 @@ const Pages = () => {
               <Route path="admin/audit-logs" element={<AdminAuditLogList />}></Route>
               <Route path="media" element={<MediaManager />}></Route>
               <Route path="orders" element={<AdminOrderList />}></Route>
+              <Route path="promotions" element={<AdminPromotionList />}></Route>
               <Route path="reviews" element={<AdminReviews />}></Route>
               <Route path="payment-methods" element={<AdminPaymentMethodList />}></Route>
               <Route path="admin/shipping-methods" element={<AdminShippingMethods />}></Route>
