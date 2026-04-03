@@ -191,6 +191,7 @@ model Product {
   items            ProductItem[]
   categoryMaps     ProductCategoryMap[]
   media            ProductMedia[]
+  documents        ProductDocument[]
   reviews          UserReview[]
   promotionProducts PromotionProduct[]
   menuItemMaps     MenuItemProductMap[]
@@ -298,6 +299,20 @@ model ProductMedia {
   @@map("product_media")
 }
 
+model ProductDocument {
+  id           String     @id @default(uuid())
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id])
+  docType      String     // nutritional_label | barcode | product_label
+  mediaAssetId String
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id])
+  filename     String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([productId, docType])
+  @@map("product_documents")
+}
 
 // ─── Media ────────────────────────────────────────────────────────────────────
 
@@ -316,6 +331,7 @@ model MediaAsset {
 
   metadata           MediaAssetMetadata?
   productMedia       ProductMedia[]
+  productDocuments   ProductDocument[]
   menuItems          MenuItem[]
   contentPosts       ContentPost[]
   contentPostMedia   ContentPostMedia[]

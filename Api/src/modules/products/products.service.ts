@@ -13,7 +13,7 @@ import {
 } from './products.schema';
 import * as repo from './products.repository';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
-import { uploadMediaFile } from '../media/media.service';
+import { uploadMediaFile, deleteMedia } from '../media/media.service';
 
 // ─── Products ─────────────────────────────────────────────────────────────────
 
@@ -170,5 +170,43 @@ export async function uploadProductImage(productId: string, file: Express.Multer
 export async function removeProductImage(productId: string, mediaAssetId: string): Promise<void> {
   await getProductById(productId);
   await repo.deleteProductMedia(productId, mediaAssetId);
+}
+
+// ─── ProductDocuments ─────────────────────────────────────────────────────────
+
+const VALID_DOC_TYPES = ['nutritional_label', 'barcode', 'product_label'];
+
+export async function getProductDocuments(productId: string) {
+  await getProductById(productId);
+  return repo.getProductDocuments(productId);
+}
+
+export async function uploadProductDocument(
+  productId: string,
+  docType: string,
+  file: Express.Multer.File,
+) {
+  if (!VALID_DOC_TYPES.includes(docType)) {
+    throw new ApiError(400, `Invalid docType. Must be one of: ${VALID_DOC_TYPES.join(', ')}`);
+  }
+  await getProductById(productId);
+
+  // Delete old media asset if one exists for this slot
+  const oldAssetId = await repo.deleteProductDocument(productId, docType);
+  if (oldAssetId) {
+    try { await deleteMedia(oldAssetId); } catch {}
+  }
+
+  const asset = await uploadMediaFile(file, 'product-docs');
+  const doc = await repo.upsertProductDocument(productId, docType, asset.id, file.originalname);
+  return doc;
+}
+
+export async function removeProductDocument(productId: string, docType: string): Promise<void> {
+  await getProductById(productId);
+  const assetId = await repo.deleteProductDocument(productId, docType);
+  if (assetId) {
+    try { await deleteMedia(assetId); } catch {}
+  }
 }
 

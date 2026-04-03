@@ -78,6 +78,12 @@ const AdminProductList = () => {
   const [imageSaving, setImageSaving] = useState(false);
   const [imageError, setImageError] = useState(null);
 
+  // Documents tab (nutritional_label | barcode | product_label)
+  const [productDocs, setProductDocs] = useState({});
+  const [docFiles, setDocFiles] = useState({});
+  const [docSaving, setDocSaving] = useState({});
+  const [docError, setDocError] = useState(null);
+
   // Add modal
   const [addModal, setAddModal] = useState(false);
   const [addForm, setAddForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [] });
@@ -204,6 +210,10 @@ const AdminProductList = () => {
     setSkuItems([]);
     setAttrItems(product.attributes ?? []);
     setProductImages(product.media ?? []);
+    setProductDocs({});
+    setDocFiles({});
+    setDocSaving({});
+    setDocError(null);
     setSkuLoading(true);
     setEditModal(true);
     try {
@@ -215,6 +225,15 @@ const AdminProductList = () => {
       setSkuItems([]);
     } finally {
       setSkuLoading(false);
+    }
+    try {
+      const docsRes = await apiGet(`/products/${product.id}/documents`);
+      const docsArr = Array.isArray(docsRes) ? docsRes : (docsRes?.data ?? []);
+      const docsMap = {};
+      docsArr.forEach((d) => { docsMap[d.docType] = d; });
+      setProductDocs(docsMap);
+    } catch (e) {
+      console.error("Failed to load product documents:", e);
     }
   };
 
@@ -404,6 +423,43 @@ const AdminProductList = () => {
       await apiDelete(`/products/${editProduct.id}/image/${mediaAssetId}`);
       setProductImages((prev) => prev.filter((m) => m.mediaAssetId !== mediaAssetId));
     } catch (e) { setImageError(e.message); }
+  };
+
+  // ─── Document tab handlers ───────────────────────────────────────────────────
+
+  const onDropDoc = (docType, acceptedFiles) => {
+    const file = acceptedFiles?.[0];
+    if (!file) return;
+    setDocFiles((prev) => ({ ...prev, [docType]: file }));
+  };
+
+  const uploadDoc = async (docType) => {
+    const file = docFiles[docType];
+    if (!file) return;
+    setDocSaving((prev) => ({ ...prev, [docType]: true }));
+    setDocError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const result = await apiUpload(`/products/${editProduct.id}/documents/${docType}`, fd);
+      const doc = result?.data ?? result;
+      setProductDocs((prev) => ({ ...prev, [docType]: doc }));
+      setDocFiles((prev) => { const n = { ...prev }; delete n[docType]; return n; });
+    } catch (e) {
+      setDocError(e.message);
+    } finally {
+      setDocSaving((prev) => ({ ...prev, [docType]: false }));
+    }
+  };
+
+  const removeDoc = async (docType) => {
+    setDocError(null);
+    try {
+      await apiDelete(`/products/${editProduct.id}/documents/${docType}`);
+      setProductDocs((prev) => { const n = { ...prev }; delete n[docType]; return n; });
+    } catch (e) {
+      setDocError(e.message);
+    }
   };
 
   const openAddModal = () => {
@@ -819,10 +875,10 @@ const AdminProductList = () => {
             <div className="p-2">
               <h5 className="title">Edit Product — <span className="text-soft">{editProduct?.name}</span></h5>
               <Nav tabs className="mt-3">
-                {["basic","skus","attributes","image"].map((tab) => (
+                {["basic","skus","attributes","image","nutritional","barcode","product-label"].map((tab) => (
                   <NavItem key={tab}>
                     <NavLink className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)} style={{ cursor: "pointer", textTransform: "capitalize" }}>
-                      {tab === "skus" ? "SKUs / Items" : tab === "basic" ? "Basic Info" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      {tab === "skus" ? "SKUs / Items" : tab === "basic" ? "Basic Info" : tab === "nutritional" ? "Nutritional Label" : tab === "barcode" ? "Bar Code" : tab === "product-label" ? "Product Label" : tab.charAt(0).toUpperCase() + tab.slice(1)}
                     </NavLink>
                   </NavItem>
                 ))}
@@ -1056,6 +1112,68 @@ const AdminProductList = () => {
                     </div>
                   )}
                 </TabPane>
+
+                {/* ── Nutritional Label / Bar Code / Product Label ── */}
+                {[
+                  { tabId: "nutritional", docType: "nutritional_label", label: "Nutritional Label" },
+                  { tabId: "barcode",     docType: "barcode",           label: "Bar Code" },
+                  { tabId: "product-label", docType: "product_label",   label: "Product Label" },
+                ].map(({ tabId, docType, label }) => {
+                  const existing = productDocs[docType] ?? null;
+                  const pendingFile = docFiles[docType] ?? null;
+                  const saving = docSaving[docType] ?? false;
+                  return (
+                    <TabPane key={tabId} tabId={tabId}>
+                      {docError && <div className="alert alert-danger">{docError}</div>}
+                      <p className="text-soft mb-3">Upload a {label} file for this product. Accepted: PDF, images, Word documents. Uploading a new file replaces the existing one.</p>
+
+                      {/* Existing file */}
+                      {existing && (
+                        <div className="d-flex align-items-center gap-3 p-3 mb-4" style={{ background: "#f8f9fc", borderRadius: 8, border: "1px solid #e5e9f2" }}>
+                          <em className="icon ni ni-file-pdf" style={{ fontSize: 32, color: "#6576ff" }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p className="fw-medium mb-0" style={{ wordBreak: "break-all" }}>{existing.filename}</p>
+                            <a href={existing.mediaAsset?.url} target="_blank" rel="noopener noreferrer" className="text-primary small">Download / View</a>
+                          </div>
+                          <Button color="danger" size="sm" outline onClick={() => removeDoc(docType)}>Remove</Button>
+                        </div>
+                      )}
+                      {!existing && <p className="text-muted mb-3">No {label} uploaded yet.</p>}
+
+                      <hr />
+                      <div className="form-group mt-3">
+                        <label className="form-label">{existing ? "Replace" : "Upload"} {label}</label>
+                        <Dropzone onDrop={(files) => onDropDoc(docType, files)} maxFiles={1} accept={{ "application/pdf": [".pdf"], "image/*": [".jpg", ".jpeg", ".png", ".gif", ".webp"], "application/msword": [".doc"], "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"] }}>
+                          {({ getRootProps, getInputProps }) => (
+                            <section>
+                              <div {...getRootProps()} className="dropzone upload-zone dz-clickable">
+                                <input {...getInputProps()} />
+                                {!pendingFile ? (
+                                  <div className="dz-message">
+                                    <span className="dz-message-text">Drag and drop file</span>
+                                    <span className="dz-message-or">or</span>
+                                    <Button color="primary" type="button">SELECT FILE</Button>
+                                  </div>
+                                ) : (
+                                  <div className="dz-preview dz-processing dz-complete" style={{ padding: 16 }}>
+                                    <em className="icon ni ni-file" style={{ fontSize: 28, display: "block", marginBottom: 4 }} />
+                                    <span>{pendingFile.name}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </section>
+                          )}
+                        </Dropzone>
+                      </div>
+                      {pendingFile && (
+                        <div className="mt-2 d-flex gap-2 align-items-center">
+                          <Button color="primary" onClick={() => uploadDoc(docType)} disabled={saving}>{saving ? <Spinner size="sm" /> : `Upload ${label}`}</Button>
+                          <Button color="light" size="sm" onClick={() => setDocFiles((p) => { const n = { ...p }; delete n[docType]; return n; })}>Clear</Button>
+                        </div>
+                      )}
+                    </TabPane>
+                  );
+                })}
               </TabContent>
               {editError && <div className="alert alert-danger mt-3">{editError}</div>}
               {activeTab === "basic" && (

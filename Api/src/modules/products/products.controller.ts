@@ -113,6 +113,31 @@ export async function deleteProductImage(req: AuthRequest, res: Response): Promi
   sendNoContent(res);
 }
 
+// ─── ProductDocuments ─────────────────────────────────────────────────────────
+
+export async function listProductDocuments(req: Request, res: Response): Promise<void> {
+  const docs = await service.getProductDocuments(req.params['id'] as string);
+  sendSuccess(res, docs);
+}
+
+export async function uploadProductDocument(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.file) throw new Error('No file attached');
+  const doc = await service.uploadProductDocument(
+    req.params['id'] as string,
+    req.params['docType'] as string,
+    req.file,
+  );
+  sendCreated(res, doc, 'Document uploaded');
+}
+
+export async function deleteProductDocument(req: AuthRequest, res: Response): Promise<void> {
+  await service.removeProductDocument(
+    req.params['id'] as string,
+    req.params['docType'] as string,
+  );
+  sendNoContent(res);
+}
+
 // ─── Brands ───────────────────────────────────────────────────────────────────
 
 export async function listBrands(_req: Request, res: Response): Promise<void> {

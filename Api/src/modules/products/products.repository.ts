@@ -239,3 +239,38 @@ export async function deleteProductMedia(productId: string, mediaAssetId: string
   await prisma.mediaAsset.delete({ where: { id: mediaAssetId } });
 }
 
+// ─── ProductDocuments ─────────────────────────────────────────────────────────
+
+export async function getProductDocuments(productId: string) {
+  return prisma.productDocument.findMany({
+    where: { productId },
+    include: { mediaAsset: true },
+    orderBy: { docType: 'asc' },
+  });
+}
+
+export async function upsertProductDocument(
+  productId: string,
+  docType: string,
+  mediaAssetId: string,
+  filename: string,
+) {
+  return prisma.productDocument.upsert({
+    where: { productId_docType: { productId, docType } },
+    create: { productId, docType, mediaAssetId, filename },
+    update: { mediaAssetId, filename, updatedAt: new Date() },
+    include: { mediaAsset: true },
+  });
+}
+
+export async function deleteProductDocument(productId: string, docType: string): Promise<string | null> {
+  const existing = await prisma.productDocument.findUnique({
+    where: { productId_docType: { productId, docType } },
+  });
+  if (!existing) return null;
+  await prisma.productDocument.delete({
+    where: { productId_docType: { productId, docType } },
+  });
+  return existing.mediaAssetId;
+}
+

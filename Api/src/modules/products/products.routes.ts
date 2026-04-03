@@ -27,6 +27,11 @@ const upload = multer({
   },
 });
 
+const uploadDoc = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB for documents
+});
+
 export const productsRouter = Router();
 
 // ─── Brands (static prefix — must be before /:id) ────────────────────────────
@@ -95,4 +100,15 @@ productsRouter.post('/:id/image', authenticate, authorize('admin'), upload.singl
 
 // DELETE /api/v1/products/:id/image/:mediaAssetId
 productsRouter.delete('/:id/image/:mediaAssetId', authenticate, authorize('admin'), asyncHandler(ctrl.deleteProductImage));
+
+// ─── ProductDocuments (admin) ─────────────────────────────────────────────────
+
+// GET    /api/v1/products/:id/documents
+productsRouter.get('/:id/documents', authenticate, authorize('admin'), asyncHandler(ctrl.listProductDocuments));
+
+// POST   /api/v1/products/:id/documents/:docType
+productsRouter.post('/:id/documents/:docType', authenticate, authorize('admin'), uploadDoc.single('file'), asyncHandler(ctrl.uploadProductDocument));
+
+// DELETE /api/v1/products/:id/documents/:docType
+productsRouter.delete('/:id/documents/:docType', authenticate, authorize('admin'), asyncHandler(ctrl.deleteProductDocument));
 
