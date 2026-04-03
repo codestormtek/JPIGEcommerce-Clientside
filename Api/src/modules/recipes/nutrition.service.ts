@@ -78,18 +78,31 @@ function unitToGrams(quantity: number, unit: string): number {
 async function searchUSDA(query: string): Promise<{ description: string; fdcId: number; nutrients: any[] } | null> {
   if (!USDA_API_KEY) throw ApiError.internal('USDA_API_KEY is not configured');
 
-  const url = `${USDA_BASE}/foods/search?query=${encodeURIComponent(query)}&pageSize=5&api_key=${USDA_API_KEY}`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw ApiError.internal(`USDA API error: ${response.status} ${response.statusText}`);
+  // First pass: only reliable data types with full nutrient coverage
+  const reliableTypes = 'Foundation,SR%20Legacy,Survey%20(FNDDS)';
+  const reliableUrl = `${USDA_BASE}/foods/search?query=${encodeURIComponent(query)}&pageSize=10&dataType=${reliableTypes}&api_key=${USDA_API_KEY}`;
+  const reliableRes = await fetch(reliableUrl);
+  if (!reliableRes.ok) {
+    throw ApiError.internal(`USDA API error: ${reliableRes.status} ${reliableRes.statusText}`);
+  }
+  const reliableData = await reliableRes.json() as any;
+  let foods: any[] = reliableData.foods ?? [];
+
+  // Second pass: fall back to all types if no reliable match found
+  if (foods.length === 0) {
+    const fallbackUrl = `${USDA_BASE}/foods/search?query=${encodeURIComponent(query)}&pageSize=10&api_key=${USDA_API_KEY}`;
+    const fallbackRes = await fetch(fallbackUrl);
+    if (fallbackRes.ok) {
+      const fallbackData = await fallbackRes.json() as any;
+      foods = fallbackData.foods ?? [];
+    }
   }
 
-  const data = await response.json() as any;
-  const foods = data.foods ?? [];
   if (foods.length === 0) return null;
 
+  // Prefer Survey/SR Legacy/Foundation over Branded
   const preferred = foods.find((f: any) =>
-    f.dataType === 'Survey (FNDDS)' || f.dataType === 'SR Legacy'
+    f.dataType === 'Survey (FNDDS)' || f.dataType === 'SR Legacy' || f.dataType === 'Foundation'
   );
   const best = preferred || foods[0];
 
