@@ -3,6 +3,7 @@ import { AuthRequest } from '../../types';
 import { sendSuccess, sendCreated, sendNoContent, sendPaginated } from '../../utils/apiResponse';
 import { ListMediaInput, CreateMediaInput, UpdateMediaInput, CreateFolderInput, UpdateFolderInput } from './media.schema';
 import * as service from './media.service';
+import { ApiError } from '../../utils/apiError';
 
 // GET /api/v1/media
 export async function listMedia(req: Request, res: Response): Promise<void> {
@@ -36,7 +37,7 @@ export async function deleteMedia(req: Request, res: Response): Promise<void> {
 
 // POST /api/v1/media/upload
 export async function uploadMedia(req: AuthRequest, res: Response): Promise<void> {
-  if (!req.file) throw new Error('No file attached');
+  if (!req.file) throw ApiError.badRequest('File type not allowed or no file attached.');
   const folder = (req.body?.folder as string) || 'media';
   const asset = await service.uploadMediaFile(req.file, folder);
   sendCreated(res, asset, 'Media uploaded');

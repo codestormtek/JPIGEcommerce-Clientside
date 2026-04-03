@@ -16,7 +16,7 @@ const ALLOWED_MIME = new Set([
 ]);
 
 // Extensions whose MIME type some OS/browsers report as application/octet-stream
-const ALLOWED_EXT_FALLBACK = new Set(['eps', 'ai', 'ps']);
+const ALLOWED_EXT_FALLBACK = new Set(['eps', 'ai', 'ps', 'zip']);
 
 const upload = multer({
   storage: multer.memoryStorage(),

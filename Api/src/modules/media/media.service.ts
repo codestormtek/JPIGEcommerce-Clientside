@@ -50,6 +50,10 @@ const ALLOWED_DOC_MIME = new Set([
   'application/vnd.adobe.illustrator',
   'image/x-eps',
   'image/eps',
+  // Archives
+  'application/zip',
+  'application/x-zip-compressed',
+  'application/x-zip',
 ]);
 const ALLOWED_UPLOAD_TYPES = new Set([...ALLOWED_IMAGE_MIME, ...ALLOWED_VIDEO_MIME, ...ALLOWED_DOC_MIME]);
 
@@ -64,6 +68,7 @@ const DESIGN_EXT_FALLBACK = new Map<string, string>([
   ['eps', 'application/postscript'],
   ['ai',  'application/illustrator'],
   ['ps',  'application/postscript'],
+  ['zip', 'application/zip'],
 ]);
 
 /**

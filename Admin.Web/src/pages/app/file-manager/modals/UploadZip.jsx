@@ -29,6 +29,9 @@ const EXT_MIME_MAP = {
   webp: "image/webp",
   mp4:  "video/mp4",
   webm: "video/webm",
+  zip:  "application/zip",
+  rar:  "application/x-rar-compressed",
+  "7z": "application/x-7z-compressed",
 };
 
 function mimeForFilename(name) {

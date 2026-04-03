@@ -22,6 +22,10 @@ export const ALLOWED_DOCUMENT_MIME = new Set([
   'application/vnd.adobe.illustrator', // .ai — alternative
   'image/x-eps',                   // .eps — alternative
   'image/eps',                     // .eps — alternative
+  // Archives
+  'application/zip',               // .zip (standard)
+  'application/x-zip-compressed',  // .zip (Windows)
+  'application/x-zip',             // .zip (alternative)
 ]);
 
 // ─── List media ───────────────────────────────────────────────────────────────
