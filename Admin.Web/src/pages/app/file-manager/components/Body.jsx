@@ -1,4 +1,4 @@
-import React, {useState, useLayoutEffect, useEffect} from 'react'
+import React, {useState, useLayoutEffect, useEffect, useCallback, useRef} from 'react'
 import { useLocation } from 'react-router-dom';
 
 import ViewFilter, {options as viewOptions} from './ViewFilter';
@@ -6,6 +6,7 @@ import Files from './Files';
 
 import Upload from "../modals/Upload";
 import UploadZip from "../modals/UploadZip";
+import UploadFolder from "../modals/UploadFolder";
 import CreateFolder from "../modals/CreateFolder";
 import CreateDocument from "../modals/CreateDocument";
 
@@ -22,6 +23,10 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
     const [uploadModal, setUploadModal] = useState(false);
     const [zipModal, setZipModal] = useState(false);
     const [docModal, setDocModal] = useState(false);
+    const [folderModal, setFolderModal] = useState(false);
+    const [droppedEntries, setDroppedEntries] = useState([]);
+    const [isDragOver, setIsDragOver] = useState(false);
+    const dragCounter = useRef(0);
 
     const [search, setSearch] = useState(false);
     const location = useLocation();
@@ -36,6 +41,42 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
     const toggleUploadModal = () => {
       setUploadModal(!uploadModal);
     };
+
+    // Drag-and-drop folder upload handlers
+    const onDragEnter = useCallback((e) => {
+        e.preventDefault();
+        dragCounter.current += 1;
+        if (dragCounter.current === 1) setIsDragOver(true);
+    }, []);
+
+    const onDragLeave = useCallback((e) => {
+        e.preventDefault();
+        dragCounter.current -= 1;
+        if (dragCounter.current === 0) setIsDragOver(false);
+    }, []);
+
+    const onDragOver = useCallback((e) => {
+        e.preventDefault();
+    }, []);
+
+    const onDrop = useCallback((e) => {
+        e.preventDefault();
+        dragCounter.current = 0;
+        setIsDragOver(false);
+
+        // Collect FileSystemEntry objects synchronously (they expire after the event)
+        const entries = [];
+        if (e.dataTransfer.items) {
+            for (let i = 0; i < e.dataTransfer.items.length; i++) {
+                const entry = e.dataTransfer.items[i].webkitGetAsEntry?.();
+                if (entry) entries.push(entry);
+            }
+        }
+        if (entries.length > 0) {
+            setDroppedEntries(entries);
+            setFolderModal(true);
+        }
+    }, []);
 
     useLayoutEffect(() => {
         fileManagerUpdate.search('')
@@ -104,6 +145,32 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
                         <li>
                             <DropdownItem
                             tag="a"
+                            href="#upload-folder"
+                            onClick={(ev) => {
+                                ev.preventDefault();
+                                const input = document.createElement("input");
+                                input.type = "file";
+                                input.webkitdirectory = true;
+                                input.multiple = true;
+                                input.onchange = () => {
+                                    const fileList = Array.from(input.files || []);
+                                    if (!fileList.length) return;
+                                    // Convert File list to synthetic entries via DataTransfer
+                                    // Build folder/file lists directly from webkitRelativePath
+                                    const syntheticEntries = [{ _fileList: fileList, _isVirtual: true }];
+                                    setDroppedEntries(syntheticEntries);
+                                    setFolderModal(true);
+                                };
+                                input.click();
+                            }}
+                            >
+                            <Icon name="folder-plus"></Icon>
+                            <span>Upload Folder</span>
+                            </DropdownItem>
+                        </li>
+                        <li>
+                            <DropdownItem
+                            tag="a"
                             href="#upload"
                             onClick={(ev) => {
                                 ev.preventDefault();
@@ -131,7 +198,34 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
             </ul>
         </div>
         </div>}
-        <div className="nk-fmg-body-content">
+        <div
+            className="nk-fmg-body-content"
+            style={{ position: "relative" }}
+            onDragEnter={onDragEnter}
+            onDragLeave={onDragLeave}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+        >
+            {/* Drag-over overlay */}
+            {isDragOver && (
+                <div
+                    style={{
+                        position: "absolute", inset: 0, zIndex: 50,
+                        background: "rgba(255,255,255,0.88)",
+                        border: "2px dashed #6576ff",
+                        borderRadius: 8,
+                        display: "flex", flexDirection: "column",
+                        alignItems: "center", justifyContent: "center",
+                        pointerEvents: "none",
+                    }}
+                >
+                    <em className="icon ni ni-folder-plus" style={{ fontSize: 48, color: "#6576ff" }} />
+                    <p className="mt-2 fw-medium text-primary mb-0">
+                        Drop folder{fileManager.currentFolder ? ` into "${fileManager.currentFolder.name}"` : " here"}
+                    </p>
+                    <p className="small text-muted">Sub-folders and files will be uploaded automatically</p>
+                </div>
+            )}
             <BlockHead size="sm">
                 <BlockBetween className="position-relative">
                     <BlockHeadContent>
@@ -238,6 +332,29 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
                                     <li>
                                         <DropdownItem
                                         tag="a"
+                                        href="#upload-folder"
+                                        onClick={(ev) => {
+                                            ev.preventDefault();
+                                            const input = document.createElement("input");
+                                            input.type = "file";
+                                            input.webkitdirectory = true;
+                                            input.multiple = true;
+                                            input.onchange = () => {
+                                                const fileList = Array.from(input.files || []);
+                                                if (!fileList.length) return;
+                                                setDroppedEntries([{ _fileList: fileList, _isVirtual: true }]);
+                                                setFolderModal(true);
+                                            };
+                                            input.click();
+                                        }}
+                                        >
+                                        <Icon name="folder-plus"></Icon>
+                                        <span>Upload Folder</span>
+                                        </DropdownItem>
+                                    </li>
+                                    <li>
+                                        <DropdownItem
+                                        tag="a"
                                         href="#upload"
                                         onClick={(ev) => {
                                             ev.preventDefault();
@@ -319,6 +436,12 @@ const FilesBody = ({searchBar, title, viewFilter, recoveryFilter, ...props}) => 
         </Modal>
         <Modal isOpen={docModal} size="xl" toggle={() => setDocModal(false)}>
             <CreateDocument toggle={() => setDocModal(false)} />
+        </Modal>
+        <Modal isOpen={folderModal} size="md" toggle={() => setFolderModal(false)}>
+            <UploadFolder
+                entries={droppedEntries}
+                toggle={() => setFolderModal(false)}
+            />
         </Modal>
     </>
   )
