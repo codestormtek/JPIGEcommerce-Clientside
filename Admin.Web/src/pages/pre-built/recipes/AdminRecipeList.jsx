@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import html2canvas from "html2canvas";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DndContext, closestCenter, useSensors, useSensor, PointerSensor, KeyboardSensor } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -557,6 +558,23 @@ const AdminRecipeList = () => {
     w.document.close();
     w.focus();
     w.print();
+  };
+
+  const [downloadingPng, setDownloadingPng] = useState(false);
+  const downloadLabelPng = async () => {
+    const el = document.getElementById("nutrition-label-print");
+    if (!el) return;
+    setDownloadingPng(true);
+    try {
+      const canvas = await html2canvas(el, { scale: 3, backgroundColor: "#ffffff", useCORS: true });
+      const link = document.createElement("a");
+      const recipeName = (form.name || "nutrition-label").replace(/[^a-z0-9]/gi, "-").toLowerCase();
+      link.download = `${recipeName}-nutrition-label.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } finally {
+      setDownloadingPng(false);
+    }
   };
 
   const printRecipe = () => {
@@ -1259,6 +1277,9 @@ const AdminRecipeList = () => {
                     <div className="d-flex gap-2">
                       <Button color="warning" size="sm" onClick={analyzeRecipeNutrition} disabled={analyzing}>
                         {analyzing ? <Spinner size="sm" /> : <><Icon name="reload" /><span>Re-analyze</span></>}
+                      </Button>
+                      <Button color="success" size="sm" onClick={downloadLabelPng} disabled={downloadingPng}>
+                        {downloadingPng ? <Spinner size="sm" /> : <><Icon name="download" /><span>Download PNG</span></>}
                       </Button>
                       <Button color="primary" size="sm" onClick={printNutritionLabel}>
                         <Icon name="printer" /><span>Print Label</span>
