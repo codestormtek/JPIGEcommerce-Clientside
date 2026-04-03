@@ -150,7 +150,31 @@ export async function softDeleteMedia(id: string) {
 // ─── Folder CRUD ──────────────────────────────────────────────────────────────
 
 export async function listFolders() {
-  return prisma.mediaFolder.findMany({ orderBy: [{ parentSlug: 'asc' }, { name: 'asc' }] });
+  const folders = await prisma.mediaFolder.findMany({
+    orderBy: [{ parentSlug: 'asc' }, { name: 'asc' }],
+  });
+
+  // Aggregate total file size + count per folder slug in one query
+  const rows = await prisma.$queryRaw<{ folder: string; totalBytes: bigint; fileCount: bigint }[]>`
+    SELECT
+      ma.folder,
+      COALESCE(SUM(mam."fileSizeBytes"), 0) AS "totalBytes",
+      COUNT(ma.id)                          AS "fileCount"
+    FROM "public"."media_assets" ma
+    LEFT JOIN "public"."media_asset_metadata" mam ON mam."mediaAssetId" = ma.id
+    WHERE ma."isDeleted" = false AND ma.folder IS NOT NULL
+    GROUP BY ma.folder
+  `;
+
+  const sizeMap = new Map(
+    rows.map(r => [r.folder, { totalSizeBytes: Number(r.totalBytes), fileCount: Number(r.fileCount) }]),
+  );
+
+  return folders.map(f => ({
+    ...f,
+    totalSizeBytes: sizeMap.get(f.slug)?.totalSizeBytes ?? 0,
+    fileCount:      sizeMap.get(f.slug)?.fileCount      ?? 0,
+  }));
 }
 
 export async function findFolderBySlug(slug: string) {

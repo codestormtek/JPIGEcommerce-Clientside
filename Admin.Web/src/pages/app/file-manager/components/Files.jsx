@@ -5,6 +5,13 @@ import icons from './Icons';
 import { Modal, DropdownItem, DropdownMenu, DropdownToggle, UncontrolledDropdown } from "reactstrap";
 import { Icon } from "@/components/Component";
 
+function fmtSize(mb) {
+  if (!mb || mb === 0) return '0 KB';
+  if (mb < 0.01) return `${Math.round(mb * 1024)} KB`;
+  if (mb < 1) return `${(mb * 1024).toFixed(1)} KB`;
+  return `${mb} MB`;
+}
+
 import CreateFolder from "../modals/CreateFolder";
 import Details from "../modals/Details";
 import Share from "../modals/Share";
@@ -82,7 +89,7 @@ const File = ({item, fileView, page}) => {
                     </div>
                     {(fileView === 'group' || fileView === 'grid') && <ul className="nk-file-desc">
                         <li className="date">{item.date}</li>
-                        <li className="size">{item.size} MB</li>
+                        <li className="size">{fmtSize(item.size)}</li>
                         {(item.access && fileView === 'group') && <li className="members">{item.access.length} Members</li>}
                     </ul>}
                 </div>

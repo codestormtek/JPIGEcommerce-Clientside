@@ -63,13 +63,17 @@ function assetToFile(asset) {
 }
 
 function folderToFile(folder) {
+  const bytes = folder.totalSizeBytes ?? 0;
+  const sizeMB = parseFloat((bytes / 1024 / 1024).toFixed(2));
   return {
     id: folder.id,
     name: folder.name,
     slug: folder.slug,
     ext: 'zip',
     icon: folder.isSystem ? 'folderSecure' : 'folder',
-    size: 0,
+    size: sizeMB,
+    sizeBytes: bytes,
+    fileCount: folder.fileCount ?? 0,
     type: 'folder',
     starred: false,
     date: '--',
