@@ -42,8 +42,10 @@ export const placeOrderSchema = z.object({
   specialInstructions: z.string().optional(),
   currency: z.string().length(3).default('USD'),
   orderType: z.enum(['retail', 'catering']).default('retail'),
-  /** UUID of a saved PaymentMethodToken to charge at checkout */
+  /** UUID of a saved PaymentMethodToken (Stripe) to charge at checkout */
   paymentMethodTokenId: z.string().uuid().optional(),
+  /** Square nonce (sourceId) from Web Payments SDK tokenization */
+  squareNonce: z.string().optional(),
   /** Optional coupon code to apply a discount at checkout */
   couponCode: z.string().optional(),
   /** Shippo rate fields — set when customer selects a live carrier rate at checkout */

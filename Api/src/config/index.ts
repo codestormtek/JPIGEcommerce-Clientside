@@ -103,5 +103,13 @@ export const config = {
     enabled: !!process.env.SHIPPO_API_KEY,
   },
 
+  square: {
+    accessToken: process.env.SQUARE_ACCESS_TOKEN ?? '',
+    locationId: process.env.SQUARE_LOCATION_ID ?? '',
+    environment: process.env.SQUARE_ENVIRONMENT ?? 'sandbox',
+    webhookSignatureKey: process.env.SQUARE_WEBHOOK_SIGNATURE_KEY ?? '',
+    applicationId: process.env.SQUARE_APPLICATION_ID ?? '',
+  },
+
 } as const;
 

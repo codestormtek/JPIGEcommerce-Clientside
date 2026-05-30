@@ -5,6 +5,7 @@ import { ctxFromRequest } from '../../utils/auditLogger';
 import { ListPaymentsInput } from './payments.schema';
 import * as service from './payments.service';
 import * as stripeService from '../../services/stripeService';
+import * as squareService from '../../services/squareService';
 import { config } from '../../config';
 import { logger } from '../../utils/logger';
 
@@ -38,6 +39,62 @@ export async function refundPayment(req: AuthRequest, res: Response): Promise<vo
     ctxFromRequest(req, req.user?.sub),
   );
   sendSuccess(res, payment, 'Payment refunded');
+}
+
+// POST /api/v1/payments/square-webhook  (no auth — verified by Square HMAC)
+export async function handleSquareWebhook(req: Request, res: Response): Promise<void> {
+  const sig = req.headers['x-square-hmacsha256-signature'] as string | undefined;
+  const signatureKey = config.square.webhookSignatureKey;
+
+  if (!sig || !signatureKey) {
+    logger.warn('Square webhook: missing signature or key');
+    res.status(400).json({ error: 'Missing Square signature or webhook key' });
+    return;
+  }
+
+  const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+  const notificationUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+
+  const isValid = squareService.verifyWebhookSignature(rawBody, sig, signatureKey, notificationUrl);
+  if (!isValid) {
+    logger.warn('Square webhook: invalid signature');
+    res.status(400).json({ error: 'Square webhook signature verification failed' });
+    return;
+  }
+
+  let event: { type?: string; data?: { object?: { id?: string; status?: string } } };
+  try {
+    event = typeof req.body === 'string' ? JSON.parse(req.body) as typeof event : req.body as typeof event;
+  } catch {
+    res.status(400).json({ error: 'Invalid JSON body' });
+    return;
+  }
+
+  try {
+    const eventType = event?.type ?? '';
+    const paymentId = event?.data?.object?.id ?? '';
+    const paymentStatus = event?.data?.object?.status ?? '';
+
+    switch (eventType) {
+      case 'payment.completed':
+        if (paymentId) await service.handleSquarePaymentCompleted(paymentId, paymentStatus);
+        break;
+      case 'payment.failed':
+        if (paymentId) await service.handleSquarePaymentFailed(paymentId);
+        break;
+      case 'refund.completed':
+        if (paymentId) await service.handleSquareRefundCompleted(paymentId);
+        break;
+      default:
+        logger.debug('Unhandled Square webhook event', { type: eventType });
+    }
+  } catch (err: unknown) {
+    logger.error('Error processing Square webhook event', { type: event?.type, err });
+    res.status(500).json({ error: 'Webhook processing failed' });
+    return;
+  }
+
+  res.json({ received: true });
 }
 
 // POST /api/v1/payments/webhook  (no auth — verified by Stripe signature)

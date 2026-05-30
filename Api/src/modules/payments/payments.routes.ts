@@ -7,8 +7,11 @@ import * as ctrl from './payments.controller';
 
 export const paymentsRouter = Router();
 
-// POST /api/v1/payments/webhook  — must be listed FIRST (no auth, raw body already parsed)
+// POST /api/v1/payments/webhook  — no auth, raw body already parsed
 paymentsRouter.post('/webhook', asyncHandler(ctrl.handleWebhook));
+
+// POST /api/v1/payments/square-webhook  — no auth, Square HMAC verified in controller
+paymentsRouter.post('/square-webhook', asyncHandler(ctrl.handleSquareWebhook));
 
 // All other payments routes are admin-only
 

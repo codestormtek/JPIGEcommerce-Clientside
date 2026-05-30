@@ -7,6 +7,7 @@ import * as repo from './orders.repository';
 import * as userRepo from '../users/users.repository';
 import * as paymentRepo from '../payments/payments.repository';
 import * as stripeService from '../../services/stripeService';
+import * as squareService from '../../services/squareService';
 import { validateCoupon, redeemCoupon } from '../promotions/promotions.service';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
 import { logger } from '../../utils/logger';
@@ -94,8 +95,35 @@ export async function checkout(userId: string, input: PlaceOrderInput, ctx?: Aud
       });
     }
 
-    // ── Step 3: Create a Stripe PaymentIntent if a payment method was supplied ─
-    if (input.paymentMethodTokenId) {
+    // ── Step 3: Create a payment record via the active gateway ───────────────
+    if (input.squareNonce) {
+      // ── Square path ──────────────────────────────────────────────────────────
+      const locationId = process.env.SQUARE_LOCATION_ID ?? config.square.locationId;
+      if (!locationId) {
+        throw ApiError.unprocessable('Square Location ID is not configured. Please add SQUARE_LOCATION_ID to Replit Secrets.');
+      }
+
+      const grandTotalCents = Math.round(Number(order.grandTotal) * 100);
+
+      const squareResult = await squareService.createPayment(
+        grandTotalCents,
+        order.currency,
+        input.squareNonce,
+        locationId,
+        { orderId: order.id, userId },
+      );
+
+      await paymentRepo.createPayment({
+        orderId: order.id,
+        provider: 'square',
+        amount: Number(order.grandTotal),
+        status: squareResult.status === 'COMPLETED' ? 'captured' : squareResult.status.toLowerCase(),
+        providerTxnId: squareResult.paymentId,
+        authorizedAt: new Date(),
+      });
+
+    } else if (input.paymentMethodTokenId) {
+      // ── Stripe path ──────────────────────────────────────────────────────────
       const token = await userRepo.findPaymentMethodById(input.paymentMethodTokenId, userId);
       if (!token) {
         throw ApiError.unprocessable('Payment method not found or does not belong to this user');

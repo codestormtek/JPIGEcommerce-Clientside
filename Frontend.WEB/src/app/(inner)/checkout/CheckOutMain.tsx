@@ -11,6 +11,22 @@ import { getMyAddresses } from '@/lib/account';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '');
 
+declare global {
+  interface Window {
+    Square?: {
+      payments: (appId: string, locationId: string) => Promise<SquarePaymentsInstance>;
+    };
+  }
+}
+interface SquarePaymentsInstance {
+  card: (options?: Record<string, unknown>) => Promise<SquareCardInstance>;
+}
+interface SquareCardInstance {
+  attach: (selector: string) => Promise<void>;
+  tokenize: () => Promise<{ status: string; token?: string; errors?: Array<{ message: string }> }>;
+  destroy: () => Promise<void>;
+}
+
 interface ShippingMethod {
   id: string;
   name: string;
@@ -67,6 +83,10 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
   const { cartItems, clearCart, removeFromCart, isCartLoaded } = useCart();
   const { user, isAuthenticated } = useAuth();
 
+  const [activeGateway, setActiveGateway] = useState<'stripe' | 'square'>('stripe');
+  const [squareReady, setSquareReady] = useState(false);
+  const squareCardRef = useRef<SquareCardInstance | null>(null);
+
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -91,6 +111,60 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
       }));
     }
   }, [user]);
+
+  useEffect(() => {
+    apiFetch<{ data: string }>('/site-settings/public/active_payment_gateway')
+      .then(res => { if (res.data === 'square') setActiveGateway('square'); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (activeGateway !== 'square') return;
+    const appId = process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID ?? '';
+    const locationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ?? '';
+    const squareEnv = process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT ?? 'sandbox';
+    if (!appId || !locationId) return;
+
+    const scriptUrl = squareEnv === 'production'
+      ? 'https://web.squarecdn.com/v1/square.js'
+      : 'https://sandbox.web.squarecdn.com/v1/square.js';
+
+    let script = document.querySelector<HTMLScriptElement>(`script[src="${scriptUrl}"]`);
+    if (!script) {
+      script = document.createElement('script');
+      script.src = scriptUrl;
+      script.async = true;
+      document.head.appendChild(script);
+    }
+
+    let card: SquareCardInstance | null = null;
+    let cancelled = false;
+
+    const initCard = async () => {
+      if (cancelled) return;
+      if (!window.Square) { setTimeout(initCard, 200); return; }
+      try {
+        const payments = await window.Square.payments(appId, locationId);
+        card = await payments.card();
+        await card.attach('#square-card-container');
+        if (!cancelled) { squareCardRef.current = card; setSquareReady(true); }
+      } catch (err) { console.error('Square card init failed', err); }
+    };
+
+    const el = script as HTMLScriptElement & { readyState?: string };
+    if (el.complete || el.readyState === 'complete' || window.Square) {
+      void initCard();
+    } else {
+      el.addEventListener('load', initCard);
+    }
+
+    return () => {
+      cancelled = true;
+      card?.destroy().catch(() => {});
+      squareCardRef.current = null;
+      setSquareReady(false);
+    };
+  }, [activeGateway]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -266,7 +340,8 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (activeGateway === 'stripe' && (!stripe || !elements)) return;
+    if (activeGateway === 'square' && !squareCardRef.current) return;
     if (!isAuthenticated) { setOrderError('Please sign in to place an order.'); return; }
     if (cartItemsForOrder.length === 0) { setOrderError('Your cart is empty.'); return; }
     if (!agreeTerms) { setOrderError('Please agree to the terms and conditions.'); return; }
@@ -297,80 +372,95 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
     setOrderError('');
 
     try {
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) throw new Error('Card element not available. Please refresh and try again.');
-
-      const { paymentMethod, error: pmError } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-        billing_details: {
-          name: `${form.firstName} ${form.lastName}`.trim(),
-          email: form.email,
+      const addresses = [
+        {
+          addressType: 'shipping',
+          fullName: `${form.firstName} ${form.lastName}`.trim(),
           phone: form.phone || undefined,
-          address: {
-            line1: form.address1,
-            line2: form.address2 || undefined,
-            city: form.city,
-            state: form.state,
-            postal_code: form.zip,
-            country: form.country,
-          },
+          addressLine1: form.address1,
+          addressLine2: form.address2 || undefined,
+          city: form.city,
+          region: form.state,
+          postalCode: form.zip,
+          countryName: 'United States',
+          countryIso2: form.country,
         },
-      });
-
-      if (pmError) throw new Error(pmError.message ?? 'Card error — please check your details.');
-      if (!paymentMethod) throw new Error('Failed to process card. Please try again.');
-
-      const { card } = paymentMethod;
-      const tokenRes = await apiFetch<{ data: { id: string } }>('/users/me/payment-methods', {
-        method: 'POST',
-        headers: getAuthHeader(),
-        body: {
-          provider: 'stripe',
-          token: paymentMethod.id,
-          brand: card?.brand ?? undefined,
-          last4: card?.last4 ?? undefined,
-          expMonth: card?.exp_month ?? undefined,
-          expYear: card?.exp_year ?? undefined,
-          isDefault: false,
+        {
+          addressType: 'billing',
+          fullName: `${form.firstName} ${form.lastName}`.trim(),
+          addressLine1: form.address1,
+          addressLine2: form.address2 || undefined,
+          city: form.city,
+          region: form.state,
+          postalCode: form.zip,
+          countryName: 'United States',
+          countryIso2: form.country,
         },
-      });
+      ];
 
-      const paymentMethodTokenId = tokenRes.data.id;
-
-      const orderBody: Record<string, unknown> = {
+      const baseOrder: Record<string, unknown> = {
         lines: cartItemsForOrder.map(i => ({ productItemId: i.productItemId, qty: i.quantity })),
-        addresses: [
-          {
-            addressType: 'shipping',
-            fullName: `${form.firstName} ${form.lastName}`.trim(),
-            phone: form.phone || undefined,
-            addressLine1: form.address1,
-            addressLine2: form.address2 || undefined,
-            city: form.city,
-            region: form.state,
-            postalCode: form.zip,
-            countryName: 'United States',
-            countryIso2: form.country,
-          },
-          {
-            addressType: 'billing',
-            fullName: `${form.firstName} ${form.lastName}`.trim(),
-            addressLine1: form.address1,
-            addressLine2: form.address2 || undefined,
-            city: form.city,
-            region: form.state,
-            postalCode: form.zip,
-            countryName: 'United States',
-            countryIso2: form.country,
-          },
-        ],
+        addresses,
         couponCode: couponResult?.code ?? undefined,
         specialInstructions: form.notes || undefined,
-        paymentMethodTokenId,
         currency: 'USD',
         orderType: 'retail',
       };
+
+      let paymentField: Record<string, unknown> = {};
+
+      if (activeGateway === 'square') {
+        const card = squareCardRef.current;
+        if (!card) throw new Error('Square card form not ready. Please refresh and try again.');
+        const result = await card.tokenize();
+        if (result.status !== 'OK' || !result.token) {
+          const msg = result.errors?.[0]?.message ?? 'Card tokenization failed — please check your card details.';
+          throw new Error(msg);
+        }
+        paymentField = { squareNonce: result.token };
+      } else {
+        const cardElement = elements!.getElement(CardElement);
+        if (!cardElement) throw new Error('Card element not available. Please refresh and try again.');
+
+        const { paymentMethod, error: pmError } = await stripe!.createPaymentMethod({
+          type: 'card',
+          card: cardElement,
+          billing_details: {
+            name: `${form.firstName} ${form.lastName}`.trim(),
+            email: form.email,
+            phone: form.phone || undefined,
+            address: {
+              line1: form.address1,
+              line2: form.address2 || undefined,
+              city: form.city,
+              state: form.state,
+              postal_code: form.zip,
+              country: form.country,
+            },
+          },
+        });
+
+        if (pmError) throw new Error(pmError.message ?? 'Card error — please check your details.');
+        if (!paymentMethod) throw new Error('Failed to process card. Please try again.');
+
+        const { card } = paymentMethod;
+        const tokenRes = await apiFetch<{ data: { id: string } }>('/users/me/payment-methods', {
+          method: 'POST',
+          headers: getAuthHeader(),
+          body: {
+            provider: 'stripe',
+            token: paymentMethod.id,
+            brand: card?.brand ?? undefined,
+            last4: card?.last4 ?? undefined,
+            expMonth: card?.exp_month ?? undefined,
+            expYear: card?.exp_year ?? undefined,
+            isDefault: false,
+          },
+        });
+        paymentField = { paymentMethodTokenId: tokenRes.data.id };
+      }
+
+      const orderBody: Record<string, unknown> = { ...baseOrder, ...paymentField };
 
       if (usingLiveRates && selectedRate) {
         orderBody.shippoRateId = selectedRate.rateId;
@@ -669,7 +759,7 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
             ))}
           </div>
 
-          {/* Payment — Credit Card Only */}
+          {/* Payment */}
           <div style={{ background: '#fff', border: '1px solid #eee', borderRadius: 8, padding: '24px', marginBottom: 24 }}>
             <h5 style={{ fontSize: 17, fontWeight: 700, color: '#1F1F25', marginBottom: 6 }}>Payment</h5>
             <p style={{ color: '#8094ae', fontSize: 13, marginBottom: 20 }}>All transactions are secure and encrypted.</p>
@@ -682,20 +772,42 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
               ))}
             </div>
 
-            {!stripe ? (
-              <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: '14px 16px', background: '#fafafa', display: 'flex', alignItems: 'center', gap: 10, color: '#8094ae', fontSize: 14 }}>
-                <i className="fa-solid fa-spinner fa-spin" style={{ color: '#ff8c00' }} />
-                Initializing secure payment...
-              </div>
+            {activeGateway === 'square' ? (
+              <>
+                <div
+                  id="square-card-container"
+                  style={{ border: '1px solid #ddd', borderRadius: 6, padding: '14px 16px', background: '#fafafa', minHeight: 54 }}
+                >
+                  {!squareReady && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#8094ae', fontSize: 14 }}>
+                      <i className="fa-solid fa-spinner fa-spin" style={{ color: '#ff8c00' }} />
+                      Initializing secure payment...
+                    </div>
+                  )}
+                </div>
+                <p style={{ fontSize: 12, color: '#aab7c4', marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <i className="fa-solid fa-shield-halved" style={{ color: '#629D23' }} />
+                  Secured by Square. Your card details are never stored on our servers.
+                </p>
+              </>
             ) : (
-              <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: '14px 16px', background: '#fafafa' }}>
-                <CardElement options={CARD_ELEMENT_OPTIONS} />
-              </div>
+              <>
+                {!stripe ? (
+                  <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: '14px 16px', background: '#fafafa', display: 'flex', alignItems: 'center', gap: 10, color: '#8094ae', fontSize: 14 }}>
+                    <i className="fa-solid fa-spinner fa-spin" style={{ color: '#ff8c00' }} />
+                    Initializing secure payment...
+                  </div>
+                ) : (
+                  <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: '14px 16px', background: '#fafafa' }}>
+                    <CardElement options={CARD_ELEMENT_OPTIONS} />
+                  </div>
+                )}
+                <p style={{ fontSize: 12, color: '#aab7c4', marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <i className="fa-solid fa-shield-halved" style={{ color: '#629D23' }} />
+                  Secured by Stripe. Your card details are never stored on our servers.
+                </p>
+              </>
             )}
-            <p style={{ fontSize: 12, color: '#aab7c4', marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <i className="fa-solid fa-shield-halved" style={{ color: '#629D23' }} />
-              Secured by Stripe. Your card details are never stored on our servers.
-            </p>
           </div>
 
           {/* Terms */}
@@ -732,8 +844,8 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
           <button
             type="submit"
             className="rts-btn btn-primary"
-            style={{ width: '100%', padding: '16px', fontSize: 16, fontWeight: 700, borderRadius: 8, cursor: (submitting || !stripe) ? 'not-allowed' : 'pointer', opacity: (submitting || !stripe) ? 0.75 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
-            disabled={submitting || !stripe}
+            style={{ width: '100%', padding: '16px', fontSize: 16, fontWeight: 700, borderRadius: 8, cursor: (submitting || (activeGateway === 'stripe' ? !stripe : !squareReady)) ? 'not-allowed' : 'pointer', opacity: (submitting || (activeGateway === 'stripe' ? !stripe : !squareReady)) ? 0.75 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
+            disabled={submitting || (activeGateway === 'stripe' ? !stripe : !squareReady)}
           >
             {submitting ? (
               <>

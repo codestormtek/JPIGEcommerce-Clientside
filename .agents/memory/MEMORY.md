@@ -1,0 +1,1 @@
+- [Square integration pattern](square-integration.md) — official SDK is `square` (not `squareup`); uses SquareClient, SquareEnvironment from package v44+

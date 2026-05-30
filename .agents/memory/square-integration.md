@@ -1,0 +1,48 @@
+---
+name: Square payment integration
+description: How Square is wired into the JPIG API and checkout, and which env vars are needed
+---
+
+## Key decisions
+
+The correct npm package is `square` (v44+), NOT `squareup` (which is an old unofficial library with no useful exports).
+
+**Why:** `squareup` v1.0.0 is a legacy unofficial SDK that exports almost nothing useful. `square` is the official SDK from Square.
+
+## Env vars
+
+### API (Replit Secrets)
+- `SQUARE_ACCESS_TOKEN` — production or sandbox token
+- `SQUARE_LOCATION_ID` — Square location ID
+- `SQUARE_APPLICATION_ID` — Square application ID
+- `SQUARE_ENVIRONMENT` — `sandbox` or `production` (defaults to sandbox)
+- `SQUARE_WEBHOOK_SIGNATURE_KEY` — for webhook signature verification
+
+### Frontend (Replit Secrets, prefixed NEXT_PUBLIC_)
+- `NEXT_PUBLIC_SQUARE_APPLICATION_ID`
+- `NEXT_PUBLIC_SQUARE_LOCATION_ID`
+- `NEXT_PUBLIC_SQUARE_ENVIRONMENT` — `sandbox` or `production`
+
+## How it works
+
+- `Api/src/lib/square.ts` — lazy singleton SquareClient (reset on credential change)
+- `Api/src/services/squareService.ts` — createPayment, refundPayment, verifyWebhookSignature (HMAC-SHA256)
+- `Api/src/modules/payment-gateway/` — admin API to get/set active gateway, test Square connection
+- Active gateway stored in `SiteSetting` key `active_payment_gateway` (defaults to `stripe`)
+- `orders.service.ts` branches: `input.squareNonce` → Square path, `input.paymentMethodTokenId` → Stripe path
+- `payments.service.ts` branches capture/refund on `payment.provider` field
+- Square webhook at `POST /api/v1/payments/square-webhook` (HMAC verified)
+
+## Checkout frontend flow
+
+- `CheckOutMain.tsx` fetches `active_payment_gateway` on mount
+- If square: loads `https://sandbox.web.squarecdn.com/v1/square.js` dynamically, inits card via `Square.payments(appId, locationId)`
+- On submit: `card.tokenize()` → gets nonce → sends as `squareNonce` in order POST
+- If stripe: existing Stripe Elements flow unchanged
+
+## Payment gateway admin UI
+
+- Route: `/payment-gateway` in admin panel (port 3001)
+- Sidebar: under System section
+- API: `GET /api/v1/admin/payment-gateway/status`, `POST /`, `POST /test`
+- Square credentials entered in UI are applied to process.env (session-only); permanent creds need Replit Secrets

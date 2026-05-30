@@ -64,6 +64,7 @@ const DEFAULT_SETTINGS = [
   { settingKey: 'footer_phone_href', settingValue: 'tel:18005131710', label: 'Footer Phone Link (href)', category: 'footer' },
   { settingKey: 'footer_location', settingValue: 'Located in the metro DC area', label: 'Footer Location Text', category: 'footer' },
   { settingKey: 'footer_newsletter_text', settingValue: 'Subscribe to the mailing list to receive updates on the new arrivals and other discounts', label: 'Footer Newsletter Tagline', category: 'footer' },
+  { settingKey: 'active_payment_gateway', settingValue: 'stripe', label: 'Active Payment Gateway', category: 'payments' },
 ];
 
 export async function seedDefaultSettings() {
