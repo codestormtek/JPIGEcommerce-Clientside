@@ -287,10 +287,8 @@ export default function Home() {
                                                         Pastine Mellin Filid Angelo 100% Di Grano Tenero
                                                     </h4>
                                                 </Link>
-                                                <span className="availability">500g Pack</span>
                                                 <div className="price-area">
                                                     <span className="current">$36.00</span>
-                                                    <div className="previous">$36.00</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -309,10 +307,8 @@ export default function Home() {
                                                         Pastine Mellin Filid Angelo 100% Di Grano Tenero
                                                     </h4>
                                                 </Link>
-                                                <span className="availability">500g Pack</span>
                                                 <div className="price-area">
                                                     <span className="current">$36.00</span>
-                                                    <div className="previous">$36.00</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -331,10 +327,8 @@ export default function Home() {
                                                         Pastine Mellin Filid Angelo 100% Di Grano Tenero
                                                     </h4>
                                                 </Link>
-                                                <span className="availability">500g Pack</span>
                                                 <div className="price-area">
                                                     <span className="current">$36.00</span>
-                                                    <div className="previous">$36.00</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -353,10 +347,8 @@ export default function Home() {
                                                         Pastine Mellin Filid Angelo 100% Di Grano Tenero
                                                     </h4>
                                                 </Link>
-                                                <span className="availability">500g Pack</span>
                                                 <div className="price-area">
                                                     <span className="current">$36.00</span>
-                                                    <div className="previous">$36.00</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -375,10 +367,8 @@ export default function Home() {
                                                         Pastine Mellin Filid Angelo 100% Di Grano Tenero
                                                     </h4>
                                                 </Link>
-                                                <span className="availability">500g Pack</span>
                                                 <div className="price-area">
                                                     <span className="current">$36.00</span>
-                                                    <div className="previous">$36.00</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -397,10 +387,8 @@ export default function Home() {
                                                         Pastine Mellin Filid Angelo 100% Di Grano Tenero
                                                     </h4>
                                                 </Link>
-                                                <span className="availability">500g Pack</span>
                                                 <div className="price-area">
                                                     <span className="current">$36.00</span>
-                                                    <div className="previous">$36.00</div>
                                                 </div>
                                             </div>
                                         </div>

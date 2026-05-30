@@ -83,7 +83,6 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                     </Link>
                     <div className="price-area">
                         <span className="current">{`$${Price}`}</span>
-                        <div className="previous">$36.00</div>
                     </div>
                 </div>
             </div>

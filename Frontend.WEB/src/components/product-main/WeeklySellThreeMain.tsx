@@ -183,10 +183,8 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
                         {ProductTitle ? ProductTitle : 'How to growing your business'}
                     </h4>
                 </Link>
-                <span className="availability">500g Pack</span>
                 <div className="price-area">
                     <span className="current">{`$${Price}`}</span>
-                    <div className="previous">$36.00</div>
                 </div>
                 <div className="cart-counter-action">
                     <Link

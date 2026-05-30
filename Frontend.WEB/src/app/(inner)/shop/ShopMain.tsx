@@ -94,13 +94,6 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
     <>
       <div className="image-and-action-area-wrapper">
         <a href={`/shop/${Slug}`} className="thumbnail-preview">
-          <div className="badge">
-            <span>
-              25% <br />
-              Off
-            </span>
-            <i className="fa-solid fa-bookmark" />
-          </div>
           <img src={imageSrc} alt="grocery" />
         </a>
 
@@ -147,11 +140,8 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
           </h4>
         </a>
 
-        <span className="availability">500g Pack</span>
-
         <div className="price-area">
           <span className="current">{`$${Price}`}</span>
-          <div className="previous">$36.00</div>
         </div>
 
     

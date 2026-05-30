@@ -42,10 +42,8 @@ function LessDiscountTwo() {
                                                                     Pastine Mellin Filid Angelo 100% Di Grano Tenero
                                                                 </h4>
                                                             </Link>
-                                                            <span className="availability">500g Pack</span>
                                                             <div className="price-area">
                                                                 <span className="current">$36.00</span>
-                                                                <div className="previous">$36.00</div>
                                                             </div>
                                                         </div>
                                                         <div className="bottom-content-deals mt--10">
@@ -86,10 +84,8 @@ function LessDiscountTwo() {
                                                                     Pastine Mellin Filid Angelo 100% Di Grano Tenero
                                                                 </h4>
                                                             </Link>
-                                                            <span className="availability">500g Pack</span>
                                                             <div className="price-area">
                                                                 <span className="current">$36.00</span>
-                                                                <div className="previous">$36.00</div>
                                                             </div>
                                                         </div>
                                                         <div className="bottom-content-deals mt--10">
@@ -130,10 +126,8 @@ function LessDiscountTwo() {
                                                                     Pastine Mellin Filid Angelo 100% Di Grano Tenero
                                                                 </h4>
                                                             </Link>
-                                                            <span className="availability">500g Pack</span>
                                                             <div className="price-area">
                                                                 <span className="current">$36.00</span>
-                                                                <div className="previous">$36.00</div>
                                                             </div>
                                                         </div>
                                                         <div className="bottom-content-deals mt--10">

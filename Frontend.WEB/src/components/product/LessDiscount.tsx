@@ -127,10 +127,8 @@ export default function CategorySlider() {
                                     <a href="/shop">
                                       <h4 className="title">{item.title}</h4>
                                     </a>
-                                    <span className="availability">{item.pack}</span>
                                     <div className="price-area">
                                       <span className="current">{item.currentPrice}</span>
-                                      <div className="previous">{item.previousPrice}</div>
                                     </div>
                                   </div>
                                 </div>
