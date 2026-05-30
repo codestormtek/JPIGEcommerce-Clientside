@@ -116,6 +116,7 @@ import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
 import AdminPromotionList from "@/pages/pre-built/promotions/AdminPromotionList";
 import AdminReviews from "@/pages/pre-built/reviews/AdminReviews";
 import AdminPaymentMethodList from "@/pages/pre-built/payment-methods/AdminPaymentMethodList";
+import AdminPaymentGateway from "@/pages/pre-built/payment-gateway/AdminPaymentGateway";
 import AdminShippingMethods from "@/pages/pre-built/shipping-methods/AdminShippingMethods";
 import AdminSmsTester from "@/pages/pre-built/sms-tester/AdminSmsTester";
 import MediaManager from "@/pages/pre-built/media/MediaManager";
@@ -227,6 +228,7 @@ const Pages = () => {
               <Route path="promotions" element={<AdminPromotionList />}></Route>
               <Route path="reviews" element={<AdminReviews />}></Route>
               <Route path="payment-methods" element={<AdminPaymentMethodList />}></Route>
+              <Route path="payment-gateway" element={<AdminPaymentGateway />}></Route>
               <Route path="admin/shipping-methods" element={<AdminShippingMethods />}></Route>
               <Route path="templates" element={<AdminMessageTemplateList />}></Route>
               <Route path="blog" element={<AdminBlogList />}></Route>

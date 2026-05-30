@@ -255,6 +255,11 @@ const menu = [
     text: "Site Settings",
     link: "/site-settings",
   },
+  {
+    icon: "cc-alt2",
+    text: "Payment Gateway",
+    link: "/payment-gateway",
+  },
 
   // ─── SAMPLE & DEMO COMPONENTS ─────────────────────────────────────────────
   { heading: "─── Sample / Demo ───" },
