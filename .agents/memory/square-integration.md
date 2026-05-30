@@ -40,6 +40,18 @@ The correct npm package is `square` (v44+), NOT `squareup` (which is an old unof
 - On submit: `card.tokenize()` → gets nonce → sends as `squareNonce` in order POST
 - If stripe: existing Stripe Elements flow unchanged
 
+## Build-check gotcha (IMPORTANT)
+
+Replit dev workflows run `ts-node-dev --transpile-only` (API) and Next dev (Frontend), which SKIP type checking. Render builds with real `tsc` (`npm run build` → `tsc`). So type errors pass locally but fail the Render deploy.
+**Always run `npx tsc --noEmit` in both `Api/` and `Frontend.WEB/` before telling the user to push/deploy.**
+
+### Square SDK v44 correct API shapes
+- Payments: `client.payments.create({...})` — NOT `createPayment`. Awaited result has `.payment`.
+- Refunds: `client.refunds.refundPayment({...})` — this one IS `refundPayment`. Result has `.refund`.
+- `amountMoney.currency` must be typed `Square.Currency` (string-literal union), not plain string — cast `currency.toUpperCase() as Square.Currency`. Import `import type { Square } from 'square'`.
+- `Money.amount` is `bigint | null | undefined`; coalesce null → undefined when narrowing to `bigint | undefined`.
+- Frontend: `HTMLScriptElement` has no `.complete` property (that's HTMLImageElement); use `readyState === 'complete'` or `window.Square` presence to detect a loaded script.
+
 ## Payment gateway admin UI
 
 - Route: `/payment-gateway` in admin panel (port 3001)

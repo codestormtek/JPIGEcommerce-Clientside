@@ -152,7 +152,7 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
     };
 
     const el = script as HTMLScriptElement & { readyState?: string };
-    if (el.complete || el.readyState === 'complete' || window.Square) {
+    if (el.readyState === 'complete' || window.Square) {
       void initCard();
     } else {
       el.addEventListener('load', initCard);

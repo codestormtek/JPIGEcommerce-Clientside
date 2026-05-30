@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import type { Square } from 'square';
 import { getSquareClient } from '../lib/square';
 import { logger } from '../utils/logger';
 
@@ -28,10 +29,10 @@ export async function createPayment(
   const client = getSquareClient();
   const idempotencyKey = `${metadata.orderId}-${Date.now()}`;
 
-  const response = await client.payments.createPayment({
+  const response = await client.payments.create({
     sourceId,
     idempotencyKey,
-    amountMoney: { amount: BigInt(amountCents), currency: currency.toUpperCase() },
+    amountMoney: { amount: BigInt(amountCents), currency: currency.toUpperCase() as Square.Currency },
     locationId,
     note: `Order ${metadata.orderId}`,
     referenceId: metadata.orderId,
@@ -48,7 +49,7 @@ export async function createPayment(
     paymentId: payment.id,
     status: payment.status ?? 'UNKNOWN',
     amountMoney: {
-      amount: payment.amountMoney?.amount,
+      amount: payment.amountMoney?.amount ?? undefined,
       currency: payment.amountMoney?.currency,
     },
     receiptUrl: payment.receiptUrl,
@@ -69,7 +70,7 @@ export async function refundPayment(
   const response = await client.refunds.refundPayment({
     paymentId: squarePaymentId,
     idempotencyKey,
-    amountMoney: { amount: BigInt(amountCents), currency: currency.toUpperCase() },
+    amountMoney: { amount: BigInt(amountCents), currency: currency.toUpperCase() as Square.Currency },
     reason: reason ?? 'Customer request',
   });
 
