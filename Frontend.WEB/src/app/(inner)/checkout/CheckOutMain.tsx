@@ -85,6 +85,7 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
 
   const [activeGateway, setActiveGateway] = useState<'stripe' | 'square'>('stripe');
   const [squareReady, setSquareReady] = useState(false);
+  const [squareError, setSquareError] = useState('');
   const squareCardRef = useRef<SquareCardInstance | null>(null);
 
   const [form, setForm] = useState({
@@ -126,7 +127,28 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
     const appId = process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID ?? '';
     const locationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ?? '';
     const squareEnv = process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT ?? 'sandbox';
-    if (!appId || !locationId) return;
+
+    setSquareError('');
+
+    if (!appId || !locationId) {
+      setSquareError(
+        'Square is not fully configured. Missing ' +
+        [!appId && 'Application ID', !locationId && 'Location ID'].filter(Boolean).join(' and ') +
+        '. Add the NEXT_PUBLIC_SQUARE_* environment variables and redeploy the storefront.'
+      );
+      return;
+    }
+
+    // Catch the common sandbox/production mismatch before the SDK silently fails.
+    const isSandboxAppId = appId.startsWith('sandbox-');
+    if (squareEnv === 'production' && isSandboxAppId) {
+      setSquareError('Square environment is set to "production" but a sandbox Application ID is configured. Use your production Application ID, or set NEXT_PUBLIC_SQUARE_ENVIRONMENT=sandbox.');
+      return;
+    }
+    if (squareEnv !== 'production' && !isSandboxAppId) {
+      setSquareError('Square environment is set to "sandbox" but a production Application ID is configured. Set NEXT_PUBLIC_SQUARE_ENVIRONMENT=production, or use your sandbox Application ID.');
+      return;
+    }
 
     const scriptUrl = squareEnv === 'production'
       ? 'https://web.squarecdn.com/v1/square.js'
@@ -137,21 +159,39 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
       script = document.createElement('script');
       script.src = scriptUrl;
       script.async = true;
+      script.addEventListener('error', () => {
+        if (!cancelled) setSquareError('Failed to load the Square payment library. Check your network connection or any content blockers and try again.');
+      });
       document.head.appendChild(script);
     }
 
     let card: SquareCardInstance | null = null;
     let cancelled = false;
+    let attempts = 0;
 
     const initCard = async () => {
       if (cancelled) return;
-      if (!window.Square) { setTimeout(initCard, 200); return; }
+      if (!window.Square) {
+        attempts += 1;
+        if (attempts > 50) { // ~10s
+          setSquareError('The Square payment library did not load in time. Please refresh the page and try again.');
+          return;
+        }
+        setTimeout(initCard, 200);
+        return;
+      }
       try {
         const payments = await window.Square.payments(appId, locationId);
         card = await payments.card();
         await card.attach('#square-card-container');
         if (!cancelled) { squareCardRef.current = card; setSquareReady(true); }
-      } catch (err) { console.error('Square card init failed', err); }
+      } catch (err) {
+        console.error('Square card init failed', err);
+        if (!cancelled) {
+          const msg = err instanceof Error ? err.message : String(err);
+          setSquareError(`Square could not initialize the card form: ${msg}. Verify your Application ID and Location ID are correct and from the same (production) Square account.`);
+        }
+      }
     };
 
     const el = script as HTMLScriptElement & { readyState?: string };
@@ -779,15 +819,21 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
               <>
                 <div
                   id="square-card-container"
-                  style={{ border: '1px solid #ddd', borderRadius: 6, padding: '14px 16px', background: '#fafafa', minHeight: 54 }}
+                  style={{ border: '1px solid #ddd', borderRadius: 6, padding: '14px 16px', background: '#fafafa', minHeight: 54, display: squareError ? 'none' : 'block' }}
                 >
-                  {!squareReady && (
+                  {!squareReady && !squareError && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#8094ae', fontSize: 14 }}>
                       <i className="fa-solid fa-spinner fa-spin" style={{ color: '#ff8c00' }} />
                       Initializing secure payment...
                     </div>
                   )}
                 </div>
+                {squareError && (
+                  <div style={{ border: '1px solid #f3c2c2', borderRadius: 6, padding: '14px 16px', background: '#fdecec', color: '#a8071a', fontSize: 13, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <i className="fa-solid fa-triangle-exclamation" style={{ marginTop: 2 }} />
+                    <span>{squareError}</span>
+                  </div>
+                )}
                 <p style={{ fontSize: 12, color: '#aab7c4', marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <i className="fa-solid fa-shield-halved" style={{ color: '#629D23' }} />
                   Secured by Square. Your card details are never stored on our servers.
