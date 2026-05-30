@@ -113,8 +113,11 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
   }, [user]);
 
   useEffect(() => {
-    apiFetch<{ data: string }>('/site-settings/public/active_payment_gateway')
-      .then(res => { if (res.data === 'square') setActiveGateway('square'); })
+    apiFetch<{ data: { settingValue?: string } | string }>('/site-settings/public/active_payment_gateway')
+      .then(res => {
+        const value = typeof res.data === 'string' ? res.data : res.data?.settingValue;
+        if (value === 'square') setActiveGateway('square');
+      })
       .catch(() => {});
   }, []);
 

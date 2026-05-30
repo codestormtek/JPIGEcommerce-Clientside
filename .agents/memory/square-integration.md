@@ -58,3 +58,6 @@ Replit dev workflows run `ts-node-dev --transpile-only` (API) and Next dev (Fron
 - Sidebar: under System section
 - API: `GET /api/v1/admin/payment-gateway/status`, `POST /`, `POST /test`
 - Square credentials entered in UI are applied to process.env (session-only); permanent creds need Replit Secrets
+
+## Storefront gateway switch: read settingValue, not the record
+The public endpoint `GET /site-settings/public/:key` returns the FULL record (`{success, data:{settingValue, settingKey, ...}}`), NOT a bare string. The frontend `apiFetch` returns the whole body, so `res.data` is the object. Reading the active gateway must use `res.data.settingValue === 'square'` — an earlier bug compared `res.data === 'square'` (object vs string, always false), so checkout never switched to Square no matter the toggle/env. The keyless `GET /site-settings/public` instead returns a flat key→value map.
