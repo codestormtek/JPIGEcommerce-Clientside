@@ -13,6 +13,7 @@ interface QuickViewProduct {
   price: string;
   description?: string;
   sku?: string;
+  productItemId?: string;
   categories?: string;
   brand?: string;
   slug: string;
@@ -26,6 +27,7 @@ function productToQuickView(product: Product): QuickViewProduct {
     title: product.name,
     price: formatPrice(product.price),
     description: product.description || undefined,
+    productItemId: product.items?.[0]?.id,
     sku: product.items?.[0]?.sku || undefined,
     categories: product.categoryMaps?.map(cm => cm.category.name).join(', ') || undefined,
     brand: product.brand?.name || undefined,
@@ -122,6 +124,7 @@ function FeatureProduct() {
                           ProductImage={getProductImage(product)}
                           ProductTitle={product.name}
                           Price={formatPrice(product.price)}
+                          ProductItemId={product.items?.[0]?.id}
                           productDescription={product.description || undefined}
                           productSku={product.items?.[0]?.sku || undefined}
                           productCategories={product.categoryMaps?.map(cm => cm.category.name).join(', ') || undefined}
@@ -149,6 +152,7 @@ function FeatureProduct() {
           productTitle={quickView.title}
           productPrice={quickView.price}
           productDescription={quickView.description}
+          productItemId={quickView.productItemId}
           productSku={quickView.sku}
           productCategories={quickView.categories}
           productBrand={quickView.brand}

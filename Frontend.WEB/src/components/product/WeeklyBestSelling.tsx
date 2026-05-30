@@ -87,6 +87,7 @@ const WeeklyBestSelling: React.FC = () => {
                                                     ProductImage={getProductImage(product)}
                                                     ProductTitle={product.name}
                                                     Price={formatPrice(product.price)}
+                                                    ProductItemId={product.items?.[0]?.id}
                                                     productDescription={product.description || undefined}
                                                     productSku={product.items?.[0]?.sku || undefined}
                                                     productCategories={product.categoryMaps?.map(cm => cm.category.name).join(', ') || undefined}

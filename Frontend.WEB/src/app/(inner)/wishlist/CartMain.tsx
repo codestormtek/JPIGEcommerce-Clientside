@@ -62,6 +62,7 @@ const CartMain = () => {
       price: parseFloat(item.price ?? '0'),
       quantity: 1,
       active: true,
+      productItemId: item.productItemId,
     });
   };
   const addcart = () => toast('Successfully Add To Cart!');

@@ -53,6 +53,7 @@ function DiscountProduct() {
                                                             ProductImage={getProductImage(product)}
                                                             ProductTitle={product.name}
                                                             Price={formatPrice(product.price)}
+                                                            ProductItemId={product.items?.[0]?.id}
                                                         />
                                                     </div>
                                                 </div>

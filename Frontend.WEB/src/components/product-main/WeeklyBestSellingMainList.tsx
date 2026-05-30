@@ -10,6 +10,7 @@ interface BlogGridMainProps {
     ProductImage: string;
     ProductTitle?: string;
     Price?: string;
+    ProductItemId?: string;
 }
 
 const BlogGridMain: React.FC<BlogGridMainProps> = ({
@@ -17,6 +18,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
     ProductImage,
     ProductTitle,
     Price,
+    ProductItemId,
 }) => {
 
 
@@ -34,6 +36,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
             price: parseFloat(Price ?? '0'),
             quantity: 1,
             active: true,
+            productItemId: ProductItemId,
         });
     };
 

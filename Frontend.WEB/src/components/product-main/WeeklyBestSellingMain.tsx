@@ -21,6 +21,7 @@ interface BlogGridMainProps {
   ProductImage: string;
   ProductTitle?: string;
   Price?: string;
+  ProductItemId?: string;
   productDescription?: string;
   productSku?: string;
   productCategories?: string;
@@ -35,6 +36,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
   ProductImage,
   ProductTitle,
   Price,
+  ProductItemId,
   productDescription,
   productSku,
   productCategories,
@@ -76,6 +78,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
       price: parseFloat(Price ?? '0'),
       quantity,
       active: true,
+      productItemId: ProductItemId,
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 5000);
@@ -209,6 +212,7 @@ const BlogGridMain: React.FC<BlogGridMainProps> = ({
           productTitle={ProductTitle ?? 'Default Product Title'}
           productPrice={Price ?? '0'}
           productDescription={productDescription}
+          productItemId={ProductItemId}
           productSku={productSku}
           productCategories={productCategories}
           productBrand={productBrand}

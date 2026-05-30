@@ -1,1 +1,2 @@
 - [Square integration pattern](square-integration.md) — official SDK is `square` (not `squareup`); uses SquareClient, SquareEnvironment from package v44+
+- [Cart productItemId](cart-product-item-id.md) — every add-to-cart entry point must set productItemId from product.items?.[0]?.id or checkout blocks "missing product info"
