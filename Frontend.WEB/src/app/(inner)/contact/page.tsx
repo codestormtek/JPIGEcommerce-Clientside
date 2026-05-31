@@ -86,6 +86,9 @@ export default function Home() {
                                                             <input type="text" placeholder="Email*" />
                                                         </div>
                                                     </div>
+                                                    <div className="single">
+                                                        <input type="tel" placeholder="Phone Number*" />
+                                                    </div>
                                                     <div className="single-select">
                                                         <select>
                                                             <option data-display="Subject*">All Categories</option>
@@ -99,6 +102,32 @@ export default function Home() {
                                                         placeholder="Write Message Here"
                                                         defaultValue={""}
                                                     />
+                                                    <div style={{ marginTop: '20px', fontSize: '14px', color: '#555', lineHeight: 1.6 }}>
+                                                        <p>
+                                                            The Jiggling Pig, LLC would like your consent to send informational and/or marketing text message communications from +12027742073 to your mobile number listed above. Informational messages may include responses to messages you send us, as well as information relevant to your relationship with us. Marketing messages may include discount codes, special deals or texts promoting our products/services.
+                                                        </p>
+                                                        <p>
+                                                            Consent is not a condition of purchase. Message frequency varies. Message and data rates may apply. Reply &apos;STOP&apos; to unsubscribe at any time. Reply &apos;HELP&apos; for assistance or more information.
+                                                        </p>
+                                                        <p>
+                                                            We do not share your mobile opt-in information with anyone. Our privacy policy and messaging terms and conditions are available at{" "}
+                                                            <a href="/privacy-policy" style={{ color: '#ff8c00' }}>https://thejigglingpig.com/privacy-policy</a> for more information.
+                                                        </p>
+                                                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: 0 }}>
+                                                                <input type="checkbox" name="sms_consent_informational" style={{ marginTop: '3px', flexShrink: 0 }} />
+                                                                <span>Yes, I consent to receive informational messages from The Jiggling Pig, LLC</span>
+                                                            </label>
+                                                            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: 0 }}>
+                                                                <input type="checkbox" name="sms_consent_marketing" style={{ marginTop: '3px', flexShrink: 0 }} />
+                                                                <span>Yes, I consent to receive marketing text messages from The Jiggling Pig, LLC</span>
+                                                            </label>
+                                                            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: 0 }}>
+                                                                <input type="checkbox" name="sms_consent_none" style={{ marginTop: '3px', flexShrink: 0 }} />
+                                                                <span>No, I do not want to receive any text messages from The Jiggling Pig, LLC</span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
                                                     <button className="rts-btn btn-primary mt--20">
                                                         Send Message
                                                     </button>
