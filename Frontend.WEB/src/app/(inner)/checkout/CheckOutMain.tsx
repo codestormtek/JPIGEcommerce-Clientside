@@ -124,9 +124,9 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
 
   useEffect(() => {
     if (activeGateway !== 'square') return;
-    const appId = process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID ?? '';
-    const locationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ?? '';
-    const squareEnv = process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT ?? 'sandbox';
+    const appId = (process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID ?? '').trim();
+    const locationId = (process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ?? '').trim();
+    const squareEnv = (process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT ?? 'sandbox').trim();
 
     setSquareError('');
 
