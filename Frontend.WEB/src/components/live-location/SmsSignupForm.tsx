@@ -9,8 +9,9 @@ export default function SmsSignupForm() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [consent, setConsent] = useState(false);
 
-  const canSubmit = phone.trim().length >= 10 && !submitting;
+  const canSubmit = phone.trim().length >= 10 && consent && !submitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,6 +114,29 @@ export default function SmsSignupForm() {
               fontSize: "16px",
             }}
           />
+          <label
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "8px",
+              fontSize: "12px",
+              color: "#666",
+              lineHeight: 1.5,
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              required
+              style={{ marginTop: "3px", flexShrink: 0 }}
+            />
+            <span>
+              By checking this box, I agree to receive recurring automated promotional, transactional, and customer care text messages (e.g. roadside BBQ location alerts) from The Jiggling Pig, LLC at the phone number provided. Consent is not a condition of purchase. Msg &amp; data rates may apply. Msg frequency varies. Reply STOP to unsubscribe or HELP for help. See our{" "}
+              <a href="/terms-condition" style={{ color: "#ff8c00" }}>Terms</a> and{" "}
+              <a href="/privacy-policy" style={{ color: "#ff8c00" }}>Privacy Policy</a>.
+            </span>
+          </label>
           {error && (
             <p style={{ color: "#d32f2f", fontSize: "14px", margin: 0 }}>{error}</p>
           )}
