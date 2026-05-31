@@ -78,6 +78,7 @@ export const config = {
   telnyx: {
     apiKey: process.env.TELNYX_API_KEY ?? '',
     fromNumber: process.env.TELNYX_FROM_NUMBER ?? '',
+    voiceForwardTo: process.env.TELNYX_VOICE_FORWARD_TO ?? '',
   },
 
   store: {
