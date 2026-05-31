@@ -161,6 +161,23 @@ export default function Home() {
             </div>
 
             <div className="section-list mt--40">
+              <h2 className="title">SMS/Text Messaging Program</h2>
+              <p className="disc">
+                By opting in, you agree to receive account alerts and promotional text messages from The Jiggling Pig, LLC. These SMS messages are sent by The Jiggling Pig, LLC.
+              </p>
+              <ul>
+                <li><p><strong>Message types.</strong> You will receive messages such as order and shipping alerts, customer service updates, and promotional texts including our roadside BBQ live-location announcements.</p></li>
+                <li><p><strong>Message frequency.</strong> Message frequency varies.</p></li>
+                <li><p><strong>Cost.</strong> Message and data rates may apply.</p></li>
+                <li><p><strong>Opt-out.</strong> Reply STOP to opt out of SMS messages.</p></li>
+                <li><p><strong>Help.</strong> Reply HELP for help or contact support at info@thejigglingpig.com or 1-800-513-1710.</p></li>
+              </ul>
+              <p className="disc">
+                Carriers are not liable for delayed or undelivered messages. For details on how we handle your information, see our <a href="/privacy-policy" style={{ color: '#ff8c00' }}>Privacy Policy</a>.
+              </p>
+            </div>
+
+            <div className="section-list mt--40">
               <h2 className="title">Contact Us</h2>
               <p className="disc">
                 If you have any questions about these Terms, please contact us:
