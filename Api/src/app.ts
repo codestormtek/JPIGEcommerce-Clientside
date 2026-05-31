@@ -70,6 +70,9 @@ app.use(
     max: config.rateLimit.max,
     standardHeaders: true,
     legacyHeaders: false,
+    // Telnyx voice webhooks all originate from Telnyx IPs; don't let call
+    // bursts hit the shared IP limit and drop inbound calls with 429s.
+    skip: (req) => req.path.startsWith('/api/v1/telnyx/'),
   }),
 );
 // Raw body required for webhook signature verification — must come BEFORE express.json()
