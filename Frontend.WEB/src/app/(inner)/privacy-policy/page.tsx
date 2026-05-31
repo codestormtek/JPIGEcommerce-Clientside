@@ -65,7 +65,7 @@ export default function Home() {
               <ul>
                 <li><p>Email address</p></li>
                 <li><p>First name and last name</p></li>
-                <li><p>Phone number</p></li>
+                <li><p>Phone number (including mobile number for SMS/text message alerts)</p></li>
                 <li><p>Address, State, Province, ZIP/Postal code, City</p></li>
                 <li><p>Cookies and Usage Data</p></li>
               </ul>
@@ -108,6 +108,29 @@ export default function Home() {
             </div>
 
             <div className="section-list mt--40">
+              <h2 className="title">SMS/Text Messaging Communications</h2>
+              <p className="disc">
+                If you opt in to receive text messages from The Jiggling Pig, LLC, the following terms apply to our SMS program:
+              </p>
+              <ul>
+                <li><p><strong>Program description.</strong> We send text messages relating to order and shipping updates, customer service, and promotional alerts such as our roadside BBQ live-location announcements.</p></li>
+                <li><p><strong>Consent.</strong> You provide your consent to receive text messages by opting in through our website or by providing your mobile number for this purpose. Consent is not a condition of any purchase.</p></li>
+                <li><p><strong>Message frequency.</strong> Message frequency varies.</p></li>
+                <li><p><strong>Cost.</strong> Message and data rates may apply.</p></li>
+                <li><p><strong>Opt-out.</strong> You may opt out of SMS messages at any time by replying STOP, END, CANCEL, or UNSUBSCRIBE. For help, reply HELP or contact us directly.</p></li>
+              </ul>
+              <p className="disc">
+                <strong>No mobile information will be shared with third parties or affiliates for marketing or promotional purposes.</strong> Text messaging originator opt-in data and consent will not be shared with any third parties except aggregators and providers needed to operate the text messaging service.
+              </p>
+              <p className="disc">
+                We do not sell, share, or transfer consumers&apos; personal data, including SMS registration data, to external organizations for marketing or independent use, even with consent.
+              </p>
+              <p className="disc">
+                If you have questions about this policy or our SMS program, contact us at info@thejigglingpig.com or 1-800-513-1710.
+              </p>
+            </div>
+
+            <div className="section-list mt--40">
               <h2 className="title">Transfer of Data</h2>
               <p className="disc">
                 Your information, including Personal Data, may be transferred to — and maintained on — computers located outside of your state, province, country or other governmental jurisdiction where the data protection laws may differ than those from your jurisdiction.
@@ -139,6 +162,9 @@ export default function Home() {
             <div className="section-list mt--40">
               <h2 className="title">Security of Data</h2>
               <p className="disc">
+                We use administrative, technical, and contractual safeguards to prevent unauthorized access, use, or disclosure of user data.
+              </p>
+              <p className="disc">
                 The security of your data is important to us, but remember that no method of transmission over the Internet, or method of electronic storage is 100% secure. While we strive to use commercially acceptable means to protect your Personal Data, we cannot guarantee its absolute security.
               </p>
             </div>
@@ -150,6 +176,9 @@ export default function Home() {
               </p>
               <p className="disc">
                 These third parties have access to your Personal Data only to perform these tasks on our behalf and are obligated not to disclose or use it for any other purpose.
+              </p>
+              <p className="disc">
+                We do not sell, trade, or otherwise transfer your personal information to outside parties for marketing or independent use. We do not sell, share, or transfer consumers&apos; personal data, including SMS registration data, to external organizations for marketing or independent use, even with consent.
               </p>
             </div>
 
