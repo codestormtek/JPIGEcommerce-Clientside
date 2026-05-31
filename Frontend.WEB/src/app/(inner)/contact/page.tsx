@@ -104,7 +104,7 @@ export default function Home() {
                                                     />
                                                     <div style={{ marginTop: '20px', fontSize: '14px', color: '#555', lineHeight: 1.6 }}>
                                                         <p>
-                                                            The Jiggling Pig, LLC would like your consent to send informational and/or marketing text message communications from +12027742073 to your mobile number listed above. Informational messages may include responses to messages you send us, as well as information relevant to your relationship with us. Marketing messages may include discount codes, special deals or texts promoting our products/services.
+                                                            The Jiggling Pig, LLC would like your consent to send informational and/or marketing text message communications from 1-800-513-1710 to your mobile number listed above. Informational messages may include responses to messages you send us, as well as information relevant to your relationship with us. Marketing messages may include discount codes, special deals or texts promoting our products/services.
                                                         </p>
                                                         <p>
                                                             Consent is not a condition of purchase. Message frequency varies. Message and data rates may apply. Reply &apos;STOP&apos; to unsubscribe at any time. Reply &apos;HELP&apos; for assistance or more information.

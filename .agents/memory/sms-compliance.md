@@ -15,4 +15,8 @@ US carrier A2P/toll-free verification is carrier-level, not provider-specific �
 
 **URL gotcha:** the real public paths are `/privacy-policy` and `/terms-condition`. The carrier form had been given `/conditions-of-use` and `/privacy-notice`, which 404. Either fix the URLs submitted to the carrier or add redirect routes for those paths.
 
+**Sending number decision:** Business SMS sends from the **1-800-513-1710** toll-free number, which was *ported into Telnyx* (full port — left Grasshopper, so Grasshopper no longer handles that number's voice either). Because it's toll-free, the correct Telnyx path is **Toll-Free Verification** ("Toll-Free Compliance" section), NOT 10DLC (10DLC is local long-code only). All consent disclosures must name 1-800-513-1710 as the sender, and the app's `TELNYX_FROM_NUMBER` must be `+18005131710`. An earlier consent draft wrongly used +12027742073 — that 202 number is not the sender.
+
+**Why:** user confirmed 1-800-513-1710 (now on Telnyx) is the intended sending number; the number in the opt-in disclosure must match the number that actually sends, or verification fails.
+
 **Interim channel option:** email broadcast via existing Resend + subscriber email opt-in needs no carrier approval — a viable "reach customers now" channel while verification clears.
