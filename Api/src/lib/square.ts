@@ -6,8 +6,8 @@ let _client: SquareClient | null = null;
 export function getSquareClient(): SquareClient {
   if (_client) return _client;
 
-  const token = process.env.SQUARE_ACCESS_TOKEN ?? '';
-  const env   = process.env.SQUARE_ENVIRONMENT ?? 'sandbox';
+  const token = (process.env.SQUARE_ACCESS_TOKEN ?? '').trim();
+  const env   = (process.env.SQUARE_ENVIRONMENT ?? 'sandbox').trim();
 
   if (!token) {
     logger.warn('SQUARE_ACCESS_TOKEN is not set — Square payments will fail at runtime');
