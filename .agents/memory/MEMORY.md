@@ -1,3 +1,4 @@
 - [Square integration pattern](square-integration.md) — official SDK is `square` (not `squareup`); uses SquareClient, SquareEnvironment from package v44+
 - [Cart productItemId](cart-product-item-id.md) — every add-to-cart entry point must set productItemId from product.items?.[0]?.id or checkout blocks "missing product info"
 - [SMS compliance](sms-compliance.md) — carrier toll-free/A2P verification needs specific SMS clauses in privacy + terms pages AND matching live URLs (/privacy-policy, /terms-condition)
+- [Telnyx voice webhooks](telnyx-voice-webhooks.md) — 1-800 forward+voicemail via TeXML; side-effecting action callbacks are rate-limit-exempt so must carry a self-signed ?k= token

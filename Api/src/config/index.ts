@@ -79,6 +79,12 @@ export const config = {
     apiKey: process.env.TELNYX_API_KEY ?? '',
     fromNumber: process.env.TELNYX_FROM_NUMBER ?? '',
     voiceForwardTo: process.env.TELNYX_VOICE_FORWARD_TO ?? '',
+    // Public base URL of the telnyx routes (used for TeXML action callbacks)
+    publicUrl: process.env.TELNYX_PUBLIC_URL ?? 'https://api.thejigglingpig.com/api/v1/telnyx',
+    // Where missed-call voicemails are emailed
+    voicemailEmail: process.env.TELNYX_VOICEMAIL_EMAIL ?? process.env.ADMIN_EMAIL ?? 'info@thejigglingpig.com',
+    // Optional dedicated secret for signing TeXML action callback URLs (falls back to apiKey)
+    webhookToken: process.env.TELNYX_WEBHOOK_TOKEN ?? '',
   },
 
   store: {
