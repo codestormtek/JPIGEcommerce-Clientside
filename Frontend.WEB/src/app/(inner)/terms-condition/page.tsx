@@ -161,20 +161,23 @@ export default function Home() {
             </div>
 
             <div className="section-list mt--40">
-              <h2 className="title">SMS/Text Messaging Program</h2>
-              <p className="disc">
-                By opting in, you agree to receive account alerts and promotional text messages from The Jiggling Pig, LLC. These SMS messages are sent by The Jiggling Pig, LLC.
-              </p>
+              <h2 className="title">Data Sharing</h2>
               <ul>
-                <li><p><strong>Message types.</strong> You will receive messages such as order and shipping alerts, customer service updates, and promotional texts including our roadside BBQ live-location announcements.</p></li>
-                <li><p><strong>Message frequency.</strong> Message frequency varies.</p></li>
-                <li><p><strong>Cost.</strong> Message and data rates may apply.</p></li>
-                <li><p><strong>Opt-out.</strong> Reply STOP to opt out of SMS messages.</p></li>
-                <li><p><strong>Help.</strong> Reply HELP for help or contact support at info@thejigglingpig.com or 1-800-513-1710.</p></li>
+                <li><p>Customer data is not shared with 3rd parties for promotional or marketing purposes.</p></li>
+                <li><p>Mobile opt-in and consent are never shared with anyone for any purpose. Any information sharing that may be mentioned elsewhere in this policy excludes mobile opt-in data.</p></li>
               </ul>
-              <p className="disc">
-                Carriers are not liable for delayed or undelivered messages. For details on how we handle your information, see our <a href="/privacy-policy" style={{ color: '#ff8c00' }}>Privacy Policy</a>.
-              </p>
+            </div>
+
+            <div className="section-list mt--40">
+              <h2 className="title">The Jiggling Pig, LLC Messaging Terms and Conditions</h2>
+              <ol>
+                <li><p>The messaging program consists of standard notifications about customers purchases or relationship with our business, general conversational messaging to answer questions and provide support to customers, notifications about the delivery status of our products/services, promotional offers or discounts, any promotion of your products/services.</p></li>
+                <li><p>You can cancel the SMS service at any time. Just text &apos;STOP&apos; to the phone number from which you received messages. After you send the SMS message &apos;STOP&apos; to us, we will send you an SMS message to confirm that you have been unsubscribed. After this, you will no longer receive SMS messages from us. If you want to join again, just sign up as you did the first time and we will start sending SMS messages to you again.</p></li>
+                <li><p>If you are experiencing issues with the messaging program you can reply with the keyword HELP for more assistance, or you can get help directly at info@thejigglingpig.com.</p></li>
+                <li><p>Carriers are not liable for delayed or undelivered messages.</p></li>
+                <li><p>As always, message and data rates may apply for any messages sent to you from us and to us from you. Message frequency will vary based on communication needs. If you have any questions about your text plan or data plan, it is best to contact your wireless provider.</p></li>
+                <li><p>If you have any questions regarding privacy, please read our <a href="/privacy-policy" style={{ color: '#ff8c00' }}>Privacy Policy</a>.</p></li>
+              </ol>
             </div>
 
             <div className="section-list mt--40">
