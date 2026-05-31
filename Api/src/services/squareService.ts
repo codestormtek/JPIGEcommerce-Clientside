@@ -27,7 +27,8 @@ export async function createPayment(
   metadata: { orderId: string; userId: string },
 ): Promise<SquarePaymentResult> {
   const client = getSquareClient();
-  const idempotencyKey = `${metadata.orderId}-${Date.now()}`;
+  // Square caps idempotency_key at 45 chars; order IDs are long, so use a UUID (36 chars).
+  const idempotencyKey = crypto.randomUUID();
 
   const response = await client.payments.create({
     sourceId,
@@ -65,7 +66,8 @@ export async function refundPayment(
   reason?: string,
 ): Promise<SquareRefundResult> {
   const client = getSquareClient();
-  const idempotencyKey = `refund-${squarePaymentId}-${Date.now()}`;
+  // Square caps idempotency_key at 45 chars; use a UUID (36 chars) to stay safely under.
+  const idempotencyKey = crypto.randomUUID();
 
   const response = await client.refunds.refundPayment({
     paymentId: squarePaymentId,

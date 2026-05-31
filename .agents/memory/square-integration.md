@@ -67,3 +67,6 @@ The Square Web SDK card form gets stuck on the loading spinner when init silentl
 
 ## Server-side charge returns 401 AUTHENTICATION_ERROR / UNAUTHORIZED
 After the browser card form tokenizes fine, the API's Square charge can still 401. Causes: (1) `SQUARE_ACCESS_TOKEN` is a sandbox token while `SQUARE_ENVIRONMENT=production` (or vice versa) — token and environment must match and come from the SAME app's Production credentials as the App ID; (2) a trailing newline/space on `SQUARE_ENVIRONMENT` makes `env === 'production'` false, so the SDK silently hits the sandbox endpoint with a prod token → 401; (3) stray char on the access token. The API Square client (`Api/src/lib/square.ts`) now `.trim()`s both, but the values themselves must still match. NOTE: the client is a cached singleton — the API must be restarted/redeployed after changing these env vars.
+
+## Charge 400 VALUE_TOO_LONG on idempotency_key
+Square caps `idempotency_key` at 45 chars. The app's order IDs are long human-readable strings, so `${orderId}-${Date.now()}` exceeds 45 and Square rejects with 400 INVALID_REQUEST_ERROR. Fix: use `crypto.randomUUID()` (36 chars) for both payment create and refund in `Api/src/services/squareService.ts`.
