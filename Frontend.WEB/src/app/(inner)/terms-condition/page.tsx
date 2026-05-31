@@ -170,6 +170,12 @@ export default function Home() {
 
             <div className="section-list mt--40">
               <h2 className="title">The Jiggling Pig, LLC Messaging Terms and Conditions</h2>
+              <p className="disc">
+                By opting in, you agree to receive promotional, transactional, and customer care text messages from The Jiggling Pig, LLC. Message frequency varies. Message and data rates may apply.
+              </p>
+              <p className="disc">
+                To opt out of SMS messages, reply STOP to 1-800-513-1710. For help, reply HELP to 1-800-513-1710 or contact info@thejigglingpig.com.
+              </p>
               <ol>
                 <li><p>The messaging program consists of standard notifications about customers purchases or relationship with our business, general conversational messaging to answer questions and provide support to customers, notifications about the delivery status of our products/services, promotional offers or discounts, any promotion of your products/services.</p></li>
                 <li><p>You can cancel the SMS service at any time. Just text &apos;STOP&apos; to the phone number from which you received messages. After you send the SMS message &apos;STOP&apos; to us, we will send you an SMS message to confirm that you have been unsubscribed. After this, you will no longer receive SMS messages from us. If you want to join again, just sign up as you did the first time and we will start sending SMS messages to you again.</p></li>
