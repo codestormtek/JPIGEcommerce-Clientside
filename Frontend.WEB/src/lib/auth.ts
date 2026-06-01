@@ -18,6 +18,8 @@ interface RegisterData {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
+  smsOptInOrders?: boolean;
+  smsOptInMarketing?: boolean;
   website?: string;
 }
 

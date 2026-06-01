@@ -17,6 +17,7 @@ import {
 import * as repo from './auth.repository';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
 import { sendPendingApprovalEmail, sendAdminNewUserNotification } from '../../lib/registrationEmails';
+import { normalizePhone } from '../../lib/phone';
 
 // ─── Disposable email blocklist ───────────────────────────────────────────────
 
@@ -99,6 +100,22 @@ export async function register(
     passwordHash,
     phoneNumber: input.phoneNumber,
   });
+
+  // Persist SMS opt-ins (explicit consent captured at registration).
+  // Phone is canonicalized to E.164 so the same number always maps to one record.
+  const e164Phone = normalizePhone(input.phoneNumber);
+  if (e164Phone && input.smsOptInOrders) {
+    await repo.upsertSmsContactPreference(user.id, e164Phone).catch((err) => {
+      logger.error('Failed to save order SMS opt-in', { userId: user.id, err });
+    });
+  }
+  if (e164Phone && input.smsOptInMarketing) {
+    await repo
+      .upsertMarketingSmsSubscriber({ userId: user.id, phone: e164Phone, email: input.emailAddress })
+      .catch((err) => {
+        logger.error('Failed to save marketing SMS opt-in', { userId: user.id, err });
+      });
+  }
 
   logger.info('User registered (pending approval)', { userId: user.id });
   logAudit({

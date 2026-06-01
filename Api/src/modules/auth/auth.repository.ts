@@ -35,6 +35,65 @@ export async function createUser(data: {
   });
 }
 
+/** Enables SMS (and keeps email default) on the user's contact preference for order texts. */
+export async function upsertSmsContactPreference(userId: string, smsPhone: string): Promise<void> {
+  await prisma.userContactPreference.upsert({
+    where: { userId },
+    create: { userId, optInSms: true, smsPhone },
+    update: { optInSms: true, smsPhone },
+  });
+}
+
+/**
+ * Idempotently records a marketing SMS opt-in (events & live-location alerts).
+ * Reuses the Subscriber model that the roadside live-session broadcaster sends to.
+ * Looks up an existing subscriber by canonical phone first so re-registration or a
+ * prior newsletter signup never creates a duplicate row (= duplicate outbound SMS).
+ */
+export async function upsertMarketingSmsSubscriber(data: {
+  userId: string;
+  phone: string; // already normalized to E.164 by the caller
+  email?: string;
+}): Promise<void> {
+  const existing = await prisma.subscriber.findFirst({
+    where: { phone: data.phone, isDeleted: false },
+  });
+
+  const subscriber = existing
+    ? await prisma.subscriber.update({
+        where: { id: existing.id },
+        data: {
+          optInSms: true,
+          confirmedAt: existing.confirmedAt ?? new Date(),
+          userId: existing.userId ?? data.userId,
+          email: existing.email ?? data.email,
+        },
+      })
+    : await prisma.subscriber.create({
+        data: {
+          userId: data.userId,
+          phone: data.phone,
+          email: data.email,
+          optInSms: true,
+          confirmedAt: new Date(),
+        },
+      });
+
+  // Live-location / truck-schedule topic drives roadside BBQ alerts — ensure one exists
+  const sub = await prisma.subscriberSubscription.findFirst({
+    where: { subscriberId: subscriber.id, subscriptionType: 'truck_schedule', isDeleted: false },
+  });
+  if (sub) {
+    if (!sub.isEnabled) {
+      await prisma.subscriberSubscription.update({ where: { id: sub.id }, data: { isEnabled: true } });
+    }
+  } else {
+    await prisma.subscriberSubscription.create({
+      data: { subscriberId: subscriber.id, subscriptionType: 'truck_schedule', isEnabled: true },
+    });
+  }
+}
+
 export async function updateUserPassword(userId: string, passwordHash: string): Promise<void> {
   await prisma.siteUser.update({
     where: { id: userId },

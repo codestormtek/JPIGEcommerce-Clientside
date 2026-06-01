@@ -2,19 +2,35 @@ import { z } from 'zod';
 
 // ─── Register ─────────────────────────────────────────────────────────────────
 
-export const registerSchema = z.object({
-  firstName: z.string().min(1).max(100).optional(),
-  lastName: z.string().min(1).max(100).optional(),
-  emailAddress: z.string().email('Invalid email address'),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  phoneNumber: z.string().optional(),
-  // Honeypot: must be absent or empty — bots fill it, humans don't
-  website: z.string().max(0, 'Registration failed. Please try again.').optional(),
-});
+export const registerSchema = z
+  .object({
+    firstName: z.string().min(1).max(100).optional(),
+    lastName: z.string().min(1).max(100).optional(),
+    emailAddress: z.string().email('Invalid email address'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/[0-9]/, 'Password must contain at least one number'),
+    phoneNumber: z.string().max(30).optional(),
+    // SMS opt-ins (explicit consent — required for toll-free compliance)
+    smsOptInOrders: z.boolean().optional().default(false), // order/transactional texts
+    smsOptInMarketing: z.boolean().optional().default(false), // events & live-location alerts
+    // Honeypot: must be absent or empty — bots fill it, humans don't
+    website: z.string().max(0, 'Registration failed. Please try again.').optional(),
+  })
+  .refine(
+    (d) => {
+      // If they opted into any SMS, a phone number with enough digits is required
+      if (!d.smsOptInOrders && !d.smsOptInMarketing) return true;
+      const digits = (d.phoneNumber ?? '').replace(/\D/g, '');
+      return digits.length >= 10;
+    },
+    {
+      message: 'A valid mobile number is required to receive text messages',
+      path: ['phoneNumber'],
+    },
+  );
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 

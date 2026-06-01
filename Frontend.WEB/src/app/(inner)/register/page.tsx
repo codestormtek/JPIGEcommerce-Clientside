@@ -15,8 +15,11 @@ export default function Home() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [emailAddress, setEmailAddress] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [smsOptInOrders, setSmsOptInOrders] = useState(false);
+  const [smsOptInMarketing, setSmsOptInMarketing] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -30,13 +33,31 @@ export default function Home() {
       return;
     }
 
+    // If they opted into any texts, require a valid-looking mobile number
+    if (smsOptInOrders || smsOptInMarketing) {
+      const digits = phoneNumber.replace(/\D/g, "");
+      if (digits.length < 10) {
+        setError("Please enter a valid mobile number to receive text messages.");
+        return;
+      }
+    }
+
     // Honeypot check — if this field has a value, a bot filled it in
     const honeypot = (e.currentTarget as HTMLFormElement).elements.namedItem("website") as HTMLInputElement | null;
     if (honeypot?.value) return;
 
     setLoading(true);
     try {
-      await register({ emailAddress, password, firstName, lastName, website: "" });
+      await register({
+        emailAddress,
+        password,
+        firstName,
+        lastName,
+        phoneNumber: phoneNumber.trim() || undefined,
+        smsOptInOrders,
+        smsOptInMarketing,
+        website: "",
+      });
       setRegistered(true);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -148,6 +169,18 @@ export default function Home() {
                       />
                     </div>
                     <div className="input-wrapper">
+                      <label htmlFor="phone">Mobile Phone {(smsOptInOrders || smsOptInMarketing) ? "*" : "(optional)"}</label>
+                      <input
+                        type="tel"
+                        id="phone"
+                        placeholder="(555) 123-4567"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        autoComplete="tel"
+                        required={smsOptInOrders || smsOptInMarketing}
+                      />
+                    </div>
+                    <div className="input-wrapper">
                       <label htmlFor="password">Password*</label>
                       <input
                         type="password"
@@ -166,6 +199,38 @@ export default function Home() {
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
                       />
+                    </div>
+                    <div style={{ margin: "8px 0 4px", padding: "16px", border: "1px solid #e5e7eb", borderRadius: 8, background: "#fafafa" }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: "#374151", marginBottom: 10 }}>
+                        Text Message Alerts
+                      </p>
+                      <label htmlFor="smsOptInOrders" style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#4b5563", cursor: "pointer", marginBottom: 10 }}>
+                        <input
+                          type="checkbox"
+                          id="smsOptInOrders"
+                          checked={smsOptInOrders}
+                          onChange={(e) => setSmsOptInOrders(e.target.checked)}
+                          style={{ marginTop: 3, flexShrink: 0 }}
+                        />
+                        <span>Text me updates about <strong>my orders</strong> (confirmation, shipping, and ready-for-pickup alerts).</span>
+                      </label>
+                      <label htmlFor="smsOptInMarketing" style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#4b5563", cursor: "pointer", marginBottom: 12 }}>
+                        <input
+                          type="checkbox"
+                          id="smsOptInMarketing"
+                          checked={smsOptInMarketing}
+                          onChange={(e) => setSmsOptInMarketing(e.target.checked)}
+                          style={{ marginTop: 3, flexShrink: 0 }}
+                        />
+                        <span>Text me about <strong>events &amp; live BBQ locations</strong> (find out where the truck is parked).</span>
+                      </label>
+                      <p style={{ fontSize: 11, color: "#9ca3af", lineHeight: 1.5, margin: 0 }}>
+                        By checking a box above you agree to receive recurring automated text messages from The Jiggling Pig
+                        at the number provided. Consent is not a condition of purchase. Message frequency varies. Message &amp;
+                        data rates may apply. Reply <strong>STOP</strong> to cancel or <strong>HELP</strong> for help. See our{" "}
+                        <Link href="/privacy-policy" style={{ textDecoration: "underline" }}>Privacy Policy</Link> and{" "}
+                        <Link href="/terms-condition" style={{ textDecoration: "underline" }}>Terms</Link>.
+                      </p>
                     </div>
                     <button
                       type="submit"
