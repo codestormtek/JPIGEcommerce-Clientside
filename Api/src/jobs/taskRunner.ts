@@ -127,6 +127,15 @@ export async function runTaskManually(taskId: string, userId?: string): Promise<
     throw new Error(`No handler registered for taskKey="${task.taskKey}"`);
   }
 
+  if (!task.allowConcurrentRuns) {
+    const runningExecution = await prisma.taskExecution.findFirst({
+      where: { scheduledTaskId: task.id, status: 'running' },
+    });
+    if (runningExecution) {
+      throw new Error('Task is already running — concurrent runs are not allowed for this task');
+    }
+  }
+
   executeTask(taskId, task.taskKey, 'manual', userId).catch((e) =>
     logger.error(`taskRunner: manual run failed for "${task.taskKey}"`, { err: e }),
   );

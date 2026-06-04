@@ -3,6 +3,7 @@ import { lowStockCheckProcessor } from './lowStockCheck.job';
 import { logCleanupProcessor } from './logCleanup.job';
 import { dailySalesSummaryProcessor } from './dailySalesSummary.job';
 import { aggregateMetricsProcessor } from './aggregateMetrics.job';
+import { cateringEventReminderProcessor } from './cateringEventReminder.job';
 
 export interface TaskHandlerMeta {
   key: string;
@@ -62,6 +63,15 @@ register({
   category: 'reports',
   defaultCron: '0 1 * * *',
   handler: aggregateMetricsProcessor,
+});
+
+register({
+  key: 'cateringEventReminder',
+  name: 'Catering Event Reminder',
+  description: 'Texts customers a reminder when their booked catering event is 3 days away. Idempotent via MessageOutbox.',
+  category: 'catering',
+  defaultCron: '0 15 * * *',
+  handler: cateringEventReminderProcessor,
 });
 
 export function getHandler(taskKey: string): TaskHandlerMeta | undefined {
