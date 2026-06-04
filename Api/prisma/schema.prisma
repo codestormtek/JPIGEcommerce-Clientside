@@ -50,6 +50,7 @@ model SiteUser {
   cateringQuotes        CateringQuote[]
   liveSessions          LiveSession[]         @relation("LiveSessionCreator")
   smsCampaigns          SmsAlertCampaign[]    @relation("SmsCampaignCreator")
+  smsBroadcasts         SmsBroadcast[]        @relation("SmsBroadcastCreator")
 
   @@map("site_users")
 }
@@ -1132,6 +1133,7 @@ model Subscriber {
 
   subscriptions   SubscriberSubscription[]
   smsAlertMessages SmsAlertMessage[]
+  smsBroadcastRecipients SmsBroadcastRecipient[]
 
   @@map("subscribers")
 }
@@ -2027,5 +2029,46 @@ model SmsAlertMessage {
   sentAt            DateTime?
 
   @@map("sms_alert_messages")
+}
+
+model SmsBroadcast {
+  id              String       @id @default(uuid())
+  createdAt       DateTime     @default(now())
+
+  title           String?
+  messageBody     String
+  audienceType    String       @default("all") // all | topic
+  audienceTopic   String?      // subscriptionType when audienceType=topic
+  status          String       @default("sent") // sent | partial | failed
+  totalRecipients Int          @default(0)
+  totalSent       Int          @default(0)
+  totalFailed     Int          @default(0)
+  sentAt          DateTime?
+
+  createdByUserId String?
+  createdByUser   SiteUser?    @relation("SmsBroadcastCreator", fields: [createdByUserId], references: [id])
+
+  recipients      SmsBroadcastRecipient[]
+
+  @@map("sms_broadcasts")
+}
+
+model SmsBroadcastRecipient {
+  id                String       @id @default(uuid())
+  createdAt         DateTime     @default(now())
+
+  broadcastId       String
+  broadcast         SmsBroadcast @relation(fields: [broadcastId], references: [id])
+
+  subscriberId      String?
+  subscriber        Subscriber?  @relation(fields: [subscriberId], references: [id])
+
+  phoneNumber       String
+  providerMessageId String?
+  sendStatus        String       @default("queued") // sent | failed
+  errorMessage      String?
+  sentAt            DateTime?
+
+  @@map("sms_broadcast_recipients")
 }
 

@@ -40,6 +40,7 @@ import { siteSettingsRouter } from './modules/site-settings/site-settings.routes
 import { widgetsRouter } from './modules/widgets/widgets.routes';
 import { cateringRouter } from './modules/catering/catering.routes';
 import { liveSessionsRouter } from './modules/live-sessions/live-sessions.routes';
+import { smsBroadcastsRouter } from './modules/sms-broadcasts/sms-broadcasts.routes';
 import { reviewsRouter } from './modules/reviews/reviews.routes';
 import { paymentGatewayRouter } from './modules/payment-gateway/payment-gateway.routes';
 import { telnyxVoiceRouter } from './modules/telnyx-voice/telnyx-voice.routes';
@@ -131,6 +132,7 @@ app.use(`${API}/site-settings`, siteSettingsRouter);
 app.use(`${API}/widgets`, widgetsRouter);
 app.use(`${API}/catering`, cateringRouter);
 app.use(`${API}/live-sessions`, liveSessionsRouter);
+app.use(`${API}/admin/sms-broadcasts`, smsBroadcastsRouter);
 app.use(`${API}/reviews`, reviewsRouter);
 app.use(`${API}/admin/payment-gateway`, paymentGatewayRouter);
 app.use(`${API}/telnyx`, telnyxVoiceRouter);

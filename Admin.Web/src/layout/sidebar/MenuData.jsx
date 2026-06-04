@@ -96,6 +96,13 @@ const menu = [
     ],
   },
   {
+    icon: "chat",
+    text: "SMS Marketing",
+    subMenu: [
+      { text: "Broadcast",  link: "/sms-broadcasts" },
+    ],
+  },
+  {
     icon: "clip",
     text: "Food Truck Menus",
     subMenu: [
