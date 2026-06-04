@@ -12,6 +12,7 @@ import { validateCoupon, redeemCoupon } from '../promotions/promotions.service';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
 import { logger } from '../../utils/logger';
 import { sendOrderConfirmationToCustomer, sendAdminNewOrderNotification } from '../../lib/notificationEmails';
+import { resolveOrderSmsRecipient, sendOrderStatusSms } from './orderSms';
 import prisma from '../../lib/prisma';
 
 // ─── User-facing ──────────────────────────────────────────────────────────────
@@ -248,15 +249,16 @@ export async function checkout(userId: string, input: PlaceOrderInput, ctx?: Aud
           }),
         ];
 
-        // SMS confirmation if customer has a phone number
-        if (usr.phoneNumber) {
-          notifyPromises.push(
-            sendSms(
-              usr.phoneNumber,
-              `Hi ${usr.firstName || 'there'}, your order ${orderNum} has been placed! Total: ${order.currency} ${n(order.grandTotal).toFixed(2)}. Visit ${config.store.url}/orders to track it. — ${config.store.name}`,
-            ),
-          );
-        }
+        // SMS order-placed confirmation — only to customers who opted in to order texts
+        notifyPromises.push(
+          resolveOrderSmsRecipient(userId).then((recipient) => {
+            if (!recipient) return undefined;
+            return sendSms(
+              recipient.phone,
+              `Hi ${recipient.firstName || 'there'}, your order ${orderNum} has been placed! Total: ${order.currency} ${n(order.grandTotal).toFixed(2)}. Track it: ${config.store.url}/orders — ${config.store.name}`,
+            );
+          }),
+        );
 
         return Promise.all(notifyPromises);
       })
@@ -293,6 +295,7 @@ export async function changeOrderStatus(
 ) {
   // Verify order exists and capture before state
   const before = await getOrderById(orderId);
+  const previousStatusId = (before as { orderStatusId?: string }).orderStatusId;
 
   // Verify the target status exists
   const statuses = await repo.findAllStatuses();
@@ -308,6 +311,12 @@ export async function changeOrderStatus(
     afterJson: { statusId: input.statusId },
     ctx: { ...ctx, actorId: changedByUserId },
   });
+
+  // Fire-and-forget customer SMS — only on an actual status transition (respects opt-in)
+  if (previousStatusId !== input.statusId) {
+    void sendOrderStatusSms(after as unknown as Parameters<typeof sendOrderStatusSms>[0], after.userId);
+  }
+
   return after;
 }
 
