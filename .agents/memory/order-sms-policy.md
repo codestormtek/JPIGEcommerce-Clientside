@@ -20,3 +20,10 @@ sends; legacy users without a `UserContactPreference` row will (correctly) get n
 resolver. Status-change texts must only fire on an **actual** status transition
 (compare previous statusId to the new one) — re-saving the same status must NOT
 re-send, or customers get duplicate texts.
+
+**Catering quotes are the exception to opt-in gating:** catering quote-status texts go
+straight to the quote's `customerPhone` (no opt-in table check), because submitters can
+be guests with no account and they supply the phone specifically to receive updates on
+that quote — transactional consent. Same transition-guard rule still applies (only fire
+when status actually changed). Keep this distinction: do NOT gate catering quote texts on
+optInSms, and do NOT remove opt-in gating from registered-user order texts.

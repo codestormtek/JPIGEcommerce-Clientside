@@ -1,6 +1,7 @@
 import { ApiError } from '../../utils/apiError';
 import { CalculateEstimateInput, SubmitQuoteInput, UpdateQuoteInput } from './catering.schema';
 import * as repo from './catering.repository';
+import { sendQuoteStatusSms } from './cateringSms';
 
 export async function getPublicMenu() {
   return repo.findActiveMenuItemsGrouped();
@@ -124,7 +125,15 @@ export async function submitQuote(input: SubmitQuoteInput) {
 export async function updateQuote(id: string, input: UpdateQuoteInput) {
   const existing = await repo.findQuoteById(id);
   if (!existing) throw ApiError.notFound('Catering quote');
-  return repo.updateQuote(id, input);
+
+  const updated = await repo.updateQuote(id, input);
+
+  // Fire-and-forget customer SMS — only on an actual status transition
+  if (input.status && input.status !== existing.status) {
+    void sendQuoteStatusSms(updated as unknown as Parameters<typeof sendQuoteStatusSms>[0]);
+  }
+
+  return updated;
 }
 
 export async function checkAvailability(dateStr: string) {
