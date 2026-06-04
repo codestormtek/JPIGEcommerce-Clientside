@@ -113,6 +113,7 @@ import AdminCateringAvailability from "@/pages/pre-built/catering/AdminCateringA
 import AdminLiveSessionManager from "@/pages/pre-built/live-sessions/AdminLiveSessionManager";
 import AdminAlertHistory from "@/pages/pre-built/live-sessions/AdminAlertHistory";
 import AdminSmsBroadcast from "@/pages/pre-built/sms-broadcasts/AdminSmsBroadcast";
+import AdminOrderNotifications from "@/pages/pre-built/order-notifications/AdminOrderNotifications";
 import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
 import AdminPromotionList from "@/pages/pre-built/promotions/AdminPromotionList";
 import AdminReviews from "@/pages/pre-built/reviews/AdminReviews";
@@ -257,6 +258,7 @@ const Pages = () => {
               <Route path="live-sessions" element={<AdminLiveSessionManager />}></Route>
               <Route path="live-sessions/history" element={<AdminAlertHistory />}></Route>
               <Route path="sms-broadcasts" element={<AdminSmsBroadcast />}></Route>
+              <Route path="order-notifications" element={<AdminOrderNotifications />}></Route>
 
               <Route path="kyc-list-regular" element={<KycListRegular />}></Route>
               <Route path="kyc-details-regular/:kycId" element={<KycDetailsRegular />}></Route>

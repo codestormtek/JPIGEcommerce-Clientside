@@ -2072,3 +2072,16 @@ model SmsBroadcastRecipient {
   @@map("sms_broadcast_recipients")
 }
 
+/// Store-side cell numbers that receive an SMS alert whenever a customer places an order.
+model OrderNotificationRecipient {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  label       String?  // optional name/description, e.g. "Owner", "Kitchen"
+  phoneNumber String
+  isActive    Boolean  @default(true)
+
+  @@map("order_notification_recipients")
+}
+

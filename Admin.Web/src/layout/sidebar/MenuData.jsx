@@ -99,7 +99,8 @@ const menu = [
     icon: "chat",
     text: "SMS Marketing",
     subMenu: [
-      { text: "Broadcast",  link: "/sms-broadcasts" },
+      { text: "Broadcast",          link: "/sms-broadcasts" },
+      { text: "Order Alert Numbers", link: "/order-notifications" },
     ],
   },
   {

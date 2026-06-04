@@ -27,3 +27,10 @@ be guests with no account and they supply the phone specifically to receive upda
 that quote — transactional consent. Same transition-guard rule still applies (only fire
 when status actually changed). Keep this distinction: do NOT gate catering quote texts on
 optInSms, and do NOT remove opt-in gating from registered-user order texts.
+
+**Store-side new-order alerts are also exempt from customer opt-in:** internal staff
+"a customer placed an order" texts go to numbers in the `OrderNotificationRecipient`
+table (managed in admin), NOT to customers. They are first-party staff notifications, so
+no opt-in/TCPA gating applies. Keep customer-facing order SMS and store-side alert
+numbers in separate code paths — never merge the store alert list into the customer
+opt-in resolver.

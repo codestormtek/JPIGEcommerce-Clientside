@@ -13,6 +13,7 @@ import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
 import { logger } from '../../utils/logger';
 import { sendOrderConfirmationToCustomer, sendAdminNewOrderNotification } from '../../lib/notificationEmails';
 import { resolveOrderSmsRecipient, sendOrderStatusSms } from './orderSms';
+import { sendNewOrderStoreAlerts } from '../order-notifications/order-notifications.service';
 import prisma from '../../lib/prisma';
 
 // ─── User-facing ──────────────────────────────────────────────────────────────
@@ -257,6 +258,17 @@ export async function checkout(userId: string, input: PlaceOrderInput, ctx?: Aud
               recipient.phone,
               `Hi ${recipient.firstName || 'there'}, your order ${orderNum} has been placed! Total: ${order.currency} ${n(order.grandTotal).toFixed(2)}. Track it: ${config.store.url}/orders — ${config.store.name}`,
             );
+          }),
+        );
+
+        // Store-side new-order alert — texts every active notification recipient
+        notifyPromises.push(
+          sendNewOrderStoreAlerts({
+            orderNumber: orderNum,
+            customerName,
+            itemCount: lines.length,
+            grandTotal: n(order.grandTotal),
+            currency: order.currency,
           }),
         );
 
