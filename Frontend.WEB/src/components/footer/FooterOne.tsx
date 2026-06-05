@@ -1,11 +1,26 @@
 'use client';
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import NewsletterForm from './NewsletterForm'
 import { useSiteSettings } from '@/context/SiteSettingsContext';
+import { apiGet } from '@/lib/api';
+
+interface SocialLink {
+    id: string;
+    platform: string;
+    iconClass: string;
+    url: string;
+}
 
 function FooterOne() {
     const { settings } = useSiteSettings();
     const s = (key: string, fallback: string) => settings[key] || fallback;
+
+    const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+    useEffect(() => {
+        apiGet<{ success: boolean; data: SocialLink[] }>('/social-links/public')
+            .then((res) => setSocialLinks(res.data || []))
+            .catch(() => {});
+    }, []);
     return (
         <div><>
             <style>{`
@@ -145,36 +160,26 @@ function FooterOne() {
                                 </div>
                             </div>
                             <div className="social-and-payment-area-wrapper">
-                                <div className="social-one-wrapper">
-                                    <span>Follow Us:</span>
-                                    <ul>
-                                        <li>
-                                            <a href="#">
-                                                <i className="fa-brands fa-facebook-f" />
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="#">
-                                                <i className="fa-brands fa-twitter" />
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="#">
-                                                <i className="fa-brands fa-youtube" />
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="#">
-                                                <i className="fa-brands fa-whatsapp" />
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="#">
-                                                <i className="fa-brands fa-instagram" />
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
+                                {socialLinks.length > 0 && (
+                                    <div className="social-one-wrapper">
+                                        <span>Follow Us:</span>
+                                        <ul>
+                                            {socialLinks.map((link) => (
+                                                <li key={link.id}>
+                                                    <a
+                                                        href={link.url || '#'}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        aria-label={link.platform}
+                                                        title={link.platform}
+                                                    >
+                                                        <i className={link.iconClass} />
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                                 <div className="payment-access">
                                     <span>Payment Accepts:</span>
                                     <img src="https://cdn.thejigglingpig.com/media/2026/03/35509b8d-5593-4e4e-ab96-956e95a78655.png" alt="Payment methods" />

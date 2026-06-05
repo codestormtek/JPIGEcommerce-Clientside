@@ -114,6 +114,7 @@ import AdminLiveSessionManager from "@/pages/pre-built/live-sessions/AdminLiveSe
 import AdminAlertHistory from "@/pages/pre-built/live-sessions/AdminAlertHistory";
 import AdminSmsBroadcast from "@/pages/pre-built/sms-broadcasts/AdminSmsBroadcast";
 import AdminOrderNotifications from "@/pages/pre-built/order-notifications/AdminOrderNotifications";
+import AdminSocialLinks from "@/pages/pre-built/social-links/AdminSocialLinks";
 import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
 import AdminPromotionList from "@/pages/pre-built/promotions/AdminPromotionList";
 import AdminReviews from "@/pages/pre-built/reviews/AdminReviews";
@@ -247,6 +248,7 @@ const Pages = () => {
               <Route path="site-pages" element={<AdminPageList />}></Route>
               <Route path="metrics" element={<AdminMetricsPage />}></Route>
               <Route path="site-settings" element={<AdminSiteSettings />}></Route>
+              <Route path="social-links" element={<AdminSocialLinks />}></Route>
               <Route path="widgets" element={<AdminWidgetList />}></Route>
               <Route path="catering" element={<AdminCateringDashboard />}></Route>
               <Route path="catering/menu-items" element={<AdminCateringMenuItems />}></Route>

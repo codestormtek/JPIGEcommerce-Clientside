@@ -264,6 +264,11 @@ const menu = [
     link: "/site-settings",
   },
   {
+    icon: "share-alt",
+    text: "Social Links",
+    link: "/social-links",
+  },
+  {
     icon: "cc-alt2",
     text: "Payment Gateway",
     link: "/payment-gateway",
