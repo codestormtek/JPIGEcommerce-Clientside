@@ -15,8 +15,8 @@ const CartMain = () => {
 
   useEffect(() => {
     const total = activeCartItems.reduce((acc, item) => {
-      const price = item.price;
-      const quantity = item.quantity || 1;
+      const price = Number(item.price);
+      const quantity = Number(item.quantity) || 1;
       return acc + (isNaN(price) ? 0 : price * quantity);
     }, 0);
     setSubtotal(total);
@@ -95,7 +95,10 @@ const CartMain = () => {
                 <div className="subtotal"><p>SubTotal</p></div>
               </div>
 
-              {activeCartItems.map(item => (
+              {activeCartItems.map(item => {
+                const price = Number(item.price) || 0;
+                const quantity = Number(item.quantity) || 1;
+                return (
                 <div className="single-cart-area-list main item-parent" key={item.id}>
                   <div className="product-main-cart">
                     <div className="close section-activation" onClick={() => removeFromCart(item.id)}>
@@ -109,31 +112,32 @@ const CartMain = () => {
                       <span>SKU:SKUZNFER</span>
                     </div>
                   </div>
-                  <div className="price"><p>${item.price.toFixed(2)}</p></div>
+                  <div className="price"><p>${price.toFixed(2)}</p></div>
                   <div className="quantity">
                     <div className="quantity-edit">
-                      <input type="text" className="input" value={item.quantity} readOnly />
+                      <input type="text" className="input" value={quantity} readOnly />
                       <div className="button-wrapper-action">
                         <button
                           className="button minus"
                           onClick={() =>
-                            item.quantity > 1 && updateItemQuantity(item.id, item.quantity - 1)
+                            quantity > 1 && updateItemQuantity(item.id, quantity - 1)
                           }
                         >
                           <i className="fa-regular fa-chevron-down" />
                         </button>
                         <button
                           className="button plus"
-                          onClick={() => updateItemQuantity(item.id, item.quantity + 1)}
+                          onClick={() => updateItemQuantity(item.id, quantity + 1)}
                         >
                           <i className="fa-regular fa-chevron-up" />
                         </button>
                       </div>
                     </div>
                   </div>
-                  <div className="subtotal"><p>${(item.price * item.quantity).toFixed(2)}</p></div>
+                  <div className="subtotal"><p>${(price * quantity).toFixed(2)}</p></div>
                 </div>
-              ))}
+                );
+              })}
 
               {/* Coupon + Clear */}
               <div className="bottom-cupon-code-cart-area">
