@@ -11,6 +11,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   changePasswordSchema,
+  claimAccountSchema,
 } from './auth.schema';
 import * as ctrl from './auth.controller';
 
@@ -80,6 +81,14 @@ authRouter.post(
   authLimiter,
   validate(resetPasswordSchema),
   asyncHandler(ctrl.resetPassword),
+);
+
+// POST /api/v1/auth/claim-account  (set a password after a guest order)
+authRouter.post(
+  '/claim-account',
+  registerLimiter,
+  validate(claimAccountSchema),
+  asyncHandler(ctrl.claimAccount),
 );
 
 // ─── Authenticated routes ─────────────────────────────────────────────────────

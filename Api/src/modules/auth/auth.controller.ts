@@ -11,6 +11,7 @@ import {
   ForgotPasswordInput,
   ResetPasswordInput,
   ChangePasswordInput,
+  ClaimAccountInput,
 } from './auth.schema';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -86,6 +87,17 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
   const input = req.body as ChangePasswordInput;
   await service.changePassword(req.user!.sub, input, ctxFromRequest(req, req.user!.sub));
   sendNoContent(res);
+}
+
+export async function claimAccount(req: Request, res: Response): Promise<void> {
+  const input = req.body as ClaimAccountInput;
+  const result = await service.claimAccount(input, requestMeta(req));
+  sendSuccess(
+    res,
+    { accessToken: result.accessToken, refreshToken: result.refreshToken, userId: result.userId },
+    'Account created successfully.',
+    201,
+  );
 }
 
 export async function me(req: AuthRequest, res: Response): Promise<void> {

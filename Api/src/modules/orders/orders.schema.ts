@@ -26,6 +26,7 @@ const orderAddressSchema = z.object({
   addressType: z.enum(['shipping', 'billing']),
   fullName: z.string().optional(),
   phone: z.string().optional(),
+  email: z.string().email().optional(),
   addressLine1: z.string().min(1),
   addressLine2: z.string().optional(),
   city: z.string().min(1),
@@ -58,6 +59,33 @@ export const placeOrderSchema = z.object({
 export type PlaceOrderInput = z.infer<typeof placeOrderSchema>;
 export type OrderLineInput = z.infer<typeof orderLineSchema>;
 export type OrderAddressInput = z.infer<typeof orderAddressSchema>;
+
+// ─── Guest checkout (public — no login) ───────────────────────────────────────
+
+export const guestCheckoutSchema = placeOrderSchema.extend({
+  contact: z.object({
+    email: z.string().email('A valid email is required'),
+    firstName: z.string().min(1).max(100).optional(),
+    lastName: z.string().min(1).max(100).optional(),
+    phone: z.string().max(30).optional(),
+  }),
+  /** Raw Stripe PaymentMethod id (pm_...) for a one-time guest charge */
+  stripePaymentMethodId: z.string().optional(),
+}).refine(
+  (data) => Boolean(data.stripePaymentMethodId) || Boolean(data.squareNonce),
+  { message: 'A payment method is required for guest checkout.', path: ['stripePaymentMethodId'] },
+);
+
+export type GuestCheckoutInput = z.infer<typeof guestCheckoutSchema>;
+
+// ─── Track order (public) ─────────────────────────────────────────────────────
+
+export const trackOrderSchema = z.object({
+  orderNumber: z.string().min(1, 'Order number is required'),
+  email: z.string().email('A valid email is required'),
+});
+
+export type TrackOrderInput = z.infer<typeof trackOrderSchema>;
 
 // ─── Update order status (admin) ──────────────────────────────────────────────
 

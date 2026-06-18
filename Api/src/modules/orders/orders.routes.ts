@@ -1,11 +1,29 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validate.middleware';
 import { asyncHandler } from '../../utils/asyncHandler';
-import { listOrdersSchema, placeOrderSchema, updateOrderStatusSchema, emailInvoiceSchema } from './orders.schema';
+import { listOrdersSchema, placeOrderSchema, updateOrderStatusSchema, emailInvoiceSchema, guestCheckoutSchema, trackOrderSchema } from './orders.schema';
 import * as ctrl from './orders.controller';
 
 export const ordersRouter = Router();
+
+// Throttle public, unauthenticated order endpoints (abuse / enumeration protection)
+const guestCheckoutLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20,
+  message: { success: false, message: 'Too many checkout attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const trackOrderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,
+  message: { success: false, message: 'Too many tracking attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // ─── Lookup routes (static — must be before /:id) ────────────────────────────
 
@@ -14,6 +32,12 @@ ordersRouter.get('/statuses', asyncHandler(ctrl.listStatuses));
 
 // GET  /api/v1/orders/shipping-methods (public)
 ordersRouter.get('/shipping-methods', asyncHandler(ctrl.listShippingMethods));
+
+// POST /api/v1/orders/guest            (public — guest checkout)
+ordersRouter.post('/guest', guestCheckoutLimiter, validate(guestCheckoutSchema), asyncHandler(ctrl.guestCheckout));
+
+// POST /api/v1/orders/track            (public — order tracking by number + email)
+ordersRouter.post('/track', trackOrderLimiter, validate(trackOrderSchema), asyncHandler(ctrl.trackOrder));
 
 // ─── Admin routes ─────────────────────────────────────────────────────────────
 

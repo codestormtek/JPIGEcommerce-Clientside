@@ -101,6 +101,22 @@ export async function updateUserPassword(userId: string, passwordHash: string): 
   });
 }
 
+/** Loads an order plus its owning user — used to verify guest-account claims. */
+export async function findOrderOwner(orderId: string) {
+  return prisma.shopOrder.findUnique({
+    where: { id: orderId },
+    include: { user: true },
+  });
+}
+
+/** Converts a guest shell account into a real, active account with a password. */
+export async function claimGuestAccount(userId: string, passwordHash: string): Promise<void> {
+  await prisma.siteUser.update({
+    where: { id: userId },
+    data: { passwordHash, isActive: true, isGuest: false, lastModifiedAt: new Date() },
+  });
+}
+
 // ─── Refresh Tokens ───────────────────────────────────────────────────────────
 
 export async function createRefreshToken(data: {

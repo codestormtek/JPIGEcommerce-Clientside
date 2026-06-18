@@ -13,6 +13,7 @@ import {
   ForgotPasswordInput,
   ResetPasswordInput,
   ChangePasswordInput,
+  ClaimAccountInput,
 } from './auth.schema';
 import * as repo from './auth.repository';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
@@ -257,6 +258,42 @@ export async function changePassword(
     entityId: userId,
     ctx: { ...ctx, actorId: userId },
   });
+}
+
+export async function claimAccount(
+  input: ClaimAccountInput,
+  meta?: { userAgent?: string; ipAddress?: string },
+): Promise<AuthTokens & { userId: string }> {
+  const order = await repo.findOrderOwner(input.orderId);
+  if (!order || !order.user) {
+    throw ApiError.badRequest('We could not find an order with that reference.');
+  }
+
+  const emailMatches =
+    order.user.emailAddress.toLowerCase() === input.emailAddress.trim().toLowerCase();
+  if (!emailMatches) {
+    throw ApiError.badRequest('That email does not match this order.');
+  }
+
+  if (!order.user.isGuest) {
+    throw ApiError.conflict(
+      'An account already exists for this email. Please log in, or use the "forgot password" link.',
+    );
+  }
+
+  const passwordHash = await bcrypt.hash(input.password, config.bcrypt.saltRounds);
+  await repo.claimGuestAccount(order.user.id, passwordHash);
+
+  const tokens = await _issueTokens(order.user.id, order.user.role as UserRole, meta);
+  logger.info('Guest account claimed', { userId: order.user.id });
+  logAudit({
+    action: AuditAction.USER_REGISTERED,
+    entityType: 'SiteUser',
+    entityId: order.user.id,
+    ctx: { actorId: order.user.id, ip: meta?.ipAddress, userAgent: meta?.userAgent },
+  });
+
+  return { ...tokens, userId: order.user.id };
 }
 
 export async function getProfile(userId: string) {

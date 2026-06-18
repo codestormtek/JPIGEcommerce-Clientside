@@ -24,6 +24,7 @@ model SiteUser {
   passwordHash String
   avatarUrl    String?
   isActive     Boolean @default(true)
+  isGuest      Boolean @default(false) // guest-checkout shell account (no password set yet)
   role         String  @default("user") // user|admin
 
   contactPreference     UserContactPreference?

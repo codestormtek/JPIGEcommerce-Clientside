@@ -47,6 +47,19 @@ export async function register(data: RegisterData): Promise<{ userId: string; pe
   return unwrap(res);
 }
 
+export async function claimAccount(
+  orderId: string,
+  emailAddress: string,
+  password: string,
+): Promise<AuthTokens> {
+  const res = await apiPost<ApiResponse<AuthTokens>>("/auth/claim-account", {
+    orderId,
+    emailAddress,
+    password,
+  });
+  return unwrap(res);
+}
+
 export async function forgotPassword(emailAddress: string): Promise<void> {
   await apiPost("/auth/forgot-password", { emailAddress });
 }

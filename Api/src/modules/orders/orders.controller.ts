@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../types';
 import { sendSuccess, sendCreated, sendPaginated } from '../../utils/apiResponse';
-import { ListOrdersInput, PlaceOrderInput, UpdateOrderStatusInput, EmailInvoiceInput } from './orders.schema';
+import { ListOrdersInput, PlaceOrderInput, UpdateOrderStatusInput, EmailInvoiceInput, GuestCheckoutInput, TrackOrderInput } from './orders.schema';
 import { ctxFromRequest } from '../../utils/auditLogger';
 import * as service from './orders.service';
 
@@ -24,6 +24,16 @@ export async function placeOrder(req: AuthRequest, res: Response): Promise<void>
   const userId = req.user!.sub;
   const order = await service.checkout(userId, req.body as PlaceOrderInput, ctxFromRequest(req, userId));
   sendCreated(res, order, 'Order placed successfully');
+}
+
+export async function guestCheckout(req: AuthRequest, res: Response): Promise<void> {
+  const order = await service.guestCheckout(req.body as GuestCheckoutInput, ctxFromRequest(req));
+  sendCreated(res, order, 'Order placed successfully');
+}
+
+export async function trackOrder(req: AuthRequest, res: Response): Promise<void> {
+  const result = await service.trackOrder(req.body as TrackOrderInput);
+  sendSuccess(res, result);
 }
 
 // ─── Admin-facing ─────────────────────────────────────────────────────────────

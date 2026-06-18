@@ -1,5 +1,7 @@
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { ApiError } from '../../utils/apiError';
-import { ListOrdersInput, PlaceOrderInput, UpdateOrderStatusInput } from './orders.schema';
+import { ListOrdersInput, PlaceOrderInput, UpdateOrderStatusInput, GuestCheckoutInput, TrackOrderInput } from './orders.schema';
 import { sendEmail } from '../../lib/mailer';
 import { sendSms } from '../../lib/telnyx';
 import { config } from '../../config';
@@ -27,6 +29,107 @@ export async function getMyOrderById(orderId: string, userId: string) {
   const order = await repo.findOrderByIdAndUser(orderId, userId);
   if (!order) throw ApiError.notFound('Order');
   return order;
+}
+
+// ─── Guest checkout (public — no login) ───────────────────────────────────────
+
+/**
+ * Places an order for a non-logged-in customer. A lightweight "shell" SiteUser is
+ * found-or-created by email (so every existing notification / invoice / order-history
+ * path keeps working), then the shared checkout() runs unchanged. The customer can
+ * later claim this shell account by setting a password (see auth.claimAccount).
+ */
+export async function guestCheckout(input: GuestCheckoutInput, ctx?: AuditContext) {
+  const email = input.contact.email.trim().toLowerCase();
+
+  let user = await prisma.siteUser.findFirst({
+    where: { emailAddress: { equals: email, mode: 'insensitive' }, isDeleted: false },
+  });
+
+  // Never bind a guest order to an existing real (claimed) account — an
+  // unauthenticated caller must not be able to write orders or payment methods
+  // into someone else's account. Only reuse a prior unclaimed guest shell.
+  if (user && !user.isGuest) {
+    throw ApiError.conflict('An account already exists for this email. Please sign in to complete your purchase.');
+  }
+
+  if (!user) {
+    // Unusable random password + isActive:false means this shell can never be
+    // logged into until the customer claims it by setting a real password.
+    const randomHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), config.bcrypt.saltRounds);
+    user = await prisma.siteUser.create({
+      data: {
+        emailAddress: email,
+        firstName: input.contact.firstName,
+        lastName: input.contact.lastName,
+        phoneNumber: input.contact.phone,
+        passwordHash: randomHash,
+        isActive: false,
+        isGuest: true,
+        role: 'user',
+      },
+    });
+  }
+
+  // For Stripe, persist the one-time PaymentMethod against the shell account so the
+  // shared checkout() can charge it through the normal paymentMethodTokenId path.
+  const { contact: _contact, stripePaymentMethodId, ...orderInput } = input;
+  let paymentMethodTokenId = orderInput.paymentMethodTokenId;
+  if (stripePaymentMethodId) {
+    const token = await userRepo.addPaymentMethod(user.id, {
+      provider: 'stripe',
+      token: stripePaymentMethodId,
+      isDefault: false,
+    });
+    paymentMethodTokenId = token.id;
+  }
+
+  return checkout(user.id, { ...orderInput, paymentMethodTokenId }, ctx);
+}
+
+// ─── Public order tracking ────────────────────────────────────────────────────
+
+export async function trackOrder(input: TrackOrderInput) {
+  const code = input.orderNumber.trim().replace(/^ord-/i, '').toLowerCase();
+  if (code.length < 6) throw ApiError.badRequest('Please enter a valid order number');
+
+  const order = await repo.findOrderForTracking(code, input.email.trim());
+  if (!order) throw ApiError.notFound('Order');
+
+  const n = (v: unknown) => Number(v);
+  return {
+    orderNumber: `ORD-${order.id.replace(/-/g, '').slice(0, 8).toUpperCase()}`,
+    status: order.orderStatus.status,
+    orderDate: order.orderDate,
+    currency: order.currency,
+    items: order.lines.map((l) => ({
+      name: l.productNameSnapshot,
+      qty: l.qty,
+      lineTotal: n(l.lineTotal),
+    })),
+    totals: {
+      subtotal: n(order.subtotal),
+      discount: n(order.discountTotal),
+      tax: n(order.taxTotal),
+      shipping: n(order.shippingTotal),
+      grand: n(order.grandTotal),
+    },
+    shippingMethod: order.shippingMethod?.name ?? null,
+    shipment: order.shipment
+      ? {
+          carrier: order.shipment.carrier,
+          trackingNumber: order.shipment.trackingNumber,
+          status: order.shipment.status,
+          estimatedDelivery: order.shipment.estimatedDelivery,
+          shippedAt: order.shipment.shippedAt,
+          deliveredAt: order.shipment.deliveredAt,
+        }
+      : null,
+    timeline: order.statusHistory.map((h) => ({
+      status: (h as { newStatus?: { status?: string } }).newStatus?.status ?? null,
+      at: h.changedAt,
+    })),
+  };
 }
 
 export async function checkout(userId: string, input: PlaceOrderInput, ctx?: AuditContext) {

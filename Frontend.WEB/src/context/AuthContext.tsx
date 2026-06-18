@@ -29,6 +29,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (emailAddress: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  claimAccount: (orderId: string, emailAddress: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -103,6 +104,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await authApi.register(data);
   }, []);
 
+  const claimAccount = useCallback(async (orderId: string, emailAddress: string, password: string) => {
+    const tokens = await authApi.claimAccount(orderId, emailAddress, password);
+    if (!tokens?.accessToken || !tokens?.refreshToken) {
+      throw new Error("Account creation failed — no tokens received");
+    }
+    storeTokens(tokens);
+    await fetchUser(tokens.accessToken);
+  }, [storeTokens, fetchUser]);
+
   const logout = useCallback(async () => {
     const refreshToken = localStorage.getItem(TOKEN_KEYS.refresh);
     if (refreshToken) {
@@ -124,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         register,
+        claimAccount,
         logout,
       }}
     >

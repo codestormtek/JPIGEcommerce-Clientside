@@ -56,6 +56,21 @@ export async function findOrderByIdAndUser(id: string, userId: string) {
   return prisma.shopOrder.findFirst({ where: { id, userId }, include: orderInclude });
 }
 
+/**
+ * Public order tracking: match by order-id prefix (the ORD-XXXXXXXX short code is
+ * the first 8 hex chars of the uuid) AND the owning user's email (case-insensitive).
+ * Requiring both means a guessed order number alone never reveals an order.
+ */
+export async function findOrderForTracking(idPrefix: string, email: string) {
+  return prisma.shopOrder.findFirst({
+    where: {
+      id: { startsWith: idPrefix },
+      user: { emailAddress: { equals: email, mode: 'insensitive' } },
+    },
+    include: orderInclude,
+  });
+}
+
 // ─── Checkout (place order) ───────────────────────────────────────────────────
 
 export async function findProductItemPrices(ids: string[]) {

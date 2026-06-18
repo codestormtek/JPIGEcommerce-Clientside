@@ -81,7 +81,7 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
   const stripe = useStripe();
   const elements = useElements();
   const { cartItems, clearCart, removeFromCart, isCartLoaded } = useCart();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, claimAccount } = useAuth();
 
   const [activeGateway, setActiveGateway] = useState<'stripe' | 'square'>('stripe');
   const [squareReady, setSquareReady] = useState(false);
@@ -346,8 +346,14 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState('');
   const [itemsWithMissingId, setItemsWithMissingId] = useState<number[]>([]);
-  const [orderSuccess, setOrderSuccess] = useState<{ orderNumber: string; grandTotal: number } | null>(null);
+  const [orderSuccess, setOrderSuccess] = useState<{ orderNumber: string; grandTotal: number; orderId: string; email: string; wasGuest: boolean } | null>(null);
   const [agreeTerms, setAgreeTerms] = useState(false);
+
+  // Post-purchase "create an account" (claim guest order) state
+  const [claimPassword, setClaimPassword] = useState('');
+  const [claimSubmitting, setClaimSubmitting] = useState(false);
+  const [claimError, setClaimError] = useState('');
+  const [claimDone, setClaimDone] = useState(false);
 
   const subtotal = cartItemsForOrder.reduce((s, i) => s + i.price * i.quantity, 0);
   const selectedRate = liveRates.find(r => r.rateId === selectedRateId) ?? null;
@@ -385,7 +391,6 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
     e.preventDefault();
     if (activeGateway === 'stripe' && (!stripe || !elements)) return;
     if (activeGateway === 'square' && !squareCardRef.current) return;
-    if (!isAuthenticated) { setOrderError('Please sign in to place an order.'); return; }
     if (cartItemsForOrder.length === 0) { setOrderError('Your cart is empty.'); return; }
     if (!agreeTerms) { setOrderError('Please agree to the terms and conditions.'); return; }
 
@@ -420,6 +425,7 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
           addressType: 'shipping',
           fullName: `${form.firstName} ${form.lastName}`.trim(),
           phone: form.phone || undefined,
+          email: form.email || undefined,
           addressLine1: form.address1,
           addressLine2: form.address2 || undefined,
           city: form.city,
@@ -431,6 +437,7 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
         {
           addressType: 'billing',
           fullName: `${form.firstName} ${form.lastName}`.trim(),
+          email: form.email || undefined,
           addressLine1: form.address1,
           addressLine2: form.address2 || undefined,
           city: form.city,
@@ -486,21 +493,28 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
         if (pmError) throw new Error(pmError.message ?? 'Card error — please check your details.');
         if (!paymentMethod) throw new Error('Failed to process card. Please try again.');
 
-        const { card } = paymentMethod;
-        const tokenRes = await apiFetch<{ data: { id: string } }>('/users/me/payment-methods', {
-          method: 'POST',
-          headers: getAuthHeader(),
-          body: {
-            provider: 'stripe',
-            token: paymentMethod.id,
-            brand: card?.brand ?? undefined,
-            last4: card?.last4 ?? undefined,
-            expMonth: card?.exp_month ?? undefined,
-            expYear: card?.exp_year ?? undefined,
-            isDefault: false,
-          },
-        });
-        paymentField = { paymentMethodTokenId: tokenRes.data.id };
+        if (isAuthenticated) {
+          // Logged-in: save the card to the account, then charge via the saved token.
+          const { card } = paymentMethod;
+          const tokenRes = await apiFetch<{ data: { id: string } }>('/users/me/payment-methods', {
+            method: 'POST',
+            headers: getAuthHeader(),
+            body: {
+              provider: 'stripe',
+              token: paymentMethod.id,
+              brand: card?.brand ?? undefined,
+              last4: card?.last4 ?? undefined,
+              expMonth: card?.exp_month ?? undefined,
+              expYear: card?.exp_year ?? undefined,
+              isDefault: false,
+            },
+          });
+          paymentField = { paymentMethodTokenId: tokenRes.data.id };
+        } else {
+          // Guest: hand the raw PaymentMethod to the server, which attaches it to the
+          // guest's shell account before charging.
+          paymentField = { stripePaymentMethodId: paymentMethod.id };
+        }
       }
 
       const orderBody: Record<string, unknown> = { ...baseOrder, ...paymentField };
@@ -514,16 +528,34 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
         orderBody.shippingMethodId = selectedShipping || undefined;
       }
 
-      const orderRes = await apiFetch<{ data: { id: string; grandTotal: string | number } }>('/orders', {
-        method: 'POST',
-        headers: getAuthHeader(),
-        body: orderBody,
-      });
+      if (!isAuthenticated) {
+        orderBody.contact = {
+          email: form.email,
+          firstName: form.firstName || undefined,
+          lastName: form.lastName || undefined,
+          phone: form.phone || undefined,
+        };
+      }
+
+      const orderRes = await apiFetch<{ data: { id: string; grandTotal: string | number } }>(
+        isAuthenticated ? '/orders' : '/orders/guest',
+        {
+          method: 'POST',
+          headers: isAuthenticated ? getAuthHeader() : {},
+          body: orderBody,
+        },
+      );
 
       const orderId = orderRes.data.id;
       const orderNum = `ORD-${orderId.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
       clearCart();
-      setOrderSuccess({ orderNumber: orderNum, grandTotal: Number(orderRes.data.grandTotal) });
+      setOrderSuccess({
+        orderNumber: orderNum,
+        grandTotal: Number(orderRes.data.grandTotal),
+        orderId,
+        email: form.email,
+        wasGuest: !isAuthenticated,
+      });
 
     } catch (err: unknown) {
       setOrderError((err as Error)?.message ?? 'Something went wrong. Please try again.');
@@ -542,33 +574,67 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
           <h2 style={{ color: '#1F1F25', marginBottom: 8, fontSize: 26 }}>Order Confirmed!</h2>
           <p style={{ color: '#526484', marginBottom: 4, fontSize: 15 }}>Order <strong>{orderSuccess.orderNumber}</strong></p>
           <p style={{ color: '#526484', marginBottom: 24, fontSize: 15 }}>Grand Total: <strong>${orderSuccess.grandTotal.toFixed(2)}</strong></p>
-          <p style={{ color: '#8094ae', fontSize: 14, lineHeight: 1.7, marginBottom: 32 }}>
+          <p style={{ color: '#8094ae', fontSize: 14, lineHeight: 1.7, marginBottom: 28 }}>
             A confirmation email is on its way to you. Your order is being reviewed and your card will be charged shortly.
           </p>
+
+          {/* Guest: offer optional account creation by setting a password */}
+          {orderSuccess.wasGuest && !claimDone && (
+            <div style={{ background: '#fafafa', border: '1px solid #eee', borderRadius: 8, padding: '20px', marginBottom: 28, textAlign: 'left' }}>
+              <h4 style={{ fontSize: 16, fontWeight: 700, color: '#1F1F25', marginBottom: 6 }}>Create an account?</h4>
+              <p style={{ color: '#8094ae', fontSize: 13, marginBottom: 14, lineHeight: 1.6 }}>
+                Set a password for <strong>{orderSuccess.email}</strong> to track this order and check out faster next time.
+              </p>
+              <input
+                type="password"
+                value={claimPassword}
+                onChange={e => { setClaimPassword(e.target.value); setClaimError(''); }}
+                placeholder="Choose a password (8+ chars, 1 uppercase, 1 number)"
+                style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, marginBottom: 12 }}
+              />
+              {claimError && <p style={{ color: '#e85347', fontSize: 13, marginBottom: 12 }}>{claimError}</p>}
+              <button
+                type="button"
+                className="rts-btn btn-primary"
+                style={{ width: '100%', cursor: claimSubmitting ? 'not-allowed' : 'pointer', opacity: claimSubmitting ? 0.75 : 1 }}
+                disabled={claimSubmitting}
+                onClick={async () => {
+                  setClaimError('');
+                  if (claimPassword.length < 8 || !/[A-Z]/.test(claimPassword) || !/[0-9]/.test(claimPassword)) {
+                    setClaimError('Password must be at least 8 characters and include an uppercase letter and a number.');
+                    return;
+                  }
+                  setClaimSubmitting(true);
+                  try {
+                    await claimAccount(orderSuccess.orderId, orderSuccess.email, claimPassword);
+                    setClaimDone(true);
+                  } catch (err: unknown) {
+                    setClaimError((err as Error)?.message ?? 'Could not create your account. Please try again.');
+                  } finally {
+                    setClaimSubmitting(false);
+                  }
+                }}
+              >
+                {claimSubmitting ? 'Creating account…' : 'Create Account'}
+              </button>
+            </div>
+          )}
+
+          {claimDone && (
+            <div style={{ background: '#f1f8e9', border: '1px solid #c5e1a5', borderRadius: 8, padding: '14px 18px', marginBottom: 28, color: '#558b2f', fontSize: 14 }}>
+              <i className="fa-solid fa-circle-check" style={{ marginRight: 8 }} />
+              Account created — you&apos;re now signed in.
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/account" className="rts-btn btn-primary">View My Orders</Link>
+            {(!orderSuccess.wasGuest || claimDone) ? (
+              <Link href="/account" className="rts-btn btn-primary">View My Orders</Link>
+            ) : (
+              <Link href="/trackorder" className="rts-btn btn-primary">Track My Order</Link>
+            )}
             <Link href="/shop" style={{ display: 'inline-block', padding: '10px 24px', border: '2px solid #ff8c00', borderRadius: 6, color: '#ff8c00', fontWeight: 600, fontSize: 15, textDecoration: 'none' }}>
               Continue Shopping
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div style={{ textAlign: 'center', padding: '60px 24px' }}>
-        <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: 12, maxWidth: 480, margin: '0 auto', padding: '48px 32px' }}>
-          <i className="fa-solid fa-lock" style={{ fontSize: 48, color: '#ff8c00', marginBottom: 20, display: 'block' }} />
-          <h3 style={{ color: '#1F1F25', marginBottom: 12 }}>Sign In to Checkout</h3>
-          <p style={{ color: '#8094ae', marginBottom: 28, lineHeight: 1.6, fontSize: 15 }}>
-            Create an account or sign in to securely complete your purchase.
-          </p>
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/login?redirect=/checkout" className="rts-btn btn-primary">Sign In</Link>
-            <Link href="/register?redirect=/checkout" style={{ display: 'inline-block', padding: '10px 24px', border: '2px solid #ff8c00', borderRadius: 6, color: '#ff8c00', fontWeight: 600, fontSize: 15, textDecoration: 'none' }}>
-              Create Account
             </Link>
           </div>
         </div>
@@ -596,6 +662,17 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
 
   return (
     <form ref={formRef} onSubmit={handleSubmit}>
+      {!isAuthenticated && (
+        <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '14px 18px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <i className="fa-solid fa-circle-info" style={{ color: '#ff8c00', fontSize: 18 }} />
+          <span style={{ flex: 1, minWidth: 220, color: '#526484', fontSize: 14 }}>
+            You&apos;re checking out as a guest. Already have an account?
+          </span>
+          <Link href="/login?redirect=/checkout" style={{ color: '#ff8c00', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
+            Sign in
+          </Link>
+        </div>
+      )}
       <div className="row g-5">
 
         {/* ── LEFT COLUMN: Details + Payment ─────────────────────────────── */}
