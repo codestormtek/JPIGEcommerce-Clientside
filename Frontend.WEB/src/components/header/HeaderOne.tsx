@@ -216,22 +216,6 @@ function HeaderOne() {
                                     </div>
                                     <div className="nav-sm-left">
                                         <ul className="nav-h_top language">
-                                            <li className="category-hover-header language-hover">
-                                                <a href="#">English</a>
-                                                <ul className="category-sub-menu">
-                                                    <li><a href="#"><span>Italian</span></a></li>
-                                                    <li><a href="#"><span>Russian</span></a></li>
-                                                    <li><a href="#"><span>Chinian</span></a></li>
-                                                </ul>
-                                            </li>
-                                            <li className="category-hover-header language-hover">
-                                                <a href="#">USD</a>
-                                                <ul className="category-sub-menu">
-                                                    <li><a href="#"><span>Rubol</span></a></li>
-                                                    <li><a href="#"><span>Rupi</span></a></li>
-                                                    <li><a href="#"><span>Euro</span></a></li>
-                                                </ul>
-                                            </li>
                                             <li><Link href="/trackorder">Track Order</Link></li>
                                         </ul>
                                     </div>
