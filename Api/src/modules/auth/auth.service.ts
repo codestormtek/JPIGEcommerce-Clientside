@@ -18,6 +18,7 @@ import {
 import * as repo from './auth.repository';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
 import { sendPendingApprovalEmail, sendAdminNewUserNotification } from '../../lib/registrationEmails';
+import { sendNewUserStoreAlerts } from '../order-notifications/order-notifications.service';
 import { normalizePhone } from '../../lib/phone';
 
 // ─── Disposable email blocklist ───────────────────────────────────────────────
@@ -136,6 +137,11 @@ export async function register(
   };
   sendPendingApprovalEmail(emailUser).catch(() => {});
   sendAdminNewUserNotification(emailUser).catch(() => {});
+  sendNewUserStoreAlerts({
+    customerName: [user.firstName, user.lastName].filter(Boolean).join(' ') || 'N/A',
+    emailAddress: user.emailAddress,
+    phoneNumber: emailUser.phoneNumber,
+  }).catch(() => {});
 
   return { userId: user.id, pending: true };
 }

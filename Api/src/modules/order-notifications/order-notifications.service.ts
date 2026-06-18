@@ -73,3 +73,39 @@ export async function sendNewOrderStoreAlerts(order: {
     logger.warn('order-notifications: store alerts failed', { err });
   }
 }
+
+/**
+ * Builds the store-side new-registration alert text and sends it to every active
+ * notification recipient (reuses the Order Alert Numbers). Fire-and-forget:
+ * never throws, logs failures. No-ops silently if SMS keys are unconfigured.
+ */
+export async function sendNewUserStoreAlerts(user: {
+  customerName: string;
+  emailAddress: string;
+  phoneNumber?: string | null;
+}): Promise<void> {
+  try {
+    const recipients = await repo.findActive();
+    if (recipients.length === 0) return;
+
+    const body =
+      `New customer registration — ${user.customerName} (${user.emailAddress})` +
+      `${user.phoneNumber ? `, ${user.phoneNumber}` : ''}. ` +
+      `Awaiting activation. — ${config.store.name}`;
+
+    await Promise.all(
+      recipients.map((r) =>
+        sendSms(r.phoneNumber, body).then((res) => {
+          if (!res.success) {
+            logger.warn('order-notifications: new-user alert not sent', {
+              recipientId: r.id,
+              error: res.error,
+            });
+          }
+        }),
+      ),
+    );
+  } catch (err) {
+    logger.warn('order-notifications: new-user alerts failed', { err });
+  }
+}
