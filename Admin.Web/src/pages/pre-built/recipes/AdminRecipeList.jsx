@@ -165,7 +165,7 @@ const SortableIngredientRow = ({ ing, updateIngredient, removeIngredient, isOnly
 
 const DV = { totalFat: 78, saturatedFat: 20, cholesterol: 300, sodium: 2300, totalCarbs: 275, fiber: 28, sugar: 50, protein: 50, vitaminD: 20, calcium: 1300, iron: 18, potassium: 4700 };
 
-const NutritionLabel = ({ data, recipeName }) => {
+const NutritionLabel = ({ data, recipeName, borderColor = "#000000", contentColor = "#000000" }) => {
   const servings = data.servingsPerRecipe || 1;
   const pv = (key) => Math.round((data[key] || 0) / servings * 10) / 10;
   const dvp = (key) => {
@@ -181,10 +181,10 @@ const NutritionLabel = ({ data, recipeName }) => {
     ? `About ${servingsPerContainer} serving${servingsPerContainer !== 1 ? "s" : ""} per container`
     : `${servings} serving${servings !== 1 ? "s" : ""} per recipe`;
 
-  const labelStyle = { border: "2px solid #000", padding: "4px 8px", fontFamily: "Arial, Helvetica, sans-serif", maxWidth: 360, color: "#000", backgroundColor: "#fff" };
-  const hrThick = { borderTop: "8px solid #000", margin: "2px 0" };
-  const hrMed = { borderTop: "3px solid #000", margin: "2px 0" };
-  const hrThin = { borderTop: "1px solid #000", margin: "1px 0" };
+  const labelStyle = { border: `2px solid ${borderColor}`, padding: "4px 8px", fontFamily: "Arial, Helvetica, sans-serif", maxWidth: 360, color: contentColor, backgroundColor: "transparent" };
+  const hrThick = { borderTop: `8px solid ${borderColor}`, margin: "2px 0" };
+  const hrMed = { borderTop: `3px solid ${borderColor}`, margin: "2px 0" };
+  const hrThin = { borderTop: `1px solid ${borderColor}`, margin: "1px 0" };
   const rowStyle = { display: "flex", justifyContent: "space-between", fontSize: 13 };
 
   return (
@@ -282,6 +282,8 @@ const AdminRecipeList = () => {
   const [nutritionData,  setNutritionData]  = useState(null);
   const [analyzing,      setAnalyzing]      = useState(false);
   const [nutritionError, setNutritionError] = useState(null);
+  const [labelBorderColor,  setLabelBorderColor]  = useState("#000000");
+  const [labelContentColor, setLabelContentColor] = useState("#000000");
 
   // ── Linked products state ────────────────────────────────────────────
   const [linkedProducts,   setLinkedProducts]   = useState([]);
@@ -581,17 +583,19 @@ const AdminRecipeList = () => {
       "position:fixed",
       "top:-99999px",
       "left:-99999px",
-      "background:#fff",
+      "background:transparent",
       "padding:12px",
       "font-family:Arial,Helvetica,sans-serif",
-      "color:#000",
+      `color:${labelContentColor}`,
       "display:inline-block",
       "line-height:normal",
     ].join(";");
     wrapper.innerHTML = el.innerHTML;
-    // Force every child element to black text so admin theme colours can't win
+    // Force text colour to the chosen content colour and keep a consistent font
+    // so admin theme styles can't bleed in (the label border/divider colours
+    // are already baked into the cloned inline styles).
     wrapper.querySelectorAll("*").forEach((node) => {
-      node.style.color = "#000";
+      node.style.color = labelContentColor;
       node.style.fontFamily = "Arial, Helvetica, sans-serif";
     });
     document.body.appendChild(wrapper);
@@ -603,7 +607,7 @@ const AdminRecipeList = () => {
       const SCALE = 4; // 4× = ~288 dpi equivalent, crisp for print
       const canvas = await html2canvas(wrapper, {
         scale: SCALE,
-        backgroundColor: "#ffffff",
+        backgroundColor: null,
         useCORS: true,
         logging: false,
         width: fullW,
@@ -1354,7 +1358,19 @@ const AdminRecipeList = () => {
                     {/* Left: FDA-style Nutrition Label */}
                     <div className="col-md-6">
                       <div id="nutrition-label-print">
-                        <NutritionLabel data={nutritionData} recipeName={form.name} />
+                        <NutritionLabel data={nutritionData} recipeName={form.name} borderColor={labelBorderColor} contentColor={labelContentColor} />
+                      </div>
+                      <div className="d-flex flex-wrap gap-3 mt-3 align-items-center">
+                        <label className="d-flex align-items-center gap-2 mb-0 small fw-bold">
+                          Border color
+                          <input type="color" value={labelBorderColor} onChange={(e) => setLabelBorderColor(e.target.value)} style={{ width: 36, height: 28, padding: 0, border: "1px solid #ccc", borderRadius: 4, cursor: "pointer" }} />
+                          <input type="text" value={labelBorderColor} onChange={(e) => setLabelBorderColor(e.target.value)} className="form-control form-control-sm" style={{ width: 90 }} />
+                        </label>
+                        <label className="d-flex align-items-center gap-2 mb-0 small fw-bold">
+                          Content color
+                          <input type="color" value={labelContentColor} onChange={(e) => setLabelContentColor(e.target.value)} style={{ width: 36, height: 28, padding: 0, border: "1px solid #ccc", borderRadius: 4, cursor: "pointer" }} />
+                          <input type="text" value={labelContentColor} onChange={(e) => setLabelContentColor(e.target.value)} className="form-control form-control-sm" style={{ width: 90 }} />
+                        </label>
                       </div>
                     </div>
 
