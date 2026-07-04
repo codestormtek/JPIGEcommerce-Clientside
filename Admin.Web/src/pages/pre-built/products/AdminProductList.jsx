@@ -99,6 +99,10 @@ const AdminProductList = () => {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(null);
 
+  // Square sync
+  const [squareSyncing, setSquareSyncing] = useState(false);
+  const [squareSyncResult, setSquareSyncResult] = useState(null);
+
   // Detail modal
   const [detailModal, setDetailModal] = useState(false);
   const [detailProduct, setDetailProduct] = useState(null);
@@ -531,6 +535,20 @@ const AdminProductList = () => {
     }
   };
 
+  const doSquareSync = async () => {
+    setSquareSyncing(true);
+    setSquareSyncResult(null);
+    try {
+      const res = await apiPost("/products/sync-square", {});
+      const summary = res?.data ?? res;
+      setSquareSyncResult(summary);
+    } catch (e) {
+      setSquareSyncResult({ error: e.message || "Square sync failed" });
+    } finally {
+      setSquareSyncing(false);
+    }
+  };
+
   const doExport = async (format) => {
     setExporting(true);
     setExportError(null);
@@ -584,6 +602,21 @@ const AdminProductList = () => {
                 <div className="toggle-expand-content">
                   <ul className="nk-block-tools g-3">
                     {exportError && <li><span className="text-danger small">{exportError}</span></li>}
+                    {squareSyncResult && (
+                      <li>
+                        <span className={`small ${squareSyncResult.failed > 0 ? "text-warning" : "text-success"}`}>
+                          {squareSyncResult.error
+                            ? squareSyncResult.error
+                            : `Square: ${squareSyncResult.synced}/${squareSyncResult.total} synced${squareSyncResult.failed > 0 ? `, ${squareSyncResult.failed} failed` : ""}`}
+                        </span>
+                      </li>
+                    )}
+                    <li>
+                      <Button color="white" className="btn-outline-light" onClick={doSquareSync} disabled={squareSyncing}>
+                        {squareSyncing ? <Spinner size="sm" /> : <Icon name="reload-alt" />}
+                        <span>Sync to Square</span>
+                      </Button>
+                    </li>
                     <li>
                       <UncontrolledDropdown>
                         <DropdownToggle tag="a" className="btn btn-white btn-outline-light" disabled={exporting}>

@@ -14,6 +14,7 @@ import {
 import * as repo from './products.repository';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
 import { uploadMediaFile, deleteMedia } from '../media/media.service';
+import { syncProductToSquareInBackground, syncAllProductsToSquare } from '../../services/squareCatalogService';
 
 // ─── Products ─────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,7 @@ export async function createProduct(input: CreateProductInput, ctx?: AuditContex
     afterJson: product,
     ctx,
   });
+  syncProductToSquareInBackground(product.id);
   return product;
 }
 
@@ -50,7 +52,14 @@ export async function updateProduct(id: string, input: UpdateProductInput, ctx?:
     afterJson: after,
     ctx,
   });
+  syncProductToSquareInBackground(id);
   return after;
+}
+
+// ─── Square catalog sync ──────────────────────────────────────────────────────
+
+export async function syncProductsToSquare() {
+  return syncAllProductsToSquare();
 }
 
 export async function deleteProduct(id: string, ctx?: AuditContext): Promise<void> {

@@ -189,6 +189,9 @@ model Product {
   brandId     String?
   brand       Brand?   @relation(fields: [brandId], references: [id])
 
+  squareCatalogObjectId String?
+  squareSyncedAt        DateTime?
+
   attributes       ProductAttribute[]
   items            ProductItem[]
   categoryMaps     ProductCategoryMap[]

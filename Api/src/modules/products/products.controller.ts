@@ -198,3 +198,10 @@ export async function deleteCategory(req: Request, res: Response): Promise<void>
   sendNoContent(res);
 }
 
+
+// ─── Square catalog sync ──────────────────────────────────────────────────────
+
+export async function syncProductsToSquare(_req: AuthRequest, res: Response): Promise<void> {
+  const summary = await service.syncProductsToSquare();
+  sendSuccess(res, summary, `Square sync complete: ${summary.synced}/${summary.total} synced`);
+}
