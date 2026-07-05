@@ -14,7 +14,7 @@ import {
 import * as repo from './products.repository';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
 import { uploadMediaFile, deleteMedia } from '../media/media.service';
-import { syncProductToSquareInBackground, syncAllProductsToSquare } from '../../services/squareCatalogService';
+import { syncProductToSquareInBackground, syncAllProductsToSquare, syncProductToSquare } from '../../services/squareCatalogService';
 
 // ─── Products ─────────────────────────────────────────────────────────────────
 
@@ -60,6 +60,11 @@ export async function updateProduct(id: string, input: UpdateProductInput, ctx?:
 
 export async function syncProductsToSquare() {
   return syncAllProductsToSquare();
+}
+
+export async function syncSingleProductToSquare(id: string) {
+  await getProductById(id); // ensures existence (404 otherwise)
+  return syncProductToSquare(id);
 }
 
 export async function deleteProduct(id: string, ctx?: AuditContext): Promise<void> {

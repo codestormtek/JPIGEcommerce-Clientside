@@ -56,6 +56,9 @@ productsRouter.post('/categories/:id/image', authenticate, authorize('admin'), u
 // POST   /api/v1/products/sync-square — push all products to the Square catalog
 productsRouter.post('/sync-square', authenticate, authorize('admin'), asyncHandler(ctrl.syncProductsToSquare));
 
+// POST   /api/v1/products/:id/sync-square — push a single product to the Square catalog
+productsRouter.post('/:id/sync-square', authenticate, authorize('admin'), asyncHandler(ctrl.syncSingleProductToSquare));
+
 // GET    /api/v1/products
 productsRouter.get('/', validate(listProductsSchema, 'query'), asyncHandler(ctrl.listProducts));
 

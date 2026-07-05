@@ -205,3 +205,8 @@ export async function syncProductsToSquare(_req: AuthRequest, res: Response): Pr
   const summary = await service.syncProductsToSquare();
   sendSuccess(res, summary, `Square sync complete: ${summary.synced}/${summary.total} synced`);
 }
+
+export async function syncSingleProductToSquare(req: AuthRequest, res: Response): Promise<void> {
+  const result = await service.syncSingleProductToSquare(req.params['id'] as string);
+  sendSuccess(res, result, 'Product synced to Square');
+}

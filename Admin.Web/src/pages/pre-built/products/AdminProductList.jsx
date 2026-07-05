@@ -102,6 +102,7 @@ const AdminProductList = () => {
   // Square sync
   const [squareSyncing, setSquareSyncing] = useState(false);
   const [squareSyncResult, setSquareSyncResult] = useState(null);
+  const [rowSyncingId, setRowSyncingId] = useState(null);
 
   // Detail modal
   const [detailModal, setDetailModal] = useState(false);
@@ -549,6 +550,19 @@ const AdminProductList = () => {
     }
   };
 
+  const doRowSquareSync = async (product) => {
+    setRowSyncingId(product.id);
+    setSquareSyncResult(null);
+    try {
+      await apiPost(`/products/${product.id}/sync-square`, {});
+      setSquareSyncResult({ total: 1, synced: 1, failed: 0, singleName: product.name });
+    } catch (e) {
+      setSquareSyncResult({ error: `${product.name}: ${e.message || "Square sync failed"}` });
+    } finally {
+      setRowSyncingId(null);
+    }
+  };
+
   const doExport = async (format) => {
     setExporting(true);
     setExportError(null);
@@ -604,10 +618,12 @@ const AdminProductList = () => {
                     {exportError && <li><span className="text-danger small">{exportError}</span></li>}
                     {squareSyncResult && (
                       <li>
-                        <span className={`small ${squareSyncResult.failed > 0 ? "text-warning" : "text-success"}`}>
+                        <span className={`small ${squareSyncResult.error ? "text-danger" : squareSyncResult.failed > 0 ? "text-warning" : "text-success"}`}>
                           {squareSyncResult.error
                             ? squareSyncResult.error
-                            : `Square: ${squareSyncResult.synced}/${squareSyncResult.total} synced${squareSyncResult.failed > 0 ? `, ${squareSyncResult.failed} failed` : ""}`}
+                            : squareSyncResult.singleName
+                              ? `Square: ${squareSyncResult.singleName} synced`
+                              : `Square: ${squareSyncResult.synced}/${squareSyncResult.total} synced${squareSyncResult.failed > 0 ? `, ${squareSyncResult.failed} failed` : ""}`}
                         </span>
                       </li>
                     )}
@@ -817,6 +833,12 @@ const AdminProductList = () => {
                             <ul className="link-list-opt no-bdr">
                               <li><DropdownItem onClick={() => openDetail(product)}><Icon name="eye" /><span>View</span></DropdownItem></li>
                               <li><DropdownItem onClick={() => onEditClick(product)}><Icon name="edit" /><span>Edit</span></DropdownItem></li>
+                              <li>
+                                <DropdownItem onClick={() => doRowSquareSync(product)} disabled={rowSyncingId === product.id}>
+                                  {rowSyncingId === product.id ? <Spinner size="sm" /> : <Icon name="reload-alt" />}
+                                  <span>Sync to Square</span>
+                                </DropdownItem>
+                              </li>
                               <li><DropdownItem onClick={() => { setDeleteTarget(product); setDeleteModal(true); }}><Icon name="trash" /><span>Delete</span></DropdownItem></li>
                             </ul>
                           </DropdownMenu>
