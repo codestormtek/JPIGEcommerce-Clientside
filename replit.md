@@ -31,6 +31,12 @@ Three active services:
 - **API Server** — Express API (port 8000, console)
 - **Frontend** — Next.js storefront (port 3000, console)
 
+## Kiosk (Self-Order)
+- **Kiosk app**: `Frontend.WEB/src/app/kiosk` — iPad self-order flow; device token via setup screen or `/kiosk?token=...`. Payments: Square Terminal (paired reader) or on-screen Square Web Payments card.
+- **API**: `Api/src/modules/kiosk` — device auth via `X-Kiosk-Token`; daily K-numbers; terminal checkout create/poll/cancel; pairing via Square device codes.
+- **Admin**: Kitchen Queue (`/kitchen-queue`, 5s polling, pending→processing→ready_to_ship→delivered) + Kiosk Devices (`/kiosk-devices`, tokens shown once, Terminal pairing UI).
+- **Env**: Admin needs `VITE_STOREFRONT_URL` in production (Cloudflare Pages) so generated kiosk setup links point at the storefront domain; dev falls back to `hostname:3000`.
+
 ## Admin Pages (Admin.Web)
 File Manager (R2-backed, folders/upload/recovery + document generator), Products, Blog, News (+ email-to-subscribers), Menus, Checklists, Carousel, Galleries, Subscribers, Customers, Scheduled Tasks (DB-driven runner), Recipes (+ USDA nutrition analysis, product linking), Pages/Topics, Dashboard, Metrics & KPIs, Site Settings, Widgets, Catering (quote system), Roadside BBQ Live Sessions, SMS Marketing (Broadcast composer + Order Alert Numbers), Inventory, Orders, Media, Templates, Audit Logs.
 

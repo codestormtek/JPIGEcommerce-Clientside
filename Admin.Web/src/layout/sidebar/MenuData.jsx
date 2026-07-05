@@ -10,6 +10,14 @@ const menu = [
     text: "Orders",
     link: "/orders",
   },
+  {
+    icon: "monitor",
+    text: "Kiosk",
+    subMenu: [
+      { text: "Kitchen Queue", link: "/kitchen-queue" },
+      { text: "Kiosk Devices", link: "/kiosk-devices" },
+    ],
+  },
 
   {
     icon: "truck",

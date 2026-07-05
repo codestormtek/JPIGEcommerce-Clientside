@@ -8,7 +8,7 @@ export const listOrdersSchema = z.object({
   // admin-only filter
   userId: z.string().uuid().optional(),
   statusId: z.string().uuid().optional(),
-  orderType: z.enum(['retail', 'catering']).optional(),
+  orderType: z.enum(['retail', 'catering', 'kiosk']).optional(),
   orderBy: z.enum(['orderDate', 'grandTotal']).default('orderDate'),
   order: z.enum(['asc', 'desc']).default('desc'),
 });
