@@ -80,7 +80,12 @@ export async function findProductItemPrices(ids: string[]) {
   });
 }
 
-export async function placeOrder(userId: string, input: PlaceOrderInput, taxTotal = 0, discountTotal = 0) {
+export async function placeOrder(
+  userId: string,
+  input: PlaceOrderInput & { kioskDeviceId?: string },
+  taxTotal = 0,
+  discountTotal = 0,
+) {
   return prisma.$transaction(async (tx: TxClient) => {
     // Resolve "pending" status
     const pendingStatus = await tx.orderStatus.findFirst({ where: { status: 'pending' } });
@@ -111,6 +116,20 @@ export async function placeOrder(userId: string, input: PlaceOrderInput, taxTota
 
     const grandTotal = subtotal + shippingTotal + taxTotal - discountTotal;
 
+    // Kiosk orders get a short daily sequential number (K-001, K-002...) assigned
+    // atomically with order creation. An advisory lock serializes concurrent
+    // kiosk checkouts so numbers never duplicate.
+    let kioskOrderNumber: string | undefined;
+    if (input.orderType === 'kiosk') {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('kiosk_order_number'))`;
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const countToday = await tx.shopOrder.count({
+        where: { orderType: 'kiosk', orderDate: { gte: startOfDay } },
+      });
+      kioskOrderNumber = `K-${String(countToday + 1).padStart(3, '0')}`;
+    }
+
     // Create order
     const order = await tx.shopOrder.create({
       data: {
@@ -120,6 +139,8 @@ export async function placeOrder(userId: string, input: PlaceOrderInput, taxTota
         shippingMethodId: input.shippingMethodId,
         currency: input.currency,
         orderType: input.orderType,
+        kioskOrderNumber,
+        kioskDeviceId: input.kioskDeviceId,
         specialInstructions: input.specialInstructions,
         subtotal,
         discountTotal,

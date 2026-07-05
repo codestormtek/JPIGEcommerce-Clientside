@@ -42,7 +42,7 @@ export const placeOrderSchema = z.object({
   shippingMethodId: z.string().min(1).optional(),
   specialInstructions: z.string().optional(),
   currency: z.string().length(3).default('USD'),
-  orderType: z.enum(['retail', 'catering']).default('retail'),
+  orderType: z.enum(['retail', 'catering', 'kiosk']).default('retail'),
   /** UUID of a saved PaymentMethodToken (Stripe) to charge at checkout */
   paymentMethodTokenId: z.string().uuid().optional(),
   /** Square nonce (sourceId) from Web Payments SDK tokenization */

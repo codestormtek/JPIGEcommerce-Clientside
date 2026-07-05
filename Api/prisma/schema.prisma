@@ -483,7 +483,10 @@ model ShopOrder {
   taxTotal               Decimal
   shippingTotal          Decimal
   grandTotal             Decimal
-  orderType              String          @default("retail") // retail|catering
+  orderType              String          @default("retail") // retail|catering|kiosk
+  kioskOrderNumber       String?         // short callable number for kiosk pickup orders, e.g. K-047
+  kioskDeviceId          String?
+  kioskDevice            KioskDevice?    @relation(fields: [kioskDeviceId], references: [id])
   fulfillmentType        String?
   requestedFulfillmentAt DateTime?
   eventName              String?
@@ -2102,3 +2105,16 @@ model OrderNotificationRecipient {
   @@map("order_notification_recipients")
 }
 
+
+model KioskDevice {
+  id         String    @id @default(uuid())
+  createdAt  DateTime  @default(now())
+  name       String
+  tokenHash  String    @unique
+  isActive   Boolean   @default(true)
+  lastSeenAt DateTime?
+
+  orders ShopOrder[]
+
+  @@map("kiosk_devices")
+}

@@ -132,7 +132,11 @@ export async function trackOrder(input: TrackOrderInput) {
   };
 }
 
-export async function checkout(userId: string, input: PlaceOrderInput, ctx?: AuditContext) {
+export async function checkout(
+  userId: string,
+  input: PlaceOrderInput & { kioskDeviceId?: string },
+  ctx?: AuditContext,
+) {
   try {
     // ── Step 1: Fetch product prices (needed for tax and/or coupon discount) ──
     let taxTotal = 0;
