@@ -76,7 +76,10 @@ app.use(
     legacyHeaders: false,
     // Telnyx voice webhooks all originate from Telnyx IPs; don't let call
     // bursts hit the shared IP limit and drop inbound calls with 429s.
-    skip: (req) => req.path.startsWith('/api/v1/telnyx/'),
+    // Kiosk routes have their own limiters (per-device throughput + failure-only
+    // brute-force guard) — several iPads polling behind one restaurant Wi-Fi IP
+    // must not be throttled by the generic per-IP cap.
+    skip: (req) => req.path.startsWith('/api/v1/telnyx/') || req.path.startsWith('/api/v1/kiosk/'),
   }),
 );
 // Raw body required for webhook signature verification — must come BEFORE express.json()

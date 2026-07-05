@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import * as ctrl from './kiosk.controller';
-import { authenticateKiosk } from './kiosk.middleware';
+import { authenticateKiosk, lookupKioskDevice } from './kiosk.middleware';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validate.middleware';
 import { asyncHandler } from '../../utils/asyncHandler';
@@ -19,28 +19,66 @@ const kioskOrderLimiter = rateLimit({
   message: { success: false, message: 'Too many orders — please wait a moment.' },
 });
 
+// Brute-force guard for all kiosk-facing endpoints: per-IP, counting only
+// FAILED requests (skipSuccessfulRequests), and requests carrying a VALID
+// device token bypass it entirely (async skip + 30s token cache). So token
+// guessing is cut off after 30 failures per 15 minutes, while real kiosks are
+// never throttled or locked out — even if someone on the same restaurant
+// Wi-Fi (shared IP) deliberately spams bad tokens to trip the limiter.
+const kioskGeneralLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  skipSuccessfulRequests: true,
+  skip: async (req) => {
+    const token = req.header('x-kiosk-token');
+    if (!token) return false;
+    return (await lookupKioskDevice(token)) !== null;
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many failed requests — please wait and try again.' },
+});
+
+// Per-device throughput ceiling for authenticated kiosk traffic (kiosk routes
+// are exempt from the app-level per-IP limiter, so this is the backstop
+// against a malfunctioning or compromised device). Keyed by token so devices
+// sharing one IP don't share a budget. 300/min is ~10x normal peak usage
+// (2s payment polling ≈ 30/min plus menu/heartbeat).
+const kioskDeviceLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.header('x-kiosk-token') || req.ip || 'unknown',
+  message: { success: false, message: 'Too many requests — please slow down.' },
+});
+
+// Applied to every kiosk-facing route: brute-force guard first, then the
+// per-device throughput ceiling.
+const kioskLimiters = [kioskGeneralLimiter, kioskDeviceLimiter];
+
 // ─── Kiosk-facing (X-Kiosk-Token) ────────────────────────────────────────────
 
 // GET    /api/v1/kiosk/menu
-kioskRouter.get('/menu', authenticateKiosk, asyncHandler(ctrl.getMenu));
+kioskRouter.get('/menu', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.getMenu));
 
 // POST   /api/v1/kiosk/orders
-kioskRouter.post('/orders', authenticateKiosk, kioskOrderLimiter, validate(kioskOrderSchema), asyncHandler(ctrl.createOrder));
+kioskRouter.post('/orders', ...kioskLimiters, authenticateKiosk, kioskOrderLimiter, validate(kioskOrderSchema), asyncHandler(ctrl.createOrder));
 
 // GET    /api/v1/kiosk/orders/:id/status
-kioskRouter.get('/orders/:id/status', authenticateKiosk, asyncHandler(ctrl.getOrderStatus));
+kioskRouter.get('/orders/:id/status', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.getOrderStatus));
 
 // POST   /api/v1/kiosk/heartbeat
-kioskRouter.post('/heartbeat', authenticateKiosk, asyncHandler(ctrl.heartbeat));
+kioskRouter.post('/heartbeat', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.heartbeat));
 
 // GET    /api/v1/kiosk/config — payment capabilities for this device
-kioskRouter.get('/config', authenticateKiosk, asyncHandler(ctrl.getConfig));
+kioskRouter.get('/config', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.getConfig));
 
 // GET    /api/v1/kiosk/orders/:id/payment — poll Terminal payment status
-kioskRouter.get('/orders/:id/payment', authenticateKiosk, asyncHandler(ctrl.getPaymentStatus));
+kioskRouter.get('/orders/:id/payment', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.getPaymentStatus));
 
 // POST   /api/v1/kiosk/orders/:id/cancel-payment — abort a pending Terminal checkout
-kioskRouter.post('/orders/:id/cancel-payment', authenticateKiosk, asyncHandler(ctrl.cancelPayment));
+kioskRouter.post('/orders/:id/cancel-payment', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.cancelPayment));
 
 // ─── Admin device management (JWT) ───────────────────────────────────────────
 

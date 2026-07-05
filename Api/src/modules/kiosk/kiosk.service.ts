@@ -7,7 +7,7 @@ import { ApiError } from '../../utils/apiError';
 import { logger } from '../../utils/logger';
 import { config } from '../../config';
 import { checkout } from '../orders/orders.service';
-import { hashKioskToken } from './kiosk.middleware';
+import { hashKioskToken, invalidateKioskDeviceCache } from './kiosk.middleware';
 import { KioskOrderInput, CreateKioskDeviceInput, UpdateKioskDeviceInput } from './kiosk.schema';
 
 // ─── Menu ─────────────────────────────────────────────────────────────────────
@@ -416,6 +416,8 @@ export async function updateKioskDevice(id: string, input: UpdateKioskDeviceInpu
   const device = await prisma.kioskDevice.findUnique({ where: { id } });
   if (!device) throw ApiError.notFound('Kiosk device');
   const updated = await prisma.kioskDevice.update({ where: { id }, data: input });
+  // Revocations/re-activations must take effect immediately, not after cache TTL.
+  if (input.isActive !== undefined) invalidateKioskDeviceCache();
   return { id: updated.id, name: updated.name, isActive: updated.isActive, lastSeenAt: updated.lastSeenAt };
 }
 
@@ -432,9 +434,11 @@ export async function deleteKioskDevice(id: string) {
 
   if (device._count.orders > 0) {
     await prisma.kioskDevice.update({ where: { id }, data: { isActive: false } });
+    invalidateKioskDeviceCache();
     return { deleted: false, revoked: true, message: 'Device has order history — revoked instead of deleted.' };
   }
 
   await prisma.kioskDevice.delete({ where: { id } });
+  invalidateKioskDeviceCache();
   return { deleted: true, revoked: false };
 }

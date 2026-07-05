@@ -36,6 +36,12 @@ Three active services:
 - **API**: `Api/src/modules/kiosk` — device auth via `X-Kiosk-Token`; daily K-numbers; terminal checkout create/poll/cancel; pairing via Square device codes.
 - **Admin**: Kitchen Queue (`/kitchen-queue`, 5s polling, pending→processing→ready_to_ship→delivered) + Kiosk Devices (`/kiosk-devices`, tokens shown once, Terminal pairing UI).
 - **Env**: Admin needs `VITE_STOREFRONT_URL` in production (Cloudflare Pages) so generated kiosk setup links point at the storefront domain; dev falls back to `hostname:3000`.
+- **Rate limits**: kiosk routes are exempt from the global per-IP API limiter and instead have: (1) brute-force guard — 30 *failed* requests per 15 min per IP, bypassed by valid tokens; (2) per-device throughput ceiling — 300 req/min keyed by token; (3) order placement — 6/min. Valid device tokens are cached in-memory 30s (revoke/delete invalidates immediately).
+- **Prod go-live checklist**:
+  1. Sync Prisma schema to prod DB (adds `KioskDevice` table + `ShopOrder.kioskOrderNumber`/`kioskDeviceId` — additive, non-destructive).
+  2. Render (API): set `SQUARE_ACCESS_TOKEN` (valid production token), `SQUARE_APPLICATION_ID`, `SQUARE_LOCATION_ID`, `SQUARE_ENVIRONMENT=production`.
+  3. Cloudflare Pages (Admin): set `VITE_STOREFRONT_URL=https://<storefront-domain>` and redeploy.
+  4. In Admin → Kiosk Devices: create device, open setup link on iPad (Safari → Add to Home Screen for fullscreen), pair Square Terminal if using a reader.
 
 ## Admin Pages (Admin.Web)
 File Manager (R2-backed, folders/upload/recovery + document generator), Products, Blog, News (+ email-to-subscribers), Menus, Checklists, Carousel, Galleries, Subscribers, Customers, Scheduled Tasks (DB-driven runner), Recipes (+ USDA nutrition analysis, product linking), Pages/Topics, Dashboard, Metrics & KPIs, Site Settings, Widgets, Catering (quote system), Roadside BBQ Live Sessions, SMS Marketing (Broadcast composer + Order Alert Numbers), Inventory, Orders, Media, Templates, Audit Logs.
