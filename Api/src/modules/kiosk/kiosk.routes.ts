@@ -33,6 +33,15 @@ kioskRouter.get('/orders/:id/status', authenticateKiosk, asyncHandler(ctrl.getOr
 // POST   /api/v1/kiosk/heartbeat
 kioskRouter.post('/heartbeat', authenticateKiosk, asyncHandler(ctrl.heartbeat));
 
+// GET    /api/v1/kiosk/config — payment capabilities for this device
+kioskRouter.get('/config', authenticateKiosk, asyncHandler(ctrl.getConfig));
+
+// GET    /api/v1/kiosk/orders/:id/payment — poll Terminal payment status
+kioskRouter.get('/orders/:id/payment', authenticateKiosk, asyncHandler(ctrl.getPaymentStatus));
+
+// POST   /api/v1/kiosk/orders/:id/cancel-payment — abort a pending Terminal checkout
+kioskRouter.post('/orders/:id/cancel-payment', authenticateKiosk, asyncHandler(ctrl.cancelPayment));
+
 // ─── Admin device management (JWT) ───────────────────────────────────────────
 
 // GET    /api/v1/kiosk/devices
@@ -46,3 +55,9 @@ kioskRouter.patch('/devices/:id', authenticate, authorize('admin'), validate(upd
 
 // DELETE /api/v1/kiosk/devices/:id — deletes if unused, otherwise revokes
 kioskRouter.delete('/devices/:id', authenticate, authorize('admin'), asyncHandler(ctrl.deleteDevice));
+
+// POST   /api/v1/kiosk/devices/:id/pair-terminal — generate a Square Terminal device code
+kioskRouter.post('/devices/:id/pair-terminal', authenticate, authorize('admin'), asyncHandler(ctrl.startPairing));
+
+// GET    /api/v1/kiosk/devices/:id/pair-terminal/:codeId — poll pairing status
+kioskRouter.get('/devices/:id/pair-terminal/:codeId', authenticate, authorize('admin'), asyncHandler(ctrl.checkPairing));

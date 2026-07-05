@@ -54,6 +54,21 @@ export interface KioskOrderResult {
   orderId: string;
   kioskOrderNumber: string | null;
   grandTotal: number;
+  paymentStatus: "pending" | "paid";
+  terminalCheckoutId: string | null;
+}
+
+export interface KioskConfig {
+  applicationId: string | null;
+  locationId: string | null;
+  environment: string;
+  terminalEnabled: boolean;
+  cardEnabled: boolean;
+}
+
+export interface KioskPaymentStatus {
+  status: "pending" | "paid" | "canceled";
+  terminalStatus?: string;
 }
 
 // ─── Fetch helper ─────────────────────────────────────────────────────────────
@@ -96,14 +111,27 @@ export function sendHeartbeat(): Promise<{ ok: boolean }> {
   return kioskFetch<{ ok: boolean }>("/heartbeat", { method: "POST" });
 }
 
+export function fetchKioskConfig(): Promise<KioskConfig> {
+  return kioskFetch<KioskConfig>("/config");
+}
+
 export function placeKioskOrder(input: {
   lines: { productItemId: string; qty: number }[];
   customerName: string;
   customerPhone?: string;
   specialInstructions?: string;
+  paymentMethod: "terminal" | "card";
   squareNonce?: string;
 }): Promise<KioskOrderResult> {
   return kioskFetch<KioskOrderResult>("/orders", { method: "POST", body: input });
+}
+
+export function fetchKioskPaymentStatus(orderId: string): Promise<KioskPaymentStatus> {
+  return kioskFetch<KioskPaymentStatus>(`/orders/${orderId}/payment`);
+}
+
+export function cancelKioskPayment(orderId: string): Promise<{ canceled: boolean }> {
+  return kioskFetch<{ canceled: boolean }>(`/orders/${orderId}/cancel-payment`, { method: "POST" });
 }
 
 export function fetchKioskOrderStatus(orderId: string): Promise<{ status: string }> {

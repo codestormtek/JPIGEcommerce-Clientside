@@ -4,9 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   KioskApiError,
   KioskCartLine,
+  KioskConfig,
   KioskMenu,
+  KioskOrderResult,
   KioskProduct,
   clearKioskToken,
+  fetchKioskConfig,
   fetchKioskMenu,
   getKioskToken,
   placeKioskOrder,
@@ -29,6 +32,13 @@ const HEARTBEAT_MS = 60_000;
 export default function KioskPage() {
   const [screen, setScreen] = useState<Screen>("loading");
   const [menu, setMenu] = useState<KioskMenu | null>(null);
+  const [config, setConfig] = useState<KioskConfig>({
+    applicationId: null,
+    locationId: null,
+    environment: "sandbox",
+    terminalEnabled: false,
+    cardEnabled: false,
+  });
   const [cart, setCart] = useState<KioskCartLine[]>([]);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -53,6 +63,14 @@ export default function KioskPage() {
     return data;
   }, []);
 
+  const loadConfig = useCallback(async () => {
+    try {
+      setConfig(await fetchKioskConfig());
+    } catch {
+      // keep defaults — payment options simply stay disabled
+    }
+  }, []);
+
   // ── Boot: check token, load menu ──
   useEffect(() => {
     (async () => {
@@ -69,6 +87,7 @@ export default function KioskPage() {
       }
       try {
         await loadMenu();
+        loadConfig();
         setScreen(params.get("start") === "menu" ? "menu" : "attract");
       } catch (e) {
         if (e instanceof KioskApiError && e.status === 401) {
@@ -80,7 +99,7 @@ export default function KioskPage() {
         }
       }
     })();
-  }, [loadMenu]);
+  }, [loadMenu, loadConfig]);
 
   // ── Heartbeat + periodic menu refresh ──
   useEffect(() => {
@@ -124,6 +143,7 @@ export default function KioskPage() {
     setKioskToken(token);
     try {
       await loadMenu();
+      loadConfig();
       setLoadError(null);
       setScreen("attract");
     } catch (e) {
@@ -163,13 +183,20 @@ export default function KioskPage() {
     setScreen("pay");
   };
 
-  const handlePlaceOrder = async (squareNonce?: string) => {
-    const result = await placeKioskOrder({
+  const handlePlaceOrder = async (
+    paymentMethod: "terminal" | "card",
+    squareNonce?: string,
+  ): Promise<KioskOrderResult> => {
+    return placeKioskOrder({
       lines: cart.map((l) => ({ productItemId: l.item.id, qty: l.qty })),
       customerName,
       customerPhone: customerPhone || undefined,
+      paymentMethod,
       squareNonce,
     });
+  };
+
+  const handlePaid = (result: KioskOrderResult) => {
     setOrderNumber(result.kioskOrderNumber);
     setScreen("confirm");
     loadMenu().catch(() => {}); // refresh stock after sale
@@ -227,10 +254,10 @@ export default function KioskPage() {
         <PayScreen
           cart={cart}
           customerName={customerName}
+          config={config}
           onBack={() => setScreen("details")}
           onPlaceOrder={handlePlaceOrder}
-          terminalEnabled={false}
-          cardEnabled={false}
+          onPaid={handlePaid}
         />
       );
     case "confirm":

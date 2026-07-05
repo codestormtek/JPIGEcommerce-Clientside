@@ -15,7 +15,9 @@ export const kioskOrderSchema = z.object({
   customerName: z.string().min(1, 'Customer name is required').max(100),
   customerPhone: z.string().max(30).optional(),
   specialInstructions: z.string().max(500).optional(),
-  /** Square nonce (sourceId) from Web Payments SDK — on-screen card entry */
+  /** 'terminal' pushes the checkout to the paired Square Terminal; 'card' uses an on-screen nonce */
+  paymentMethod: z.enum(['terminal', 'card']),
+  /** Square nonce (sourceId) from Web Payments SDK — required when paymentMethod = 'card' */
   squareNonce: z.string().optional(),
 });
 
@@ -32,6 +34,8 @@ export type CreateKioskDeviceInput = z.infer<typeof createKioskDeviceSchema>;
 export const updateKioskDeviceSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   isActive: z.boolean().optional(),
+  /** Square Terminal device_id to link (or null to unlink) */
+  squareTerminalDeviceId: z.string().max(100).nullable().optional(),
 });
 
 export type UpdateKioskDeviceInput = z.infer<typeof updateKioskDeviceSchema>;

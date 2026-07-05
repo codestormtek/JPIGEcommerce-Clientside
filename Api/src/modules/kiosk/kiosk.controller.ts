@@ -32,6 +32,27 @@ export async function heartbeat(req: KioskRequest, res: Response): Promise<void>
   sendSuccess(res, { ok: true, device: req.kioskDevice!.name });
 }
 
+export async function getConfig(req: KioskRequest, res: Response): Promise<void> {
+  const cfg = await service.getKioskConfig(req.kioskDevice!.id);
+  sendSuccess(res, cfg);
+}
+
+export async function getPaymentStatus(req: KioskRequest, res: Response): Promise<void> {
+  const result = await service.getKioskPaymentStatus(
+    req.kioskDevice!.id,
+    req.params['id'] as string,
+  );
+  sendSuccess(res, result);
+}
+
+export async function cancelPayment(req: KioskRequest, res: Response): Promise<void> {
+  const result = await service.cancelKioskPayment(
+    req.kioskDevice!.id,
+    req.params['id'] as string,
+  );
+  sendSuccess(res, result);
+}
+
 // ─── Admin (JWT auth) ────────────────────────────────────────────────────────
 
 export async function listDevices(_req: Request, res: Response): Promise<void> {
@@ -54,5 +75,18 @@ export async function updateDevice(req: Request, res: Response): Promise<void> {
 
 export async function deleteDevice(req: Request, res: Response): Promise<void> {
   const result = await service.deleteKioskDevice(req.params['id'] as string);
+  sendSuccess(res, result);
+}
+
+export async function startPairing(req: Request, res: Response): Promise<void> {
+  const result = await service.startTerminalPairing(req.params['id'] as string);
+  sendSuccess(res, result);
+}
+
+export async function checkPairing(req: Request, res: Response): Promise<void> {
+  const result = await service.checkTerminalPairing(
+    req.params['id'] as string,
+    req.params['codeId'] as string,
+  );
   sendSuccess(res, result);
 }

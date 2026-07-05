@@ -2107,12 +2107,13 @@ model OrderNotificationRecipient {
 
 
 model KioskDevice {
-  id         String    @id @default(uuid())
-  createdAt  DateTime  @default(now())
-  name       String
-  tokenHash  String    @unique
-  isActive   Boolean   @default(true)
-  lastSeenAt DateTime?
+  id                     String    @id @default(uuid())
+  createdAt              DateTime  @default(now())
+  name                   String
+  tokenHash              String    @unique
+  isActive               Boolean   @default(true)
+  lastSeenAt             DateTime?
+  squareTerminalDeviceId String?
 
   orders ShopOrder[]
 
