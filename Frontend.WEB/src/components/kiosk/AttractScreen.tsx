@@ -7,7 +7,8 @@ interface Props {
 export default function AttractScreen({ onStart }: Props) {
   return (
     <div className="k-screen k-attract" onClick={onStart}>
-      <div className="k-attract-logo">The Jiggling Pig</div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="k-attract-logo-img" src="/kiosk-logo.png" alt="The Jiggling Pig" />
       <h1>
         Hungry?
         <br />

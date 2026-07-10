@@ -34,9 +34,8 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
     <div className="k-screen k-menu">
       <div className="k-menu-main">
         <div className="k-menu-header">
-          <h2>
-            The Jiggling <span>Pig</span>
-          </h2>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="k-menu-logo" src="/kiosk-logo.png" alt="The Jiggling Pig" />
           <button className="k-btn k-btn-ghost k-start-over" onClick={onStartOver}>
             Start Over
           </button>
@@ -76,6 +75,7 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
                   )}
                   <div className="k-card-body">
                     <div className="k-card-name">{p.name}</div>
+                    {p.description && <div className="k-card-desc">{p.description}</div>}
                     <div className="k-card-price">{formatMoney(item.price)}</div>
                   </div>
                 </button>
@@ -107,6 +107,13 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
                 <span className="k-line-qty">{l.qty}</span>
                 <button className="k-qty-btn" onClick={() => onSetQty(l.item.id, l.qty + 1)}>
                   +
+                </button>
+                <button
+                  className="k-line-remove"
+                  aria-label={`Remove ${l.product.name} from order`}
+                  onClick={() => onSetQty(l.item.id, 0)}
+                >
+                  Remove
                 </button>
               </div>
             </div>
