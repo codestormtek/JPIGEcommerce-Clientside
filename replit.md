@@ -9,8 +9,10 @@ Three active services:
 | Service | Directory | Port | Framework |
 |---------|-----------|------|-----------|
 | API Server | `Api/` | 8000 | Express + TypeScript + Prisma |
-| Admin Panel | `Admin.Web/` | 5000 (webview) | Vite + React |
-| Frontend | `Frontend.WEB/` | 3000 (console) | Next.js 16 + TypeScript |
+| Admin Panel | `Admin.Web/` | 3001 | Vite + React |
+| Frontend | `Frontend.WEB/` | 5000 (webview, main domain) | Next.js + TypeScript |
+
+Dev URLs: Frontend (storefront + `/kiosk`) is on the workspace domain (external port 80 → local 5000); Admin Panel at `:3001`; API at `:8000`.
 
 ## Key Configuration
 - **Database**: External PostgreSQL on Render, accessed via `EXTERNAL_DATABASE_URL` (NOT the Replit-managed `DATABASE_URL`). Prisma schema: `Api/prisma/schema.prisma`.
@@ -27,15 +29,15 @@ Three active services:
 - **Production does NOT auto-apply the Prisma schema.** After adding/changing models, sync the prod DB manually (new tables are additive/non-destructive).
 
 ## Workflows
-- **Admin Panel** — Vite dashboard (port 5000, webview) — main UI
+- **Admin Panel** — Vite dashboard (port 3001)
 - **API Server** — Express API (port 8000, console)
-- **Frontend** — Next.js storefront (port 3000, console)
+- **Frontend** — Next.js storefront (port 5000, webview — main domain)
 
 ## Kiosk (Self-Order)
 - **Kiosk app**: `Frontend.WEB/src/app/kiosk` — iPad self-order flow; device token via setup screen or `/kiosk?token=...`. Payments: Square Terminal (paired reader) or on-screen Square Web Payments card.
 - **API**: `Api/src/modules/kiosk` — device auth via `X-Kiosk-Token`; daily K-numbers; terminal checkout create/poll/cancel; pairing via Square device codes.
 - **Admin**: Kitchen Queue (`/kitchen-queue`, 5s polling, pending→processing→ready_to_ship→delivered) + Kiosk Devices (`/kiosk-devices`, tokens shown once, Terminal pairing UI).
-- **Env**: Admin needs `VITE_STOREFRONT_URL` in production (Cloudflare Pages) so generated kiosk setup links point at the storefront domain; dev falls back to `hostname:3000`.
+- **Env**: Admin needs `VITE_STOREFRONT_URL` in production (Cloudflare Pages) so generated kiosk setup links point at the storefront domain; dev falls back to the workspace domain without a port (storefront is on external port 80).
 - **Rate limits**: kiosk routes are exempt from the global per-IP API limiter and instead have: (1) brute-force guard — 30 *failed* requests per 15 min per IP, bypassed by valid tokens; (2) per-device throughput ceiling — 300 req/min keyed by token; (3) order placement — 6/min. Valid device tokens are cached in-memory 30s (revoke/delete invalidates immediately).
 - **Prod go-live checklist**:
   1. Sync Prisma schema to prod DB (adds `KioskDevice` table + `ShopOrder.kioskOrderNumber`/`kioskDeviceId` — additive, non-destructive).

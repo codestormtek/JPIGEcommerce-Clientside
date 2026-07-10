@@ -167,10 +167,11 @@ const KioskDeviceManager = () => {
   };
 
   // Storefront origin: configurable for prod (Admin and the storefront live on
-  // different domains); falls back to the local Next.js dev port.
+  // different domains). Dev fallback: the storefront is served on the default
+  // port of the workspace domain (Admin runs on its own port), so strip the port.
   const storefrontOrigin =
     import.meta.env.VITE_STOREFRONT_URL?.replace(/\/$/, "") ||
-    `${window.location.protocol}//${window.location.hostname}:3000`;
+    `${window.location.protocol}//${window.location.hostname}`;
   const kioskBaseUrl = `${storefrontOrigin}/kiosk`;
 
   return (
