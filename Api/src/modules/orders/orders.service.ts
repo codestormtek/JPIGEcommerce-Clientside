@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { ApiError } from '../../utils/apiError';
-import { ListOrdersInput, PlaceOrderInput, UpdateOrderStatusInput, GuestCheckoutInput, TrackOrderInput } from './orders.schema';
+import { ListOrdersInput, PlaceOrderInput, UpdateOrderStatusInput, GuestCheckoutInput, TrackOrderInput, CheckoutInput } from './orders.schema';
 import { sendEmail } from '../../lib/mailer';
 import { sendSms } from '../../lib/telnyx';
 import { config } from '../../config';
@@ -134,7 +134,7 @@ export async function trackOrder(input: TrackOrderInput) {
 
 export async function checkout(
   userId: string,
-  input: PlaceOrderInput & { kioskDeviceId?: string },
+  input: CheckoutInput & { kioskDeviceId?: string },
   ctx?: AuditContext,
 ) {
   try {

@@ -36,7 +36,16 @@ export interface KioskProduct {
   imageUrl: string | null;
   categoryIds: string[];
   primaryCategoryId: string | null;
+  /** Number of free sides included with this combo meal (0 = not a combo) */
+  comboSideCount: number;
+  /** Category the combo's sides are chosen from */
+  comboSideCategoryId: string | null;
   items: KioskMenuItem[];
+}
+
+export interface KioskSideChoice {
+  id: string;
+  name: string;
 }
 
 export interface KioskMenu {
@@ -48,6 +57,14 @@ export interface KioskCartLine {
   product: KioskProduct;
   item: KioskMenuItem;
   qty: number;
+  /** Chosen combo sides (empty for non-combo items) */
+  sides?: KioskSideChoice[];
+}
+
+/** Cart lines are unique per item + side combination. */
+export function cartLineKey(itemId: string, sides?: KioskSideChoice[]): string {
+  const sideIds = (sides ?? []).map((s) => s.id).sort();
+  return sideIds.length ? `${itemId}|${sideIds.join(",")}` : itemId;
 }
 
 export interface KioskOrderResult {
@@ -116,7 +133,7 @@ export function fetchKioskConfig(): Promise<KioskConfig> {
 }
 
 export function placeKioskOrder(input: {
-  lines: { productItemId: string; qty: number }[];
+  lines: { productItemId: string; qty: number; sideProductIds?: string[] }[];
   customerName: string;
   customerPhone?: string;
   specialInstructions?: string;

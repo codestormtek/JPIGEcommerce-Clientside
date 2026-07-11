@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { KioskCartLine } from "@/lib/kiosk";
-import { formatMoney } from "@/lib/kiosk";
+import { cartLineKey, formatMoney } from "@/lib/kiosk";
 
 interface Props {
   cart: KioskCartLine[];
@@ -52,9 +52,12 @@ export default function DetailsScreen({ cart, initialName, initialPhone, onBack,
 
         <div className="k-summary">
           {cart.map((l) => (
-            <div className="k-summary-row" key={l.item.id}>
+            <div className="k-summary-row" key={cartLineKey(l.item.id, l.sides)}>
               <span>
                 {l.qty}× {l.product.name}
+                {l.sides && l.sides.length > 0 && (
+                  <span className="k-summary-sides"> ({l.sides.map((s) => s.name).join(", ")})</span>
+                )}
               </span>
               <span>{formatMoney(l.item.price * l.qty)}</span>
             </div>

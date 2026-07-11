@@ -8,6 +8,8 @@ export const kioskOrderSchema = z.object({
       z.object({
         productItemId: z.string().min(1),
         qty: z.number().int().positive().max(50),
+        /** For combo meals: chosen side product IDs (must match the combo's included side count) */
+        sideProductIds: z.array(z.string().min(1)).max(10).optional(),
       }),
     )
     .min(1, 'At least one item is required')

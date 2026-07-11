@@ -48,7 +48,7 @@ const AdminProductList = () => {
   // Edit modal
   const [editModal, setEditModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both" });
+  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both", comboSideCount: "", comboSideCategoryId: null });
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState(null);
   // Edit modal tabs
@@ -86,7 +86,7 @@ const AdminProductList = () => {
 
   // Add modal
   const [addModal, setAddModal] = useState(false);
-  const [addForm, setAddForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both" });
+  const [addForm, setAddForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both", comboSideCount: "", comboSideCategoryId: null });
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState(null);
 
@@ -206,6 +206,10 @@ const AdminProductList = () => {
         value: (product.categoryMaps?.[i]?.category?.id ?? name),
       })),
       visibility: product.visibility ?? "both",
+      comboSideCount: product.comboSideCount > 0 ? String(product.comboSideCount) : "",
+      comboSideCategoryId: product.comboSideCategoryId
+        ? (categoryOptions.find((o) => o.value === product.comboSideCategoryId) ?? { label: "Selected category", value: product.comboSideCategoryId })
+        : null,
     });
     setEditError(null);
     setActiveTab("basic");
@@ -470,7 +474,7 @@ const AdminProductList = () => {
   };
 
   const openAddModal = () => {
-    setAddForm({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both" });
+    setAddForm({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both", comboSideCount: "", comboSideCategoryId: null });
     setAddError(null);
     setAddModal(true);
   };
@@ -487,6 +491,8 @@ const AdminProductList = () => {
         brandId: editForm.brandId?.value ?? null,
         categoryIds: editForm.categoryIds.map((c) => c.value),
         visibility: editForm.visibility,
+        comboSideCount: editForm.comboSideCount !== "" ? parseInt(editForm.comboSideCount, 10) : 0,
+        comboSideCategoryId: editForm.comboSideCategoryId?.value ?? null,
       });
       successTimers.current.forEach(clearTimeout);
       successTimers.current = [];
@@ -511,6 +517,8 @@ const AdminProductList = () => {
         brandId: addForm.brandId?.value ?? undefined,
         categoryIds: addForm.categoryIds.map((c) => c.value),
         visibility: addForm.visibility,
+        comboSideCount: addForm.comboSideCount !== "" ? parseInt(addForm.comboSideCount, 10) : 0,
+        comboSideCategoryId: addForm.comboSideCategoryId?.value ?? undefined,
       });
       const newProduct = res?.data ?? res;
       setAddModal(false);
@@ -918,6 +926,8 @@ const AdminProductList = () => {
                     <Col md="6"><div className="form-group"><label className="form-label">Brand</label><RSelect options={brandOptions} value={addForm.brandId} onChange={(v) => setAddForm((f) => ({ ...f, brandId: v }))} isClearable placeholder="Select brand" /></div></Col>
                     <Col md="6"><div className="form-group"><label className="form-label">Categories</label><RSelect options={categoryOptions} value={addForm.categoryIds} onChange={(v) => setAddForm((f) => ({ ...f, categoryIds: v ?? [] }))} isMulti placeholder="Select categories" /></div></Col>
                     <Col md="6"><div className="form-group"><label className="form-label">Show On</label><select className="form-select" value={addForm.visibility} onChange={(e) => setAddForm((f) => ({ ...f, visibility: e.target.value }))}><option value="both">Website &amp; Kiosk</option><option value="website">Website only</option><option value="kiosk">Kiosk only</option></select></div></Col>
+                    <Col md="3"><div className="form-group"><label className="form-label">Included Free Sides</label><input className="form-control" type="number" min="0" max="10" placeholder="0" value={addForm.comboSideCount} onChange={(e) => setAddForm((f) => ({ ...f, comboSideCount: e.target.value }))} /><span className="form-note">For combo meals — 0 = not a combo</span></div></Col>
+                    <Col md="3"><div className="form-group"><label className="form-label">Sides Category</label><RSelect options={categoryOptions} value={addForm.comboSideCategoryId} onChange={(v) => setAddForm((f) => ({ ...f, comboSideCategoryId: v }))} isClearable placeholder="e.g. Sides" /></div></Col>
                     <Col size="12"><div className="form-group"><label className="form-label">Description</label><textarea className="form-control" rows={3} value={addForm.description} onChange={(e) => setAddForm((f) => ({ ...f, description: e.target.value }))} /></div></Col>
                     <Col size="12">
                       <Button color="primary" onClick={saveAdd} disabled={addSaving || !addForm.name || !addForm.price}>
@@ -957,6 +967,8 @@ const AdminProductList = () => {
                     <Col md="6"><div className="form-group"><label className="form-label">Brand</label><RSelect options={brandOptions} value={editForm.brandId} onChange={(v) => setEditForm((f) => ({ ...f, brandId: v }))} isClearable placeholder="Select brand" /></div></Col>
                     <Col md="6"><div className="form-group"><label className="form-label">Categories</label><RSelect options={categoryOptions} value={editForm.categoryIds} onChange={(v) => setEditForm((f) => ({ ...f, categoryIds: v ?? [] }))} isMulti placeholder="Select categories" /></div></Col>
                     <Col md="6"><div className="form-group"><label className="form-label">Show On</label><select className="form-select" value={editForm.visibility} onChange={(e) => setEditForm((f) => ({ ...f, visibility: e.target.value }))}><option value="both">Website &amp; Kiosk</option><option value="website">Website only</option><option value="kiosk">Kiosk only</option></select></div></Col>
+                    <Col md="3"><div className="form-group"><label className="form-label">Included Free Sides</label><input className="form-control" type="number" min="0" max="10" placeholder="0" value={editForm.comboSideCount} onChange={(e) => setEditForm((f) => ({ ...f, comboSideCount: e.target.value }))} /><span className="form-note">For combo meals — 0 = not a combo</span></div></Col>
+                    <Col md="3"><div className="form-group"><label className="form-label">Sides Category</label><RSelect options={categoryOptions} value={editForm.comboSideCategoryId} onChange={(v) => setEditForm((f) => ({ ...f, comboSideCategoryId: v }))} isClearable placeholder="e.g. Sides" /></div></Col>
                     <Col size="12"><div className="form-group"><label className="form-label">Description</label><textarea className="form-control" rows={3} value={editForm.description} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))} /></div></Col>
                   </Row>
                 </TabPane>

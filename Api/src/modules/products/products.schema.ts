@@ -29,6 +29,8 @@ export const createProductSchema = z.object({
   brandId: z.string().min(1).optional(),
   categoryIds: z.array(z.string().min(1)).optional(),
   visibility: z.enum(['website', 'kiosk', 'both']).default('both'),
+  comboSideCount: z.number().int().min(0).max(10).default(0),
+  comboSideCategoryId: z.string().min(1).nullable().optional(),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
@@ -43,6 +45,8 @@ export const updateProductSchema = z.object({
   brandId: z.string().min(1).optional().nullable(),
   categoryIds: z.array(z.string().min(1)).optional(),
   visibility: z.enum(['website', 'kiosk', 'both']).optional(),
+  comboSideCount: z.number().int().min(0).max(10).optional(),
+  comboSideCategoryId: z.string().min(1).nullable().optional(),
 });
 
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;

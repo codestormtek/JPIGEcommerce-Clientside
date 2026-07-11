@@ -136,6 +136,11 @@ const KitchenOrderQueue = () => {
           {(order.lines ?? []).map((l) => (
             <li key={l.id} className="py-1 border-bottom">
               <strong>{l.qty}×</strong> {l.productItem?.product?.name ?? l.productItem?.sku ?? "Item"}
+              {l.sideSelectionsText && (
+                <div className="text-soft" style={{ fontSize: "0.85em", paddingLeft: "1.5em" }}>
+                  Sides: {l.sideSelectionsText}
+                </div>
+              )}
             </li>
           ))}
         </ul>

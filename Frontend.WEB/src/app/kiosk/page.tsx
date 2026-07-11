@@ -8,6 +8,8 @@ import {
   KioskMenu,
   KioskOrderResult,
   KioskProduct,
+  KioskSideChoice,
+  cartLineKey,
   clearKioskToken,
   fetchKioskConfig,
   fetchKioskMenu,
@@ -157,23 +159,28 @@ export default function KioskPage() {
     loadMenu().catch(() => {});
   };
 
-  const handleAdd = (product: KioskProduct) => {
+  const handleAdd = (product: KioskProduct, sides?: KioskSideChoice[]) => {
     const item = product.items[0];
     if (!item) return;
+    const key = cartLineKey(item.id, sides);
     setCart((prev) => {
-      const existing = prev.find((l) => l.item.id === item.id);
+      const existing = prev.find((l) => cartLineKey(l.item.id, l.sides) === key);
       if (existing) {
-        return prev.map((l) => (l.item.id === item.id ? { ...l, qty: Math.min(l.qty + 1, 50) } : l));
+        return prev.map((l) =>
+          cartLineKey(l.item.id, l.sides) === key ? { ...l, qty: Math.min(l.qty + 1, 50) } : l,
+        );
       }
-      return [...prev, { product, item, qty: 1 }];
+      return [...prev, { product, item, qty: 1, sides }];
     });
   };
 
-  const handleSetQty = (productItemId: string, qty: number) => {
+  const handleSetQty = (lineKey: string, qty: number) => {
     setCart((prev) =>
       qty <= 0
-        ? prev.filter((l) => l.item.id !== productItemId)
-        : prev.map((l) => (l.item.id === productItemId ? { ...l, qty: Math.min(qty, 50) } : l)),
+        ? prev.filter((l) => cartLineKey(l.item.id, l.sides) !== lineKey)
+        : prev.map((l) =>
+            cartLineKey(l.item.id, l.sides) === lineKey ? { ...l, qty: Math.min(qty, 50) } : l,
+          ),
     );
   };
 
@@ -188,7 +195,11 @@ export default function KioskPage() {
     squareNonce?: string,
   ): Promise<KioskOrderResult> => {
     return placeKioskOrder({
-      lines: cart.map((l) => ({ productItemId: l.item.id, qty: l.qty })),
+      lines: cart.map((l) => ({
+        productItemId: l.item.id,
+        qty: l.qty,
+        sideProductIds: l.sides?.length ? l.sides.map((s) => s.id) : undefined,
+      })),
       customerName,
       customerPhone: customerPhone || undefined,
       paymentMethod,

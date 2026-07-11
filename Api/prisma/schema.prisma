@@ -192,6 +192,11 @@ model Product {
   // Sales-channel visibility: "website" | "kiosk" | "both"
   visibility String @default("both")
 
+  // Combo meal: number of included free sides (0 = not a combo) and the
+  // category customers choose those sides from.
+  comboSideCount      Int     @default(0)
+  comboSideCategoryId String?
+
   squareCatalogObjectId String?
   squareSyncedAt        DateTime?
 
@@ -523,6 +528,7 @@ model OrderLine {
   lineTotal           Decimal
   skuSnapshot         String
   productNameSnapshot String
+  sideSelectionsText  String?     // e.g. "Mac & Cheese, Coleslaw" for combo meals
 
   options       OrderLineOption[]
   catering      OrderLineCatering?

@@ -51,6 +51,8 @@ export async function getKioskMenu() {
       imageUrl: p.media[0]?.mediaAsset?.url ?? null,
       categoryIds: p.categoryMaps.map((m) => m.categoryId),
       primaryCategoryId: primaryCategory?.categoryId ?? null,
+      comboSideCount: p.comboSideCount,
+      comboSideCategoryId: p.comboSideCategoryId,
       items: p.items.map((i) => ({
         id: i.id,
         sku: i.sku,
@@ -91,10 +93,71 @@ async function getKioskSystemUser() {
   return user;
 }
 
+/**
+ * Validates combo side selections for each order line and returns the lines
+ * enriched with a display snapshot of the chosen sides. Sides are included
+ * free with combo meals — they never affect pricing.
+ */
+async function resolveComboSides(lines: KioskOrderInput['lines']) {
+  const itemIds = lines.map((l) => l.productItemId);
+  const items = await prisma.productItem.findMany({
+    where: { id: { in: itemIds } },
+    include: { product: true },
+  });
+  const itemMap = new Map(items.map((i) => [i.id, i]));
+
+  const allSideIds = [...new Set(lines.flatMap((l) => l.sideProductIds ?? []))];
+  const sideProducts = allSideIds.length
+    ? await prisma.product.findMany({
+        where: {
+          id: { in: allSideIds },
+          isDeleted: false,
+          visibility: { in: ['kiosk', 'both'] },
+        },
+        include: { categoryMaps: true },
+      })
+    : [];
+  const sideMap = new Map(sideProducts.map((p) => [p.id, p]));
+
+  return lines.map((l) => {
+    const item = itemMap.get(l.productItemId);
+    if (!item) throw ApiError.badRequest('One of the items in your order is no longer available.');
+    const combo = item.product;
+    const wanted = l.sideProductIds ?? [];
+
+    if (combo.comboSideCount > 0) {
+      if (wanted.length !== combo.comboSideCount) {
+        throw ApiError.badRequest(
+          `"${combo.name}" comes with ${combo.comboSideCount} side${combo.comboSideCount > 1 ? 's' : ''} — please choose ${combo.comboSideCount}.`,
+        );
+      }
+      const names = wanted.map((sid) => {
+        const side = sideMap.get(sid);
+        if (!side) throw ApiError.badRequest('One of the chosen sides is no longer available.');
+        if (
+          combo.comboSideCategoryId &&
+          !side.categoryMaps.some((m) => m.categoryId === combo.comboSideCategoryId)
+        ) {
+          throw ApiError.badRequest(`"${side.name}" is not an available side for "${combo.name}".`);
+        }
+        return side.name;
+      });
+      return { productItemId: l.productItemId, qty: l.qty, sidesText: names.join(', ') };
+    }
+
+    if (wanted.length > 0) {
+      throw ApiError.badRequest(`"${combo.name}" does not include side selections.`);
+    }
+    return { productItemId: l.productItemId, qty: l.qty };
+  });
+}
+
 export async function createKioskOrder(deviceId: string, input: KioskOrderInput) {
   if (input.paymentMethod === 'card' && !input.squareNonce) {
     throw ApiError.badRequest('Payment is required to place a kiosk order.');
   }
+
+  const linesWithSides = await resolveComboSides(input.lines);
 
   let terminalDeviceId: string | null = null;
   if (input.paymentMethod === 'terminal') {
@@ -111,7 +174,7 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
   // customer's name/phone for the order ticket. Placeholder locality values
   // satisfy the shared order schema; they are never used for fulfillment.
   const order = await checkout(user.id, {
-    lines: input.lines,
+    lines: linesWithSides,
     addresses: [
       {
         addressType: 'billing',

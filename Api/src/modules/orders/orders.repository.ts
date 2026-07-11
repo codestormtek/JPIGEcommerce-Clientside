@@ -1,5 +1,5 @@
 import prisma from '../../lib/prisma';
-import { ListOrdersInput, PlaceOrderInput } from './orders.schema';
+import { ListOrdersInput, PlaceOrderInput, CheckoutInput } from './orders.schema';
 
 type TxClient = Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -82,7 +82,7 @@ export async function findProductItemPrices(ids: string[]) {
 
 export async function placeOrder(
   userId: string,
-  input: PlaceOrderInput & { kioskDeviceId?: string },
+  input: CheckoutInput & { kioskDeviceId?: string },
   taxTotal = 0,
   discountTotal = 0,
 ) {
@@ -159,6 +159,7 @@ export async function placeOrder(
             lineTotal,
             skuSnapshot: item.sku,
             productNameSnapshot: item.sku, // will be enriched by service
+            sideSelectionsText: l.sidesText ?? null,
           })),
         },
         statusHistory: {

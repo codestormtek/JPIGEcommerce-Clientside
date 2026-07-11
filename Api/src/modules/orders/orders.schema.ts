@@ -22,6 +22,17 @@ const orderLineSchema = z.object({
   qty: z.number().int().positive('Quantity must be at least 1'),
 });
 
+/**
+ * Internal-only checkout line: `sidesText` is a display-only snapshot of combo
+ * sides built server-side by the kiosk flow from validated product IDs. It is
+ * intentionally NOT part of the public zod schema so clients can never supply it
+ * (z.object strips unknown keys at the API boundary).
+ */
+export type CheckoutLine = z.infer<typeof orderLineSchema> & { sidesText?: string };
+
+/** PlaceOrderInput with internal-only line fields (see CheckoutLine). */
+export type CheckoutInput = Omit<PlaceOrderInput, 'lines'> & { lines: CheckoutLine[] };
+
 const orderAddressSchema = z.object({
   addressType: z.enum(['shipping', 'billing']),
   fullName: z.string().optional(),

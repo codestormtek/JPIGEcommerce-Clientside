@@ -28,8 +28,36 @@ export async function getProductById(id: string) {
   return product;
 }
 
+/**
+ * Combo config invariant: a product that includes free sides must say where the
+ * sides come from — otherwise it would be unorderable at the kiosk (the picker
+ * needs a category, and the API rejects the order without valid sides).
+ * When a product is not a combo, any stale side category is cleared.
+ */
+function normalizeComboConfig<T extends { comboSideCount?: number; comboSideCategoryId?: string | null }>(
+  input: T,
+  existing?: { comboSideCount: number; comboSideCategoryId: string | null },
+): T {
+  const count = input.comboSideCount ?? existing?.comboSideCount ?? 0;
+  const categoryId =
+    input.comboSideCategoryId !== undefined
+      ? input.comboSideCategoryId
+      : existing?.comboSideCategoryId ?? null;
+
+  if (count > 0 && !categoryId) {
+    throw ApiError.badRequest(
+      'A combo product with included sides needs a "Sides Category" so customers know what to choose from.',
+    );
+  }
+  if (count === 0 && categoryId && input.comboSideCount !== undefined) {
+    // Explicitly no longer a combo — clear the stale side category.
+    return { ...input, comboSideCategoryId: null };
+  }
+  return input;
+}
+
 export async function createProduct(input: CreateProductInput, ctx?: AuditContext) {
-  const product = await repo.createProduct(input);
+  const product = await repo.createProduct(normalizeComboConfig(input));
   logAudit({
     action: AuditAction.PRODUCT_CREATED,
     entityType: 'Product',
@@ -43,7 +71,7 @@ export async function createProduct(input: CreateProductInput, ctx?: AuditContex
 
 export async function updateProduct(id: string, input: UpdateProductInput, ctx?: AuditContext) {
   const before = await getProductById(id); // also ensures existence
-  const after = await repo.updateProduct(id, input);
+  const after = await repo.updateProduct(id, normalizeComboConfig(input, before));
   logAudit({
     action: AuditAction.PRODUCT_UPDATED,
     entityType: 'Product',
