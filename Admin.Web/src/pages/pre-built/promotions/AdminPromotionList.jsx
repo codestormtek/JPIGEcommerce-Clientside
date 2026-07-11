@@ -159,7 +159,7 @@ const AdminPromotionList = () => {
     try {
       const [catsRes, prodsRes] = await Promise.all([
         apiGet("/products/categories"),
-        apiGet("/products?limit=200&page=1"),
+        apiGet("/products?limit=200&page=1&visibility=all"),
       ]);
       const cats = Array.isArray(catsRes) ? catsRes : (catsRes?.data ?? []);
       setCategoryOptions(cats.map((c) => ({ label: c.name, value: c.id })));

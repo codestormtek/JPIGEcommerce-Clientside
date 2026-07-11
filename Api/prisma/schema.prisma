@@ -189,6 +189,9 @@ model Product {
   brandId     String?
   brand       Brand?   @relation(fields: [brandId], references: [id])
 
+  // Sales-channel visibility: "website" | "kiosk" | "both"
+  visibility String @default("both")
+
   squareCatalogObjectId String?
   squareSyncedAt        DateTime?
 

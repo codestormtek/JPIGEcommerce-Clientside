@@ -29,10 +29,16 @@ const productInclude = {
 // ─── Products ─────────────────────────────────────────────────────────────────
 
 export async function findProducts(input: ListProductsInput) {
-  const { page, limit, search, brandId, categoryId, minPrice, maxPrice, orderBy, order } = input;
+  const { page, limit, search, brandId, categoryId, minPrice, maxPrice, orderBy, order, visibility } = input;
   const skip = (page - 1) * limit;
 
   const where: Record<string, unknown> = { isDeleted: false };
+  // Channel visibility: 'all' shows everything (admin); a specific channel
+  // shows that channel + 'both'; absent defaults to the public website view.
+  if (visibility !== 'all') {
+    const channel = visibility === 'kiosk' ? 'kiosk' : 'website';
+    where['visibility'] = { in: [channel, 'both'] };
+  }
   if (search) where['name'] = { contains: search, mode: 'insensitive' };
   if (brandId) where['brandId'] = brandId;
   if (minPrice !== undefined || maxPrice !== undefined) {

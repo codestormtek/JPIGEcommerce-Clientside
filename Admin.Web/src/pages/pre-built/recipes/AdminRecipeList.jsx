@@ -709,7 +709,7 @@ const AdminRecipeList = () => {
     productSearchTimer.current = setTimeout(async () => {
       setProductSearching(true);
       try {
-        const res = await apiGet(`/products?search=${encodeURIComponent(query)}&limit=8`);
+        const res = await apiGet(`/products?search=${encodeURIComponent(query)}&limit=8&visibility=all`);
         const all = res?.data ?? [];
         const linkedIds = new Set(linkedProducts.map((p) => p.id));
         setProductResults(all.filter((p) => !linkedIds.has(p.id)));

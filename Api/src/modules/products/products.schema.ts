@@ -12,6 +12,9 @@ export const listProductsSchema = z.object({
   maxPrice: z.coerce.number().nonnegative().optional(),
   orderBy: z.enum(['createdAt', 'name', 'price']).default('createdAt'),
   order: z.enum(['asc', 'desc']).default('desc'),
+  // Sales-channel filter: default (absent) = storefront view (website + both).
+  // 'all' = no filter (admin listing).
+  visibility: z.enum(['website', 'kiosk', 'both', 'all']).optional(),
 });
 
 export type ListProductsInput = z.infer<typeof listProductsSchema>;
@@ -25,6 +28,7 @@ export const createProductSchema = z.object({
   quantity: z.number().int().nonnegative().default(0),
   brandId: z.string().min(1).optional(),
   categoryIds: z.array(z.string().min(1)).optional(),
+  visibility: z.enum(['website', 'kiosk', 'both']).default('both'),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
@@ -38,6 +42,7 @@ export const updateProductSchema = z.object({
   quantity: z.number().int().nonnegative().optional(),
   brandId: z.string().min(1).optional().nullable(),
   categoryIds: z.array(z.string().min(1)).optional(),
+  visibility: z.enum(['website', 'kiosk', 'both']).optional(),
 });
 
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;

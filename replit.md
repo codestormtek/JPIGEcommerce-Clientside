@@ -39,8 +39,9 @@ Dev URLs: Frontend (storefront + `/kiosk`) is on the workspace domain (external 
 - **Admin**: Kitchen Queue (`/kitchen-queue`, 5s polling, pending→processing→ready_to_ship→delivered) + Kiosk Devices (`/kiosk-devices`, tokens shown once, Terminal pairing UI).
 - **Env**: Admin needs `VITE_STOREFRONT_URL` in production (Cloudflare Pages) so generated kiosk setup links point at the storefront domain; dev falls back to the workspace domain without a port (storefront is on external port 80).
 - **Rate limits**: kiosk routes are exempt from the global per-IP API limiter and instead have: (1) brute-force guard — 30 *failed* requests per 15 min per IP, bypassed by valid tokens; (2) per-device throughput ceiling — 300 req/min keyed by token; (3) order placement — 6/min. Valid device tokens are cached in-memory 30s (revoke/delete invalidates immediately).
+- **Product channel visibility**: `Product.visibility` = `website` | `kiosk` | `both` (default `both`). Public `GET /products` defaults to website+both; `?visibility=all` returns everything (admin list uses it); kiosk menu filters kiosk+both. Admin form "Show On" select + list badges. Note: product detail by ID stays publicly reachable for kiosk-only items (only listings filter).
 - **Prod go-live checklist**:
-  1. Sync Prisma schema to prod DB (adds `KioskDevice` table + `ShopOrder.kioskOrderNumber`/`kioskDeviceId` — additive, non-destructive).
+  1. Sync Prisma schema to prod DB (adds `KioskDevice` table + `ShopOrder.kioskOrderNumber`/`kioskDeviceId` + `Product.visibility` — additive, non-destructive).
   2. Render (API): set `SQUARE_ACCESS_TOKEN` (valid production token), `SQUARE_APPLICATION_ID`, `SQUARE_LOCATION_ID`, `SQUARE_ENVIRONMENT=production`.
   3. Cloudflare Pages (Admin): set `VITE_STOREFRONT_URL=https://<storefront-domain>` and redeploy.
   4. In Admin → Kiosk Devices: create device, open setup link on iPad (Safari → Add to Home Screen for fullscreen), pair Square Terminal if using a reader.

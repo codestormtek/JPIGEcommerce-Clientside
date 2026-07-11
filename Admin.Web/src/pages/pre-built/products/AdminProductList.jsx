@@ -48,7 +48,7 @@ const AdminProductList = () => {
   // Edit modal
   const [editModal, setEditModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [] });
+  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both" });
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState(null);
   // Edit modal tabs
@@ -86,7 +86,7 @@ const AdminProductList = () => {
 
   // Add modal
   const [addModal, setAddModal] = useState(false);
-  const [addForm, setAddForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [] });
+  const [addForm, setAddForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both" });
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState(null);
 
@@ -120,6 +120,7 @@ const AdminProductList = () => {
     try {
       const opts = {
         page: currentPage, limit: itemPerPage, order: sort, orderBy: sortField,
+        visibility: "all",
         brandId: brandFilter?.value ?? undefined,
         categoryId: categoryFilter?.value ?? undefined,
         search: searchText || undefined,
@@ -204,6 +205,7 @@ const AdminProductList = () => {
         label: name,
         value: (product.categoryMaps?.[i]?.category?.id ?? name),
       })),
+      visibility: product.visibility ?? "both",
     });
     setEditError(null);
     setActiveTab("basic");
@@ -468,7 +470,7 @@ const AdminProductList = () => {
   };
 
   const openAddModal = () => {
-    setAddForm({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [] });
+    setAddForm({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both" });
     setAddError(null);
     setAddModal(true);
   };
@@ -484,6 +486,7 @@ const AdminProductList = () => {
         quantity: editForm.quantity !== "" ? parseInt(editForm.quantity, 10) : undefined,
         brandId: editForm.brandId?.value ?? null,
         categoryIds: editForm.categoryIds.map((c) => c.value),
+        visibility: editForm.visibility,
       });
       successTimers.current.forEach(clearTimeout);
       successTimers.current = [];
@@ -507,6 +510,7 @@ const AdminProductList = () => {
         quantity: addForm.quantity !== "" ? parseInt(addForm.quantity, 10) : undefined,
         brandId: addForm.brandId?.value ?? undefined,
         categoryIds: addForm.categoryIds.map((c) => c.value),
+        visibility: addForm.visibility,
       });
       const newProduct = res?.data ?? res;
       setAddModal(false);
@@ -784,7 +788,11 @@ const AdminProductList = () => {
                   </DataTableRow>
                   {/* Product name */}
                   <DataTableRow>
-                    <span className="tb-product"><span className="title">{product.name}</span></span>
+                    <span className="tb-product">
+                      <span className="title">{product.name}</span>
+                      {product.visibility === "kiosk" && <Badge color="warning" className="badge-dim ms-1">Kiosk only</Badge>}
+                      {product.visibility === "website" && <Badge color="info" className="badge-dim ms-1">Website only</Badge>}
+                    </span>
                   </DataTableRow>
                   <DataTableRow size="sm"><span className="tb-lead">{fmtPrice(product.price)}</span></DataTableRow>
                   <DataTableRow size="md"><span>{product.quantity ?? "—"}</span></DataTableRow>
@@ -909,6 +917,7 @@ const AdminProductList = () => {
                     <Col md="3"><div className="form-group"><label className="form-label">Quantity</label><input className="form-control" type="number" value={addForm.quantity} onChange={(e) => setAddForm((f) => ({ ...f, quantity: e.target.value }))} /></div></Col>
                     <Col md="6"><div className="form-group"><label className="form-label">Brand</label><RSelect options={brandOptions} value={addForm.brandId} onChange={(v) => setAddForm((f) => ({ ...f, brandId: v }))} isClearable placeholder="Select brand" /></div></Col>
                     <Col md="6"><div className="form-group"><label className="form-label">Categories</label><RSelect options={categoryOptions} value={addForm.categoryIds} onChange={(v) => setAddForm((f) => ({ ...f, categoryIds: v ?? [] }))} isMulti placeholder="Select categories" /></div></Col>
+                    <Col md="6"><div className="form-group"><label className="form-label">Show On</label><select className="form-select" value={addForm.visibility} onChange={(e) => setAddForm((f) => ({ ...f, visibility: e.target.value }))}><option value="both">Website &amp; Kiosk</option><option value="website">Website only</option><option value="kiosk">Kiosk only</option></select></div></Col>
                     <Col size="12"><div className="form-group"><label className="form-label">Description</label><textarea className="form-control" rows={3} value={addForm.description} onChange={(e) => setAddForm((f) => ({ ...f, description: e.target.value }))} /></div></Col>
                     <Col size="12">
                       <Button color="primary" onClick={saveAdd} disabled={addSaving || !addForm.name || !addForm.price}>
@@ -947,6 +956,7 @@ const AdminProductList = () => {
                     <Col md="3"><div className="form-group"><label className="form-label">Quantity</label><input className="form-control" type="number" value={editForm.quantity} onChange={(e) => setEditForm((f) => ({ ...f, quantity: e.target.value }))} /></div></Col>
                     <Col md="6"><div className="form-group"><label className="form-label">Brand</label><RSelect options={brandOptions} value={editForm.brandId} onChange={(v) => setEditForm((f) => ({ ...f, brandId: v }))} isClearable placeholder="Select brand" /></div></Col>
                     <Col md="6"><div className="form-group"><label className="form-label">Categories</label><RSelect options={categoryOptions} value={editForm.categoryIds} onChange={(v) => setEditForm((f) => ({ ...f, categoryIds: v ?? [] }))} isMulti placeholder="Select categories" /></div></Col>
+                    <Col md="6"><div className="form-group"><label className="form-label">Show On</label><select className="form-select" value={editForm.visibility} onChange={(e) => setEditForm((f) => ({ ...f, visibility: e.target.value }))}><option value="both">Website &amp; Kiosk</option><option value="website">Website only</option><option value="kiosk">Kiosk only</option></select></div></Col>
                     <Col size="12"><div className="form-group"><label className="form-label">Description</label><textarea className="form-control" rows={3} value={editForm.description} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))} /></div></Col>
                   </Row>
                 </TabPane>

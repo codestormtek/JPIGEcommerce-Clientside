@@ -87,7 +87,7 @@ const AdminInventoryList = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await apiGet("/products?limit=200&order=asc&orderBy=name");
+        const res = await apiGet("/products?limit=200&order=asc&orderBy=name&visibility=all");
         const prods = Array.isArray(res) ? res : (res?.data ?? []);
         setProductOptions(prods.map((p) => ({ label: p.name, value: p.id })));
       } catch { /* non-fatal */ }

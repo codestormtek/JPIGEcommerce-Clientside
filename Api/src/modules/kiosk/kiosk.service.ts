@@ -14,7 +14,11 @@ import { KioskOrderInput, CreateKioskDeviceInput, UpdateKioskDeviceInput } from 
 
 export async function getKioskMenu() {
   const products = await prisma.product.findMany({
-    where: { isDeleted: false, items: { some: { qtyInStock: { gt: 0 } } } },
+    where: {
+      isDeleted: false,
+      visibility: { in: ['kiosk', 'both'] },
+      items: { some: { qtyInStock: { gt: 0 } } },
+    },
     include: {
       items: { where: { qtyInStock: { gt: 0 } }, orderBy: { price: 'asc' } },
       media: {

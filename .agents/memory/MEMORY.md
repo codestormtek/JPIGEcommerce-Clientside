@@ -7,3 +7,4 @@
 - [Scheduled-task SMS](scheduled-task-sms.md) — recurring SMS jobs use MessageOutbox for idempotency (no schema change); serialize via allowConcurrentRuns guard (added to manual runs too)
 - [Order/transactional SMS policy](order-sms-policy.md) — all order texts gated on optInSms (smsPhone→phoneNumber); status texts only on real transitions, never unconditional
 - [Telnyx voice webhooks](telnyx-voice-webhooks.md) — 1-800 forward+voicemail via TeXML; side-effecting action callbacks are rate-limit-exempt so must carry a self-signed ?k= token
+- [Product channel visibility](product-channel-visibility.md) — public GET /products default-hides kiosk-only; every admin product picker must pass visibility=all or items vanish
