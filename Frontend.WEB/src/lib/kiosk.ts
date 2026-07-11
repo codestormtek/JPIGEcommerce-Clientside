@@ -40,12 +40,38 @@ export interface KioskProduct {
   comboSideCount: number;
   /** Category the combo's sides are chosen from */
   comboSideCategoryId: string | null;
+  /** When picked as a side more than once, each extra pick adds this amount */
+  duplicateSideUpcharge: number;
   items: KioskMenuItem[];
 }
 
 export interface KioskSideChoice {
   id: string;
   name: string;
+  /** Per-duplicate upcharge for this side (0 = none) — display only, server recomputes */
+  upcharge?: number;
+}
+
+/** Display-only cart subtotal including duplicate-side upcharges (server recomputes authoritatively). */
+export function cartSubtotal(cart: KioskCartLine[]): number {
+  return cart.reduce((s, l) => s + (l.item.price + sidesUpcharge(l.sides)) * l.qty, 0);
+}
+
+/**
+ * Total upcharge for a combo's chosen sides: each duplicate pick of the same
+ * side beyond the first adds that side's upcharge amount. Mirrors the server's
+ * authoritative calculation (display only).
+ */
+export function sidesUpcharge(sides?: KioskSideChoice[]): number {
+  if (!sides?.length) return 0;
+  const seen = new Map<string, number>();
+  let total = 0;
+  for (const s of sides) {
+    const count = (seen.get(s.id) ?? 0) + 1;
+    seen.set(s.id, count);
+    if (count > 1 && s.upcharge) total += s.upcharge;
+  }
+  return Math.round(total * 100) / 100;
 }
 
 export interface KioskMenu {

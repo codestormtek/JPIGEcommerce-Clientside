@@ -100,9 +100,11 @@ export async function placeOrder(
       const item = productItems.find((p) => p.id === l.productItemId);
       if (!item) throw new Error(`Product item ${l.productItemId} not found`);
       if (item.qtyInStock < l.qty) throw new Error(`Insufficient stock for SKU ${item.sku}`);
-      const lineTotal = Number(item.price) * l.qty;
+      // Server-computed surcharge for duplicate premium combo sides (kiosk only)
+      const unitPrice = Number(item.price) + (l.sideUpcharge ?? 0);
+      const lineTotal = unitPrice * l.qty;
       subtotal += lineTotal;
-      return { item, l, lineTotal };
+      return { item, l, unitPrice, lineTotal };
     });
 
     // Fetch shipping cost — Shippo rate takes priority over static method
@@ -152,10 +154,10 @@ export async function placeOrder(
         shippoServiceLevel: input.shippoServiceLevel,
         addresses: { create: input.addresses },
         lines: {
-          create: lineData.map(({ item, l, lineTotal }) => ({
+          create: lineData.map(({ item, l, unitPrice, lineTotal }) => ({
             productItemId: item.id,
             qty: l.qty,
-            unitPriceSnapshot: item.price,
+            unitPriceSnapshot: unitPrice,
             lineTotal,
             skuSnapshot: item.sku,
             productNameSnapshot: item.sku, // will be enriched by service

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { KioskCartLine, KioskConfig, KioskOrderResult } from "@/lib/kiosk";
-import { cancelKioskPayment, fetchKioskPaymentStatus, formatMoney } from "@/lib/kiosk";
+import { cancelKioskPayment, cartSubtotal, fetchKioskPaymentStatus, formatMoney } from "@/lib/kiosk";
 
 interface Props {
   cart: KioskCartLine[];
@@ -67,7 +67,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
   const cardRef = useRef<SquareCard | null>(null);
   const cancelledRef = useRef(false);
 
-  const subtotal = cart.reduce((s, l) => s + l.item.price * l.qty, 0);
+  const subtotal = cartSubtotal(cart);
 
   // ── Terminal flow: place order, then poll until paid/canceled ──
   const startTerminal = async () => {

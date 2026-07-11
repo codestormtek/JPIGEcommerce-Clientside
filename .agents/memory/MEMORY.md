@@ -7,5 +7,6 @@
 - [Scheduled-task SMS](scheduled-task-sms.md) — recurring SMS jobs use MessageOutbox for idempotency (no schema change); serialize via allowConcurrentRuns guard (added to manual runs too)
 - [Order/transactional SMS policy](order-sms-policy.md) — all order texts gated on optInSms (smsPhone→phoneNumber); status texts only on real transitions, never unconditional
 - [Telnyx voice webhooks](telnyx-voice-webhooks.md) — 1-800 forward+voicemail via TeXML; side-effecting action callbacks are rate-limit-exempt so must carry a self-signed ?k= token
+- [Kiosk display pricing](kiosk-display-pricing.md) — price-affecting cart fields must go through the shared cartSubtotal helper; inline per-screen subtotals drift (pay screen missed once)
 - [Internal-only API fields](internal-only-api-fields.md) — server-generated fields stay OUT of public zod schemas (zod strips them); use Omit<> not intersection for typed internal lines
 - [Product channel visibility](product-channel-visibility.md) — public GET /products default-hides kiosk-only; every admin product picker must pass visibility=all or items vanish

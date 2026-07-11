@@ -48,7 +48,7 @@ const AdminProductList = () => {
   // Edit modal
   const [editModal, setEditModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both", comboSideCount: "", comboSideCategoryId: null });
+  const [editForm, setEditForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both", comboSideCount: "", comboSideCategoryId: null, duplicateSideUpcharge: "" });
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState(null);
   // Edit modal tabs
@@ -86,7 +86,7 @@ const AdminProductList = () => {
 
   // Add modal
   const [addModal, setAddModal] = useState(false);
-  const [addForm, setAddForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both", comboSideCount: "", comboSideCategoryId: null });
+  const [addForm, setAddForm] = useState({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both", comboSideCount: "", comboSideCategoryId: null, duplicateSideUpcharge: "" });
   const [addSaving, setAddSaving] = useState(false);
   const [addError, setAddError] = useState(null);
 
@@ -210,6 +210,7 @@ const AdminProductList = () => {
       comboSideCategoryId: product.comboSideCategoryId
         ? (categoryOptions.find((o) => o.value === product.comboSideCategoryId) ?? { label: "Selected category", value: product.comboSideCategoryId })
         : null,
+      duplicateSideUpcharge: Number(product.duplicateSideUpcharge) > 0 ? String(product.duplicateSideUpcharge) : "",
     });
     setEditError(null);
     setActiveTab("basic");
@@ -493,6 +494,7 @@ const AdminProductList = () => {
         visibility: editForm.visibility,
         comboSideCount: editForm.comboSideCount !== "" ? parseInt(editForm.comboSideCount, 10) : 0,
         comboSideCategoryId: editForm.comboSideCategoryId?.value ?? null,
+        duplicateSideUpcharge: editForm.duplicateSideUpcharge !== "" ? parseFloat(editForm.duplicateSideUpcharge) : 0,
       });
       successTimers.current.forEach(clearTimeout);
       successTimers.current = [];
@@ -519,6 +521,7 @@ const AdminProductList = () => {
         visibility: addForm.visibility,
         comboSideCount: addForm.comboSideCount !== "" ? parseInt(addForm.comboSideCount, 10) : 0,
         comboSideCategoryId: addForm.comboSideCategoryId?.value ?? undefined,
+        duplicateSideUpcharge: addForm.duplicateSideUpcharge !== "" ? parseFloat(addForm.duplicateSideUpcharge) : 0,
       });
       const newProduct = res?.data ?? res;
       setAddModal(false);
@@ -928,6 +931,7 @@ const AdminProductList = () => {
                     <Col md="6"><div className="form-group"><label className="form-label">Show On</label><select className="form-select" value={addForm.visibility} onChange={(e) => setAddForm((f) => ({ ...f, visibility: e.target.value }))}><option value="both">Website &amp; Kiosk</option><option value="website">Website only</option><option value="kiosk">Kiosk only</option></select></div></Col>
                     <Col md="3"><div className="form-group"><label className="form-label">Included Free Sides</label><input className="form-control" type="number" min="0" max="10" placeholder="0" value={addForm.comboSideCount} onChange={(e) => setAddForm((f) => ({ ...f, comboSideCount: e.target.value }))} /><span className="form-note">For combo meals — 0 = not a combo</span></div></Col>
                     <Col md="3"><div className="form-group"><label className="form-label">Sides Category</label><RSelect options={categoryOptions} value={addForm.comboSideCategoryId} onChange={(v) => setAddForm((f) => ({ ...f, comboSideCategoryId: v }))} isClearable placeholder="e.g. Sides" /></div></Col>
+                    <Col md="3"><div className="form-group"><label className="form-label">Duplicate Side Upcharge ($)</label><input className="form-control" type="number" min="0" step="0.01" placeholder="0.00" value={addForm.duplicateSideUpcharge} onChange={(e) => setAddForm((f) => ({ ...f, duplicateSideUpcharge: e.target.value }))} /><span className="form-note">Charged when this side is picked more than once in a combo</span></div></Col>
                     <Col size="12"><div className="form-group"><label className="form-label">Description</label><textarea className="form-control" rows={3} value={addForm.description} onChange={(e) => setAddForm((f) => ({ ...f, description: e.target.value }))} /></div></Col>
                     <Col size="12">
                       <Button color="primary" onClick={saveAdd} disabled={addSaving || !addForm.name || !addForm.price}>
@@ -969,6 +973,7 @@ const AdminProductList = () => {
                     <Col md="6"><div className="form-group"><label className="form-label">Show On</label><select className="form-select" value={editForm.visibility} onChange={(e) => setEditForm((f) => ({ ...f, visibility: e.target.value }))}><option value="both">Website &amp; Kiosk</option><option value="website">Website only</option><option value="kiosk">Kiosk only</option></select></div></Col>
                     <Col md="3"><div className="form-group"><label className="form-label">Included Free Sides</label><input className="form-control" type="number" min="0" max="10" placeholder="0" value={editForm.comboSideCount} onChange={(e) => setEditForm((f) => ({ ...f, comboSideCount: e.target.value }))} /><span className="form-note">For combo meals — 0 = not a combo</span></div></Col>
                     <Col md="3"><div className="form-group"><label className="form-label">Sides Category</label><RSelect options={categoryOptions} value={editForm.comboSideCategoryId} onChange={(v) => setEditForm((f) => ({ ...f, comboSideCategoryId: v }))} isClearable placeholder="e.g. Sides" /></div></Col>
+                    <Col md="3"><div className="form-group"><label className="form-label">Duplicate Side Upcharge ($)</label><input className="form-control" type="number" min="0" step="0.01" placeholder="0.00" value={editForm.duplicateSideUpcharge} onChange={(e) => setEditForm((f) => ({ ...f, duplicateSideUpcharge: e.target.value }))} /><span className="form-note">Charged when this side is picked more than once in a combo</span></div></Col>
                     <Col size="12"><div className="form-group"><label className="form-label">Description</label><textarea className="form-control" rows={3} value={editForm.description} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))} /></div></Col>
                   </Row>
                 </TabPane>

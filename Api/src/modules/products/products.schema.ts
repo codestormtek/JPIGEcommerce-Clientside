@@ -31,6 +31,7 @@ export const createProductSchema = z.object({
   visibility: z.enum(['website', 'kiosk', 'both']).default('both'),
   comboSideCount: z.number().int().min(0).max(10).default(0),
   comboSideCategoryId: z.string().min(1).nullable().optional(),
+  duplicateSideUpcharge: z.number().min(0).max(1000).default(0),
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
@@ -47,6 +48,7 @@ export const updateProductSchema = z.object({
   visibility: z.enum(['website', 'kiosk', 'both']).optional(),
   comboSideCount: z.number().int().min(0).max(10).optional(),
   comboSideCategoryId: z.string().min(1).nullable().optional(),
+  duplicateSideUpcharge: z.number().min(0).max(1000).optional(),
 });
 
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;

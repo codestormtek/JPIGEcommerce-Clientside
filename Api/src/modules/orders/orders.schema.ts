@@ -23,12 +23,18 @@ const orderLineSchema = z.object({
 });
 
 /**
- * Internal-only checkout line: `sidesText` is a display-only snapshot of combo
- * sides built server-side by the kiosk flow from validated product IDs. It is
- * intentionally NOT part of the public zod schema so clients can never supply it
- * (z.object strips unknown keys at the API boundary).
+ * Internal-only checkout line fields, built server-side by the kiosk flow from
+ * validated product IDs. They are intentionally NOT part of the public zod
+ * schema so clients can never supply them (z.object strips unknown keys at the
+ * API boundary):
+ * - `sidesText`: display-only snapshot of chosen combo sides.
+ * - `sideUpcharge`: per-unit surcharge for duplicate premium sides, computed
+ *   from Product.duplicateSideUpcharge — added to the line's unit price.
  */
-export type CheckoutLine = z.infer<typeof orderLineSchema> & { sidesText?: string };
+export type CheckoutLine = z.infer<typeof orderLineSchema> & {
+  sidesText?: string;
+  sideUpcharge?: number;
+};
 
 /** PlaceOrderInput with internal-only line fields (see CheckoutLine). */
 export type CheckoutInput = Omit<PlaceOrderInput, 'lines'> & { lines: CheckoutLine[] };

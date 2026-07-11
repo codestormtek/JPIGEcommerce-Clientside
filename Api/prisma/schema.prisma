@@ -197,6 +197,10 @@ model Product {
   comboSideCount      Int     @default(0)
   comboSideCategoryId String?
 
+  // When this product is picked as a combo side more than once, each extra
+  // pick beyond the first adds this amount to the combo's price (0 = no upcharge).
+  duplicateSideUpcharge Decimal @default(0) @db.Decimal(10, 2)
+
   squareCatalogObjectId String?
   squareSyncedAt        DateTime?
 

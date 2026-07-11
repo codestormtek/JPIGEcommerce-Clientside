@@ -649,6 +649,33 @@
   font-size: 0.85em;
 }
 
+.k-upcharge-note {
+  color: var(--k-accent);
+  font-weight: 700;
+}
+
+.k-upcharge-overlay {
+  z-index: 110;
+}
+
+.k-upcharge-modal {
+  max-width: 520px;
+  text-align: center;
+}
+
+.k-upcharge-modal .k-modal-sub {
+  font-size: 19px;
+  line-height: 1.5;
+}
+
+.k-upcharge-modal .k-modal-sub strong {
+  color: var(--k-accent);
+}
+
+.k-upcharge-modal .k-modal-actions {
+  justify-content: center;
+}
+
 .k-modal-overlay {
   position: fixed;
   inset: 0;

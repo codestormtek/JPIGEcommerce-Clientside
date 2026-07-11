@@ -53,6 +53,7 @@ export async function getKioskMenu() {
       primaryCategoryId: primaryCategory?.categoryId ?? null,
       comboSideCount: p.comboSideCount,
       comboSideCategoryId: p.comboSideCategoryId,
+      duplicateSideUpcharge: Number(p.duplicateSideUpcharge),
       items: p.items.map((i) => ({
         id: i.id,
         sku: i.sku,
@@ -96,9 +97,12 @@ async function getKioskSystemUser() {
 /**
  * Validates combo side selections for each order line and returns the lines
  * enriched with a display snapshot of the chosen sides. Sides are included
- * free with combo meals — they never affect pricing.
+ * free with combo meals, except when the same premium side is picked more than
+ * once: each extra pick beyond the first adds that side's
+ * `duplicateSideUpcharge` to the combo's per-unit price (computed server-side —
+ * the client can never set the amount).
  */
-async function resolveComboSides(lines: KioskOrderInput['lines']) {
+export async function resolveComboSides(lines: KioskOrderInput['lines']) {
   const itemIds = lines.map((l) => l.productItemId);
   const items = await prisma.productItem.findMany({
     where: { id: { in: itemIds } },
@@ -142,7 +146,31 @@ async function resolveComboSides(lines: KioskOrderInput['lines']) {
         }
         return side.name;
       });
-      return { productItemId: l.productItemId, qty: l.qty, sidesText: names.join(', ') };
+
+      // Duplicate premium sides: each pick of the same side beyond the first
+      // adds that side's upcharge to the combo's per-unit price.
+      const countsById = new Map<string, number>();
+      wanted.forEach((sid) => countsById.set(sid, (countsById.get(sid) ?? 0) + 1));
+      let sideUpcharge = 0;
+      for (const [sid, count] of countsById) {
+        if (count > 1) {
+          const amount = Number(sideMap.get(sid)!.duplicateSideUpcharge);
+          if (amount > 0) sideUpcharge += (count - 1) * amount;
+        }
+      }
+      sideUpcharge = Math.round(sideUpcharge * 100) / 100;
+
+      const sidesText =
+        sideUpcharge > 0
+          ? `${names.join(', ')} (+$${sideUpcharge.toFixed(2)} upcharge)`
+          : names.join(', ');
+
+      return {
+        productItemId: l.productItemId,
+        qty: l.qty,
+        sidesText,
+        ...(sideUpcharge > 0 ? { sideUpcharge } : {}),
+      };
     }
 
     if (wanted.length > 0) {

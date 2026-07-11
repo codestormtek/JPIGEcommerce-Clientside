@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { KioskMenu, KioskCartLine, KioskProduct, KioskSideChoice } from "@/lib/kiosk";
-import { cartLineKey, formatMoney } from "@/lib/kiosk";
+import { cartLineKey, cartSubtotal, formatMoney, sidesUpcharge } from "@/lib/kiosk";
 
 interface Props {
   menu: KioskMenu;
@@ -17,6 +17,8 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [sidePicker, setSidePicker] = useState<KioskProduct | null>(null);
   const [chosenSides, setChosenSides] = useState<KioskSideChoice[]>([]);
+  // Side pending confirmation because picking it again incurs an upcharge
+  const [upchargeConfirm, setUpchargeConfirm] = useState<KioskProduct | null>(null);
 
   const products = useMemo(() => {
     if (!activeCat) return menu.products;
@@ -40,10 +42,25 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
     const needsSides = p.comboSideCount > 0 && p.comboSideCategoryId;
     if (needsSides) {
       setChosenSides([]);
+      setUpchargeConfirm(null);
       setSidePicker(p);
     } else {
       onAdd(p);
     }
+  };
+
+  const addSide = (s: KioskProduct) => {
+    setChosenSides((prev) => [...prev, { id: s.id, name: s.name, upcharge: s.duplicateSideUpcharge }]);
+  };
+
+  const handleSideTap = (s: KioskProduct) => {
+    if (!sidePicker || chosenSides.length >= sidePicker.comboSideCount) return;
+    const alreadyChosen = chosenSides.some((c) => c.id === s.id);
+    if (alreadyChosen && s.duplicateSideUpcharge > 0) {
+      setUpchargeConfirm(s);
+      return;
+    }
+    addSide(s);
   };
 
   const confirmSides = () => {
@@ -51,9 +68,11 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
     onAdd(sidePicker, chosenSides);
     setSidePicker(null);
     setChosenSides([]);
+    setUpchargeConfirm(null);
   };
 
-  const subtotal = cart.reduce((s, l) => s + l.item.price * l.qty, 0);
+  const pickerUpcharge = sidesUpcharge(chosenSides);
+  const subtotal = cartSubtotal(cart);
   const itemCount = cart.reduce((s, l) => s + l.qty, 0);
 
   return (
@@ -127,11 +146,12 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
           )}
           {cart.map((l) => {
             const key = cartLineKey(l.item.id, l.sides);
+            const unitPrice = l.item.price + sidesUpcharge(l.sides);
             return (
               <div className="k-line" key={key}>
                 <div className="k-line-top">
                   <span>{l.product.name}</span>
-                  <span className="k-line-price">{formatMoney(l.item.price * l.qty)}</span>
+                  <span className="k-line-price">{formatMoney(unitPrice * l.qty)}</span>
                 </div>
                 {l.sides && l.sides.length > 0 && (
                   <div className="k-line-sides">
@@ -183,6 +203,9 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
             <div className="k-modal-sub">
               {chosenSides.length} of {sidePicker.comboSideCount} chosen
               {chosenSides.length > 0 && ` — ${chosenSides.map((s) => s.name).join(", ")}`}
+              {pickerUpcharge > 0 && (
+                <span className="k-upcharge-note"> (+{formatMoney(pickerUpcharge)} upcharge)</span>
+              )}
             </div>
             {sideOptions.length === 0 ? (
               <div className="k-modal-empty">No sides are available right now.</div>
@@ -194,11 +217,7 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
                     <button
                       key={s.id}
                       className={`k-side-card ${count > 0 ? "active" : ""}`}
-                      onClick={() => {
-                        if (chosenSides.length < sidePicker.comboSideCount) {
-                          setChosenSides((prev) => [...prev, { id: s.id, name: s.name }]);
-                        }
-                      }}
+                      onClick={() => handleSideTap(s)}
                     >
                       {s.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -227,9 +246,36 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
                 disabled={chosenSides.length !== sidePicker.comboSideCount}
                 onClick={confirmSides}
               >
-                Add to Order
+                Add to Order{pickerUpcharge > 0 && ` (+${formatMoney(pickerUpcharge)})`}
               </button>
             </div>
+
+            {upchargeConfirm && (
+              <div className="k-modal-overlay k-upcharge-overlay" onClick={() => setUpchargeConfirm(null)}>
+                <div className="k-modal k-upcharge-modal" onClick={(e) => e.stopPropagation()}>
+                  <div className="k-modal-title">Extra {upchargeConfirm.name}?</div>
+                  <div className="k-modal-sub">
+                    Adding another {upchargeConfirm.name} has a{" "}
+                    <strong>{formatMoney(upchargeConfirm.duplicateSideUpcharge)} upcharge</strong>. Would
+                    you like to proceed?
+                  </div>
+                  <div className="k-modal-actions">
+                    <button className="k-btn k-btn-ghost" onClick={() => setUpchargeConfirm(null)}>
+                      No, Go Back
+                    </button>
+                    <button
+                      className="k-btn k-btn-primary"
+                      onClick={() => {
+                        addSide(upchargeConfirm);
+                        setUpchargeConfirm(null);
+                      }}
+                    >
+                      Yes, Add It (+{formatMoney(upchargeConfirm.duplicateSideUpcharge)})
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

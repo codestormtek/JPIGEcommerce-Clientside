@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { KioskCartLine } from "@/lib/kiosk";
-import { cartLineKey, formatMoney } from "@/lib/kiosk";
+import { cartLineKey, cartSubtotal, formatMoney, sidesUpcharge } from "@/lib/kiosk";
 
 interface Props {
   cart: KioskCartLine[];
@@ -16,7 +16,7 @@ export default function DetailsScreen({ cart, initialName, initialPhone, onBack,
   const [name, setName] = useState(initialName);
   const [phone, setPhone] = useState(initialPhone);
 
-  const subtotal = cart.reduce((s, l) => s + l.item.price * l.qty, 0);
+  const subtotal = cartSubtotal(cart);
 
   return (
     <div className="k-screen k-center">
@@ -59,7 +59,7 @@ export default function DetailsScreen({ cart, initialName, initialPhone, onBack,
                   <span className="k-summary-sides"> ({l.sides.map((s) => s.name).join(", ")})</span>
                 )}
               </span>
-              <span>{formatMoney(l.item.price * l.qty)}</span>
+              <span>{formatMoney((l.item.price + sidesUpcharge(l.sides)) * l.qty)}</span>
             </div>
           ))}
           <div className="k-summary-row total">
