@@ -475,7 +475,7 @@ const AdminProductList = () => {
   };
 
   const openAddModal = () => {
-    setAddForm({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both", comboSideCount: "", comboSideCategoryId: null });
+    setAddForm({ name: "", description: "", price: "", quantity: "", brandId: null, categoryIds: [], visibility: "both", comboSideCount: "", comboSideCategoryId: null, duplicateSideUpcharge: "" });
     setAddError(null);
     setAddModal(true);
   };
@@ -803,6 +803,8 @@ const AdminProductList = () => {
                       <span className="title">{product.name}</span>
                       {product.visibility === "kiosk" && <Badge color="warning" className="badge-dim ms-1">Kiosk only</Badge>}
                       {product.visibility === "website" && <Badge color="info" className="badge-dim ms-1">Website only</Badge>}
+                      {product.comboSideCount > 0 && <Badge color="success" className="badge-dim ms-1">{product.comboSideCount} Free Side{product.comboSideCount > 1 ? "s" : ""}</Badge>}
+                      {Number(product.duplicateSideUpcharge) > 0 && <Badge color="danger" className="badge-dim ms-1">+${Number(product.duplicateSideUpcharge).toFixed(2)} 2nd</Badge>}
                     </span>
                   </DataTableRow>
                   <DataTableRow size="sm"><span className="tb-lead">{fmtPrice(product.price)}</span></DataTableRow>
