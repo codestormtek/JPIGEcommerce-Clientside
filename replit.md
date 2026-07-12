@@ -35,6 +35,7 @@ Dev URLs: Frontend (storefront + `/kiosk`) is on the workspace domain (external 
 
 ## Kiosk (Self-Order)
 - **Kiosk app**: `Frontend.WEB/src/app/kiosk` — iPad self-order flow; device token via setup screen or `/kiosk?token=...`. Payments: Square Terminal (paired reader) or on-screen Square Web Payments card.
+- **Kiosk menu nav**: no "All" tab; exactly 3 tabs matched by category name (case-insensitive) in `MenuScreen.tsx` — "Jiggling Food Menu" (default, sections: Combo Items / Sides / Other Items / Drinks), "Sides" (flat), "Jiggling Pig Products" (grouped by sub-category — Sauces, Rubs, Fry Mixes, Drinks — with "Other Items" fallback; also picks up orphan products in neither top-level category). If any of the 3 named categories is missing, falls back to showing all categories as tabs.
 - **API**: `Api/src/modules/kiosk` — device auth via `X-Kiosk-Token`; daily K-numbers; terminal checkout create/poll/cancel; pairing via Square device codes.
 - **Admin**: Kitchen Queue (`/kitchen-queue`, 5s polling, pending→processing→ready_to_ship→delivered) + Kiosk Devices (`/kiosk-devices`, tokens shown once, Terminal pairing UI).
 - **Env**: Admin needs `VITE_STOREFRONT_URL` in production (Cloudflare Pages) so generated kiosk setup links point at the storefront domain; dev falls back to the workspace domain without a port (storefront is on external port 80).

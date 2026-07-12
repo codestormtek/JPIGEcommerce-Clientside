@@ -13,17 +13,123 @@ interface Props {
   onStartOver: () => void;
 }
 
+// Top-level navigation tabs (matched against category names, case-insensitive).
+// Everything else (Combo Dinners, Drinks, Sauces, Rubs, …) becomes a section
+// header inside a tab instead of its own tab.
+const TAB_FOOD = "jiggling food menu";
+const TAB_SIDES = "sides";
+const TAB_PRODUCTS = "jiggling pig products";
+
+const norm = (s: string) => s.trim().toLowerCase();
+
+interface MenuSection {
+  title: string | null;
+  products: KioskProduct[];
+}
+
 export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, onStartOver }: Props) {
-  const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [sidePicker, setSidePicker] = useState<KioskProduct | null>(null);
   const [chosenSides, setChosenSides] = useState<KioskSideChoice[]>([]);
   // Side pending confirmation because picking it again incurs an upcharge
   const [upchargeConfirm, setUpchargeConfirm] = useState<KioskProduct | null>(null);
 
-  const products = useMemo(() => {
-    if (!activeCat) return menu.products;
-    return menu.products.filter((p) => p.categoryIds.includes(activeCat));
-  }, [menu.products, activeCat]);
+  const catById = useMemo(
+    () => new Map(menu.categories.map((c) => [c.id, c])),
+    [menu.categories],
+  );
+
+  const tabs = useMemo(() => {
+    const byName = (name: string) => menu.categories.find((c) => norm(c.name) === name);
+    const found = [byName(TAB_FOOD), byName(TAB_SIDES), byName(TAB_PRODUCTS)].filter(
+      (c): c is NonNullable<typeof c> => Boolean(c),
+    );
+    // Fallback: if any of the expected categories is missing, show all
+    // categories as tabs so no products become unreachable.
+    return found.length === 3 ? found : menu.categories;
+  }, [menu.categories]);
+
+  // Default to the first tab (Food Menu) instead of an "All" view. If the
+  // selected tab disappears after a menu refresh, fall back to the first tab.
+  const activeCat =
+    selectedCat && tabs.some((t) => t.id === selectedCat)
+      ? selectedCat
+      : tabs[0]?.id ?? null;
+
+  const sections = useMemo<MenuSection[]>(() => {
+    const all = menu.products;
+    const hasCat = (p: KioskProduct, name: string) =>
+      p.categoryIds.some((id) => {
+        const c = catById.get(id);
+        return c ? norm(c.name) === name : false;
+      });
+
+    const tab = tabs.find((t) => t.id === activeCat);
+    if (!tab) return [{ title: null, products: all }];
+    const tabName = norm(tab.name);
+
+    if (tabName === TAB_FOOD) {
+      const combo = all.filter((p) => hasCat(p, "combo dinners"));
+      const comboIds = new Set(combo.map((p) => p.id));
+      const sides = all.filter((p) => !comboIds.has(p.id) && hasCat(p, TAB_SIDES));
+      const sideIds = new Set(sides.map((p) => p.id));
+      const drinks = all.filter(
+        (p) => !comboIds.has(p.id) && !sideIds.has(p.id) && hasCat(p, "drinks"),
+      );
+      const drinkIds = new Set(drinks.map((p) => p.id));
+      const other = all.filter(
+        (p) =>
+          hasCat(p, TAB_FOOD) &&
+          !comboIds.has(p.id) &&
+          !sideIds.has(p.id) &&
+          !drinkIds.has(p.id),
+      );
+      return [
+        { title: "Combo Items", products: combo },
+        { title: "Sides", products: sides },
+        { title: "Other Items", products: other },
+        { title: "Drinks", products: drinks },
+      ].filter((s) => s.products.length > 0);
+    }
+
+    if (tabName === TAB_SIDES) {
+      return [{ title: null, products: all.filter((p) => hasCat(p, TAB_SIDES)) }];
+    }
+
+    if (tabName === TAB_PRODUCTS) {
+      // Members: anything in the Products category, plus orphans that don't fit
+      // in the food tab (e.g. a rub that was never added to the Products category).
+      const inFoodTab = (p: KioskProduct) =>
+        hasCat(p, TAB_FOOD) ||
+        hasCat(p, "combo dinners") ||
+        hasCat(p, TAB_SIDES) ||
+        hasCat(p, "drinks");
+      const members = all.filter((p) => hasCat(p, TAB_PRODUCTS) || !inFoodTab(p));
+
+      const groups = new Map<string, KioskProduct[]>();
+      members.forEach((p) => {
+        const subId = p.categoryIds.find((id) => {
+          const c = catById.get(id);
+          if (!c) return false;
+          const n = norm(c.name);
+          return n !== TAB_PRODUCTS && n !== TAB_FOOD;
+        });
+        const title = subId ? catById.get(subId)!.name : "Other Items";
+        const list = groups.get(title) ?? [];
+        list.push(p);
+        groups.set(title, list);
+      });
+      const titles = [...groups.keys()].sort((a, b) => {
+        if (a === "Other Items") return 1;
+        if (b === "Other Items") return -1;
+        return a.localeCompare(b);
+      });
+      return titles.map((t) => ({ title: t, products: groups.get(t)! }));
+    }
+
+    // Unknown tab (fallback mode): plain category filter.
+    return [{ title: null, products: all.filter((p) => p.categoryIds.includes(tab.id)) }];
+  }, [menu.products, tabs, activeCat, catById]);
 
   const qtyByItem = useMemo(() => {
     const m = new Map<string, number>();
@@ -87,52 +193,57 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
         </div>
 
         <div className="k-cats">
-          <button
-            className={`k-cat ${activeCat === null ? "active" : ""}`}
-            onClick={() => setActiveCat(null)}
-          >
-            All
-          </button>
-          {menu.categories.map((c) => (
+          {tabs.map((c) => (
             <button
               key={c.id}
               className={`k-cat ${activeCat === c.id ? "active" : ""}`}
-              onClick={() => setActiveCat(c.id)}
+              onClick={() => setSelectedCat(c.id)}
             >
               {c.name}
             </button>
           ))}
         </div>
 
-        <div className="k-grid">
-          {products.map((p) => {
-            const item = p.items[0];
-            if (!item) return null;
-            const inCart = qtyByItem.get(item.id) ?? 0;
-            return (
-              <div className="k-card-wrap" key={p.id}>
-                <button className="k-card" onClick={() => handleCardTap(p)} style={{ width: "100%" }}>
-                  {p.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img className="k-card-img" src={p.imageUrl} alt={p.name} loading="lazy" />
-                  ) : (
-                    <div className="k-card-img-fallback">🍖</div>
-                  )}
-                  <div className="k-card-body">
-                    <div className="k-card-name">{p.name}</div>
-                    {p.description && <div className="k-card-desc">{p.description}</div>}
-                    {p.comboSideCount > 0 && (
-                      <div className="k-card-combo">
-                        Includes {p.comboSideCount} side{p.comboSideCount > 1 ? "s" : ""}
-                      </div>
-                    )}
-                    <div className="k-card-price">{formatMoney(item.price)}</div>
-                  </div>
-                </button>
-                {inCart > 0 && <div className="k-card-qty">×{inCart}</div>}
+        <div className="k-menu-scroll">
+          {sections.map((sec) => (
+            <div className="k-section" key={sec.title ?? "__all"}>
+              {sec.title && <div className="k-section-title">{sec.title}</div>}
+              <div className="k-grid">
+                {sec.products.map((p) => {
+                  const item = p.items[0];
+                  if (!item) return null;
+                  const inCart = qtyByItem.get(item.id) ?? 0;
+                  return (
+                    <div className="k-card-wrap" key={p.id}>
+                      <button
+                        className="k-card"
+                        onClick={() => handleCardTap(p)}
+                        style={{ width: "100%" }}
+                      >
+                        {p.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img className="k-card-img" src={p.imageUrl} alt={p.name} loading="lazy" />
+                        ) : (
+                          <div className="k-card-img-fallback">🍖</div>
+                        )}
+                        <div className="k-card-body">
+                          <div className="k-card-name">{p.name}</div>
+                          {p.description && <div className="k-card-desc">{p.description}</div>}
+                          {p.comboSideCount > 0 && (
+                            <div className="k-card-combo">
+                              Includes {p.comboSideCount} side{p.comboSideCount > 1 ? "s" : ""}
+                            </div>
+                          )}
+                          <div className="k-card-price">{formatMoney(item.price)}</div>
+                        </div>
+                      </button>
+                      {inCart > 0 && <div className="k-card-qty">×{inCart}</div>}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
 
