@@ -12,6 +12,40 @@ import { KioskOrderInput, CreateKioskDeviceInput, UpdateKioskDeviceInput } from 
 
 // ─── Menu ─────────────────────────────────────────────────────────────────────
 
+// ─── Combo defaults by category ───────────────────────────────────────────────
+// Any product in the "Combo Dinners" category is automatically a combo meal:
+// it includes DEFAULT_COMBO_SIDE_COUNT free sides from the "Sides" category,
+// unless the product has its own explicit combo settings (comboSideCount > 0),
+// which always take priority.
+
+const COMBO_CATEGORY_NAME = 'combo dinners';
+const SIDES_CATEGORY_NAME = 'sides';
+const DEFAULT_COMBO_SIDE_COUNT = 2;
+
+async function getSidesCategoryId(): Promise<string | null> {
+  const cat = await prisma.productCategory.findFirst({
+    where: { name: { equals: SIDES_CATEGORY_NAME, mode: 'insensitive' } },
+  });
+  return cat?.id ?? null;
+}
+
+function effectiveComboConfig(
+  product: { comboSideCount: number; comboSideCategoryId: string | null },
+  categoryNames: string[],
+  sidesCategoryId: string | null,
+): { sideCount: number; sideCategoryId: string | null } {
+  if (product.comboSideCount > 0) {
+    return { sideCount: product.comboSideCount, sideCategoryId: product.comboSideCategoryId };
+  }
+  const isComboByCategory = categoryNames.some(
+    (n) => n.trim().toLowerCase() === COMBO_CATEGORY_NAME,
+  );
+  if (isComboByCategory && sidesCategoryId) {
+    return { sideCount: DEFAULT_COMBO_SIDE_COUNT, sideCategoryId: sidesCategoryId };
+  }
+  return { sideCount: 0, sideCategoryId: null };
+}
+
 export async function getKioskMenu() {
   const products = await prisma.product.findMany({
     where: {
@@ -31,10 +65,16 @@ export async function getKioskMenu() {
     orderBy: { name: 'asc' },
   });
 
+  const sidesCategoryId = await getSidesCategoryId();
   const categoriesMap = new Map<string, { id: string; name: string; imageUrl: string | null }>();
 
   const menuProducts = products.map((p) => {
     const primaryCategory = p.categoryMaps.find((m) => m.isPrimary) ?? p.categoryMaps[0];
+    const comboConfig = effectiveComboConfig(
+      p,
+      p.categoryMaps.map((m) => m.category.name),
+      sidesCategoryId,
+    );
     p.categoryMaps.forEach((m) => {
       if (!categoriesMap.has(m.category.id)) {
         categoriesMap.set(m.category.id, {
@@ -51,8 +91,8 @@ export async function getKioskMenu() {
       imageUrl: p.media[0]?.mediaAsset?.url ?? null,
       categoryIds: p.categoryMaps.map((m) => m.categoryId),
       primaryCategoryId: primaryCategory?.categoryId ?? null,
-      comboSideCount: p.comboSideCount,
-      comboSideCategoryId: p.comboSideCategoryId,
+      comboSideCount: comboConfig.sideCount,
+      comboSideCategoryId: comboConfig.sideCategoryId,
       duplicateSideUpcharge: Number(p.duplicateSideUpcharge),
       items: p.items.map((i) => ({
         id: i.id,
@@ -106,9 +146,12 @@ export async function resolveComboSides(lines: KioskOrderInput['lines']) {
   const itemIds = lines.map((l) => l.productItemId);
   const items = await prisma.productItem.findMany({
     where: { id: { in: itemIds } },
-    include: { product: true },
+    include: {
+      product: { include: { categoryMaps: { include: { category: true } } } },
+    },
   });
   const itemMap = new Map(items.map((i) => [i.id, i]));
+  const sidesCategoryId = await getSidesCategoryId();
 
   const allSideIds = [...new Set(lines.flatMap((l) => l.sideProductIds ?? []))];
   const sideProducts = allSideIds.length
@@ -128,19 +171,24 @@ export async function resolveComboSides(lines: KioskOrderInput['lines']) {
     if (!item) throw ApiError.badRequest('One of the items in your order is no longer available.');
     const combo = item.product;
     const wanted = l.sideProductIds ?? [];
+    const { sideCount, sideCategoryId } = effectiveComboConfig(
+      combo,
+      combo.categoryMaps.map((m) => m.category.name),
+      sidesCategoryId,
+    );
 
-    if (combo.comboSideCount > 0) {
-      if (wanted.length !== combo.comboSideCount) {
+    if (sideCount > 0) {
+      if (wanted.length !== sideCount) {
         throw ApiError.badRequest(
-          `"${combo.name}" comes with ${combo.comboSideCount} side${combo.comboSideCount > 1 ? 's' : ''} — please choose ${combo.comboSideCount}.`,
+          `"${combo.name}" comes with ${sideCount} side${sideCount > 1 ? 's' : ''} — please choose ${sideCount}.`,
         );
       }
       const names = wanted.map((sid) => {
         const side = sideMap.get(sid);
         if (!side) throw ApiError.badRequest('One of the chosen sides is no longer available.');
         if (
-          combo.comboSideCategoryId &&
-          !side.categoryMaps.some((m) => m.categoryId === combo.comboSideCategoryId)
+          sideCategoryId &&
+          !side.categoryMaps.some((m) => m.categoryId === sideCategoryId)
         ) {
           throw ApiError.badRequest(`"${side.name}" is not an available side for "${combo.name}".`);
         }
