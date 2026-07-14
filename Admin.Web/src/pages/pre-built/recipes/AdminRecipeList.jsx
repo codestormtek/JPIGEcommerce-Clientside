@@ -165,7 +165,7 @@ const SortableIngredientRow = ({ ing, updateIngredient, removeIngredient, isOnly
 
 const DV = { totalFat: 78, saturatedFat: 20, cholesterol: 300, sodium: 2300, totalCarbs: 275, fiber: 28, sugar: 50, protein: 50, vitaminD: 20, calcium: 1300, iron: 18, potassium: 4700 };
 
-const NutritionLabel = ({ data, recipeName, borderColor = "#000000", contentColor = "#000000", backgroundColor = "" }) => {
+const NutritionLabel = ({ data, recipeName, borderColor = "#000000", contentColor = "#000000", backgroundColor = "", ingredientsText = "" }) => {
   const servings = data.servingsPerRecipe || 1;
   const pv = (key) => Math.round((data[key] || 0) / servings * 10) / 10;
   const dvp = (key) => {
@@ -239,6 +239,14 @@ const NutritionLabel = ({ data, recipeName, borderColor = "#000000", contentColo
         serving of food contributes to a daily diet. 2,000 calories a
         day is used for general nutrition advice.
       </div>
+      {ingredientsText && (
+        <>
+          <div style={hrMed} />
+          <div style={{ fontSize: 10, lineHeight: 1.35 }}>
+            <strong>INGREDIENTS:</strong> {ingredientsText}
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -285,6 +293,7 @@ const AdminRecipeList = () => {
   const [labelBorderColor,  setLabelBorderColor]  = useState("#000000");
   const [labelContentColor, setLabelContentColor] = useState("#000000");
   const [labelBgColor,      setLabelBgColor]      = useState(""); // "" = transparent
+  const [labelIngredients,  setLabelIngredients]  = useState("");
 
   // ── Linked products state ────────────────────────────────────────────
   const [linkedProducts,   setLinkedProducts]   = useState([]);
@@ -531,6 +540,7 @@ const AdminRecipeList = () => {
     try {
       const res = await apiPost(`/recipes/${editingRecipe.id}/nutrition/analyze`);
       setNutritionData(res?.data ?? res);
+      setLabelIngredients("");
       setNutritionModal(true);
     } catch (e) {
       setNutritionError(e.message);
@@ -548,6 +558,7 @@ const AdminRecipeList = () => {
       const data = res?.data ?? res;
       if (data) {
         setNutritionData(data);
+        setLabelIngredients("");
         setNutritionModal(true);
         setAnalyzing(false);
       } else {
@@ -1359,7 +1370,7 @@ const AdminRecipeList = () => {
                     {/* Left: FDA-style Nutrition Label */}
                     <div className="col-md-6">
                       <div id="nutrition-label-print">
-                        <NutritionLabel data={nutritionData} recipeName={form.name} borderColor={labelBorderColor} contentColor={labelContentColor} backgroundColor={labelBgColor} />
+                        <NutritionLabel data={nutritionData} recipeName={form.name} borderColor={labelBorderColor} contentColor={labelContentColor} backgroundColor={labelBgColor} ingredientsText={labelIngredients.trim()} />
                       </div>
                       <div className="d-flex flex-wrap gap-3 mt-3 align-items-center">
                         <label className="d-flex align-items-center gap-2 mb-0 small fw-bold">
@@ -1382,6 +1393,29 @@ const AdminRecipeList = () => {
                             </button>
                           )}
                         </label>
+                      </div>
+                      <div className="mt-3">
+                        <div className="d-flex align-items-center justify-content-between mb-1">
+                          <label className="small fw-bold mb-0" htmlFor="label-ingredients-input">Ingredients (shown at bottom of label)</label>
+                          {nutritionData.ingredientMatches?.length > 0 && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-secondary py-0 px-2"
+                              onClick={() => setLabelIngredients(nutritionData.ingredientMatches.map((m) => m.ingredientName).filter(Boolean).join(", "))}
+                            >
+                              Fill from recipe
+                            </button>
+                          )}
+                        </div>
+                        <textarea
+                          id="label-ingredients-input"
+                          className="form-control form-control-sm"
+                          rows={3}
+                          placeholder="e.g. Pork, brown sugar, spices, natural smoke flavor"
+                          value={labelIngredients}
+                          onChange={(e) => setLabelIngredients(e.target.value)}
+                        />
+                        <div className="form-text small">Optional — list only what you want to disclose. Edit freely; leave blank to omit.</div>
                       </div>
                     </div>
 
