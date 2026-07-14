@@ -165,7 +165,7 @@ const SortableIngredientRow = ({ ing, updateIngredient, removeIngredient, isOnly
 
 const DV = { totalFat: 78, saturatedFat: 20, cholesterol: 300, sodium: 2300, totalCarbs: 275, fiber: 28, sugar: 50, protein: 50, vitaminD: 20, calcium: 1300, iron: 18, potassium: 4700 };
 
-const NutritionLabel = ({ data, recipeName, borderColor = "#000000", contentColor = "#000000" }) => {
+const NutritionLabel = ({ data, recipeName, borderColor = "#000000", contentColor = "#000000", backgroundColor = "" }) => {
   const servings = data.servingsPerRecipe || 1;
   const pv = (key) => Math.round((data[key] || 0) / servings * 10) / 10;
   const dvp = (key) => {
@@ -181,7 +181,7 @@ const NutritionLabel = ({ data, recipeName, borderColor = "#000000", contentColo
     ? `About ${servingsPerContainer} serving${servingsPerContainer !== 1 ? "s" : ""} per container`
     : `${servings} serving${servings !== 1 ? "s" : ""} per recipe`;
 
-  const labelStyle = { border: `2px solid ${borderColor}`, padding: "4px 8px", fontFamily: "Arial, Helvetica, sans-serif", maxWidth: 360, color: contentColor, backgroundColor: "transparent" };
+  const labelStyle = { border: `2px solid ${borderColor}`, padding: "4px 8px", fontFamily: "Arial, Helvetica, sans-serif", width: 280, maxWidth: "100%", boxSizing: "border-box", color: contentColor, backgroundColor: backgroundColor || "transparent" };
   const hrThick = { borderTop: `8px solid ${borderColor}`, margin: "2px 0" };
   const hrMed = { borderTop: `3px solid ${borderColor}`, margin: "2px 0" };
   const hrThin = { borderTop: `1px solid ${borderColor}`, margin: "1px 0" };
@@ -284,6 +284,7 @@ const AdminRecipeList = () => {
   const [nutritionError, setNutritionError] = useState(null);
   const [labelBorderColor,  setLabelBorderColor]  = useState("#000000");
   const [labelContentColor, setLabelContentColor] = useState("#000000");
+  const [labelBgColor,      setLabelBgColor]      = useState(""); // "" = transparent
 
   // ── Linked products state ────────────────────────────────────────────
   const [linkedProducts,   setLinkedProducts]   = useState([]);
@@ -1358,7 +1359,7 @@ const AdminRecipeList = () => {
                     {/* Left: FDA-style Nutrition Label */}
                     <div className="col-md-6">
                       <div id="nutrition-label-print">
-                        <NutritionLabel data={nutritionData} recipeName={form.name} borderColor={labelBorderColor} contentColor={labelContentColor} />
+                        <NutritionLabel data={nutritionData} recipeName={form.name} borderColor={labelBorderColor} contentColor={labelContentColor} backgroundColor={labelBgColor} />
                       </div>
                       <div className="d-flex flex-wrap gap-3 mt-3 align-items-center">
                         <label className="d-flex align-items-center gap-2 mb-0 small fw-bold">
@@ -1370,6 +1371,16 @@ const AdminRecipeList = () => {
                           Content color
                           <input type="color" value={labelContentColor} onChange={(e) => setLabelContentColor(e.target.value)} style={{ width: 36, height: 28, padding: 0, border: "1px solid #ccc", borderRadius: 4, cursor: "pointer" }} />
                           <input type="text" value={labelContentColor} onChange={(e) => setLabelContentColor(e.target.value)} className="form-control form-control-sm" style={{ width: 90 }} />
+                        </label>
+                        <label className="d-flex align-items-center gap-2 mb-0 small fw-bold">
+                          Background
+                          <input type="color" value={labelBgColor || "#ffffff"} onChange={(e) => setLabelBgColor(e.target.value)} style={{ width: 36, height: 28, padding: 0, border: "1px solid #ccc", borderRadius: 4, cursor: "pointer" }} />
+                          <input type="text" value={labelBgColor} placeholder="transparent" onChange={(e) => setLabelBgColor(e.target.value)} className="form-control form-control-sm" style={{ width: 90 }} />
+                          {labelBgColor && (
+                            <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-2" onClick={() => setLabelBgColor("")}>
+                              Clear
+                            </button>
+                          )}
                         </label>
                       </div>
                     </div>
