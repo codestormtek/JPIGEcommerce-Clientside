@@ -1372,50 +1372,51 @@ const AdminRecipeList = () => {
                       <div id="nutrition-label-print">
                         <NutritionLabel data={nutritionData} recipeName={form.name} borderColor={labelBorderColor} contentColor={labelContentColor} backgroundColor={labelBgColor} ingredientsText={labelIngredients.trim()} />
                       </div>
-                      <div className="d-flex flex-wrap gap-3 mt-3 align-items-center">
-                        <label className="d-flex align-items-center gap-2 mb-0 small fw-bold">
-                          Border color
+                      <div className="mt-3 p-3 rounded" style={{ border: "1px solid #e9ecef", backgroundColor: "#f8f9fa" }}>
+                        <div className="fw-bold small mb-2" style={{ borderBottom: "1px solid #e9ecef", paddingBottom: 6 }}>Label Options</div>
+                        <div className="d-flex align-items-center mb-2">
+                          <span className="small fw-bold" style={{ width: 110, flexShrink: 0 }}>Border color</span>
                           <input type="color" value={labelBorderColor} onChange={(e) => setLabelBorderColor(e.target.value)} style={{ width: 36, height: 28, padding: 0, border: "1px solid #ccc", borderRadius: 4, cursor: "pointer" }} />
-                          <input type="text" value={labelBorderColor} onChange={(e) => setLabelBorderColor(e.target.value)} className="form-control form-control-sm" style={{ width: 90 }} />
-                        </label>
-                        <label className="d-flex align-items-center gap-2 mb-0 small fw-bold">
-                          Content color
+                          <input type="text" value={labelBorderColor} onChange={(e) => setLabelBorderColor(e.target.value)} className="form-control form-control-sm ms-2" style={{ width: 100 }} />
+                        </div>
+                        <div className="d-flex align-items-center mb-2">
+                          <span className="small fw-bold" style={{ width: 110, flexShrink: 0 }}>Content color</span>
                           <input type="color" value={labelContentColor} onChange={(e) => setLabelContentColor(e.target.value)} style={{ width: 36, height: 28, padding: 0, border: "1px solid #ccc", borderRadius: 4, cursor: "pointer" }} />
-                          <input type="text" value={labelContentColor} onChange={(e) => setLabelContentColor(e.target.value)} className="form-control form-control-sm" style={{ width: 90 }} />
-                        </label>
-                        <label className="d-flex align-items-center gap-2 mb-0 small fw-bold">
-                          Background
+                          <input type="text" value={labelContentColor} onChange={(e) => setLabelContentColor(e.target.value)} className="form-control form-control-sm ms-2" style={{ width: 100 }} />
+                        </div>
+                        <div className="d-flex align-items-center mb-3">
+                          <span className="small fw-bold" style={{ width: 110, flexShrink: 0 }}>Background</span>
                           <input type="color" value={labelBgColor || "#ffffff"} onChange={(e) => setLabelBgColor(e.target.value)} style={{ width: 36, height: 28, padding: 0, border: "1px solid #ccc", borderRadius: 4, cursor: "pointer" }} />
-                          <input type="text" value={labelBgColor} placeholder="transparent" onChange={(e) => setLabelBgColor(e.target.value)} className="form-control form-control-sm" style={{ width: 90 }} />
+                          <input type="text" value={labelBgColor} placeholder="transparent" onChange={(e) => setLabelBgColor(e.target.value)} className="form-control form-control-sm ms-2" style={{ width: 100 }} />
                           {labelBgColor && (
-                            <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-2" onClick={() => setLabelBgColor("")}>
+                            <button type="button" className="btn btn-sm btn-outline-secondary py-0 px-2 ms-2" onClick={() => setLabelBgColor("")}>
                               Clear
                             </button>
                           )}
-                        </label>
-                      </div>
-                      <div className="mt-3">
-                        <div className="d-flex align-items-center justify-content-between mb-1">
-                          <label className="small fw-bold mb-0" htmlFor="label-ingredients-input">Ingredients (shown at bottom of label)</label>
-                          {nutritionData.ingredientMatches?.length > 0 && (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-secondary py-0 px-2"
-                              onClick={() => setLabelIngredients(nutritionData.ingredientMatches.map((m) => m.ingredientName).filter(Boolean).join(", "))}
-                            >
-                              Fill from recipe
-                            </button>
-                          )}
                         </div>
-                        <textarea
-                          id="label-ingredients-input"
-                          className="form-control form-control-sm"
-                          rows={3}
-                          placeholder="e.g. Pork, brown sugar, spices, natural smoke flavor"
-                          value={labelIngredients}
-                          onChange={(e) => setLabelIngredients(e.target.value)}
-                        />
-                        <div className="form-text small">Optional — list only what you want to disclose. Edit freely; leave blank to omit.</div>
+                        <div style={{ borderTop: "1px solid #e9ecef", paddingTop: 12 }}>
+                          <div className="d-flex align-items-center justify-content-between mb-1">
+                            <label className="small fw-bold mb-0" htmlFor="label-ingredients-input">Ingredients (bottom of label)</label>
+                            {nutritionData.ingredientMatches?.length > 0 && (
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-secondary py-0 px-2"
+                                onClick={() => setLabelIngredients(nutritionData.ingredientMatches.map((m) => m.ingredientName).filter(Boolean).join(", "))}
+                              >
+                                Fill from recipe
+                              </button>
+                            )}
+                          </div>
+                          <textarea
+                            id="label-ingredients-input"
+                            className="form-control form-control-sm"
+                            rows={3}
+                            placeholder="e.g. Pork, brown sugar, spices, natural smoke flavor"
+                            value={labelIngredients}
+                            onChange={(e) => setLabelIngredients(e.target.value)}
+                          />
+                          <div className="form-text small">Optional — list only what you want to disclose. Leave blank to omit.</div>
+                        </div>
                       </div>
                     </div>
 
