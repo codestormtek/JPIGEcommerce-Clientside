@@ -22,7 +22,26 @@ const uid = () => Math.random().toString(36).slice(2);
 const fmtTime = (min) => (min ? `${min} min` : "—");
 const CATEGORIES = ["Appetizer", "Soup", "Salad", "Entrée", "Side Dish", "Dessert", "Beverage", "Sauce", "Rub", "Dry Mix", "Drink", "Breakfast", "Other"];
 const SERVING_PRESETS = { Sauce: { qty: 1.5, unit: "tbsp" }, Rub: { qty: 1, unit: "tbsp" }, "Dry Mix": { qty: 1, unit: "tbsp" }, Drink: { qty: 8, unit: "oz" } };
-const CONTAINER_SIZES = [4, 6, 8, 10, 12, 16, 20, 24, 32, 64];
+const CONTAINER_SIZES = [
+  { oz: 4,   label: "4 oz",   short: "4oz" },
+  { oz: 6,   label: "6 oz",   short: "6oz" },
+  { oz: 8,   label: "8 oz",   short: "8oz" },
+  { oz: 10,  label: "10 oz",  short: "10oz" },
+  { oz: 12,  label: "12 oz",  short: "12oz" },
+  { oz: 16,  label: "16 oz",  short: "16oz" },
+  { oz: 20,  label: "20 oz",  short: "20oz" },
+  { oz: 24,  label: "24 oz",  short: "24oz" },
+  { oz: 32,  label: "32 oz",  short: "32oz" },
+  { oz: 64,  label: "64 oz",  short: "64oz" },
+  { oz: 128, label: 'Half Pan — 2.5" deep (128 oz)', short: "Half Pan" },
+  { oz: 224, label: 'Half Pan — 4" deep (224 oz)',   short: "Half Pan (deep)" },
+  { oz: 256, label: 'Full Pan — 2.5" deep (256 oz)', short: "Full Pan" },
+  { oz: 448, label: 'Full Pan — 4" deep (448 oz)',   short: "Full Pan (deep)" },
+];
+const containerShort = (oz) => {
+  const m = CONTAINER_SIZES.find((c) => c.oz === parseFloat(oz));
+  return m ? m.short : `${oz}oz`;
+};
 const UNITS = ["cup", "tbsp", "tsp", "oz", "lb", "g", "kg", "ml", "l", "stick", "gal", "pt", "qt", "#10 can", "piece", "slice", "clove", "bunch", "pinch", "each"];
 
 const UNIT_TO_OZ = {
@@ -646,7 +665,7 @@ const AdminRecipeList = () => {
       form.category               ? `<span class="badge badge-warn">${form.category}</span>` : "",
       form.yieldOz                ? `<span class="badge badge-info">Yield: ${form.yieldOz} oz</span>` : "",
       form.yieldOz && form.containerSizeOz
-        ? `<span class="badge badge-green">${Math.floor((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 10) / 10} × ${form.containerSizeOz}oz containers</span>` : "",
+        ? `<span class="badge badge-green">${Math.floor((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 10) / 10} × ${containerShort(form.containerSizeOz)} containers</span>` : "",
       form.servingSizeQty && form.servingSizeUnit
         ? `<span class="badge badge-light">Serving: ${form.servingSizeQty} ${form.servingSizeUnit}</span>` : "",
     ].filter(Boolean).join("");
@@ -895,7 +914,7 @@ const AdminRecipeList = () => {
                               <select className="form-select" value={String(form.containerSizeOz)}
                                 onChange={(e) => setForm((f) => ({ ...f, containerSizeOz: e.target.value }))}>
                                 <option value="">Select...</option>
-                                {CONTAINER_SIZES.map((s) => <option key={s} value={String(s)}>{s} oz</option>)}
+                                {CONTAINER_SIZES.map((s) => <option key={s.oz} value={String(s.oz)}>{s.label}</option>)}
                               </select>
                             </div>
                           </div>
@@ -918,6 +937,9 @@ const AdminRecipeList = () => {
                             {form.servingSizeQty && form.servingSizeUnit && (
                               <small className="text-muted mt-1 d-block">
                                 Nutrition label per {form.servingSizeQty} {form.servingSizeUnit}
+                                {form.servingSizeUnit === "oz" && parseFloat(form.containerSizeOz) > 0 && parseFloat(form.servingSizeQty) > 0 && (
+                                  <> · ≈ {Math.floor(parseFloat(form.containerSizeOz) / parseFloat(form.servingSizeQty))} servings per {containerShort(form.containerSizeOz)}</>
+                                )}
                               </small>
                             )}
                           </div>
@@ -928,7 +950,7 @@ const AdminRecipeList = () => {
                             <div className="py-2 px-3 rounded" style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0", minHeight: 38, display: "flex", alignItems: "center" }}>
                               {parseFloat(form.yieldOz) > 0 && parseFloat(form.containerSizeOz) > 0 ? (
                                 <span className="fw-bold" style={{ color: "#166534" }}>
-                                  {Math.round((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 100) / 100} × {form.containerSizeOz}oz
+                                  {Math.round((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 100) / 100} × {containerShort(form.containerSizeOz)}
                                 </span>
                               ) : parseFloat(form.containerSizeOz) > 0 ? (
                                 <span className="text-muted small">Add ingredients to calculate</span>
@@ -1147,7 +1169,7 @@ const AdminRecipeList = () => {
                             {form.yieldOz && <Badge color="info" className="text-white">Yield: {form.yieldOz} oz</Badge>}
                             {form.containerSizeOz && form.yieldOz && (
                               <Badge color="success" className="text-white">
-                                {Math.floor((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 10) / 10} x {form.containerSizeOz}oz containers
+                                {Math.floor((parseFloat(form.yieldOz) / parseFloat(form.containerSizeOz)) * 10) / 10} x {containerShort(form.containerSizeOz)} containers
                               </Badge>
                             )}
                             {form.servingSizeQty && form.servingSizeUnit && (
@@ -1276,7 +1298,7 @@ const AdminRecipeList = () => {
                               <div>
                                 <span className="small text-muted d-block">Containers</span>
                                 <strong className="text-success">
-                                  {Math.floor(parseFloat(form.yieldOz) * batchScale / parseFloat(form.containerSizeOz) * 10) / 10} × {form.containerSizeOz}oz
+                                  {Math.floor(parseFloat(form.yieldOz) * batchScale / parseFloat(form.containerSizeOz) * 10) / 10} × {containerShort(form.containerSizeOz)}
                                 </strong>
                               </div>
                             )}
@@ -1356,7 +1378,7 @@ const AdminRecipeList = () => {
                         <div><span className="small text-muted d-block">Total Yield</span><strong>{nutritionData.totalRecipeOz} oz</strong></div>
                       )}
                       {nutritionData.containerSizeOz && (
-                        <div><span className="small text-muted d-block">Container Size</span><strong>{nutritionData.containerSizeOz} oz</strong></div>
+                        <div><span className="small text-muted d-block">Container Size</span><strong>{containerShort(nutritionData.containerSizeOz)} ({nutritionData.containerSizeOz} oz)</strong></div>
                       )}
                       {nutritionData.containersYielded && (
                         <div><span className="small text-muted d-block">Containers Yielded</span><strong className="text-success">{nutritionData.containersYielded}</strong></div>
