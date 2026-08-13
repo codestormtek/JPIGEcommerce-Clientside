@@ -29,6 +29,7 @@
     "chart.js": "^4.4.9",
     "classnames": "^2.5.1",
     "docx": "^9.6.1",
+    "dompurify": "^3.4.13",
     "export-from-json": "^1.7.4",
     "highlight.js": "^11.11.1",
     "html-react-parser": "^5.2.5",

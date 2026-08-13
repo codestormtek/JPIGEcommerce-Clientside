@@ -7,6 +7,8 @@ import {
   Icon, Button,
 } from "@/components/Component";
 import { apiGet, apiPost, apiPatch, apiDelete, apiUpload } from "@/utils/apiClient";
+import { useQuill } from "react-quilljs";
+import DOMPurify from "dompurify";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -113,6 +115,73 @@ const ImageField = ({ value, caption, onChange, onCaptionChange, compact }) => {
   );
 };
 
+// ─── Rich text editor field (WYSIWYG) ────────────────────────────────────────
+
+const looksLikeHtml = (s) => /<\/?[a-z][\s\S]*>/i.test(s || "");
+
+const GUIDE_RICH_CSS = `
+.guide-quill .ql-container { min-height: var(--gq-min, 120px); max-height: 320px; overflow-y: auto; font-size: 0.875rem; font-family: inherit; }
+.guide-quill .ql-toolbar, .guide-quill .ql-container { border-color: #dbdfea; }
+.guide-quill .ql-toolbar { border-radius: 4px 4px 0 0; }
+.guide-quill .ql-container { border-radius: 0 0 4px 4px; }
+.guide-rich-body.ql-editor { padding: 0; min-height: 0; height: auto; overflow: visible; white-space: normal; }
+.guide-rich-body.ql-editor p { margin-bottom: 0.5rem; }
+.guide-rich-body.ql-editor p:last-child { margin-bottom: 0; }
+`;
+
+const RichBody = ({ body, className = "" }) => {
+  if (!body) return null;
+  if (looksLikeHtml(body)) {
+    return (
+      <div
+        className={`guide-rich-body ql-editor ${className}`}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(body) }}
+      />
+    );
+  }
+  return <div className={className} style={{ whiteSpace: "pre-wrap" }}>{body}</div>;
+};
+
+const RichTextField = ({ value, onChange, placeholder, minHeight = 120 }) => {
+  const modules = useMemo(() => ({
+    toolbar: [
+      [{ header: [3, 4, false] }],
+      ["bold", "italic", "underline"],
+      [{ list: "ordered" }, { list: "bullet" }],
+      ["link"],
+      ["clean"],
+    ],
+  }), []);
+  const { quill, quillRef } = useQuill({ modules, placeholder, theme: "snow" });
+  const loadedRef = useRef(false);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  useEffect(() => {
+    if (!quill || loadedRef.current) return;
+    loadedRef.current = true;
+    if (value) {
+      const html = looksLikeHtml(value)
+        ? value
+        : value.split("\n").map((l) => `<p>${l.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") || "<br/>"}</p>`).join("");
+      quill.clipboard.dangerouslyPasteHTML(DOMPurify.sanitize(html));
+    }
+    const handler = () => {
+      const html = quill.root.innerHTML;
+      onChangeRef.current(html === "<p><br></p>" ? "" : html);
+    };
+    quill.on("text-change", handler);
+    return () => quill.off("text-change", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quill]);
+
+  return (
+    <div className="guide-quill" style={{ "--gq-min": `${minHeight}px` }}>
+      <div ref={quillRef} />
+    </div>
+  );
+};
+
 // ─── Block renderer (view mode) ──────────────────────────────────────────────
 
 const CALLOUT_STYLES = {
@@ -138,7 +207,7 @@ const BlockView = ({ block }) => {
   if (block.type === "steps") {
     body = (
       <>
-      {block.body && <p className="mb-2" style={{ whiteSpace: "pre-wrap" }}>{block.body}</p>}
+      <RichBody body={block.body} className="mb-2" />
       <ol className="ps-0 mb-0" style={{ listStyle: "none", counterReset: "step" }}>
         {(block.steps || []).map((s, i) => (
           <li key={s.id} className="d-flex mb-3">
@@ -165,7 +234,7 @@ const BlockView = ({ block }) => {
         <div className="fw-bold small mb-1" style={{ color: st.border, letterSpacing: 1 }}>
           <Icon name={st.icon} className="me-1" />{st.label}{block.title ? ` — ${block.title}` : ""}
         </div>
-        <div style={{ whiteSpace: "pre-wrap" }}>{block.body}</div>
+        <RichBody body={block.body} />
         {block.imageUrl && img(block.imageUrl, block.imageCaption)}
       </div>
     );
@@ -179,7 +248,7 @@ const BlockView = ({ block }) => {
   } else {
     body = (
       <div>
-        <div style={{ whiteSpace: "pre-wrap" }}>{block.body}</div>
+        <RichBody body={block.body} />
         {block.imageUrl && img(block.imageUrl, block.imageCaption)}
       </div>
     );
@@ -315,7 +384,7 @@ const AdminUserGuide = () => {
   const matchesSearch = (node) => {
     if (!searchLower) return true;
     const hay = [node.title, node.description, ...(node.blocks || []).flatMap((b) => [b.title, b.body, ...(b.steps || []).map((s) => s.text)])]
-      .filter(Boolean).join(" ").toLowerCase();
+      .filter(Boolean).join(" ").replace(/<[^>]+>/g, " ").toLowerCase();
     if (hay.includes(searchLower)) return true;
     return (node.children || []).some(matchesSearch);
   };
@@ -370,11 +439,11 @@ const AdminUserGuide = () => {
   // ── Block CRUD ──
   const openCreateBlock = (sectionId, type = "text") => {
     setBlockForm({ type, title: "", body: "", imageUrl: null, imageCaption: "" });
-    setBlockModal({ mode: "create", sectionId });
+    setBlockModal({ mode: "create", sectionId, session: Date.now() });
   };
   const openEditBlock = (sectionId, block) => {
     setBlockForm({ type: block.type, title: block.title || "", body: block.body || "", imageUrl: block.imageUrl || null, imageCaption: block.imageCaption || "" });
-    setBlockModal({ mode: "edit", sectionId, block });
+    setBlockModal({ mode: "edit", sectionId, block, session: Date.now() });
   };
   const saveBlock = () => run(async () => {
     const payload = {
@@ -535,6 +604,7 @@ const AdminUserGuide = () => {
   return (
     <>
       <Head title="User Guide" />
+      <style>{GUIDE_RICH_CSS}</style>
       <PrintManual tree={tree} />
       <Content>
         <BlockHead size="sm">
@@ -772,8 +842,11 @@ const AdminUserGuide = () => {
           {blockForm.type !== "image" && (
             <div className="form-group mb-2">
               <label className="form-label">{blockForm.type === "steps" ? "Intro text (shown above the steps)" : "Text"}</label>
-              <textarea className="form-control" rows={blockForm.type === "steps" ? 2 : 5} value={blockForm.body}
-                onChange={(e) => setBlockForm((f) => ({ ...f, body: e.target.value }))}
+              <RichTextField
+                key={blockModal?.session || "none"}
+                value={blockForm.body}
+                minHeight={blockForm.type === "steps" ? 80 : 140}
+                onChange={(html) => setBlockForm((f) => ({ ...f, body: html }))}
                 placeholder={blockForm.type === "steps" ? "Optional intro before the numbered steps" : "Write the content…"} />
             </div>
           )}
