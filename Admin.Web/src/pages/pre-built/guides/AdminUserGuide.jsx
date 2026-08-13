@@ -202,6 +202,66 @@ const BlockView = ({ block }) => {
   );
 };
 
+// ─── Print / PDF view (whole manual) ─────────────────────────────────────────
+
+const PRINT_CSS = `
+@media print {
+  body * { visibility: hidden !important; }
+  #guide-print-root, #guide-print-root * { visibility: visible !important; }
+  #guide-print-root { display: block !important; position: absolute; top: 0; left: 0; width: 100%; padding: 0 8mm; background: #fff; }
+  #guide-print-root .gp-section { break-inside: avoid-page; }
+  #guide-print-root .gp-top-section { break-before: page; }
+  #guide-print-root .gp-block, #guide-print-root li { break-inside: avoid; }
+  #guide-print-root img { max-height: 300px !important; }
+}
+@media screen { #guide-print-root { display: none; } }
+`;
+
+const PrintManual = ({ tree }) => {
+  const renderSections = (nodes, depth = 0) =>
+    (nodes || []).map((s) => {
+      const num = numberFor(tree, s.id);
+      const Tag = depth === 0 ? "h2" : depth === 1 ? "h3" : "h4";
+      return (
+        <div key={s.id} className={`gp-section ${depth === 0 ? "gp-top-section" : ""}`} style={{ marginBottom: 24 }}>
+          <Tag style={{ borderBottom: depth === 0 ? "2px solid #333" : "none", paddingBottom: depth === 0 ? 6 : 0 }}>
+            {num}. {s.title}
+          </Tag>
+          {s.description && <p className="text-muted" style={{ whiteSpace: "pre-wrap" }}>{s.description}</p>}
+          {(s.blocks || []).map((b) => (
+            <div key={b.id} className="gp-block"><BlockView block={b} /></div>
+          ))}
+          {renderSections(s.children, depth + 1)}
+        </div>
+      );
+    });
+
+  const flat = flattenTree(tree);
+  return (
+    <div id="guide-print-root">
+      <style>{PRINT_CSS}</style>
+      {/* Cover */}
+      <div style={{ textAlign: "center", padding: "120px 0 40px" }}>
+        <h1 style={{ fontSize: 34 }}>BBQ Rig User Guide</h1>
+        <p className="text-muted">Operating manual for equipment and features</p>
+        <p className="text-muted small">Printed {new Date().toLocaleDateString()}</p>
+      </div>
+      {/* Table of contents */}
+      <div className="gp-top-section">
+        <h2 style={{ borderBottom: "2px solid #333", paddingBottom: 6 }}>Table of Contents</h2>
+        <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+          {flat.map((n) => (
+            <li key={n.id} style={{ paddingLeft: n.depth * 18, marginBottom: 4 }}>
+              {numberFor(tree, n.id)}. {n.title}
+            </li>
+          ))}
+        </ul>
+      </div>
+      {renderSections(tree)}
+    </div>
+  );
+};
+
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 const AdminUserGuide = () => {
@@ -475,6 +535,7 @@ const AdminUserGuide = () => {
   return (
     <>
       <Head title="User Guide" />
+      <PrintManual tree={tree} />
       <Content>
         <BlockHead size="sm">
           <BlockBetween>
@@ -491,6 +552,9 @@ const AdminUserGuide = () => {
                 )}
                 <Button color={editMode ? "secondary" : "light"} outline={!editMode} onClick={() => setEditMode((v) => !v)}>
                   <Icon name={editMode ? "eye" : "edit"} className="me-1" />{editMode ? "Done Editing" : "Edit Guide"}
+                </Button>
+                <Button color="light" outline disabled={tree.length === 0} onClick={() => window.print()}>
+                  <Icon name="printer" className="me-1" />Print / PDF
                 </Button>
               </div>
             </BlockHeadContent>
