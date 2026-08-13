@@ -218,7 +218,7 @@ const BlockView = ({ block }) => {
               {i + 1}
             </div>
             <div className="flex-grow-1">
-              <div style={{ whiteSpace: "pre-wrap" }}>{s.text}</div>
+              <RichBody body={s.text} />
               {s.imageUrl && img(s.imageUrl, s.imageCaption, 260)}
             </div>
           </li>
@@ -296,7 +296,7 @@ const PrintManual = ({ tree }) => {
           <Tag style={{ borderBottom: depth === 0 ? "2px solid #333" : "none", paddingBottom: depth === 0 ? 6 : 0 }}>
             {num}. {s.title}
           </Tag>
-          {s.description && <p className="text-muted" style={{ whiteSpace: "pre-wrap" }}>{s.description}</p>}
+          <RichBody body={s.description} className="text-muted" />
           {(s.blocks || []).map((b) => (
             <div key={b.id} className="gp-block"><BlockView block={b} /></div>
           ))}
@@ -399,11 +399,11 @@ const AdminUserGuide = () => {
   // ── Section CRUD ──
   const openCreateSection = (parentId = "") => {
     setSectionForm({ title: "", description: "", icon: "", parentId: parentId || "" });
-    setSectionModal({ mode: "create" });
+    setSectionModal({ mode: "create", session: Date.now() });
   };
   const openEditSection = (section) => {
     setSectionForm({ title: section.title, description: section.description || "", icon: section.icon || "", parentId: section.parentId || "" });
-    setSectionModal({ mode: "edit", section });
+    setSectionModal({ mode: "edit", section, session: Date.now() });
   };
   const saveSection = () => run(async () => {
     const payload = {
@@ -473,11 +473,11 @@ const AdminUserGuide = () => {
   // ── Step CRUD ──
   const openCreateStep = (blockId) => {
     setStepForm({ text: "", imageUrl: null, imageCaption: "" });
-    setStepModal({ mode: "create", blockId });
+    setStepModal({ mode: "create", blockId, session: Date.now() });
   };
   const openEditStep = (blockId, step) => {
     setStepForm({ text: step.text, imageUrl: step.imageUrl || null, imageCaption: step.imageCaption || "" });
-    setStepModal({ mode: "edit", blockId, step });
+    setStepModal({ mode: "edit", blockId, step, session: Date.now() });
   };
   const saveStep = () => run(async () => {
     const payload = {
@@ -571,7 +571,7 @@ const AdminUserGuide = () => {
             {(block.steps || []).map((s, si) => (
               <div key={s.id} className="d-flex align-items-center small py-1 px-2 rounded mb-1" style={{ backgroundColor: "#f8f9fa" }}>
                 <span className="text-muted me-2 fw-bold">{si + 1}.</span>
-                <span className="text-truncate flex-grow-1">{s.text}</span>
+                <span className="text-truncate flex-grow-1">{(s.text || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}</span>
                 {s.imageUrl && <Icon name="img" className="text-muted mx-1" />}
                 <button className="btn btn-xs border-0 text-muted" disabled={si === 0} onClick={() => moveStep(block, s, -1)}><Icon name="chevron-up" /></button>
                 <button className="btn btn-xs border-0 text-muted" disabled={si === (block.steps || []).length - 1} onClick={() => moveStep(block, s, 1)}><Icon name="chevron-down" /></button>
@@ -717,7 +717,7 @@ const AdminUserGuide = () => {
                         </div>
                       )}
                     </div>
-                    {selected.description && <p className="text-soft mb-3">{selected.description}</p>}
+                    <RichBody body={selected.description} className="text-soft mb-3" />
                     <hr className="my-3" />
 
                     {/* Blocks */}
@@ -783,8 +783,11 @@ const AdminUserGuide = () => {
           </div>
           <div className="form-group mb-2">
             <label className="form-label">Summary</label>
-            <textarea className="form-control" rows={2} value={sectionForm.description}
-              onChange={(e) => setSectionForm((f) => ({ ...f, description: e.target.value }))}
+            <RichTextField
+              key={sectionModal?.session || "none"}
+              value={sectionForm.description}
+              minHeight={70}
+              onChange={(html) => setSectionForm((f) => ({ ...f, description: html }))}
               placeholder="Short description shown under the heading (optional)" />
           </div>
           <div className="row g-2 mb-3">
@@ -877,8 +880,11 @@ const AdminUserGuide = () => {
           <h5 className="mb-3">{stepModal?.mode === "create" ? "Add Step" : "Edit Step"}</h5>
           <div className="form-group mb-2">
             <label className="form-label">Instruction *</label>
-            <textarea className="form-control" rows={3} value={stepForm.text} autoFocus
-              onChange={(e) => setStepForm((f) => ({ ...f, text: e.target.value }))}
+            <RichTextField
+              key={stepModal?.session || "none"}
+              value={stepForm.text}
+              minHeight={90}
+              onChange={(html) => setStepForm((f) => ({ ...f, text: html }))}
               placeholder="e.g. Open the propane valve a quarter turn and check for the hiss of gas…" />
           </div>
           <div className="form-group mb-3">
