@@ -168,6 +168,11 @@ const menu = [
     link: "/site-pages",
   },
   {
+    icon: "help-alt",
+    text: "User Guide",
+    link: "/user-guide",
+  },
+  {
     icon: "book",
     text: "Recipes",
     subMenu: [

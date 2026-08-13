@@ -2119,6 +2119,66 @@ model OrderNotificationRecipient {
 }
 
 
+/// ── Equipment / Operations User Guide ────────────────────────────────────────
+/// Hierarchical guide sections (sections → subsections, arbitrary depth).
+model GuideSection {
+  id          String         @id @default(uuid())
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  parentId    String?
+  parent      GuideSection?  @relation("GuideSectionChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children    GuideSection[] @relation("GuideSectionChildren")
+
+  title       String
+  description String?        // short summary shown under the section heading
+  icon        String?        // optional icon name for the TOC
+  sortOrder   Int            @default(0)
+  isPublished Boolean        @default(true)
+
+  blocks      GuideBlock[]
+
+  @@map("guide_sections")
+}
+
+/// Content blocks inside a section: text, step list, tip, warning, or image.
+model GuideBlock {
+  id           String       @id @default(uuid())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  sectionId    String
+  section      GuideSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  type         String       @default("text") // text | steps | tip | warning | image
+  title        String?
+  body         String?
+  imageUrl     String?
+  imageCaption String?
+  sortOrder    Int          @default(0)
+
+  steps        GuideStep[]
+
+  @@map("guide_blocks")
+}
+
+/// Ordered steps within a "steps" block; each step may carry its own photo.
+model GuideStep {
+  id           String     @id @default(uuid())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  blockId      String
+  block        GuideBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  text         String
+  imageUrl     String?
+  imageCaption String?
+  sortOrder    Int        @default(0)
+
+  @@map("guide_steps")
+}
+
 model KioskDevice {
   id                     String    @id @default(uuid())
   createdAt              DateTime  @default(now())

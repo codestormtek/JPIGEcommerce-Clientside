@@ -89,6 +89,7 @@ import AdminProductList from "@/pages/pre-built/products/AdminProductList";
 import AdminBrandList from "@/pages/pre-built/products/AdminBrandList";
 import AdminCategoryList from "@/pages/pre-built/products/AdminCategoryList";
 import AdminRecipeList from "@/pages/pre-built/recipes/AdminRecipeList";
+import AdminUserGuide from "@/pages/pre-built/guides/AdminUserGuide";
 import AdminMenuList from "@/pages/pre-built/menus/AdminMenuList";
 import AdminMenuBuilder from "@/pages/pre-built/menus/AdminMenuBuilder";
 import AdminAuditLogList from "@/pages/pre-built/audit-logs/AdminAuditLogList";
@@ -223,6 +224,7 @@ const Pages = () => {
               <Route path="products" element={<AdminProductList />}></Route>
               <Route path="brands" element={<AdminBrandList />}></Route>
               <Route path="categories" element={<AdminCategoryList />}></Route>
+              <Route path="user-guide" element={<AdminUserGuide />}></Route>
               <Route path="recipes" element={<AdminRecipeList />}></Route>
               <Route path="recipes/create" element={<AdminRecipeList />}></Route>
               <Route path="menus" element={<AdminMenuList />}></Route>
