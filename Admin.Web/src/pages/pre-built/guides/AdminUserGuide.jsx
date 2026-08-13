@@ -686,8 +686,8 @@ const AdminUserGuide = () => {
       <Modal isOpen={!!blockModal} toggle={() => setBlockModal(null)} size="lg">
         <ModalBody>
           <h5 className="mb-3">{blockModal?.mode === "create" ? "Add Content" : "Edit Content"}</h5>
-          <div className="form-group mb-2">
-            <label className="form-label">Type</label>
+          <div className="mb-3">
+            <label className="form-label d-block">Type</label>
             <div className="d-flex flex-wrap gap-1">
               {BLOCK_TYPES.map((bt) => (
                 <button key={bt.value} type="button"
@@ -697,7 +697,7 @@ const AdminUserGuide = () => {
                 </button>
               ))}
             </div>
-            <div className="form-note mt-1">{blockTypeMeta(blockForm.type).hint}</div>
+            <div className="text-muted small mt-2">{blockTypeMeta(blockForm.type).hint}</div>
           </div>
           <div className="form-group mb-2">
             <label className="form-label">Heading {blockForm.type === "image" ? "/ photo title" : ""}</label>
