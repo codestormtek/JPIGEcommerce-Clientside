@@ -57,6 +57,55 @@ export async function createPayment(
   };
 }
 
+// ─── Capture & lookup ─────────────────────────────────────────────────────────
+
+/**
+ * Complete (capture) a previously authorized Square payment.
+ * Square payments created with `autocomplete: false` sit in APPROVED status
+ * until completed. If the payment is already COMPLETED this is a no-op that
+ * returns the current state.
+ */
+export async function capturePayment(squarePaymentId: string): Promise<SquarePaymentResult> {
+  const client = getSquareClient();
+
+  const current = await client.payments.get({ paymentId: squarePaymentId });
+  if (current.payment?.status === 'COMPLETED') {
+    return toPaymentResult(current.payment);
+  }
+
+  const response = await client.payments.complete({ paymentId: squarePaymentId });
+  const payment = response.payment;
+  if (!payment?.id) {
+    throw new Error('Square capturePayment returned no payment object');
+  }
+
+  logger.info('Square payment captured', { squarePaymentId: payment.id });
+  return toPaymentResult(payment);
+}
+
+/** Fetch the current state of a Square payment. */
+export async function getPayment(squarePaymentId: string): Promise<SquarePaymentResult> {
+  const client = getSquareClient();
+  const response = await client.payments.get({ paymentId: squarePaymentId });
+  const payment = response.payment;
+  if (!payment?.id) {
+    throw new Error(`Square payment not found: ${squarePaymentId}`);
+  }
+  return toPaymentResult(payment);
+}
+
+function toPaymentResult(payment: Square.Payment): SquarePaymentResult {
+  return {
+    paymentId: payment.id as string,
+    status: payment.status ?? 'UNKNOWN',
+    amountMoney: {
+      amount: payment.amountMoney?.amount ?? undefined,
+      currency: payment.amountMoney?.currency,
+    },
+    receiptUrl: payment.receiptUrl,
+  };
+}
+
 // ─── Refunds ──────────────────────────────────────────────────────────────────
 
 export async function refundPayment(

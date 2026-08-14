@@ -1,6 +1,7 @@
 import * as repo from '../site-settings/site-settings.repository';
 import { ApiError } from '../../utils/apiError';
 import { logger } from '../../utils/logger';
+import { invalidateGatewayCache } from '../../services/paymentGateway';
 
 export type GatewayName = 'stripe' | 'square';
 
@@ -46,6 +47,7 @@ export async function setActiveGateway(gateway: GatewayName): Promise<void> {
       category: 'payments',
     });
   }
+  invalidateGatewayCache();
 }
 
 export interface SquareCredentials {
