@@ -108,13 +108,10 @@ STRIPE_WEBHOOK_SECRET = ""
 AUTO_CANCEL_ORDER_DELAY_MS = "1800000"
 CACHE_LIVE_TTL_SECONDS = "60"
 CACHE_AGGREGATE_TTL_SECONDS = "600"
-EXTERNAL_DATABASE_URL = "postgresql://jpig_user:PdOviARts3XnVGpfW4mwQmrNy4oeBOrd@dpg-d6jghn14tr6s739g6adg-a.virginia-postgres.render.com/jpig?schema=public"
-JWT_SECRET = "GfszeSf9YRXVO3pil828qEyMaSBDpzy8_LxTstCWGQS3u0kEX8gSeljdBmu39FpN"
-JWT_REFRESH_SECRET = "x5onmArSfEkYn7EB8N_QA1l8Ga8gIbemnRSCLrvlYTEBru7EQBSKqWextCJIcc9g"
-R2_ACCESS_KEY_ID = "714b82227453cd674d0502dea1c24169"
-R2_SECRET_ACCESS_KEY = "a3591c6828d362c12fa7ee8a0d8dd84209ed12abfffbf2dad62400cc0f6f7ba8"
-RESEND_API_KEY = "re_F1VEmSx3_JyK5X8hv2z3U9qTJZrAWqAzg"
-RESEND_WEBHOOK_SECRET = "whsec_kTjTSfiqgoJWIRDXtFjm8mO3Xb/+Wo92"
 NEXT_PUBLIC_API_URL = "http://localhost:8000/api/v1"
 ADMIN_EMAIL = "jeromealfredharrison@gmail.com"
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_test_51T8C1cFzZhARozyRPQehhPjwrW4R1rIJpbvJbkUBm2nJbkW3WjayD4IhXvl1is20ifQm9DlQl8k0b2fJvrI8xpbH00UoKUHOsi"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 240000

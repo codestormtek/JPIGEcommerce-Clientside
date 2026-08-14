@@ -60,6 +60,7 @@ export async function createSection(input: CreateSectionInput) {
       parentId,
       sortOrder: input.sortOrder ?? (await nextSectionOrder(parentId)),
       isPublished: input.isPublished ?? true,
+      isSafetyCritical: input.isSafetyCritical ?? false,
     },
   });
 }
@@ -75,6 +76,7 @@ export async function updateSection(id: string, input: UpdateSectionInput) {
     ...(input.parentId !== undefined ? { parentId: input.parentId } : {}),
     ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
     ...(input.isPublished !== undefined ? { isPublished: input.isPublished } : {}),
+    ...(input.isSafetyCritical !== undefined ? { isSafetyCritical: input.isSafetyCritical } : {}),
   };
 
   if (input.parentId === undefined || input.parentId === null) {
@@ -230,6 +232,79 @@ export async function reorderSteps(blockId: string, ids: string[]) {
       await tx.guideStep.update({ where: { id: ids[i]! }, data: { sortOrder: i } });
     }
   }, { isolationLevel: 'Serializable' });
+}
+
+// ─── Acknowledgments (mark-as-read / training compliance) ────────────────────
+
+export async function ackSection(userId: string, sectionId: string) {
+  const section = await prisma.guideSection.findUnique({ where: { id: sectionId } });
+  if (!section) throw ApiError.notFound('Section not found');
+  return prisma.guideSectionAck.upsert({
+    where: { userId_sectionId: { userId, sectionId } },
+    update: {}, // idempotent — keep the original readAt
+    create: { userId, sectionId },
+  });
+}
+
+export async function unackSection(userId: string, sectionId: string) {
+  await prisma.guideSectionAck.deleteMany({ where: { userId, sectionId } });
+}
+
+export async function getMyAcks(userId: string) {
+  return prisma.guideSectionAck.findMany({
+    where: { userId },
+    select: { sectionId: true, readAt: true },
+  });
+}
+
+/**
+ * Completion report: every active admin user × every published section,
+ * with per-user progress and a safety-critical breakdown.
+ */
+export async function getAckReport() {
+  const [sections, users, acks] = await Promise.all([
+    prisma.guideSection.findMany({
+      where: { isPublished: true },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true, parentId: true, title: true, isSafetyCritical: true },
+    }),
+    prisma.siteUser.findMany({
+      where: { role: 'admin', isActive: true, isDeleted: false },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+      select: { id: true, firstName: true, lastName: true, emailAddress: true },
+    }),
+    prisma.guideSectionAck.findMany({ select: { userId: true, sectionId: true, readAt: true } }),
+  ]);
+
+  const sectionIds = new Set(sections.map((s) => s.id));
+  const ackMap = new Map<string, Map<string, Date>>(); // userId -> sectionId -> readAt
+  for (const a of acks) {
+    if (!sectionIds.has(a.sectionId)) continue;
+    if (!ackMap.has(a.userId)) ackMap.set(a.userId, new Map());
+    ackMap.get(a.userId)!.set(a.sectionId, a.readAt);
+  }
+
+  const safetySections = sections.filter((s) => s.isSafetyCritical);
+
+  return {
+    sections,
+    users: users.map((u) => {
+      const mine = ackMap.get(u.id) ?? new Map<string, Date>();
+      const readSafety = safetySections.filter((s) => mine.has(s.id));
+      return {
+        id: u.id,
+        name: [u.firstName, u.lastName].filter(Boolean).join(' ') || u.emailAddress,
+        email: u.emailAddress,
+        readSectionIds: [...mine.keys()],
+        readCount: mine.size,
+        totalCount: sections.length,
+        safetyReadCount: readSafety.length,
+        safetyTotalCount: safetySections.length,
+        missingSafetySectionIds: safetySections.filter((s) => !mine.has(s.id)).map((s) => s.id),
+        lastReadAt: mine.size ? new Date(Math.max(...[...mine.values()].map((d) => d.getTime()))) : null,
+      };
+    }),
+  };
 }
 
 // ─── Image upload ─────────────────────────────────────────────────────────────

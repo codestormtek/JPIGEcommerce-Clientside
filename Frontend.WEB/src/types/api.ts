@@ -63,6 +63,15 @@ export interface Product {
   items: ProductItem[];
 }
 
+/** Public payment gateway config from GET /payments/gateway-config */
+export interface GatewayConfig {
+  gateway: 'stripe' | 'square';
+  squareApplicationId?: string;
+  squareLocationId?: string;
+  /** 'sandbox' | 'production' */
+  squareEnvironment?: string;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;

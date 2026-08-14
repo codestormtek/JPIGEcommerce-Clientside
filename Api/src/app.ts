@@ -85,6 +85,7 @@ app.use(
 );
 // Raw body required for webhook signature verification — must come BEFORE express.json()
 app.use('/api/v1/payments/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/v1/payments/square-webhook', express.raw({ type: 'application/json' }));
 app.use('/api/v1/notifications/resend-webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

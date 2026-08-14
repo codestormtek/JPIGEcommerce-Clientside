@@ -2,8 +2,7 @@ import { ApiError } from '../../utils/apiError';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
 import { ListPaymentsInput } from './payments.schema';
 import * as repo from './payments.repository';
-import * as stripeService from '../../services/stripeService';
-import * as squareService from '../../services/squareService';
+import * as paymentGateway from '../../services/paymentGateway';
 import { logger } from '../../utils/logger';
 
 // ─── Payments (admin) ─────────────────────────────────────────────────────────
@@ -25,18 +24,15 @@ export async function capturePayment(id: string, ctx?: AuditContext) {
     throw ApiError.unprocessable(`Payment cannot be captured in status "${payment.status}"`);
   }
 
-  // Route capture to the correct gateway
+  // Route capture to the gateway that created the payment (stored gatewayName),
+  // not the currently-active one — the admin may have switched gateways since.
   if (payment.providerTxnId) {
-    if (payment.provider === 'square') {
-      // Square payments auto-capture (COMPLETED status); no additional capture step needed
-      logger.info('Square payment already captured at creation — skipping capture call', { paymentId: payment.id });
-    } else {
-      try {
-        await stripeService.capturePaymentIntent(payment.providerTxnId);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Stripe capture failed';
-        throw ApiError.unprocessable(`Stripe capture failed: ${msg}`);
-      }
+    const gatewayName: paymentGateway.GatewayName = payment.provider === 'square' ? 'square' : 'stripe';
+    try {
+      await paymentGateway.capturePayment(payment.providerTxnId, gatewayName);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Capture failed';
+      throw ApiError.unprocessable(`${gatewayName === 'square' ? 'Square' : 'Stripe'} capture failed: ${msg}`);
     }
   }
 
@@ -61,27 +57,19 @@ export async function refundPayment(id: string, ctx?: AuditContext) {
     throw ApiError.unprocessable(`Payment cannot be refunded in status "${payment.status}"`);
   }
 
-  // Route refund to the correct gateway
+  // Route refund to the gateway that created the payment (stored gatewayName)
   if (payment.providerTxnId) {
-    if (payment.provider === 'square') {
-      try {
-        await squareService.refundPayment(
-          payment.providerTxnId,
-          Math.round(Number(payment.amount) * 100),
-          'USD',
-          'Admin-initiated refund',
-        );
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Square refund failed';
-        throw ApiError.unprocessable(`Square refund failed: ${msg}`);
-      }
-    } else {
-      try {
-        await stripeService.createRefund(payment.providerTxnId);
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Stripe refund failed';
-        throw ApiError.unprocessable(`Stripe refund failed: ${msg}`);
-      }
+    const gatewayName: paymentGateway.GatewayName = payment.provider === 'square' ? 'square' : 'stripe';
+    try {
+      await paymentGateway.refundPayment(
+        payment.providerTxnId,
+        Math.round(Number(payment.amount) * 100),
+        'USD',
+        { reason: 'Admin-initiated refund', gatewayOverride: gatewayName },
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Refund failed';
+      throw ApiError.unprocessable(`${gatewayName === 'square' ? 'Square' : 'Stripe'} refund failed: ${msg}`);
     }
   }
 
@@ -171,11 +159,11 @@ export async function handleSquarePaymentFailed(squarePaymentId: string): Promis
   logger.warn('Square webhook: payment failed', { paymentId: payment.id });
 }
 
-export async function handleSquareRefundCompleted(squareRefundId: string): Promise<void> {
-  // Square refunds reference payment IDs indirectly; look up by refund ID pattern
-  const payment = await repo.findPaymentByProviderTxnId(squareRefundId);
+export async function handleSquareRefundCompleted(squarePaymentId: string): Promise<void> {
+  // Refund webhook events carry the original payment id (refund.payment_id)
+  const payment = await repo.findPaymentByProviderTxnId(squarePaymentId);
   if (!payment) {
-    logger.warn('Square webhook: refund.completed — no matching payment record', { squareRefundId });
+    logger.warn('Square webhook: refund event — no matching payment record', { squarePaymentId });
     return;
   }
   if (payment.status !== 'refunded') {

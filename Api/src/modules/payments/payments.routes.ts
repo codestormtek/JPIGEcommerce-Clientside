@@ -13,6 +13,9 @@ paymentsRouter.post('/webhook', asyncHandler(ctrl.handleWebhook));
 // POST /api/v1/payments/square-webhook  — no auth, Square HMAC verified in controller
 paymentsRouter.post('/square-webhook', asyncHandler(ctrl.handleSquareWebhook));
 
+// GET /api/v1/payments/gateway-config — public; active gateway + public Square IDs only
+paymentsRouter.get('/gateway-config', asyncHandler(ctrl.getGatewayConfig));
+
 // All other payments routes are admin-only
 
 // GET    /api/v1/payments

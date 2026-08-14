@@ -40,6 +40,7 @@ model SiteUser {
   contentPosts          ContentPost[]
   contentComments       ContentComment[]
   subscriberLinks       Subscriber[]
+  guideSectionAcks      GuideSectionAck[]
   orderStatusChanges    OrderStatusHistory[]
   actorEvents           Event[]
   refreshTokens         RefreshToken[]
@@ -2135,10 +2136,25 @@ model GuideSection {
   icon        String?        // optional icon name for the TOC
   sortOrder   Int            @default(0)
   isPublished Boolean        @default(true)
+  isSafetyCritical Boolean   @default(false) // must-read for training/safety compliance
 
   blocks      GuideBlock[]
+  acknowledgments GuideSectionAck[]
 
   @@map("guide_sections")
+}
+
+/// Per-user "mark as read" acknowledgment of a guide section (training compliance).
+model GuideSectionAck {
+  id        String       @id @default(uuid())
+  userId    String
+  user      SiteUser     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sectionId String
+  section   GuideSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  readAt    DateTime     @default(now())
+
+  @@unique([userId, sectionId])
+  @@map("guide_section_acks")
 }
 
 /// Content blocks inside a section: text, step list, tip, warning, or image.

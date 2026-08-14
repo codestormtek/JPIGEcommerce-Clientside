@@ -9,6 +9,7 @@ import {
 import { apiGet, apiPost, apiPatch, apiDelete, apiUpload } from "@/utils/apiClient";
 import { useQuill } from "react-quilljs";
 import DOMPurify from "dompurify";
+import { generateManualPdf } from "./manualPdf";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -356,6 +357,64 @@ const AdminUserGuide = () => {
   const [stepForm, setStepForm] = useState({ text: "", imageUrl: null, imageCaption: "" });
 
   const [confirmDelete, setConfirmDelete] = useState(null); // { kind, id, label }
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  const downloadPdf = async () => {
+    setPdfBusy(true); setActionError(null);
+    try {
+      await generateManualPdf(tree);
+    } catch (e) {
+      setActionError(e.message || "Failed to generate PDF");
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  // ── Read acknowledgments ──
+  const [myAcks, setMyAcks] = useState({}); // sectionId -> readAt
+  const [ackBusy, setAckBusy] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [report, setReport] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState(null);
+
+  const loadMyAcks = useCallback(async () => {
+    try {
+      const res = await apiGet("/guides/acks/me");
+      const list = res?.data ?? res ?? [];
+      const map = {};
+      list.forEach((a) => { map[a.sectionId] = a.readAt; });
+      setMyAcks(map);
+    } catch { /* non-fatal */ }
+  }, []);
+
+  const toggleAck = async (sectionId) => {
+    setAckBusy(true); setActionError(null);
+    try {
+      if (myAcks[sectionId]) {
+        await apiDelete(`/guides/sections/${sectionId}/ack`);
+      } else {
+        await apiPost(`/guides/sections/${sectionId}/ack`, {});
+      }
+      await loadMyAcks();
+    } catch (e) {
+      setActionError(e.message || "Could not update read status");
+    } finally {
+      setAckBusy(false);
+    }
+  };
+
+  const openReport = async () => {
+    setReportOpen(true); setReportLoading(true); setReportError(null);
+    try {
+      const res = await apiGet("/guides/acks/report");
+      setReport(res?.data ?? res);
+    } catch (e) {
+      setReportError(e.message || "Failed to load report");
+    } finally {
+      setReportLoading(false);
+    }
+  };
 
   const load = useCallback(async (keepSelection = true) => {
     try {
@@ -374,7 +433,7 @@ const AdminUserGuide = () => {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); loadMyAcks(); }, [load, loadMyAcks]);
 
   const flat = useMemo(() => flattenTree(tree), [tree]);
   const selected = useMemo(() => findNode(tree, selectedId), [tree, selectedId]);
@@ -398,11 +457,11 @@ const AdminUserGuide = () => {
 
   // ── Section CRUD ──
   const openCreateSection = (parentId = "") => {
-    setSectionForm({ title: "", description: "", icon: "", parentId: parentId || "" });
+    setSectionForm({ title: "", description: "", icon: "", parentId: parentId || "", isSafetyCritical: false });
     setSectionModal({ mode: "create", session: Date.now() });
   };
   const openEditSection = (section) => {
-    setSectionForm({ title: section.title, description: section.description || "", icon: section.icon || "", parentId: section.parentId || "" });
+    setSectionForm({ title: section.title, description: section.description || "", icon: section.icon || "", parentId: section.parentId || "", isSafetyCritical: !!section.isSafetyCritical });
     setSectionModal({ mode: "edit", section, session: Date.now() });
   };
   const saveSection = () => run(async () => {
@@ -411,6 +470,7 @@ const AdminUserGuide = () => {
       description: sectionForm.description.trim() || null,
       icon: sectionForm.icon || null,
       parentId: sectionForm.parentId || null,
+      isSafetyCritical: !!sectionForm.isSafetyCritical,
     };
     if (!payload.title) throw new Error("Title is required");
     if (sectionModal.mode === "create") {
@@ -528,6 +588,8 @@ const AdminUserGuide = () => {
               <span className={`fw-bold me-2 ${active ? "" : "text-muted"}`} style={{ minWidth: 26, fontSize: 12 }}>{num}</span>
               {node.icon && <Icon name={node.icon} className="me-1" />}
               <span className="text-truncate flex-grow-1">{node.title}</span>
+              {node.isSafetyCritical && <Icon name="shield-check" title="Safety-critical (must read)" className={`ms-1 ${active ? "text-white" : "text-danger"}`} style={{ fontSize: 12 }} />}
+              {myAcks[node.id] && <Icon name="check-circle-fill" title="You've read this section" className={`ms-1 ${active ? "text-white" : "text-success"}`} style={{ fontSize: 12 }} />}
               {!node.isPublished && <Badge color="light" className="ms-1 text-dark" pill style={{ fontSize: 9 }}>draft</Badge>}
               {editMode && (
                 <span className="d-flex ms-1" onClick={(e) => e.stopPropagation()}>
@@ -624,7 +686,13 @@ const AdminUserGuide = () => {
                   <Icon name={editMode ? "eye" : "edit"} className="me-1" />{editMode ? "Done Editing" : "Edit Guide"}
                 </Button>
                 <Button color="light" outline disabled={tree.length === 0} onClick={() => window.print()}>
-                  <Icon name="printer" className="me-1" />Print / PDF
+                  <Icon name="printer" className="me-1" />Print
+                </Button>
+                <Button color="light" outline disabled={tree.length === 0 || pdfBusy} onClick={downloadPdf}>
+                  {pdfBusy ? <Spinner size="sm" className="me-1" /> : <Icon name="download" className="me-1" />}Download PDF
+                </Button>
+                <Button color="light" outline onClick={openReport}>
+                  <Icon name="clipboard-check" className="me-1" />Read Report
                 </Button>
               </div>
             </BlockHeadContent>
@@ -666,6 +734,21 @@ const AdminUserGuide = () => {
                       <Icon name="plus" className="me-1" />Add top-level section
                     </button>
                   )}
+                  {flat.length > 0 && (() => {
+                    const readCount = flat.filter((n) => myAcks[n.id]).length;
+                    const pct = Math.round((readCount / flat.length) * 100);
+                    return (
+                      <div className="mt-3 pt-2 border-top">
+                        <div className="d-flex justify-content-between small mb-1">
+                          <span className="text-muted">Your reading progress</span>
+                          <span className="fw-bold">{readCount}/{flat.length}</span>
+                        </div>
+                        <div className="progress" style={{ height: 6 }}>
+                          <div className={`progress-bar ${pct === 100 ? "bg-success" : "bg-primary"}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -718,6 +801,29 @@ const AdminUserGuide = () => {
                       )}
                     </div>
                     <RichBody body={selected.description} className="text-soft mb-3" />
+
+                    {/* Read acknowledgment */}
+                    {!editMode && (
+                      <div className="d-flex align-items-center gap-2 mt-2">
+                        {selected.isSafetyCritical && (
+                          <Badge color="danger" pill><Icon name="shield-check" className="me-1" />Safety-critical — must read</Badge>
+                        )}
+                        {myAcks[selected.id] ? (
+                          <>
+                            <Badge color="success" pill><Icon name="check-circle" className="me-1" />
+                              Read {new Date(myAcks[selected.id]).toLocaleDateString()}
+                            </Badge>
+                            <button className="btn btn-xs btn-link text-muted p-0" disabled={ackBusy} onClick={() => toggleAck(selected.id)}>
+                              undo
+                            </button>
+                          </>
+                        ) : (
+                          <Button size="sm" color="success" outline disabled={ackBusy} onClick={() => toggleAck(selected.id)}>
+                            {ackBusy ? <Spinner size="sm" /> : <><Icon name="check-circle" className="me-1" />Mark as read</>}
+                          </Button>
+                        )}
+                      </div>
+                    )}
                     <hr className="my-3" />
 
                     {/* Blocks */}
@@ -808,6 +914,16 @@ const AdminUserGuide = () => {
                 <option value="">None</option>
                 {SECTION_ICONS.map((ic) => <option key={ic} value={ic}>{ic}</option>)}
               </select>
+            </div>
+          </div>
+          <div className="form-group mb-3">
+            <div className="custom-control custom-switch">
+              <input type="checkbox" className="custom-control-input" id="section-safety-critical"
+                checked={!!sectionForm.isSafetyCritical}
+                onChange={(e) => setSectionForm((f) => ({ ...f, isSafetyCritical: e.target.checked }))} />
+              <label className="custom-control-label" htmlFor="section-safety-critical">
+                <Icon name="shield-check" className="me-1 text-danger" />Safety-critical (must-read for the read report)
+              </label>
             </div>
           </div>
           <div className="d-flex justify-content-end gap-2">
@@ -901,6 +1017,84 @@ const AdminUserGuide = () => {
             <Button color="primary" disabled={busy || !stepForm.text.trim()} onClick={saveStep}>
               {busy ? <Spinner size="sm" /> : "Save"}
             </Button>
+          </div>
+        </ModalBody>
+      </Modal>
+
+      {/* ── Read report modal ── */}
+      <Modal isOpen={reportOpen} toggle={() => setReportOpen(false)} size="lg">
+        <ModalBody>
+          <h5 className="mb-1"><Icon name="clipboard-check" className="me-1" />Guide Read Report</h5>
+          <p className="text-muted small mb-3">Which team members have marked sections as read — including safety-critical must-reads.</p>
+          {reportLoading && <div className="text-center py-4"><Spinner color="primary" /></div>}
+          {reportError && <div className="alert alert-danger py-2">{reportError}</div>}
+          {!reportLoading && !reportError && report && (
+            (report.users || []).length === 0 ? (
+              <div className="text-muted fst-italic py-3">No admin users found.</div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-sm align-middle">
+                  <thead>
+                    <tr className="small text-muted">
+                      <th>Team member</th>
+                      <th className="text-center">Overall</th>
+                      <th className="text-center">Safety-critical</th>
+                      <th>Missing safety sections</th>
+                      <th className="text-end">Last read</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.users.map((u) => {
+                      const sectionTitle = (id) => report.sections.find((s) => s.id === id)?.title || "?";
+                      const pct = u.totalCount ? Math.round((u.readCount / u.totalCount) * 100) : 0;
+                      const safetyDone = u.safetyTotalCount > 0 && u.safetyReadCount === u.safetyTotalCount;
+                      return (
+                        <tr key={u.id}>
+                          <td>
+                            <div className="fw-bold">{u.name}</div>
+                            <div className="small text-muted">{u.email}</div>
+                          </td>
+                          <td className="text-center" style={{ minWidth: 110 }}>
+                            <div className="small fw-bold">{u.readCount}/{u.totalCount}</div>
+                            <div className="progress" style={{ height: 5 }}>
+                              <div className={`progress-bar ${pct === 100 ? "bg-success" : "bg-primary"}`} style={{ width: `${pct}%` }} />
+                            </div>
+                          </td>
+                          <td className="text-center">
+                            {u.safetyTotalCount === 0 ? (
+                              <span className="text-muted small">—</span>
+                            ) : (
+                              <Badge color={safetyDone ? "success" : "danger"} pill>
+                                <Icon name={safetyDone ? "check-circle" : "alert-circle"} className="me-1" />
+                                {u.safetyReadCount}/{u.safetyTotalCount}
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="small" style={{ maxWidth: 220 }}>
+                            {(u.missingSafetySectionIds || []).length === 0
+                              ? <span className="text-success">None</span>
+                              : u.missingSafetySectionIds.map((id) => (
+                                  <Badge key={id} color="light" className="text-dark me-1 mb-1">{sectionTitle(id)}</Badge>
+                                ))}
+                          </td>
+                          <td className="text-end small text-muted">
+                            {u.lastReadAt ? new Date(u.lastReadAt).toLocaleDateString() : "Never"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
+          )}
+          {!reportLoading && !reportError && report && (report.sections || []).every((s) => !s.isSafetyCritical) && (
+            <div className="alert alert-light py-2 small mb-0">
+              No sections are marked safety-critical yet. Edit a section and turn on <strong>Safety-critical</strong> to track must-reads here.
+            </div>
+          )}
+          <div className="d-flex justify-content-end mt-3">
+            <Button color="light" onClick={() => setReportOpen(false)}>Close</Button>
           </div>
         </ModalBody>
       </Modal>

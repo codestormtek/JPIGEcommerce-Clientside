@@ -9,6 +9,7 @@ export const createSectionSchema = z.object({
   parentId: z.string().uuid().optional().nullable(),
   sortOrder: z.number().int().nonnegative().optional(),
   isPublished: z.boolean().optional(),
+  isSafetyCritical: z.boolean().optional(),
 });
 export type CreateSectionInput = z.infer<typeof createSectionSchema>;
 

@@ -8,24 +8,10 @@ import { useCart } from '@/components/header/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch, apiAuthPost } from '@/lib/api';
 import { getMyAddresses } from '@/lib/account';
+import SquareCardForm, { SquareCardFormHandle } from '@/components/checkout/SquareCardForm';
+import type { GatewayConfig } from '@/types/api';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '');
-
-declare global {
-  interface Window {
-    Square?: {
-      payments: (appId: string, locationId: string) => Promise<SquarePaymentsInstance>;
-    };
-  }
-}
-interface SquarePaymentsInstance {
-  card: (options?: Record<string, unknown>) => Promise<SquareCardInstance>;
-}
-interface SquareCardInstance {
-  attach: (selector: string) => Promise<void>;
-  tokenize: () => Promise<{ status: string; token?: string; errors?: Array<{ message: string }> }>;
-  destroy: () => Promise<void>;
-}
 
 interface ShippingMethod {
   id: string;
@@ -83,10 +69,10 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
   const { cartItems, clearCart, removeFromCart, isCartLoaded } = useCart();
   const { user, isAuthenticated, claimAccount } = useAuth();
 
-  const [activeGateway, setActiveGateway] = useState<'stripe' | 'square'>('stripe');
+  const [gatewayConfig, setGatewayConfig] = useState<GatewayConfig | null>(null);
   const [squareReady, setSquareReady] = useState(false);
-  const [squareError, setSquareError] = useState('');
-  const squareCardRef = useRef<SquareCardInstance | null>(null);
+  const squareFormRef = useRef<SquareCardFormHandle | null>(null);
+  const activeGateway: 'stripe' | 'square' = gatewayConfig?.gateway === 'square' ? 'square' : 'stripe';
 
   const [form, setForm] = useState({
     firstName: '',
@@ -113,101 +99,19 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
     }
   }, [user]);
 
+  // Fetch the active payment gateway config from the API on mount. Square's
+  // public identifiers come from the server so an admin gateway switch is
+  // reflected in the storefront without a redeploy.
   useEffect(() => {
-    apiFetch<{ data: { settingValue?: string } | string }>('/site-settings/public/active_payment_gateway')
-      .then(res => {
-        const value = typeof res.data === 'string' ? res.data : res.data?.settingValue;
-        if (value === 'square') setActiveGateway('square');
-      })
-      .catch(() => {});
+    apiFetch<{ data: GatewayConfig }>('/payments/gateway-config')
+      .then(res => setGatewayConfig(res.data))
+      .catch(() => setGatewayConfig({ gateway: 'stripe' })); // default to Stripe on failure
   }, []);
 
-  useEffect(() => {
-    if (activeGateway !== 'square') return;
-    const appId = (process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID ?? '').trim();
-    const locationId = (process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID ?? '').trim();
-    const squareEnv = (process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT ?? 'sandbox').trim();
-
-    setSquareError('');
-
-    if (!appId || !locationId) {
-      setSquareError(
-        'Square is not fully configured. Missing ' +
-        [!appId && 'Application ID', !locationId && 'Location ID'].filter(Boolean).join(' and ') +
-        '. Add the NEXT_PUBLIC_SQUARE_* environment variables and redeploy the storefront.'
-      );
-      return;
-    }
-
-    // Catch the common sandbox/production mismatch before the SDK silently fails.
-    const isSandboxAppId = appId.startsWith('sandbox-');
-    if (squareEnv === 'production' && isSandboxAppId) {
-      setSquareError('Square environment is set to "production" but a sandbox Application ID is configured. Use your production Application ID, or set NEXT_PUBLIC_SQUARE_ENVIRONMENT=sandbox.');
-      return;
-    }
-    if (squareEnv !== 'production' && !isSandboxAppId) {
-      setSquareError('Square environment is set to "sandbox" but a production Application ID is configured. Set NEXT_PUBLIC_SQUARE_ENVIRONMENT=production, or use your sandbox Application ID.');
-      return;
-    }
-
-    const scriptUrl = squareEnv === 'production'
-      ? 'https://web.squarecdn.com/v1/square.js'
-      : 'https://sandbox.web.squarecdn.com/v1/square.js';
-
-    let script = document.querySelector<HTMLScriptElement>(`script[src="${scriptUrl}"]`);
-    if (!script) {
-      script = document.createElement('script');
-      script.src = scriptUrl;
-      script.async = true;
-      script.addEventListener('error', () => {
-        if (!cancelled) setSquareError('Failed to load the Square payment library. Check your network connection or any content blockers and try again.');
-      });
-      document.head.appendChild(script);
-    }
-
-    let card: SquareCardInstance | null = null;
-    let cancelled = false;
-    let attempts = 0;
-
-    const initCard = async () => {
-      if (cancelled) return;
-      if (!window.Square) {
-        attempts += 1;
-        if (attempts > 50) { // ~10s
-          setSquareError('The Square payment library did not load in time. Please refresh the page and try again.');
-          return;
-        }
-        setTimeout(initCard, 200);
-        return;
-      }
-      try {
-        const payments = await window.Square.payments(appId, locationId);
-        card = await payments.card();
-        await card.attach('#square-card-container');
-        if (!cancelled) { squareCardRef.current = card; setSquareReady(true); }
-      } catch (err) {
-        console.error('Square card init failed', err);
-        if (!cancelled) {
-          const msg = err instanceof Error ? err.message : String(err);
-          setSquareError(`Square could not initialize the card form: ${msg}. Verify your Application ID and Location ID are correct and from the same (production) Square account.`);
-        }
-      }
-    };
-
-    const el = script as HTMLScriptElement & { readyState?: string };
-    if (el.readyState === 'complete' || window.Square) {
-      void initCard();
-    } else {
-      el.addEventListener('load', initCard);
-    }
-
-    return () => {
-      cancelled = true;
-      card?.destroy().catch(() => {});
-      squareCardRef.current = null;
-      setSquareReady(false);
-    };
-  }, [activeGateway]);
+  // Prefer server-provided Square config; fall back to build-time env vars.
+  const squareApplicationId = gatewayConfig?.squareApplicationId || process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID || '';
+  const squareLocationId = gatewayConfig?.squareLocationId || process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID || '';
+  const squareEnvironment = gatewayConfig?.squareEnvironment || process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT || 'sandbox';
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -390,7 +294,7 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (activeGateway === 'stripe' && (!stripe || !elements)) return;
-    if (activeGateway === 'square' && !squareCardRef.current) return;
+    if (activeGateway === 'square' && !squareReady) return;
     if (cartItemsForOrder.length === 0) { setOrderError('Your cart is empty.'); return; }
     if (!agreeTerms) { setOrderError('Please agree to the terms and conditions.'); return; }
 
@@ -460,14 +364,10 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
       let paymentField: Record<string, unknown> = {};
 
       if (activeGateway === 'square') {
-        const card = squareCardRef.current;
-        if (!card) throw new Error('Square card form not ready. Please refresh and try again.');
-        const result = await card.tokenize();
-        if (result.status !== 'OK' || !result.token) {
-          const msg = result.errors?.[0]?.message ?? 'Card tokenization failed — please check your card details.';
-          throw new Error(msg);
-        }
-        paymentField = { squareNonce: result.token };
+        const squareForm = squareFormRef.current;
+        if (!squareForm) throw new Error('Square card form not ready. Please refresh and try again.');
+        const sourceId = await squareForm.tokenize();
+        paymentField = { squareNonce: sourceId };
       } else {
         const cardElement = elements!.getElement(CardElement);
         if (!cardElement) throw new Error('Card element not available. Please refresh and try again.');
@@ -892,30 +792,19 @@ function CheckoutForm({ fallbackMethods }: { fallbackMethods: ShippingMethod[] }
               ))}
             </div>
 
-            {activeGateway === 'square' ? (
-              <>
-                <div
-                  id="square-card-container"
-                  style={{ border: '1px solid #ddd', borderRadius: 6, padding: '14px 16px', background: '#fafafa', minHeight: 54, display: squareError ? 'none' : 'block' }}
-                >
-                  {!squareReady && !squareError && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#8094ae', fontSize: 14 }}>
-                      <i className="fa-solid fa-spinner fa-spin" style={{ color: '#ff8c00' }} />
-                      Initializing secure payment...
-                    </div>
-                  )}
-                </div>
-                {squareError && (
-                  <div style={{ border: '1px solid #f3c2c2', borderRadius: 6, padding: '14px 16px', background: '#fdecec', color: '#a8071a', fontSize: 13, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                    <i className="fa-solid fa-triangle-exclamation" style={{ marginTop: 2 }} />
-                    <span>{squareError}</span>
-                  </div>
-                )}
-                <p style={{ fontSize: 12, color: '#aab7c4', marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <i className="fa-solid fa-shield-halved" style={{ color: '#629D23' }} />
-                  Secured by Square. Your card details are never stored on our servers.
-                </p>
-              </>
+            {gatewayConfig === null ? (
+              <div style={{ border: '1px solid #ddd', borderRadius: 6, padding: '14px 16px', background: '#fafafa', display: 'flex', alignItems: 'center', gap: 10, color: '#8094ae', fontSize: 14 }}>
+                <i className="fa-solid fa-spinner fa-spin" style={{ color: '#ff8c00' }} />
+                Initializing secure payment...
+              </div>
+            ) : activeGateway === 'square' ? (
+              <SquareCardForm
+                ref={squareFormRef}
+                applicationId={squareApplicationId}
+                locationId={squareLocationId}
+                environment={squareEnvironment}
+                onReadyChange={setSquareReady}
+              />
             ) : (
               <>
                 {!stripe ? (

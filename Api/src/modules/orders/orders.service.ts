@@ -9,7 +9,7 @@ import * as repo from './orders.repository';
 import * as userRepo from '../users/users.repository';
 import * as paymentRepo from '../payments/payments.repository';
 import * as stripeService from '../../services/stripeService';
-import * as squareService from '../../services/squareService';
+import * as paymentGateway from '../../services/paymentGateway';
 import { validateCoupon, redeemCoupon } from '../promotions/promotions.service';
 import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
 import { logger } from '../../utils/logger';
@@ -205,55 +205,41 @@ export async function checkout(
     }
 
     // ── Step 3: Create a payment record via the active gateway ───────────────
-    if (input.squareNonce) {
-      // ── Square path ──────────────────────────────────────────────────────────
-      const locationId = process.env.SQUARE_LOCATION_ID ?? config.square.locationId;
-      if (!locationId) {
-        throw ApiError.unprocessable('Square Location ID is not configured. Please add SQUARE_LOCATION_ID to Replit Secrets.');
-      }
-
+    if (input.squareNonce || input.paymentMethodTokenId) {
       const grandTotalCents = Math.round(Number(order.grandTotal) * 100);
 
-      const squareResult = await squareService.createPayment(
-        grandTotalCents,
-        order.currency,
-        input.squareNonce,
-        locationId,
-        { orderId: order.id, userId },
-      );
-
-      await paymentRepo.createPayment({
-        orderId: order.id,
-        provider: 'square',
-        amount: Number(order.grandTotal),
-        status: squareResult.status === 'COMPLETED' ? 'captured' : squareResult.status.toLowerCase(),
-        providerTxnId: squareResult.paymentId,
-        authorizedAt: new Date(),
-      });
-
-    } else if (input.paymentMethodTokenId) {
-      // ── Stripe path ──────────────────────────────────────────────────────────
-      const token = await userRepo.findPaymentMethodById(input.paymentMethodTokenId, userId);
-      if (!token) {
-        throw ApiError.unprocessable('Payment method not found or does not belong to this user');
+      // Resolve the card credential: a Square card token (cnon_*) or a saved
+      // Stripe payment method. The paymentGateway abstraction dispatches to
+      // whichever gateway is currently active.
+      let sourceId: string | undefined = input.squareNonce ?? undefined;
+      let paymentMethodTokenId: string | undefined;
+      if (!sourceId && input.paymentMethodTokenId) {
+        const token = await userRepo.findPaymentMethodById(input.paymentMethodTokenId, userId);
+        if (!token) {
+          throw ApiError.unprocessable('Payment method not found or does not belong to this user');
+        }
+        sourceId = token.token; // Stripe pm_* ID
+        paymentMethodTokenId = token.id;
       }
 
-      const grandTotalCents = Math.round(Number(order.grandTotal) * 100);
-
-      const pi = await stripeService.createPaymentIntent(grandTotalCents, order.currency, {
-        paymentMethodId: token.token, // token.token holds the Stripe pm_* ID
+      const gatewayResult = await paymentGateway.createPayment({
+        amountCents: grandTotalCents,
+        currency: order.currency,
+        sourceId,
         metadata: { orderId: order.id, userId },
-        taxCalculationId: taxCalculationId || undefined, // links Stripe Tax calculation for reporting
+        taxCalculationId: taxCalculationId || undefined, // Stripe-only: links Stripe Tax calculation for reporting
       });
 
       await paymentRepo.createPayment({
         orderId: order.id,
-        paymentMethodTokenId: token.id,
-        provider: 'stripe',
+        paymentMethodTokenId,
+        provider: gatewayResult.gateway, // gatewayName: stripe | square
         amount: Number(order.grandTotal),
-        status: pi.status === 'requires_capture' ? 'authorized' : pi.status,
-        providerTxnId: pi.id,
-        authorizedAt: pi.status === 'requires_capture' ? new Date() : undefined,
+        status: gatewayResult.status,
+        providerTxnId: gatewayResult.paymentId,
+        authorizedAt: gatewayResult.status === 'authorized' || gatewayResult.status === 'captured'
+          ? new Date()
+          : undefined,
       });
     }
 

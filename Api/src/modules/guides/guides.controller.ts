@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { sendSuccess, sendCreated, sendNoContent } from '../../utils/apiResponse';
 import { ApiError } from '../../utils/apiError';
+import { AuthRequest } from '../../types';
 import * as service from './guides.service';
 import {
   CreateSectionInput, UpdateSectionInput, ReorderInput,
@@ -71,6 +72,28 @@ export async function deleteStep(req: Request, res: Response): Promise<void> {
 export async function reorderSteps(req: Request, res: Response): Promise<void> {
   await service.reorderSteps(req.params['blockId'] as string, (req.body as ReorderInput).ids);
   sendSuccess(res, null, 'Steps reordered');
+}
+
+// ─── Acknowledgments ──────────────────────────────────────────────────────────
+
+export async function ackSection(req: Request, res: Response): Promise<void> {
+  const userId = (req as AuthRequest).user!.sub;
+  sendSuccess(res, await service.ackSection(userId, req.params['id'] as string), 'Section marked as read');
+}
+
+export async function unackSection(req: Request, res: Response): Promise<void> {
+  const userId = (req as AuthRequest).user!.sub;
+  await service.unackSection(userId, req.params['id'] as string);
+  sendNoContent(res);
+}
+
+export async function getMyAcks(req: Request, res: Response): Promise<void> {
+  const userId = (req as AuthRequest).user!.sub;
+  sendSuccess(res, await service.getMyAcks(userId));
+}
+
+export async function getAckReport(_req: Request, res: Response): Promise<void> {
+  sendSuccess(res, await service.getAckReport());
 }
 
 // ─── Image upload ─────────────────────────────────────────────────────────────

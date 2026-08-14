@@ -8,6 +8,22 @@ import * as stripeService from '../../services/stripeService';
 import * as squareService from '../../services/squareService';
 import { config } from '../../config';
 import { logger } from '../../utils/logger';
+import { getActiveGateway } from '../../services/paymentGateway';
+
+// ─── Public handlers ──────────────────────────────────────────────────────────
+
+// GET /api/v1/payments/gateway-config  (no auth)
+// Returns the active gateway plus the PUBLIC Square identifiers the storefront
+// needs to render the Square Web Payments SDK. Never expose secrets here.
+export async function getGatewayConfig(_req: Request, res: Response): Promise<void> {
+  const gateway = await getActiveGateway();
+  sendSuccess(res, {
+    gateway,
+    squareApplicationId: config.square.applicationId || undefined,
+    squareLocationId: config.square.locationId || undefined,
+    squareEnvironment: config.square.environment || undefined,
+  });
+}
 
 // ─── Admin handlers ───────────────────────────────────────────────────────────
 
@@ -52,7 +68,11 @@ export async function handleSquareWebhook(req: Request, res: Response): Promise<
     return;
   }
 
-  const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+  // Route is registered with express.raw(), so body is a Buffer of the exact
+  // bytes Square signed — required for HMAC verification to match.
+  const rawBody = Buffer.isBuffer(req.body)
+    ? req.body.toString('utf8')
+    : typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
   const notificationUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
 
   const isValid = squareService.verifyWebhookSignature(rawBody, sig, signatureKey, notificationUrl);
@@ -62,9 +82,18 @@ export async function handleSquareWebhook(req: Request, res: Response): Promise<
     return;
   }
 
-  let event: { type?: string; data?: { object?: { id?: string; status?: string } } };
+  // Square event shape: { type, data: { object: { payment?: {...}, refund?: {...} } } }
+  let event: {
+    type?: string;
+    data?: {
+      object?: {
+        payment?: { id?: string; status?: string };
+        refund?: { id?: string; payment_id?: string; status?: string };
+      };
+    };
+  };
   try {
-    event = typeof req.body === 'string' ? JSON.parse(req.body) as typeof event : req.body as typeof event;
+    event = JSON.parse(rawBody) as typeof event;
   } catch {
     res.status(400).json({ error: 'Invalid JSON body' });
     return;
@@ -72,8 +101,9 @@ export async function handleSquareWebhook(req: Request, res: Response): Promise<
 
   try {
     const eventType = event?.type ?? '';
-    const paymentId = event?.data?.object?.id ?? '';
-    const paymentStatus = event?.data?.object?.status ?? '';
+    const paymentId = event?.data?.object?.payment?.id ?? '';
+    const paymentStatus = event?.data?.object?.payment?.status ?? '';
+    const refundPaymentId = event?.data?.object?.refund?.payment_id ?? '';
 
     switch (eventType) {
       case 'payment.completed':
@@ -82,8 +112,10 @@ export async function handleSquareWebhook(req: Request, res: Response): Promise<
       case 'payment.failed':
         if (paymentId) await service.handleSquarePaymentFailed(paymentId);
         break;
+      case 'refund.created':
       case 'refund.completed':
-        if (paymentId) await service.handleSquareRefundCompleted(paymentId);
+        // Refund events reference the original payment via payment_id
+        if (refundPaymentId) await service.handleSquareRefundCompleted(refundPaymentId);
         break;
       default:
         logger.debug('Unhandled Square webhook event', { type: eventType });

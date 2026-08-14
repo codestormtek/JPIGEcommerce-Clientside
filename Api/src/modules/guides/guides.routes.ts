@@ -43,5 +43,11 @@ guidesRouter.post('/blocks/:blockId/steps/reorder', validate(reorderSchema), asy
 guidesRouter.patch('/steps/:stepId', validate(updateStepSchema), asyncHandler(ctrl.updateStep));
 guidesRouter.delete('/steps/:stepId', asyncHandler(ctrl.deleteStep));
 
+// ─── Acknowledgments (mark-as-read) ───────────────────────────────────────────
+guidesRouter.get('/acks/me', asyncHandler(ctrl.getMyAcks));
+guidesRouter.get('/acks/report', asyncHandler(ctrl.getAckReport));
+guidesRouter.post('/sections/:id/ack', asyncHandler(ctrl.ackSection));
+guidesRouter.delete('/sections/:id/ack', asyncHandler(ctrl.unackSection));
+
 // ─── Image upload ─────────────────────────────────────────────────────────────
 guidesRouter.post('/upload', upload.single('file'), asyncHandler(ctrl.uploadImage));
