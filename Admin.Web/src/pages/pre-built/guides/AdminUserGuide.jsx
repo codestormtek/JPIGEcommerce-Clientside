@@ -341,6 +341,7 @@ const AdminUserGuide = () => {
   const [selectedId, setSelectedId] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [search, setSearch] = useState("");
+  const [collapsedSections, setCollapsedSections] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(null);
 
@@ -573,11 +574,22 @@ const AdminUserGuide = () => {
   });
 
   // ── TOC rendering ──
+  const toggleSectionCollapsed = (sectionId) => {
+    setCollapsedSections((current) => {
+      const next = new Set(current);
+      if (next.has(sectionId)) next.delete(sectionId);
+      else next.add(sectionId);
+      return next;
+    });
+  };
+
   const renderToc = (nodes, nested = false) => (
     <ul className="list-unstyled mb-0" style={{ paddingLeft: nested ? 16 : 0 }}>
       {nodes.filter(matchesSearch).map((node) => {
         const num = numberFor(tree, node.id); // canonical numbering even when search filters siblings
         const active = node.id === selectedId;
+        const hasChildren = (node.children || []).length > 0;
+        const isCollapsed = !searchLower && collapsedSections.has(node.id);
         return (
           <li key={node.id}>
             <div
@@ -588,6 +600,22 @@ const AdminUserGuide = () => {
               <span className={`fw-bold me-2 ${active ? "" : "text-muted"}`} style={{ minWidth: 26, fontSize: 12 }}>{num}</span>
               {node.icon && <Icon name={node.icon} className="me-1" />}
               <span className="text-truncate flex-grow-1">{node.title}</span>
+              {hasChildren && (
+                <button
+                  type="button"
+                  className={`btn btn-xs p-0 border-0 ms-1 ${active ? "text-white" : "text-muted"}`}
+                  style={{ lineHeight: 1 }}
+                  title={isCollapsed ? "Expand subsections" : "Collapse subsections"}
+                  aria-label={isCollapsed ? `Expand ${node.title} subsections` : `Collapse ${node.title} subsections`}
+                  aria-expanded={!isCollapsed}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSectionCollapsed(node.id);
+                  }}
+                >
+                  <Icon name={isCollapsed ? "chevron-right" : "chevron-down"} />
+                </button>
+              )}
               {node.isSafetyCritical && <Icon name="shield-check" title="Safety-critical (must read)" className={`ms-1 ${active ? "text-white" : "text-danger"}`} style={{ fontSize: 12 }} />}
               {myAcks[node.id] && <Icon name="check-circle-fill" title="You've read this section" className={`ms-1 ${active ? "text-white" : "text-success"}`} style={{ fontSize: 12 }} />}
               {!node.isPublished && <Badge color="light" className="ms-1 text-dark" pill style={{ fontSize: 9 }}>draft</Badge>}
@@ -598,8 +626,8 @@ const AdminUserGuide = () => {
                 </span>
               )}
             </div>
-            {(node.children || []).length > 0 && renderToc(node.children, true)}
-            {editMode && (
+            {hasChildren && !isCollapsed && renderToc(node.children, true)}
+            {editMode && !isCollapsed && (
               <div style={{ paddingLeft: 28 }}>
                 <button className="btn btn-xs border-0 text-primary p-0 mb-1" style={{ fontSize: 11.5 }} onClick={() => openCreateSection(node.id)}>
                   <Icon name="plus-sm" />add subsection
