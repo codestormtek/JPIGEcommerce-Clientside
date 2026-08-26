@@ -279,9 +279,14 @@ const PRINT_CSS = `
   body * { visibility: hidden !important; }
   #guide-print-root, #guide-print-root * { visibility: visible !important; }
   #guide-print-root { display: block !important; position: absolute; top: 0; left: 0; width: 100%; padding: 0 8mm; background: #fff; }
-  #guide-print-root .gp-section { break-inside: avoid-page; }
-  #guide-print-root .gp-top-section { break-before: page; }
-  #guide-print-root .gp-block, #guide-print-root li { break-inside: avoid; }
+  #guide-print-root .gp-cover { break-after: page; }
+  #guide-print-root .gp-toc { break-after: page; }
+  #guide-print-root .gp-section, #guide-print-root .gp-block { break-inside: auto; }
+  #guide-print-root h2, #guide-print-root h3, #guide-print-root h4, #guide-print-root h5, #guide-print-root h6 {
+    break-after: avoid-page;
+  }
+  #guide-print-root p { orphans: 3; widows: 3; }
+  #guide-print-root li, #guide-print-root img, #guide-print-root figure { break-inside: avoid; }
   #guide-print-root img { max-height: 300px !important; }
 }
 @media screen { #guide-print-root { display: none; } }
@@ -293,7 +298,7 @@ const PrintManual = ({ tree }) => {
       const num = numberFor(tree, s.id);
       const Tag = depth === 0 ? "h2" : depth === 1 ? "h3" : "h4";
       return (
-        <div key={s.id} className={`gp-section ${depth === 0 ? "gp-top-section" : ""}`} style={{ marginBottom: 24 }}>
+        <div key={s.id} className="gp-section" style={{ marginBottom: 24 }}>
           <Tag style={{ borderBottom: depth === 0 ? "2px solid #333" : "none", paddingBottom: depth === 0 ? 6 : 0 }}>
             {num}. {s.title}
           </Tag>
@@ -311,13 +316,13 @@ const PrintManual = ({ tree }) => {
     <div id="guide-print-root">
       <style>{PRINT_CSS}</style>
       {/* Cover */}
-      <div style={{ textAlign: "center", padding: "120px 0 40px" }}>
+      <div className="gp-cover" style={{ textAlign: "center", padding: "120px 0 40px" }}>
         <h1 style={{ fontSize: 34 }}>BBQ Rig User Guide</h1>
         <p className="text-muted">Operating manual for equipment and features</p>
         <p className="text-muted small">Printed {new Date().toLocaleDateString()}</p>
       </div>
       {/* Table of contents */}
-      <div className="gp-top-section">
+      <div className="gp-toc">
         <h2 style={{ borderBottom: "2px solid #333", paddingBottom: 6 }}>Table of Contents</h2>
         <ul style={{ listStyle: "none", paddingLeft: 0 }}>
           {flat.map((n) => (
