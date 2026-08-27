@@ -1,0 +1,4628 @@
+%PDF-1.3
+%ºß¬à
+3 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 1641
+>>
+stream
+0.200025 w
+0 G
+0.14 0.32 0.46 rg
+0. 792. 612. -210. re
+f
+0.07 0.61 0.54 rg
+0. 582. 612. -10. re
+f
+BT
+/F2 30 Tf
+34.5 TL
+1. g
+54. 700. Td
+(JIGGLING PIG) Tj
+ET
+BT
+/F2 23 Tf
+26.4499999999999993 TL
+1. g
+54. 659. Td
+(Kiosk & Square Terminal) Tj
+ET
+BT
+/F2 23 Tf
+26.4499999999999993 TL
+1. g
+54. 628. Td
+(Payment Processing User Guide) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.196 0.255 rg
+54. 515. Td
+(Fully structured edition with numbered subsections and continuous page flow) Tj
+ET
+BT
+/F1 11 Tf
+12.6499999999999986 TL
+0.353 0.412 0.471 rg
+54. 477. Td
+(Prepared for Jiggling Pig Operations) Tj
+ET
+BT
+/F1 11 Tf
+12.6499999999999986 TL
+0.353 0.412 0.471 rg
+54. 457. Td
+(Revised complete edition: August 2026) Tj
+ET
+0.96 0.97 0.98 rg
+62. 402. m
+550. 402. l
+554.4182779986463174 402. 558. 398.4182779986463743 558. 394. c
+558. 275. l
+558. 270.5817220013536826 553.5817220013536826 267. 550. 267. c
+62. 267. l
+57.5817220013536542 267. 54. 271.4182779986463174 54. 275. c
+54. 394. l
+54. 398.4182779986463743 58.4182779986463458 402. 62. 402. c
+h
+f
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0.141 0.322 0.459 rg
+74. 372. Td
+(IMPORTANT) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+74. 346. Td
+(A payment is not complete until the kiosk displays the confirmation and order number. If a payment result) Tj
+T* (is uncertain, check the Admin Panel and Square records before charging the customer again.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+553.6000000000000227 23. Td
+(1) Tj
+ET
+endstream
+endobj
+5 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 6 0 R
+>>
+endobj
+6 0 obj
+<<
+/Length 3309
+>>
+stream
+0.200025 w
+0.84 G
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 734. Td
+(Table of Contents) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 726. m
+558. 726. l
+S
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 708. Td
+(1. System Overview) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 688. Td
+(2. Important Payment Rules) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 668. Td
+(3. Daily Opening Check) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 648. Td
+(4. Starting an Order) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 628. Td
+(5. Adding and Editing Cart Items) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 608. Td
+(6. Combo Meals and Side Selection) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 588. Td
+(7. Customer Information) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 568. Td
+(8. Choosing a Payment Method) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 548. Td
+(9. Paying on the Square Terminal) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 528. Td
+(10. On-Screen Card Payment) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 508. Td
+(11. Successful Payment) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 488. Td
+(12. Canceling a Payment) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 468. Td
+(13. Timeout and Decline) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 448. Td
+(14. Reader Connection Failure) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 428. Td
+(15. Uncertain Payment: Do Not Double-Charge) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 408. Td
+(16. Payment Status Reference) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 388. Td
+(17. Kiosk Activation) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 368. Td
+(18. Pairing a Square Terminal) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 348. Td
+(19. Refunds) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 328. Td
+(20. Kitchen Queue Handoff) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 308. Td
+(21. Product and Inventory Problems) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 288. Td
+(22. Square Terminal Troubleshooting) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 268. Td
+(23. Kiosk Troubleshooting) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 248. Td
+(24. Safe Restart Procedure) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 228. Td
+(25. End-of-Day Procedure) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 208. Td
+(26. Payment Incident Record) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 188. Td
+(27. Current Limitations) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 168. Td
+(28. Quick Payment Checklist) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 148. Td
+(29. Detailed Opening Test Transaction) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 128. Td
+(30. Detailed Tap, Chip, and Swipe Instructions) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 108. Td
+(31. Detailed Correction and Retry Procedure) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+54. 88. Td
+(32. Detailed Refund Procedure) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+553.6000000000000227 23. Td
+(2) Tj
+ET
+endstream
+endobj
+7 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 8 0 R
+>>
+endobj
+8 0 obj
+<<
+/Length 1294
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.141 0.196 0.255 rg
+54. 734. Td
+(33. Detailed Kiosk Activation and Security) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.141 0.196 0.255 rg
+54. 714. Td
+(34. Detailed Square Terminal Pairing) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.141 0.196 0.255 rg
+54. 694. Td
+(35. End-of-Day Reconciliation Checklist) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.141 0.196 0.255 rg
+54. 674. Td
+(36. Payment Incident Report Template) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.141 0.196 0.255 rg
+54. 654. Td
+(37. Full Pre-Payment Checklist) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.141 0.196 0.255 rg
+54. 634. Td
+(38. Full Post-Payment Checklist) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.141 0.196 0.255 rg
+54. 614. Td
+(39. Quick Troubleshooting Decision Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.141 0.196 0.255 rg
+54. 594. Td
+(40. Recommended User Guide Screenshots) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.141 0.196 0.255 rg
+54. 574. Td
+(41. Complete Limitations and Verification Notice) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+553.6000000000000227 23. Td
+(3) Tj
+ET
+endstream
+endobj
+9 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 10 0 R
+>>
+endobj
+10 0 obj
+<<
+/Length 5092
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 734. Td
+(1. System Overview) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 726. m
+558. 726. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 708. Td
+(1.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 708. Td
+(The Jiggling Pig payment system combines a customer touchscreen kiosk, a Square) Tj
+T* (Terminal card reader, and the Jiggling Pig Admin Panel.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 674. Td
+(1.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 674. Td
+(The kiosk lets customers build an order, select sides, review prices, enter a pickup name and) Tj
+T* (optional phone number, and choose a payment method.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 640. Td
+(1.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 640. Td
+(The Square Terminal accepts tap, chip, and swipe payments. The kiosk sends the total to the) Tj
+T* (Terminal and waits for Square to report the result.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 606. Td
+(1.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 606. Td
+(Authorized staff use the Admin Panel to manage kiosk devices, products, inventory, orders,) Tj
+T* (payments, refunds, and the Kitchen Queue.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 564. Td
+(2. Important Payment Rules) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 556. m
+558. 556. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 538. Td
+(2.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 538. Td
+(Never unplug, refresh, close, or restart either device while a payment is processing.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 517. Td
+(2.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 517. Td
+(The total shown on the kiosk must match the total shown on the Square Terminal.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 496. Td
+(2.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 496. Td
+(A payment is not considered finished until the kiosk displays the confirmation and order) Tj
+T* (number.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 462. Td
+(2.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 462. Td
+(If a result is uncertain, check the order and Square payment records before charging the) Tj
+T* (customer again.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 428. Td
+(2.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 428. Td
+(Never ask for or record a complete card number, security code, or PIN.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 407. Td
+(2.6) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 407. Td
+(The kiosk does not support cash, checks, split tender, partial payments, or customer-initiated) Tj
+T* (refunds.) Tj
+ET
+1. 0.97 0.9 rg
+0.92 0.67 0.18 RG
+59. 368. m
+553. 368. l
+555.7614237491540052 368. 558. 365.7614237491539484 558. 363. c
+558. 303. l
+558. 300.2385762508460516 555.2385762508459948 298. 553. 298. c
+59. 298. l
+56.2385762508460303 298. 54. 300.7614237491539484 54. 303. c
+54. 363. l
+54. 365.7614237491539484 56.7614237491539697 368. 59. 368. c
+h
+B
+BT
+/F2 10 Tf
+11.5 TL
+0.569 0.353 0.059 rg
+68. 348. Td
+(DUPLICATE-CHARGE WARNING) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.569 0.353 0.059 rg
+68. 328. Td
+(Never run the customer's card again until the first attempt has been checked and confirmed as failed or) Tj
+T* (canceled.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 280. Td
+(3. Daily Opening Check) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 272. m
+558. 272. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 254. Td
+(3.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 254. Td
+(Inspect the kiosk screen, stand, power cable, and network connection. Clean the touchscreen) Tj
+T* (with an approved product.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 220. Td
+(3.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 220. Td
+(Inspect the Square Terminal, charging cable, card slot, battery level, and network indicator.) Tj
+T* (Confirm it is not stuck on a sign-in or setup screen.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 186. Td
+(3.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 186. Td
+(The kiosk should show 'Hungry? Order Here.' and 'Tap to Start.' If it shows 'Kiosk Setup,') Tj
+T* (activation is required.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 152. Td
+(3.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 152. Td
+(Before opening, create a small test order, send it to the Terminal, verify the totals match,) Tj
+T* (complete the approved test method, and confirm the order reaches the Admin Panel and) Tj
+T* (Kitchen Queue.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+553.6000000000000227 23. Td
+(4) Tj
+ET
+endstream
+endobj
+11 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 12 0 R
+>>
+endobj
+12 0 obj
+<<
+/Length 5203
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 726. Td
+(4. Starting an Order) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 718. m
+558. 718. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 700. Td
+(4.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 700. Td
+(Tap 'Tap to Start' on the attract screen.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 679. Td
+(4.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 679. Td
+(Choose a category such as Jiggling Food Menu, Sides, or Jiggling Pig Products. Food may) Tj
+T* (be grouped under Combo Items, Sides, Other Items, and Drinks.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 645. Td
+(4.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 645. Td
+(Only products that are in stock and enabled for kiosk sales should appear.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 624. Td
+(4.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 624. Td
+(Use 'Start Over' only when the entire current order should be discarded. It clears the cart,) Tj
+T* (side choices, customer details, and active order information.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 582. Td
+(5. Adding and Editing Cart Items) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 574. m
+558. 574. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 556. Td
+(5.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 556. Td
+(Tap a product once to add one unit. Tap it again to increase the quantity of the same) Tj
+T* (selection.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 522. Td
+(5.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 522. Td
+(Under 'Your Order,' use + to increase quantity and - to decrease it. Decreasing to zero) Tj
+T* (removes the line.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 488. Td
+(5.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 488. Td
+(Use 'Remove' to delete an unwanted product. Confirm the subtotal changes after every) Tj
+T* (correction.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 454. Td
+(5.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 454. Td
+(If a combo has the wrong sides, remove the combo and add it again with the correct) Tj
+T* (selections.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 420. Td
+(5.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 420. Td
+(Before checkout, verify every product, quantity, side, duplicate-side charge, and subtotal.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 391. Td
+(6. Combo Meals and Side Selection) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 383. m
+558. 383. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 365. Td
+(6.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 365. Td
+(A combo opens a window labeled 'Choose [number] sides for [product].' The counter shows) Tj
+T* (how many required sides have been chosen.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 331. Td
+(6.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 331. Td
+(Select the required number of sides and press 'Add to Order.' Use 'Clear' to restart the) Tj
+T* (choices or 'Cancel' to leave without adding the combo.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 297. Td
+(6.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 297. Td
+(Selecting some sides more than once may display 'Extra [side]?' with 'No, Go Back' and 'Yes,) Tj
+T* (Add It \(+$X\).' Explain and confirm the upcharge before accepting it.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 255. Td
+(7. Customer Information) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 247. m
+558. 247. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 229. Td
+(7.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 229. Td
+(Press 'Checkout' after the cart is correct.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 208. Td
+(7.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 208. Td
+(On 'Who's this order for?', enter the required pickup name. Review the spelling because staff) Tj
+T* (will use it when calling the order.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 174. Td
+(7.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 174. Td
+(The phone number is optional. Enter it only with the customer's permission and verify every) Tj
+T* (digit.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 140. Td
+(7.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 140. Td
+(Do not promise an order-ready text until management has confirmed that texting is active) Tj
+T* (and tested.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 106. Td
+(7.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 106. Td
+(Use 'Back' to correct the cart. Use 'Continue to Payment' when all information is correct.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+553.6000000000000227 23. Td
+(5) Tj
+ET
+endstream
+endobj
+13 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 14 0 R
+>>
+endobj
+14 0 obj
+<<
+/Length 5223
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 726. Td
+(8. Choosing a Payment Method) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 718. m
+558. 718. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 700. Td
+(8.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 700. Td
+(The Payment screen shows the customer name, total, and available methods.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 679. Td
+(8.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 679. Td
+('Pay on the card reader' instructs the customer to tap, insert, or swipe on the reader. If it says) Tj
+T* ('Card reader not connected yet,' do not use it.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 645. Td
+(8.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 645. Td
+('Enter card on screen' loads a secure Square form. If it says 'Not available,' the required) Tj
+T* (Square configuration is incomplete.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 611. Td
+(8.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 611. Td
+(Use 'Back' if the order or customer information needs correction.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 582. Td
+(9. Paying on the Square Terminal) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 574. m
+558. 574. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 556. Td
+(9.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 556. Td
+(Confirm the kiosk total with the customer, then select 'Pay on the card reader' once.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 535. Td
+(9.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 535. Td
+(Wait for 'Follow the card reader.' Confirm the Square Terminal wakes and displays the) Tj
+T* (identical amount.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 501. Td
+(9.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 501. Td
+(For contactless payment, hold the card, phone, or watch near the contactless symbol until) Tj
+T* (the Terminal responds.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 467. Td
+(9.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 467. Td
+(For chip payment, insert the chip end first and leave the card in place until the Terminal says) Tj
+T* (to remove it.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 433. Td
+(9.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 433. Td
+(Swipe only when appropriate and allowed by the Terminal. Follow every prompt shown on) Tj
+T* (the Terminal.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 399. Td
+(9.6) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 399. Td
+(Wait for both the Terminal and kiosk. The kiosk checks Square every few seconds, so a short) Tj
+T* (delay is normal.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 357. Td
+(10. On-Screen Card Payment) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 349. m
+558. 349. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 331. Td
+(10.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 331. Td
+(Select 'Enter card on screen' and wait for the secure form. Do not refresh while it says) Tj
+T* ('Loading secure card form...'.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 297. Td
+(10.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 297. Td
+(The customer should enter their own card number, expiration date, security code, and postal) Tj
+T* (code when requested.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 263. Td
+(10.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 263. Td
+(Review the total and press 'Pay $X' once. Wait while the button says 'Processing...'.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 242. Td
+(10.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 242. Td
+(If the form will not load, press Back, check the internet connection, try once more, or use the) Tj
+T* (Square Terminal.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 208. Td
+(10.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 208. Td
+(This option requires the Square application ID, location ID, access configuration, correct) Tj
+T* (environment, and Square as the active payment gateway.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 166. Td
+(11. Successful Payment) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 158. m
+558. 158. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 140. Td
+(11.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 140. Td
+(A successful payment displays 'Thanks, [name]!', an order number, and pickup instructions.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 119. Td
+(11.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 119. Td
+(Confirm the order number is visible, the payment is captured or completed, and the order) Tj
+T* (appears in the Kitchen Queue.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+553.6000000000000227 23. Td
+(6) Tj
+ET
+endstream
+endobj
+15 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 16 0 R
+>>
+endobj
+16 0 obj
+<<
+/Length 5371
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 734. Td
+(11.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 734. Td
+(Tell the customer the pickup name or number. Press 'Done,' or allow the confirmation to) Tj
+T* (return to the start screen automatically after about 20 seconds.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 692. Td
+(12. Canceling a Payment) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 684. m
+558. 684. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 666. Td
+(12.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 666. Td
+(Cancel if the customer changes their mind, the amount is wrong, the wrong method was) Tj
+T* (selected, or the Terminal cannot complete the prompts.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 632. Td
+(12.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 632. Td
+(Press 'Cancel Payment,' stop interacting with the Terminal, and wait for the kiosk to return to) Tj
+T* (payment choices.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 598. Td
+(12.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 598. Td
+(If canceled on the reader, the kiosk should say 'Payment was canceled on the reader. Please) Tj
+T* (try again.') Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 564. Td
+(12.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 564. Td
+(Do not begin another attempt until the first one is clearly canceled.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 535. Td
+(13. Timeout and Decline) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 527. m
+558. 527. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 509. Td
+(13.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 509. Td
+(A Terminal attempt may time out after about three minutes and display 'The card reader timed) Tj
+T* (out. Please try again.' Verify the first attempt did not complete before retrying.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 475. Td
+(13.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 475. Td
+(For a decline, say: 'The payment was not approved. You may try again or use another card.') Tj
+T* (Do not guess why the bank declined it.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 441. Td
+(13.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 441. Td
+(Try a declined card only once more when appropriate. If declined again, request another card.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 412. Td
+(14. Reader Connection Failure) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 404. m
+558. 404. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 386. Td
+(14.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 386. Td
+(If the kiosk says 'Could not reach the card reader,' confirm the Terminal has power, internet,) Tj
+T* (the correct pairing, and no other active payment.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 352. Td
+(14.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 352. Td
+(Wait briefly and retry once. If the on-screen card option is available, use it instead.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 331. Td
+(14.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 331. Td
+(If both methods fail, stop kiosk payments and notify a manager.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 302. Td
+(15. Uncertain Payment: Do Not Double-Charge) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 294. m
+558. 294. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 276. Td
+(15.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 276. Td
+(Treat the payment as uncertain if the Terminal says approved but the kiosk waits, the internet) Tj
+T* (drops, the browser refreshes, or the customer receives a bank notice without kiosk) Tj
+T* (confirmation.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 228.5 Td
+(15.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 228.5 Td
+(Record the customer name, amount, time, and any order number. Check the kiosk, Kitchen) Tj
+T* (Queue, Admin Panel order, stored payment status, and Square transaction activity.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 194.5 Td
+(15.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 194.5 Td
+(Compare the amount, time, status, and order reference. If completed, fulfill the order and do) Tj
+T* (not charge again. If canceled or failed, retry. If pending, ask a manager to investigate.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 152.5 Td
+(16. Payment Status Reference) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 144.5 m
+558. 144.5 l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 126.5 Td
+(16.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 126.5 Td
+(Pending: started but not final; wait and verify.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 105.5 Td
+(16.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 105.5 Td
+(Authorized: approved but may still require completion; do not duplicate the charge.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+553.6000000000000227 23. Td
+(7) Tj
+ET
+endstream
+endobj
+17 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 18 0 R
+>>
+endobj
+18 0 obj
+<<
+/Length 5171
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 734. Td
+(16.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 734. Td
+(Captured or Completed: payment succeeded; fulfill the order.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 713. Td
+(16.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 713. Td
+(Canceled: stopped before completion; customer may retry.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 692. Td
+(16.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 692. Td
+(Failed: did not complete; verify, then retry or use another method.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 671. Td
+(16.6) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 671. Td
+(Refunded: money was returned to the original payment method.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 642. Td
+(17. Kiosk Activation) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 634. m
+558. 634. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 616. Td
+(17.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 616. Td
+(If 'Kiosk Setup' appears, obtain the approved setup link or token from the Admin Panel. The) Tj
+T* (token normally begins with ksk_.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 582. Td
+(17.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 582. Td
+(Enter the complete token or link, press 'Activate Kiosk,' and wait while it says 'Connecting...'.) Tj
+T* (Confirm the attract screen appears.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 548. Td
+(17.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 548. Td
+(Treat the token like a password: never publish, photograph, or include it in a guide. Revoke) Tj
+T* (the kiosk if the token may have been exposed.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 506. Td
+(18. Pairing a Square Terminal) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 498. m
+558. 498. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 480. Td
+(18.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 480. Td
+(In the Admin Panel, open kiosk device management, select the correct kiosk, and start) Tj
+T* (Terminal pairing.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 446. Td
+(18.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 446. Td
+(On the Square Terminal, open Settings, sign out if necessary, and enter the generated device) Tj
+T* (code.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 412. Td
+(18.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 412. Td
+(Wait for pairing confirmation, then run a test order to confirm the correct Terminal receives) Tj
+T* (the correct amount.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 378. Td
+(18.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 378. Td
+(Do not open the kiosk for customers until pairing and a test transaction succeed.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 349. Td
+(19. Refunds) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 341. m
+558. 341. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 323. Td
+(19.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 323. Td
+(Customers cannot refund from the kiosk. An authorized employee must locate the correct) Tj
+T* (order or payment in the Admin Panel.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 289. Td
+(19.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 289. Td
+(Verify the order number, date, customer, original amount, payment status, gateway, reason,) Tj
+T* (and any required approval.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 255. Td
+(19.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 255. Td
+(Submit the refund, wait for the result, and verify the record says Refunded. Refresh and) Tj
+T* (check Square before retrying a refund.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 221. Td
+(19.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 221. Td
+(Tell the customer the refund was submitted to the original method and that their bank) Tj
+T* (determines when it appears.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 179. Td
+(20. Kitchen Queue Handoff) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 171. m
+558. 171. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 153. Td
+(20.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 153. Td
+(After payment, confirm the order appears in the Kitchen Queue with the correct name,) Tj
+T* (number, products, quantities, and sides.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 119. Td
+(20.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 119. Td
+(If payment succeeded but the order is missing, refresh the queue and search the Admin) Tj
+T* (Panel. Do not charge again; notify a manager.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+553.6000000000000227 23. Td
+(8) Tj
+ET
+endstream
+endobj
+19 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 20 0 R
+>>
+endobj
+20 0 obj
+<<
+/Length 4979
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 734. Td
+(20.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 734. Td
+(Call the pickup name or order number and use the configured notification process when the) Tj
+T* (food is ready.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 692. Td
+(21. Product and Inventory Problems) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 684. m
+558. 684. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 666. Td
+(21.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 666. Td
+(A missing item may be deleted, out of stock, hidden from the kiosk, or assigned to the wrong) Tj
+T* (category.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 632. Td
+(21.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 632. Td
+(Verify stock is above zero, kiosk visibility is enabled, and the category is correct.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 611. Td
+(21.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 611. Td
+(Menu changes can take several minutes to refresh. Avoid changing prices during an active) Tj
+T* (checkout.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 569. Td
+(22. Square Terminal Troubleshooting) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 561. m
+558. 561. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 543. Td
+(22.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 543. Td
+(Blank screen: check power and charging; remove the device from service if it will not wake.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 522. Td
+(22.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 522. Td
+(Offline: restore the approved network connection before retrying.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 501. Td
+(22.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 501. Td
+(Wrong amount: cancel immediately, correct the cart, and restart payment.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 480. Td
+(22.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 480. Td
+(No payment received: check pairing, network, power, and whether another payment is active.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 459. Td
+(22.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 459. Td
+(Card will not read: try contactless, then chip, then another card. Never force a card into the) Tj
+T* (slot.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 417. Td
+(23. Kiosk Troubleshooting) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 409. m
+558. 409. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 391. Td
+(23.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 391. Td
+(Unresponsive screen: clean and dry it, check power, and restart only when no payment is) Tj
+T* (active.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 357. Td
+(23.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 357. Td
+(Setup screen: reactivate with an authorized token and run a test order.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 336. Td
+(23.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 336. Td
+(Secure card form missing: check internet, return to payment choices, retry once, then use) Tj
+T* (the Terminal.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 302. Td
+(23.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 302. Td
+(Empty menu: check internet, stock, visibility, and categories. Refresh only when no payment) Tj
+T* (is active.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 268. Td
+(23.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 268. Td
+(For any 'Payment failed' message, verify Square and order records before trying again.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 239. Td
+(24. Safe Restart Procedure) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 231. m
+558. 231. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 213. Td
+(24.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 213. Td
+(Before restarting, confirm no customer is entering payment and no payment is active or) Tj
+T* (pending.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 179. Td
+(24.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 179. Td
+(Record any uncertain order number, time, and amount.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 158. Td
+(24.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 158. Td
+(Restart the kiosk session first. Restart the Terminal only if necessary. Wait for reconnection,) Tj
+T* (verify activation and pairing, then run a test transaction.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+553.6000000000000227 23. Td
+(9) Tj
+ET
+endstream
+endobj
+21 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 22 0 R
+>>
+endobj
+22 0 obj
+<<
+/Length 4884
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 726. Td
+(25. End-of-Day Procedure) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 718. m
+558. 718. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 700. Td
+(25.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 700. Td
+(Review all kiosk orders and look for pending, failed, canceled, duplicate, and refunded) Tj
+T* (payments.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 666. Td
+(25.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 666. Td
+(Compare paid kiosk orders with Square completed payments and refund totals. Investigate) Tj
+T* (every unclear status.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 632. Td
+(25.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 632. Td
+(Return the kiosk to the attract screen, clean both devices, connect the Terminal to power,) Tj
+T* (hide admin pages, and report damage.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 590. Td
+(26. Payment Incident Record) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 582. m
+558. 582. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 564. Td
+(26.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 564. Td
+(Record date/time, kiosk location, customer first name, order number, amount, attempted) Tj
+T* (method, kiosk message, Terminal message, status, Kitchen Queue result, employee,) Tj
+T* (manager, and resolution.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 516.5 Td
+(26.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 516.5 Td
+(Never record a complete card number, security code, PIN, or other sensitive card) Tj
+T* (information.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 474.5 Td
+(27. Current Limitations) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 466.5 m
+558. 466.5 l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 448.5 Td
+(27.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 448.5 Td
+(No cash, checks, split tender, partial payments, kiosk coupons, or customer-initiated) Tj
+T* (refunds.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 414.5 Td
+(27.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 414.5 Td
+(No customer-facing printed, emailed, or texted receipt option is currently exposed in the) Tj
+T* (kiosk.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 380.5 Td
+(27.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 380.5 Td
+(A phone number is collected, but ready-text behavior must be separately verified before it is) Tj
+T* (promised.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 346.5 Td
+(27.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 346.5 Td
+(Menu and stock updates may take several minutes to appear.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 325.5 Td
+(27.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 325.5 Td
+(A real end-to-end Square test payment must be completed before production use is) Tj
+T* (considered fully verified.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 283.5 Td
+(28. Quick Payment Checklist) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 275.5 m
+558. 275.5 l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 257.5 Td
+(28.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 257.5 Td
+(Before: verify items, quantities, sides, upcharges, name, total, and Terminal connection.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 236.5 Td
+(28.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 236.5 Td
+(During: match the Terminal amount to the kiosk, follow prompts, leave chip cards inserted,) Tj
+T* (and never press Pay repeatedly.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 202.5 Td
+(28.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 202.5 Td
+(After: confirm the order number, Kitchen Queue entry, completed payment status, pickup) Tj
+T* (information, and return to the start screen.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 160.5 Td
+(29. Detailed Opening Test Transaction) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 152.5 m
+558. 152.5 l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 134.5 Td
+(29.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 134.5 Td
+(Wake the kiosk and verify it displays Hungry? Order Here and Tap to Start.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 113.5 Td
+(29.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 113.5 Td
+(Confirm the Square Terminal is powered, charged, online, and beside the correct kiosk.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+549.2000000000000455 23. Td
+(10) Tj
+ET
+endstream
+endobj
+23 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 24 0 R
+>>
+endobj
+24 0 obj
+<<
+/Length 5356
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 734. Td
+(29.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 734. Td
+(Tap to start, add an inexpensive test item, verify its price, and press Checkout.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 713. Td
+(29.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 713. Td
+(Enter a clearly identified test pickup name and continue to payment.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 692. Td
+(29.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 692. Td
+(Confirm Pay on the card reader is available. If it says Card reader not connected yet, stop and) Tj
+T* (troubleshoot pairing.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 658. Td
+(29.6) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 658. Td
+(Select the reader once. Compare the amount on the kiosk with the amount on the Terminal) Tj
+T* (before presenting a card.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 624. Td
+(29.7) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 624. Td
+(Complete the approved test method and wait for kiosk confirmation and an order number.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 603. Td
+(29.8) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 603. Td
+(Confirm the order appears in the Admin Panel and Kitchen Queue, then refund or document) Tj
+T* (it according to company policy.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 561. Td
+(30. Detailed Tap, Chip, and Swipe Instructions) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 553. m
+558. 553. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 535. Td
+(30.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 535. Td
+(Contactless card: hold the card flat near the contactless symbol until the Terminal responds.) Tj
+T* (Do not tap repeatedly or remove it too quickly.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 501. Td
+(30.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 501. Td
+(Phone or watch: unlock the device, open its wallet if required, authenticate, then hold it near) Tj
+T* (the contactless symbol until confirmation.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 467. Td
+(30.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 467. Td
+(Chip card: insert the chip end first, leave the card inserted, follow every prompt, and remove) Tj
+T* (it only when instructed.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 433. Td
+(30.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 433. Td
+(Magnetic stripe: use only when permitted. Position the stripe correctly and swipe smoothly) Tj
+T* (once. Chip and contactless are preferred.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 399. Td
+(30.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 399. Td
+(If a card cannot be read, try contactless, then chip, then another card. Never force a card into) Tj
+T* (the slot or copy its numbers.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 357. Td
+(31. Detailed Correction and Retry Procedure) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 349. m
+558. 349. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 331. Td
+(31.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 331. Td
+(Wrong item or side before payment: press Back, correct the cart, and verify the new subtotal.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 310. Td
+(31.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 310. Td
+(Wrong amount sent to the Terminal: do not let the customer pay. Press Cancel Payment,) Tj
+T* (confirm cancellation on both devices, correct the order, and start again.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 276. Td
+(31.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 276. Td
+(Canceled payment: wait until the kiosk returns to payment choices before retrying.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 255. Td
+(31.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 255. Td
+(Declined payment: state only that it was not approved. Retry once when appropriate, then) Tj
+T* (request another card.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 221. Td
+(31.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 221. Td
+(Timeout: check the Terminal, Admin Panel, order record, and Square activity before retrying.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 200. Td
+(31.6) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 200. Td
+(Terminal approved but kiosk did not: treat it as uncertain. Never recharge until records prove) Tj
+T* (the attempt failed or was canceled.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 166. Td
+(31.7) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 166. Td
+(Browser or network failure: record the time, amount, pickup name, and order number, then) Tj
+T* (verify the payment before acting.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+549.2000000000000455 23. Td
+(11) Tj
+ET
+endstream
+endobj
+25 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 26 0 R
+>>
+endobj
+26 0 obj
+<<
+/Length 5655
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 726. Td
+(32. Detailed Refund Procedure) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 718. m
+558. 718. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 700. Td
+(32.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 700. Td
+(Obtain the order number, customer name, date, original amount, and refund reason.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 679. Td
+(32.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 679. Td
+(Sign in with an authorized account and locate the exact order or payment.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 658. Td
+(32.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 658. Td
+(Verify it completed through Square and is eligible for refund. Compare order and payment) Tj
+T* (amounts and obtain approval when required.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 624. Td
+(32.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 624. Td
+(Select the refund action, review the amount carefully, and submit once.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 603. Td
+(32.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 603. Td
+(Wait for the result and verify the record changes to Refunded.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 582. Td
+(32.6) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 582. Td
+(If the screen is slow or errors, refresh and check Square before submitting another refund.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 561. Td
+(32.7) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 561. Td
+(Tell the customer the refund was submitted to the original method and their bank determines) Tj
+T* (when it appears.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 519. Td
+(33. Detailed Kiosk Activation and Security) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 511. m
+558. 511. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 493. Td
+(33.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 493. Td
+(Activation is needed after initial installation, token revocation, cleared browser storage, or an) Tj
+T* (invalid saved credential.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 459. Td
+(33.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 459. Td
+(Use the approved setup link or token beginning with ksk_. Enter it completely and press) Tj
+T* (Activate Kiosk once.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 425. Td
+(33.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 425. Td
+(Wait while it says Connecting. Successful activation returns to the attract screen.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 404. Td
+(33.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 404. Td
+(The token is a credential. Never publish, photograph, place it in a manual, or send it) Tj
+T* (insecurely.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 370. Td
+(33.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 370. Td
+(If exposed, revoke the kiosk device in the Admin Panel and issue a new activation.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 341. Td
+(34. Detailed Square Terminal Pairing) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 333. m
+558. 333. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 315. Td
+(34.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 315. Td
+(Verify the Terminal has power, internet, and the correct Square account and environment.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 294. Td
+(34.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 294. Td
+(In Admin kiosk device management, choose the kiosk physically beside that Terminal and) Tj
+T* (start pairing.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 260. Td
+(34.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 260. Td
+(On the Terminal, open Settings, sign out if necessary, and enter the generated device code.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 239. Td
+(34.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 239. Td
+(Wait for Square and the Admin Panel to confirm pairing.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 218. Td
+(34.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 218. Td
+(Create a test order and confirm only the intended Terminal receives the correct amount.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 197. Td
+(34.6) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 197. Td
+(Do not open the kiosk for customer payments until the pairing test succeeds.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 168. Td
+(35. End-of-Day Reconciliation Checklist) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 160. m
+558. 160. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 142. Td
+(35.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 142. Td
+(Review all kiosk orders and identify pending, failed, canceled, duplicate, and refunded) Tj
+T* (payments.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 108. Td
+(35.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 108. Td
+(Compare completed kiosk orders with completed Square transactions and refund totals.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+549.2000000000000455 23. Td
+(12) Tj
+ET
+endstream
+endobj
+27 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 28 0 R
+>>
+endobj
+28 0 obj
+<<
+/Length 5609
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 734. Td
+(35.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 734. Td
+(Investigate every completed payment without an order and every order without a completed) Tj
+T* (payment.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 700. Td
+(35.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 700. Td
+(Document unresolved incidents with date, time, kiosk, customer first name, order number,) Tj
+T* (amount, messages, status, employee, and resolution.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 666. Td
+(35.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 666. Td
+(Return to the attract screen, hide admin pages, clean both devices, charge the Terminal, and) Tj
+T* (report damage.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 624. Td
+(36. Payment Incident Report Template) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 616. m
+558. 616. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 598. Td
+(36.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 598. Td
+(Record the date and time, kiosk location, customer first name, order number, expected) Tj
+T* (amount, and payment method.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 564. Td
+(36.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 564. Td
+(Record the exact kiosk and Square Terminal messages.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 543. Td
+(36.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 543. Td
+(Record whether Square shows pending, authorized, completed, canceled, failed, or refunded.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 522. Td
+(36.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 522. Td
+(Record whether the order reached the Kitchen Queue, whether food was provided, who) Tj
+T* (handled it, who was notified, and the resolution.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 488. Td
+(36.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 488. Td
+(Never record a full card number, expiration date, security code, PIN, banking credential, or) Tj
+T* (card photograph.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 446. Td
+(37. Full Pre-Payment Checklist) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 438. m
+558. 438. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 420. Td
+(37.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 420. Td
+(Verify products, quantities, side selections, duplicate-side charges, and subtotal.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 399. Td
+(37.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 399. Td
+(Verify the pickup name and confirm the optional phone was given voluntarily.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 378. Td
+(37.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 378. Td
+(Confirm the customer understands the total and payment method.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 357. Td
+(37.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 357. Td
+(Confirm the Terminal is connected and idle before selecting Pay on the card reader.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 336. Td
+(37.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 336. Td
+(After sending the amount, compare both screens before the card is presented.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 307. Td
+(38. Full Post-Payment Checklist) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 299. m
+558. 299. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 281. Td
+(38.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 281. Td
+(Confirm the kiosk displays Thanks, the customer name, and an order number.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 260. Td
+(38.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 260. Td
+(Confirm payment is captured or completed and the order appears in the Kitchen Queue.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 239. Td
+(38.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 239. Td
+(Tell the customer the pickup name or number and where to wait.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 218. Td
+(38.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 218. Td
+(Press Done or allow the 20-second timer to return to the attract screen.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 197. Td
+(38.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 197. Td
+(Before the next customer, verify no previous name, order, payment message, or card form) Tj
+T* (remains visible.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 155. Td
+(39. Quick Troubleshooting Decision Guide) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 147. m
+558. 147. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 129. Td
+(39.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 129. Td
+(Kiosk confirmation appears: prepare the order.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 108. Td
+(39.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 108. Td
+(Terminal approved but kiosk still waits: check Admin Panel and Square; do not charge again.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+549.2000000000000455 23. Td
+(13) Tj
+ET
+endstream
+endobj
+29 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 30 0 R
+>>
+endobj
+30 0 obj
+<<
+/Length 4578
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 734. Td
+(39.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 734. Td
+(Terminal declined: retry once or use another card.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 713. Td
+(39.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 713. Td
+(Payment canceled: confirm cancellation, then retry.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 692. Td
+(39.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 692. Td
+(Reader timed out: verify the first attempt before retrying.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 671. Td
+(39.6) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 671. Td
+(Reader not connected: check power, internet, pairing, and whether another payment is) Tj
+T* (active.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 637. Td
+(39.7) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 637. Td
+(Card form unavailable: use the paired Terminal or notify a manager.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 616. Td
+(39.8) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 616. Td
+(Payment completed but kitchen order is missing: do not recharge; locate the order and notify) Tj
+T* (a manager.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 574. Td
+(40. Recommended User Guide Screenshots) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 566. m
+558. 566. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 548. Td
+(40.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 548. Td
+(Kiosk attract screen; menu categories; product selection; combo side-selection;) Tj
+T* (duplicate-side upcharge.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 514. Td
+(40.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 514. Td
+(Cart quantity controls; customer details; payment-method screen; Follow the card reader) Tj
+T* (screen.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 480. Td
+(40.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 480. Td
+(Square Terminal tap, insert, and swipe prompts; secure card form; successful confirmation.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 459. Td
+(40.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 459. Td
+(Kitchen Queue order; kiosk-device page; pairing code; payment record; refund control.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 438. Td
+(40.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 438. Td
+(Failed, canceled, timeout, reader-disconnected, and Kiosk Setup messages.) Tj
+ET
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 409. Td
+(41. Complete Limitations and Verification Notice) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 401. m
+558. 401. l
+S
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 383. Td
+(41.1) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 383. Td
+(No cash, check, split-tender, partial-payment, kiosk coupon, or customer-initiated refund) Tj
+T* (flow.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 349. Td
+(41.2) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 349. Td
+(No customer-facing printed, emailed, or texted receipt button is exposed in the kiosk.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 328. Td
+(41.3) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 328. Td
+(The optional phone is stored, but ready-text behavior must be tested before staff promise it.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 307. Td
+(41.4) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 307. Td
+(Menu and stock changes may take several minutes to appear.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 286. Td
+(41.5) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 286. Td
+(Terminal and on-screen card payments require different configuration. On-screen Square) Tj
+T* (payment also requires Square as active gateway.) Tj
+ET
+BT
+/F2 10.5 Tf
+12.0749999999999993 TL
+0.141 0.322 0.459 rg
+54. 252. Td
+(41.6) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+88. 252. Td
+(A real end-to-end Square payment must be tested before the workflow is approved for) Tj
+T* (production customers.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+549.2000000000000455 23. Td
+(14) Tj
+ET
+endstream
+endobj
+31 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 612. 792.]
+/Contents 32 0 R
+>>
+endobj
+32 0 obj
+<<
+/Length 4549
+>>
+stream
+1.5 w
+0.84 G
+BT
+/F2 15 Tf
+17.25 TL
+0.141 0.322 0.459 rg
+54. 734. Td
+(Quick Troubleshooting Decision Guide) Tj
+ET
+0.07 0.61 0.54 RG
+1.5 w
+54. 726. m
+558. 726. l
+S
+0.96 0.97 0.98 rg
+58. 708. m
+554. 708. l
+556.2091389993231587 708. 558. 706.2091389993231587 558. 704. c
+558. 668. l
+558. 665.7908610006768413 555.7908610006768413 664. 554. 664. c
+58. 664. l
+55.7908610006768271 664. 54. 666.2091389993231587 54. 668. c
+54. 704. l
+54. 706.2091389993231587 56.2091389993231729 708. 58. 708. c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+0.141 0.322 0.459 rg
+66. 691. Td
+(Kiosk shows confirmation) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+66. 675. Td
+(Prepare the order.) Tj
+ET
+0.96 0.97 0.98 rg
+58. 656. m
+554. 656. l
+556.2091389993231587 656. 558. 654.2091389993231587 558. 652. c
+558. 616. l
+558. 613.7908610006768413 555.7908610006768413 612. 554. 612. c
+58. 612. l
+55.7908610006768271 612. 54. 614.2091389993231587 54. 616. c
+54. 652. l
+54. 654.2091389993231587 56.2091389993231729 656. 58. 656. c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+0.141 0.322 0.459 rg
+66. 639. Td
+(Terminal approved; kiosk still waiting) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+66. 623. Td
+(Check Admin Panel and Square. Do not charge again.) Tj
+ET
+0.96 0.97 0.98 rg
+58. 604. m
+554. 604. l
+556.2091389993231587 604. 558. 602.2091389993231587 558. 600. c
+558. 564. l
+558. 561.7908610006768413 555.7908610006768413 560. 554. 560. c
+58. 560. l
+55.7908610006768271 560. 54. 562.2091389993231587 54. 564. c
+54. 600. l
+54. 602.2091389993231587 56.2091389993231729 604. 58. 604. c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+0.141 0.322 0.459 rg
+66. 587. Td
+(Terminal declined) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+66. 571. Td
+(Retry once or use another card.) Tj
+ET
+0.96 0.97 0.98 rg
+58. 552. m
+554. 552. l
+556.2091389993231587 552. 558. 550.2091389993231587 558. 548. c
+558. 512. l
+558. 509.7908610006768413 555.7908610006768413 508. 554. 508. c
+58. 508. l
+55.7908610006768271 508. 54. 510.2091389993231587 54. 512. c
+54. 548. l
+54. 550.2091389993231587 56.2091389993231729 552. 58. 552. c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+0.141 0.322 0.459 rg
+66. 535. Td
+(Payment canceled) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+66. 519. Td
+(Confirm cancellation, then retry.) Tj
+ET
+0.96 0.97 0.98 rg
+58. 500. m
+554. 500. l
+556.2091389993231587 500. 558. 498.2091389993231587 558. 496. c
+558. 460. l
+558. 457.7908610006768413 555.7908610006768413 456. 554. 456. c
+58. 456. l
+55.7908610006768271 456. 54. 458.2091389993231587 54. 460. c
+54. 496. l
+54. 498.2091389993231587 56.2091389993231729 500. 58. 500. c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+0.141 0.322 0.459 rg
+66. 483. Td
+(Reader timed out) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+66. 467. Td
+(Verify the first attempt before retrying.) Tj
+ET
+0.96 0.97 0.98 rg
+58. 448. m
+554. 448. l
+556.2091389993231587 448. 558. 446.2091389993231587 558. 444. c
+558. 408. l
+558. 405.7908610006768413 555.7908610006768413 404. 554. 404. c
+58. 404. l
+55.7908610006768271 404. 54. 406.2091389993231587 54. 408. c
+54. 444. l
+54. 446.2091389993231587 56.2091389993231729 448. 58. 448. c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+0.141 0.322 0.459 rg
+66. 431. Td
+(Reader not connected) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+66. 415. Td
+(Check power, network, and pairing.) Tj
+ET
+0.96 0.97 0.98 rg
+58. 396. m
+554. 396. l
+556.2091389993231587 396. 558. 394.2091389993231587 558. 392. c
+558. 356. l
+558. 353.7908610006768413 555.7908610006768413 352. 554. 352. c
+58. 352. l
+55.7908610006768271 352. 54. 354.2091389993231587 54. 356. c
+54. 392. l
+54. 394.2091389993231587 56.2091389993231729 396. 58. 396. c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+0.141 0.322 0.459 rg
+66. 379. Td
+(Card form unavailable) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+66. 363. Td
+(Use the paired Terminal or notify a manager.) Tj
+ET
+0.96 0.97 0.98 rg
+58. 344. m
+554. 344. l
+556.2091389993231587 344. 558. 342.2091389993231587 558. 340. c
+558. 304. l
+558. 301.7908610006768413 555.7908610006768413 300. 554. 300. c
+58. 300. l
+55.7908610006768271 300. 54. 302.2091389993231587 54. 304. c
+54. 340. l
+54. 342.2091389993231587 56.2091389993231729 344. 58. 344. c
+h
+f
+BT
+/F2 10 Tf
+11.5 TL
+0.141 0.322 0.459 rg
+66. 327. Td
+(Paid order missing from kitchen) Tj
+ET
+BT
+/F1 10 Tf
+11.5 TL
+0.141 0.196 0.255 rg
+66. 311. Td
+(Do not recharge; locate the order and notify a manager.) Tj
+ET
+0.84 G
+54. 38. m
+558. 38. l
+S
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+54. 23. Td
+(Jiggling Pig Operations | Kiosk & Square Terminal User Guide) Tj
+ET
+BT
+/F1 8 Tf
+9.1999999999999993 TL
+0.353 0.412 0.471 rg
+549.2000000000000455 23. Td
+(15) Tj
+ET
+endstream
+endobj
+1 0 obj
+<</Type /Pages
+/Kids [3 0 R 5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R 23 0 R 25 0 R 27 0 R 29 0 R 31 0 R ]
+/Count 15
+>>
+endobj
+33 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+34 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+35 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+36 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+37 0 obj
+<<
+/Type /Font
+/BaseFont /Courier
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+38 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+39 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+40 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+41 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Roman
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+42 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+43 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Italic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+44 0 obj
+<<
+/Type /Font
+/BaseFont /Times-BoldItalic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+45 0 obj
+<<
+/Type /Font
+/BaseFont /ZapfDingbats
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+46 0 obj
+<<
+/Type /Font
+/BaseFont /Symbol
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+2 0 obj
+<<
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+/Font <<
+/F1 33 0 R
+/F2 34 0 R
+/F3 35 0 R
+/F4 36 0 R
+/F5 37 0 R
+/F6 38 0 R
+/F7 39 0 R
+/F8 40 0 R
+/F9 41 0 R
+/F10 42 0 R
+/F11 43 0 R
+/F12 44 0 R
+/F13 45 0 R
+/F14 46 0 R
+>>
+/XObject <<
+>>
+>>
+endobj
+47 0 obj
+<<
+/Producer (jsPDF 4.2.1)
+/CreationDate (D:20260827152610-00'00')
+>>
+endobj
+48 0 obj
+<<
+/Type /Catalog
+/Pages 1 0 R
+/OpenAction [3 0 R /FitH null]
+/PageLayout /OneColumn
+>>
+endobj
+xref
+0 49
+0000000000 65535 f 
+0000070319 00000 n 
+0000072237 00000 n 
+0000000015 00000 n 
+0000000120 00000 n 
+0000001813 00000 n 
+0000001918 00000 n 
+0000005279 00000 n 
+0000005384 00000 n 
+0000006730 00000 n 
+0000006836 00000 n 
+0000011981 00000 n 
+0000012088 00000 n 
+0000017344 00000 n 
+0000017451 00000 n 
+0000022727 00000 n 
+0000022834 00000 n 
+0000028258 00000 n 
+0000028365 00000 n 
+0000033589 00000 n 
+0000033696 00000 n 
+0000038728 00000 n 
+0000038835 00000 n 
+0000043772 00000 n 
+0000043879 00000 n 
+0000049288 00000 n 
+0000049395 00000 n 
+0000055103 00000 n 
+0000055210 00000 n 
+0000060872 00000 n 
+0000060979 00000 n 
+0000065610 00000 n 
+0000065717 00000 n 
+0000070472 00000 n 
+0000070598 00000 n 
+0000070729 00000 n 
+0000070863 00000 n 
+0000071001 00000 n 
+0000071125 00000 n 
+0000071254 00000 n 
+0000071386 00000 n 
+0000071522 00000 n 
+0000071650 00000 n 
+0000071777 00000 n 
+0000071906 00000 n 
+0000072039 00000 n 
+0000072141 00000 n 
+0000072490 00000 n 
+0000072576 00000 n 
+trailer
+<<
+/Size 49
+/Root 48 0 R
+/Info 47 0 R
+/ID [ <F9BBB5899512A8F1EA2290D78B5FAADB> <F9BBB5899512A8F1EA2290D78B5FAADB> ]
+>>
+startxref
+72680
+%%EOF

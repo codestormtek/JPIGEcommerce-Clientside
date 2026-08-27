@@ -46,13 +46,36 @@ function heading(text){ ensure(42); doc.setFont("helvetica","bold"); doc.setFont
 function bullet(text){ const lines=doc.splitTextToSize(text,W-left-right-20); ensure(lines.length*13.5+5); doc.setFillColor(...teal); doc.circle(left+4,y-3,2,"F"); doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(...dark); doc.text(lines,left+16,y); y += lines.length*13.5+5; }
 
 // Cover
- doc.setFillColor(...blue); doc.rect(0,0,W,210,"F"); doc.setFillColor(...teal); doc.rect(0,210,W,10,"F"); doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(30); doc.text("JIGGLING PIG",left,92); doc.setFontSize(23); doc.text("Kiosk & Square Terminal",left,133); doc.text("Payment Processing User Guide",left,164); doc.setTextColor(...dark); doc.setFontSize(15); doc.text("Complete edition with detailed operating, safety, and troubleshooting instructions",left,277); doc.setFont("helvetica","normal"); doc.setFontSize(11); doc.setTextColor(...gray); doc.text("Prepared for Jiggling Pig Operations",left,315); doc.text("Revised complete edition: August 2026",left,335);
+ doc.setFillColor(...blue); doc.rect(0,0,W,210,"F"); doc.setFillColor(...teal); doc.rect(0,210,W,10,"F"); doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(30); doc.text("JIGGLING PIG",left,92); doc.setFontSize(23); doc.text("Kiosk & Square Terminal",left,133); doc.text("Payment Processing User Guide",left,164); doc.setTextColor(...dark); doc.setFontSize(15); doc.text("Fully structured edition with numbered subsections and continuous page flow",left,277); doc.setFont("helvetica","normal"); doc.setFontSize(11); doc.setTextColor(...gray); doc.text("Prepared for Jiggling Pig Operations",left,315); doc.text("Revised complete edition: August 2026",left,335);
  doc.setFillColor(244,247,250); doc.roundedRect(left,390,W-left-right,135,8,8,"F"); doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(...blue); doc.text("IMPORTANT",left+20,420); doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(...dark); const coverNote=doc.splitTextToSize("A payment is not complete until the kiosk displays the confirmation and order number. If a payment result is uncertain, check the Admin Panel and Square records before charging the customer again.",W-left-right-40); doc.text(coverNote,left+20,446); footer();
 
 // TOC
  doc.addPage(); y=top; heading("Table of Contents"); doc.setFont("helvetica","normal"); doc.setFontSize(10); sections.forEach((s,i)=>{ ensure(19); doc.setTextColor(...dark); doc.text(s[0],left,y); y+=20; }); footer();
 
-sections.forEach((s,idx)=>{ doc.addPage(); y=top; heading(s[0]); s[1].forEach(b=>bullet(b)); if(idx===1){ y+=8; ensure(82); doc.setFillColor(255,247,230); doc.setDrawColor(235,170,45); doc.roundedRect(left,y,W-left-right,70,5,5,"FD"); doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(145,90,15); doc.text("DUPLICATE-CHARGE WARNING",left+14,y+20); doc.setFont("helvetica","normal"); const t=doc.splitTextToSize("Never run the customer's card again until the first attempt has been checked and confirmed as failed or canceled.",W-left-right-28); doc.text(t,left+14,y+40); y+=80; } footer(); });
+doc.addPage(); y=top;
+sections.forEach((s,idx)=>{
+  ensure(95);
+  if (idx > 0) y += 8;
+  heading(s[0]);
+  const sectionNumber = (s[0].match(/^([0-9]+)/) || [null, String(idx + 1)])[1];
+  s[1].forEach((b, detailIndex)=>{
+    ensure(48);
+    doc.setFont("helvetica","bold"); doc.setFontSize(10.5); doc.setTextColor(...blue);
+    doc.text(sectionNumber + "." + (detailIndex + 1), left, y);
+    const detailLines = doc.splitTextToSize(b, W-left-right-38);
+    doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(...dark);
+    doc.text(detailLines, left+34, y);
+    y += Math.max(14, detailLines.length*13.5) + 7;
+  });
+  if(idx===1){
+    y+=5; ensure(82); doc.setFillColor(255,247,230); doc.setDrawColor(235,170,45);
+    doc.roundedRect(left,y,W-left-right,70,5,5,"FD"); doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(145,90,15);
+    doc.text("DUPLICATE-CHARGE WARNING",left+14,y+20); doc.setFont("helvetica","normal");
+    const t=doc.splitTextToSize("Never run the customer's card again until the first attempt has been checked and confirmed as failed or canceled.",W-left-right-28);
+    doc.text(t,left+14,y+40); y+=80;
+  }
+});
+footer();
 
 // Final quick-reference page
  doc.addPage(); y=top; heading("Quick Troubleshooting Decision Guide"); const quick=[
@@ -66,6 +89,6 @@ sections.forEach((s,idx)=>{ doc.addPage(); y=top; heading(s[0]); s[1].forEach(b=
  ["Paid order missing from kitchen","Do not recharge; locate the order and notify a manager."]
  ]; quick.forEach(([a,b])=>{ ensure(54); doc.setFillColor(245,248,250); doc.roundedRect(left,y,W-left-right,44,4,4,"F"); doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(...blue); doc.text(a,left+12,y+17); doc.setFont("helvetica","normal"); doc.setTextColor(...dark); doc.text(doc.splitTextToSize(b,W-left-right-24),left+12,y+33); y+=52; }); footer();
 
-const out = path.resolve("Jiggling_Pig_Kiosk_Square_Terminal_User_Guide_COMPLETE.pdf");
+const out = path.resolve("Jiggling_Pig_Kiosk_Square_Terminal_User_Guide_FULL_STRUCTURED.pdf");
 fs.writeFileSync(out, Buffer.from(doc.output("arraybuffer")));
 console.log(out, fs.statSync(out).size, doc.getNumberOfPages());

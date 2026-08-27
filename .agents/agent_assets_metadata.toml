@@ -14,3 +14,10 @@ uri = "file://Jiggling_Pig_Kiosk_Square_Terminal_User_Guide_COMPLETE.pdf"
 type = "pdf"
 title = "Complete Jiggling Pig Kiosk & Square Terminal User Guide"
 description = "Revised 45-page complete edition with the detailed procedures, warnings, checklists, troubleshooting guidance, limitations, incident template, and screenshot recommendations from the chat guide."
+
+[[outputs]]
+id = "Fqu04yLv3ljhMC1NtWAL-"
+uri = "file://Jiggling_Pig_Kiosk_Square_Terminal_User_Guide_FULL_STRUCTURED.pdf"
+type = "pdf"
+title = "Full Structured Kiosk & Square Terminal User Guide"
+description = "Corrected 15-page edition with visible numbered subsections such as 28.1, 28.2, and 28.3, continuous page flow, detailed procedures, checklists, troubleshooting, and reduced blank space."
