@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "AxHFeFHclglcxXX6TVU-h"
+uri = "file://Jiggling_Pig_Kiosk_Square_Terminal_User_Guide.pdf"
+type = "pdf"
+title = "Jiggling Pig Kiosk & Square Terminal User Guide"
+description = "A 31-page payment-processing manual covering kiosk ordering, Square Terminal payments, setup, refunds, troubleshooting, checklists, and end-of-day procedures."
