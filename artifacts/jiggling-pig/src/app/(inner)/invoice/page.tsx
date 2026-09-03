@@ -1,0 +1,189 @@
+'use client';
+
+import React, { useRef, useCallback } from 'react';
+
+function InvoicePage() {
+    const invoiceRef = useRef<HTMLDivElement>(null);
+
+    const handlePrint = useCallback(() => {
+        if (!invoiceRef.current) return;
+        let printRoot = document.getElementById('invoice-print-root');
+        if (!printRoot) {
+            printRoot = document.createElement('div');
+            printRoot.id = 'invoice-print-root';
+            printRoot.style.display = 'none';
+            document.body.appendChild(printRoot);
+        }
+        printRoot.innerHTML = invoiceRef.current.innerHTML;
+        printRoot.style.display = 'block';
+        const afterPrint = () => {
+            printRoot!.innerHTML = '';
+            printRoot!.style.display = 'none';
+            window.removeEventListener('afterprint', afterPrint);
+        };
+        window.addEventListener('afterprint', afterPrint);
+        setTimeout(() => {
+            window.print();
+        }, 100);
+    }, []);
+
+    const handleDownload = useCallback(async () => {
+        if (!invoiceRef.current) return;
+        const html2pdf = (await import('html2pdf.js')).default;
+        html2pdf()
+            .set({
+                margin: [10, 10, 10, 10],
+                filename: 'invoice.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            })
+            .from(invoiceRef.current)
+            .save();
+    }, []);
+
+    return (
+        <div>
+            <div className="rts-invoice-style-one" ref={invoiceRef}>
+                <div className="container-2">
+                    <div className="row">
+                        <div className="col-lg-12">
+                            <div className="invoice-main-wrapper-1">
+                                <div className="logo-top-area">
+                                    <div className="logo">
+                                        <img src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png" alt="The Jiggling Pig" style={{ height: 70 }} />
+                                    </div>
+                                    <div className="invoice-location">
+                                        <h6 className="title">Invoice</h6>
+                                        <span className="number">0152646678</span>
+                                        <span className="email">info@reactheme.com</span>
+                                        <span className="website">https://reacthemes.com/</span>
+                                    </div>
+                                </div>
+                                <div className="invoice-banner bg_image"></div>
+                                <div className="invoice-center-rts">
+                                    <div className="table-responsive">
+                                        <table className="table table-striped invoice-table">
+                                            <thead className="bg-active">
+                                                <tr>
+                                                    <th>Item Item</th>
+                                                    <th className="text-center">Unit Price</th>
+                                                    <th className="text-center">Quantity</th>
+                                                    <th className="text-right">Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <div className="item-desc-1">
+                                                            <span>Field Roast Chao Cheese Creamy Original</span>
+                                                            <small>SKU: FWM15VKT</small>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-center">$10.99</td>
+                                                    <td className="text-center">1</td>
+                                                    <td className="text-right">$10.99</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div className="item-desc-1">
+                                                            <span>Blue Diamond Almonds Lightly Salted</span>
+                                                            <small>SKU: FWM15VKT</small>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-center">$20.00</td>
+                                                    <td className="text-center">3</td>
+                                                    <td className="text-right">$60.00</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div className="item-desc-1">
+                                                            <span>Fresh Organic Mustard Leaves Bell Pepper</span>
+                                                            <small>SKU: KVM15VK</small>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-center">$640.00</td>
+                                                    <td className="text-center">1</td>
+                                                    <td className="text-right">$640.00</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div className="item-desc-1">
+                                                            <span>All Natural Italian-Style Chicken Meatballs</span>
+                                                            <small>SKU: 98HFG</small>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-center">$240.00</td>
+                                                    <td className="text-center">1</td>
+                                                    <td className="text-right">$240.00</td>
+                                                </tr>
+                                                <tr>
+                                                    <td colSpan={3} className="text-end f-w-600">
+                                                        SubTotal
+                                                    </td>
+                                                    <td className="text-right">$1710.99</td>
+                                                </tr>
+                                                <tr>
+                                                    <td colSpan={3} className="text-end f-w-600">
+                                                        Tax
+                                                    </td>
+                                                    <td className="text-right">$85.99</td>
+                                                </tr>
+                                                <tr>
+                                                    <td colSpan={3} className="text-end f-w-600">
+                                                        Grand Total
+                                                    </td>
+                                                    <td className="text-right f-w-600">$1795.99</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div className="invoice-area-bottom">
+                                    <div className="powerby">
+                                        <p>Powerby</p>
+                                        <img src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png" alt="The Jiggling Pig" style={{ height: 24, maxWidth: 'none' }} />
+                                    </div>
+                                    <p>
+                                        Note:This is computer generated receipt and does not require
+                                        physical signature.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="buttons-area-invoice no-print mb--30" style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                                <a
+                                    href="#"
+                                    className="rts-btn btn-primary radious-sm with-icon"
+                                    onClick={(e) => { e.preventDefault(); handlePrint(); }}
+                                >
+                                    <div className="btn-text">Print Now</div>
+                                    <div className="arrow-icon">
+                                        <i className="fa-regular fa-print" />
+                                    </div>
+                                    <div className="arrow-icon">
+                                        <i className="fa-regular fa-print" />
+                                    </div>
+                                </a>
+                                <a
+                                    href="#"
+                                    className="rts-btn btn-primary radious-sm with-icon"
+                                    onClick={(e) => { e.preventDefault(); handleDownload(); }}
+                                >
+                                    <div className="btn-text">Download PDF</div>
+                                    <div className="arrow-icon">
+                                        <i className="fa-thin fa-download" />
+                                    </div>
+                                    <div className="arrow-icon">
+                                        <i className="fa-thin fa-download" />
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default InvoicePage;

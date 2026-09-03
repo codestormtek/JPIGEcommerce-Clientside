@@ -1,0 +1,215 @@
+'use client';
+import React, { useEffect, useState } from 'react'
+import NewsletterForm from './NewsletterForm'
+import { useSiteSettings } from '@/context/SiteSettingsContext';
+import { apiGet } from '@/lib/api';
+
+interface SocialLink {
+    id: string;
+    platform: string;
+    iconClass: string;
+    url: string;
+}
+
+function FooterOne() {
+    const { settings } = useSiteSettings();
+    const s = (key: string, fallback: string) => settings[key] || fallback;
+
+    const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+    useEffect(() => {
+        apiGet<{ success: boolean; data: SocialLink[] }>('/social-links/public')
+            .then((res) => setSocialLinks(res.data || []))
+            .catch(() => {});
+    }, []);
+    return (
+        <div><>
+            <style>{`
+                .rts-footer-area.footer-custom {
+                    background: #2c2c2c !important;
+                }
+                .footer-custom .footer-title {
+                    color: #ffffff !important;
+                }
+                .footer-custom .footer-nav ul li a,
+                .footer-custom .call-area .info span,
+                .footer-custom .call-area .info a,
+                .footer-custom .opening-hour .single p,
+                .footer-custom .opening-hour .single p span,
+                .footer-custom p.disc-news-letter,
+                .footer-custom p.dsic,
+                .footer-custom .social-one-wrapper span,
+                .footer-custom .payment-access span {
+                    color: #909090 !important;
+                }
+                .footer-custom .footer-nav ul li a:hover,
+                .footer-custom .call-area .info a:hover {
+                    color: #f47920 !important;
+                }
+                .footer-custom .call-area .icon i,
+                .footer-custom .social-one-wrapper ul li a i {
+                    color: #f47920 !important;
+                }
+                .footer-custom .social-one-wrapper ul li a {
+                    color: #909090 !important;
+                    border-color: #f47920 !important;
+                }
+                .footer-custom .rts-btn.btn-primary,
+                .footer-custom .footersubscribe-form button {
+                    background: #f47920 !important;
+                    border-color: #f47920 !important;
+                }
+                .rts-copyright-area.copyright-custom {
+                    background: #2c2c2c !important;
+                }
+                .copyright-custom .disc,
+                .copyright-custom .disc a,
+                .copyright-custom .playstore-app-area span {
+                    color: #909090 !important;
+                }
+                .copyright-custom .disc a:hover {
+                    color: #f47920 !important;
+                }
+            `}</style>
+            <div className="rts-footer-area footer-custom pt--80">
+                <div className="container">
+                    <div className="row">
+                        <div className="col-lg-12">
+                            <div className="footer-main-content-wrapper pb--70 pb_sm--30">
+                                <div className="single-footer-wized">
+                                    <h3 className="footer-title">About Company</h3>
+                                    <div className="call-area">
+                                        <div className="icon">
+                                            <i className="fa-solid fa-phone-rotary" />
+                                        </div>
+                                        <div className="info">
+                                            <span>Have Question? Call Us 24/7</span>
+                                            <a href={s('footer_phone_href', 'tel:18005131710')} className="number" style={{ color: '#f47920', transition: 'color 0.3s' }}>
+                                                {s('footer_phone', '1-800-513-1710')}
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div className="opening-hour">
+                                        <div className="single">
+                                            <p>{s('footer_location', 'Located in the metro DC area')}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="single-footer-wized">
+                                    <h3 className="footer-title">Our Stores</h3>
+                                    <div className="footer-nav">
+                                        <ul>
+                                            <li>
+                                                <a href="/privacy-policy">Privacy Policy</a>
+                                            </li>
+                                            <li>
+                                                <a href="/terms-condition">Terms &amp; Conditions</a>
+                                            </li>
+                                            <li>
+                                                <a href="/cookies-policy">Cookies Policy</a>
+                                            </li>
+                                            <li>
+                                                <a href="https://admin.thejigglingpig.com" target="_blank" rel="noopener noreferrer">Administration</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div className="single-footer-wized">
+                                    <h3 className="footer-title">Shop Categories</h3>
+                                    <div className="footer-nav">
+                                        <ul>
+                                            <li>
+                                                <a href="/contact">Contact Us</a>
+                                            </li>
+                                            <li>
+                                                <a href="#">Information</a>
+                                            </li>
+                                            <li>
+                                                <a href="/about">About Us</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div className="single-footer-wized">
+                                    <h3 className="footer-title">Useful Links</h3>
+                                    <div className="footer-nav">
+                                        <ul>
+                                            <li>
+                                                <a href="/cancellation-returns">Cancellation &amp; Returns</a>
+                                            </li>
+                                            <li>
+                                                <a href="/payments">Payments</a>
+                                            </li>
+                                            <li>
+                                                <a href="/shipping">Shipping</a>
+                                            </li>
+                                            <li>
+                                                <a href="/faq">FAQ</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div className="single-footer-wized">
+                                    <h3 className="footer-title">Our Newsletter</h3>
+                                    <p className="disc-news-letter">
+                                        {s('footer_newsletter_text', 'Subscribe to the mailing list to receive updates on the new arrivals and other discounts')}
+                                    </p>
+                                    <NewsletterForm />
+                                    <p className="dsic">
+                                        I would like to receive news and special offer
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="social-and-payment-area-wrapper">
+                                {socialLinks.length > 0 && (
+                                    <div className="social-one-wrapper">
+                                        <span>Follow Us:</span>
+                                        <ul>
+                                            {socialLinks.map((link) => (
+                                                <li key={link.id}>
+                                                    <a
+                                                        href={link.url || '#'}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        aria-label={link.platform}
+                                                        title={link.platform}
+                                                    >
+                                                        <i className={link.iconClass} />
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                <div className="payment-access">
+                                    <span>Payment Accepts:</span>
+                                    <img src="https://cdn.thejigglingpig.com/media/2026/03/35509b8d-5593-4e4e-ab96-956e95a78655.png" alt="Payment methods" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div className="rts-copyright-area copyright-custom">
+                <div className="container">
+                    <div className="row">
+                        <div className="col-lg-12">
+                            <div className="copyright-between-1">
+                                <p className="disc">
+                                    Copyright 2025 <a href="#">©The Jiggling Pig, LLC</a>. All rights reserved.
+                                </p>
+                                <a href="#" className="playstore-app-area">
+                                    <span>Download App</span>
+                                    <img src="assets/images/payment/02.png" alt="" />
+                                    <img src="assets/images/payment/03.png" alt="" />
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+        </div>
+    )
+}
+
+export default FooterOne

@@ -1,0 +1,640 @@
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { ApiError } from '../../utils/apiError';
+import { ListOrdersInput, PlaceOrderInput, UpdateOrderStatusInput, GuestCheckoutInput, TrackOrderInput, CheckoutInput } from './orders.schema';
+import { sendEmail } from '../../lib/mailer';
+import { sendSms } from '../../lib/telnyx';
+import { normalizePhone } from '../../lib/phone';
+import { config } from '../../config';
+import * as repo from './orders.repository';
+import * as userRepo from '../users/users.repository';
+import * as paymentRepo from '../payments/payments.repository';
+import * as stripeService from '../../services/stripeService';
+import * as paymentGateway from '../../services/paymentGateway';
+import { validateCoupon, redeemCoupon } from '../promotions/promotions.service';
+import { AuditContext, AuditAction, logAudit } from '../../utils/auditLogger';
+import { logger } from '../../utils/logger';
+import { sendOrderConfirmationToCustomer, sendAdminNewOrderNotification } from '../../lib/notificationEmails';
+import { resolveOrderSmsRecipient, sendOrderStatusSms } from './orderSms';
+import { sendNewOrderStoreAlerts } from '../order-notifications/order-notifications.service';
+import prisma from '../../lib/prisma';
+
+// ─── User-facing ──────────────────────────────────────────────────────────────
+
+export async function listMyOrders(userId: string, input: ListOrdersInput) {
+  // Force-scope to the caller's own orders
+  return repo.findOrders(input, userId);
+}
+
+export async function getMyOrderById(orderId: string, userId: string) {
+  const order = await repo.findOrderByIdAndUser(orderId, userId);
+  if (!order) throw ApiError.notFound('Order');
+  return order;
+}
+
+// ─── Guest checkout (public — no login) ───────────────────────────────────────
+
+/**
+ * Places an order for a non-logged-in customer. A lightweight "shell" SiteUser is
+ * found-or-created by email (so every existing notification / invoice / order-history
+ * path keeps working), then the shared checkout() runs unchanged. The customer can
+ * later claim this shell account by setting a password (see auth.claimAccount).
+ */
+export async function guestCheckout(input: GuestCheckoutInput, ctx?: AuditContext) {
+  const email = input.contact.email.trim().toLowerCase();
+
+  let user = await prisma.siteUser.findFirst({
+    where: { emailAddress: { equals: email, mode: 'insensitive' }, isDeleted: false },
+  });
+
+  // Never bind a guest order to an existing real (claimed) account — an
+  // unauthenticated caller must not be able to write orders or payment methods
+  // into someone else's account. Only reuse a prior unclaimed guest shell.
+  if (user && !user.isGuest) {
+    throw ApiError.conflict('An account already exists for this email. Please sign in to complete your purchase.');
+  }
+
+  if (!user) {
+    // Unusable random password + isActive:false means this shell can never be
+    // logged into until the customer claims it by setting a real password.
+    const randomHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), config.bcrypt.saltRounds);
+    user = await prisma.siteUser.create({
+      data: {
+        emailAddress: email,
+        firstName: input.contact.firstName,
+        lastName: input.contact.lastName,
+        phoneNumber: input.contact.phone,
+        passwordHash: randomHash,
+        isActive: false,
+        isGuest: true,
+        role: 'user',
+      },
+    });
+  }
+
+  // For Stripe, persist the one-time PaymentMethod against the shell account so the
+  // shared checkout() can charge it through the normal paymentMethodTokenId path.
+  const { contact: _contact, stripePaymentMethodId, ...orderInput } = input;
+  let paymentMethodTokenId = orderInput.paymentMethodTokenId;
+  if (stripePaymentMethodId) {
+    const token = await userRepo.addPaymentMethod(user.id, {
+      provider: 'stripe',
+      token: stripePaymentMethodId,
+      isDefault: false,
+    });
+    paymentMethodTokenId = token.id;
+  }
+
+  return checkout(user.id, { ...orderInput, paymentMethodTokenId }, ctx);
+}
+
+// ─── Public order tracking ────────────────────────────────────────────────────
+
+export async function trackOrder(input: TrackOrderInput) {
+  const code = input.orderNumber.trim().replace(/^ord-/i, '').toLowerCase();
+  if (code.length < 6) throw ApiError.badRequest('Please enter a valid order number');
+
+  const order = await repo.findOrderForTracking(code, input.email.trim());
+  if (!order) throw ApiError.notFound('Order');
+
+  const n = (v: unknown) => Number(v);
+  return {
+    orderNumber: `ORD-${order.id.replace(/-/g, '').slice(0, 8).toUpperCase()}`,
+    status: order.orderStatus.status,
+    orderDate: order.orderDate,
+    currency: order.currency,
+    items: order.lines.map((l) => ({
+      name: l.productNameSnapshot,
+      qty: l.qty,
+      lineTotal: n(l.lineTotal),
+    })),
+    totals: {
+      subtotal: n(order.subtotal),
+      discount: n(order.discountTotal),
+      tax: n(order.taxTotal),
+      shipping: n(order.shippingTotal),
+      grand: n(order.grandTotal),
+    },
+    shippingMethod: order.shippingMethod?.name ?? null,
+    shipment: order.shipment
+      ? {
+          carrier: order.shipment.carrier,
+          trackingNumber: order.shipment.trackingNumber,
+          status: order.shipment.status,
+          estimatedDelivery: order.shipment.estimatedDelivery,
+          shippedAt: order.shipment.shippedAt,
+          deliveredAt: order.shipment.deliveredAt,
+        }
+      : null,
+    timeline: order.statusHistory.map((h) => ({
+      status: (h as { newStatus?: { status?: string } }).newStatus?.status ?? null,
+      at: h.changedAt,
+    })),
+  };
+}
+
+export async function checkout(
+  userId: string,
+  input: CheckoutInput & { kioskDeviceId?: string; kioskRequestId?: string },
+  ctx?: AuditContext,
+) {
+  try {
+    // ── Step 1: Fetch product prices (needed for tax and/or coupon discount) ──
+    let taxTotal = 0;
+    let discountTotal = 0;
+    let taxCalculationId = '';
+
+    const needsPrices = (config.stripe.taxEnabled || !!input.couponCode) && input.lines.length > 0;
+    const priceMap = new Map<string, number>();
+
+    if (needsPrices) {
+      const itemIds = input.lines.map((l) => l.productItemId);
+      const prices = await repo.findProductItemPrices(itemIds);
+      prices.forEach((p) => priceMap.set(p.id, Number(p.price)));
+    }
+
+    // ── Step 1a: Calculate tax via Stripe Tax (optional, falls back to 0) ────
+    if (config.stripe.taxEnabled && input.lines.length > 0) {
+      const shippingAddr = input.addresses.find((a) => a.addressType === 'shipping');
+
+      if (shippingAddr) {
+        try {
+          const lineItems = input.lines
+            .map((l) => ({
+              amount: Math.round((priceMap.get(l.productItemId) ?? 0) * l.qty * 100),
+              reference: l.productItemId,
+            }))
+            .filter((li) => li.amount > 0);
+
+          if (lineItems.length > 0) {
+            const taxResult = await stripeService.calculateTax(
+              lineItems,
+              {
+                country: shippingAddr.countryIso2 ?? 'US',
+                postalCode: shippingAddr.postalCode ?? undefined,
+                state: shippingAddr.region ?? undefined,
+              },
+              input.currency,
+            );
+            taxTotal = taxResult.taxAmountInCents / 100; // store as dollars in DB (Decimal)
+            taxCalculationId = taxResult.calculationId;  // carry forward for PI metadata
+          }
+        } catch (taxErr: unknown) {
+          logger.warn('Stripe Tax calculation failed, falling back to taxTotal=0', { taxErr });
+        }
+      }
+    }
+
+    // ── Step 1b: Validate coupon and compute discount ─────────────────────────
+    if (input.couponCode) {
+      const subtotal = input.lines.reduce(
+        (sum, l) => sum + (priceMap.get(l.productItemId) ?? 0) * l.qty,
+        0,
+      );
+      const couponResult = await validateCoupon({ code: input.couponCode, subtotal });
+      discountTotal = couponResult.discountAmount;
+    }
+
+    // ── Step 2: Create the order in the database ──────────────────────────────
+    const order = await repo.placeOrder(userId, input, taxTotal, discountTotal);
+
+    // ── Step 2b: Record coupon redemption (fire-and-forget, non-blocking) ─────
+    if (input.couponCode) {
+      redeemCoupon(input.couponCode, order.id, userId).catch((err: unknown) => {
+        logger.warn('Failed to record coupon redemption', { couponCode: input.couponCode, orderId: order.id, err });
+      });
+    }
+
+    // ── Step 3: Create a payment record via the active gateway ───────────────
+    if (input.squareNonce || input.paymentMethodTokenId) {
+      const grandTotalCents = Math.round(Number(order.grandTotal) * 100);
+
+      // Resolve the card credential: a Square card token (cnon_*) or a saved
+      // Stripe payment method. The paymentGateway abstraction dispatches to
+      // whichever gateway is currently active.
+      let sourceId: string | undefined = input.squareNonce ?? undefined;
+      let paymentMethodTokenId: string | undefined;
+      if (!sourceId && input.paymentMethodTokenId) {
+        const token = await userRepo.findPaymentMethodById(input.paymentMethodTokenId, userId);
+        if (!token) {
+          throw ApiError.unprocessable('Payment method not found or does not belong to this user');
+        }
+        sourceId = token.token; // Stripe pm_* ID
+        paymentMethodTokenId = token.id;
+      }
+
+      const gatewayResult = await paymentGateway.createPayment({
+        amountCents: grandTotalCents,
+        currency: order.currency,
+        sourceId,
+        metadata: { orderId: order.id, userId },
+        taxCalculationId: taxCalculationId || undefined, // Stripe-only: links Stripe Tax calculation for reporting
+      });
+
+      await paymentRepo.createPayment({
+        orderId: order.id,
+        paymentMethodTokenId,
+        provider: gatewayResult.gateway, // gatewayName: stripe | square
+        amount: Number(order.grandTotal),
+        status: gatewayResult.status,
+        providerTxnId: gatewayResult.paymentId,
+        authorizedAt: gatewayResult.status === 'authorized' || gatewayResult.status === 'captured'
+          ? new Date()
+          : undefined,
+      });
+    }
+
+    // ── Step 4: Audit log ─────────────────────────────────────────────────────
+    logAudit({
+      action: AuditAction.ORDER_PLACED,
+      entityType: 'Order',
+      entityId: order.id,
+      ctx: { ...ctx, actorId: userId },
+    });
+
+    // ── Step 5: Auto-save shipping address to user profile (fire-and-forget) ──
+    const checkoutShippingAddr = input.addresses.find((a) => a.addressType === 'shipping');
+    if (checkoutShippingAddr) {
+      (async () => {
+        try {
+          const country = checkoutShippingAddr.countryIso2
+            ? await prisma.country.findFirst({ where: { iso2: { equals: checkoutShippingAddr.countryIso2, mode: 'insensitive' } } })
+            : await prisma.country.findFirst({ where: { countryName: { equals: checkoutShippingAddr.countryName, mode: 'insensitive' } } });
+
+          if (!country) return;
+
+          const existing = await prisma.userAddress.findFirst({ where: { userId, label: 'shipping' } });
+
+          if (existing) {
+            await userRepo.updateUserAddress(userId, existing.id, {
+              label: 'shipping',
+              isDefault: false,
+              address: {
+                addressLine1: checkoutShippingAddr.addressLine1,
+                addressLine2: checkoutShippingAddr.addressLine2,
+                city: checkoutShippingAddr.city,
+                stateProvince: checkoutShippingAddr.region,
+                postalCode: checkoutShippingAddr.postalCode,
+                countryId: country.id,
+              },
+            });
+          } else {
+            await userRepo.addUserAddress(userId, {
+              label: 'shipping',
+              isDefault: false,
+              address: {
+                addressLine1: checkoutShippingAddr.addressLine1,
+                addressLine2: checkoutShippingAddr.addressLine2,
+                city: checkoutShippingAddr.city,
+                stateProvince: checkoutShippingAddr.region,
+                postalCode: checkoutShippingAddr.postalCode,
+                countryId: country.id,
+              },
+            });
+          }
+        } catch (err) {
+          logger.warn('Failed to auto-save shipping address to user profile', { userId, err });
+        }
+      })();
+    }
+
+    // ── Step 6: Post-order notifications (fire-and-forget) ───────────────────
+    const n = (v: unknown) => Number(v);
+    const orderNum = `ORD-${order.id.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+
+    prisma.siteUser.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true, emailAddress: true, phoneNumber: true } })
+      .then((usr) => {
+        if (!usr) return;
+        const orderAddresses = (order as unknown as {
+          addresses?: Array<{
+            addressType: string;
+            fullName?: string;
+            phone?: string | null;
+            addressLine1?: string;
+            city?: string;
+            region?: string;
+            postalCode?: string;
+          }>;
+        }).addresses ?? [];
+        const billingAddr = orderAddresses.find(a => a.addressType === 'billing');
+        const accountName = [usr.firstName, usr.lastName].filter(Boolean).join(' ') || 'Valued Customer';
+        const customerName = order.orderType === 'kiosk' && billingAddr?.fullName
+          ? billingAddr.fullName
+          : accountName;
+        const customerPhone = normalizePhone(
+          order.orderType === 'kiosk' ? billingAddr?.phone : usr.phoneNumber,
+        );
+        const shipAddr = orderAddresses.find(a => a.addressType === 'shipping');
+        const shippingLine = shipAddr
+          ? [shipAddr.fullName, shipAddr.addressLine1, shipAddr.city, shipAddr.region, shipAddr.postalCode].filter(Boolean).join(', ')
+          : null;
+
+        const lines = (order as unknown as {
+          lines?: Array<{
+            productNameSnapshot?: string;
+            qty?: number;
+            unitPriceSnapshot?: unknown;
+            lineTotal?: unknown;
+            sideSelectionsText?: string | null;
+          }>;
+        }).lines ?? [];
+
+        const notifyPromises: Promise<unknown>[] = [
+          sendOrderConfirmationToCustomer({
+            customerEmail: usr.emailAddress,
+            customerName,
+            orderNumber: orderNum,
+            orderId: order.id,
+            lines: lines.map(l => ({
+              name: l.productNameSnapshot ?? '',
+              qty: l.qty ?? 1,
+              unitPrice: n(l.unitPriceSnapshot),
+              lineTotal: n(l.lineTotal),
+            })),
+            subtotal: n(order.subtotal),
+            discountTotal: n(order.discountTotal),
+            taxTotal: n(order.taxTotal),
+            shippingTotal: n(order.shippingTotal),
+            grandTotal: n(order.grandTotal),
+            currency: order.currency,
+            shippingAddress: shippingLine,
+          }),
+          sendAdminNewOrderNotification({
+            orderNumber: orderNum,
+            orderId: order.id,
+            customerName,
+            customerEmail: usr.emailAddress,
+            grandTotal: n(order.grandTotal),
+            currency: order.currency,
+            itemCount: lines.length,
+          }),
+        ];
+
+        // SMS order-placed confirmation — only to customers who opted in to order texts
+        notifyPromises.push(
+          resolveOrderSmsRecipient(userId).then((recipient) => {
+            if (!recipient) return undefined;
+            return sendSms(
+              recipient.phone,
+              `Hi ${recipient.firstName || 'there'}, your order ${orderNum} has been placed! Total: ${order.currency} ${n(order.grandTotal).toFixed(2)}. Track it: ${config.store.url}/orders — ${config.store.name}`,
+            );
+          }),
+        );
+
+        // Terminal kiosk alerts are deferred until polling confirms payment.
+        // On-screen Square card payments are already captured before this point.
+        if (order.orderType !== 'kiosk' || Boolean(input.squareNonce)) {
+          notifyPromises.push(
+            sendNewOrderStoreAlerts({
+              orderNumber: orderNum,
+              customerName,
+              customerPhone,
+              itemCount: lines.reduce((total, line) => total + (line.qty ?? 1), 0),
+              items: lines.map(line => ({
+                name: line.productNameSnapshot || 'Item',
+                qty: line.qty ?? 1,
+                sides: line.sideSelectionsText,
+              })),
+              grandTotal: n(order.grandTotal),
+              currency: order.currency,
+            }),
+          );
+        }
+
+        return Promise.all(notifyPromises);
+      })
+      .catch((err: unknown) => logger.warn('Post-order notifications failed', { orderId: order.id, err }));
+
+    return order;
+  } catch (err: unknown) {
+    if (err instanceof ApiError) throw err;
+    const msg = err instanceof Error ? err.message : 'Checkout failed';
+    if (msg.includes('not found') || msg.includes('Insufficient stock')) {
+      throw ApiError.unprocessable(msg);
+    }
+    throw ApiError.internal(msg);
+  }
+}
+
+// ─── Admin-facing ─────────────────────────────────────────────────────────────
+
+export async function listAllOrders(input: ListOrdersInput) {
+  return repo.findOrders(input);
+}
+
+export async function getOrderById(orderId: string) {
+  const order = await repo.findOrderById(orderId);
+  if (!order) throw ApiError.notFound('Order');
+  return order;
+}
+
+export async function changeOrderStatus(
+  orderId: string,
+  input: UpdateOrderStatusInput,
+  changedByUserId: string,
+  ctx?: AuditContext,
+) {
+  // Verify order exists and capture before state
+  const before = await getOrderById(orderId);
+  const previousStatusId = (before as { orderStatusId?: string }).orderStatusId;
+
+  // Verify the target status exists
+  const statuses = await repo.findAllStatuses();
+  const valid = statuses.some((s) => s.id === input.statusId);
+  if (!valid) throw ApiError.badRequest('Invalid order status ID');
+
+  const after = await repo.updateOrderStatus(orderId, input.statusId, changedByUserId);
+  logAudit({
+    action: AuditAction.ORDER_STATUS_CHANGED,
+    entityType: 'Order',
+    entityId: orderId,
+    beforeJson: { status: (before as { orderStatus?: { status?: string } }).orderStatus?.status },
+    afterJson: { statusId: input.statusId },
+    ctx: { ...ctx, actorId: changedByUserId },
+  });
+
+  // Fire-and-forget customer SMS — only on an actual status transition (respects opt-in)
+  if (previousStatusId !== input.statusId) {
+    void sendOrderStatusSms(after as unknown as Parameters<typeof sendOrderStatusSms>[0], after.userId);
+  }
+
+  return after;
+}
+
+// ─── Lookups ──────────────────────────────────────────────────────────────────
+
+export async function listStatuses() {
+  return repo.findAllStatuses();
+}
+
+export async function listShippingMethods() {
+  return repo.findAllShippingMethods();
+}
+
+// ─── Invoice ──────────────────────────────────────────────────────────────────
+
+type FullOrder = NonNullable<Awaited<ReturnType<typeof repo.findOrderById>>>;
+
+function buildInvoice(order: FullOrder) {
+  const n = (v: unknown) => Number(v);
+
+  const billTo = order.addresses.find((a) => a.addressType === 'billing') ?? null;
+  const shipTo = order.addresses.find((a) => a.addressType === 'shipping') ?? null;
+
+  return {
+    invoiceNumber: `INV-${order.id.replace(/-/g, '').slice(0, 8).toUpperCase()}`,
+    issuedAt: order.orderDate,
+    currency: order.currency,
+    status: order.orderStatus.status,
+    orderType: order.orderType,
+    specialInstructions: order.specialInstructions ?? null,
+
+    billTo,
+    shipTo,
+
+    shippingMethod: order.shippingMethod?.name ?? null,
+
+    lines: order.lines.map((line) => ({
+      sku: line.skuSnapshot,
+      name: line.productNameSnapshot,
+      qty: line.qty,
+      unitPrice: n(line.unitPriceSnapshot),
+      lineTotal: n(line.lineTotal),
+      options: line.options.map((o) => o.variationOption.value),
+    })),
+
+    totals: {
+      subtotal: n(order.subtotal),
+      discount: n(order.discountTotal),
+      tax: n(order.taxTotal),
+      shipping: n(order.shippingTotal),
+      grand: n(order.grandTotal),
+    },
+
+    payments: order.payments.map((p) => ({
+      provider: p.provider,
+      amount: n(p.amount),
+      status: p.status,
+      capturedAt: p.capturedAt ?? null,
+    })),
+  };
+}
+
+export async function getMyInvoice(orderId: string, userId: string) {
+  const order = await repo.findOrderByIdAndUser(orderId, userId);
+  if (!order) throw ApiError.notFound('Order');
+  return buildInvoice(order);
+}
+
+export async function getAdminInvoice(orderId: string) {
+  const order = await repo.findOrderById(orderId);
+  if (!order) throw ApiError.notFound('Order');
+  return buildInvoice(order);
+}
+
+export async function emailInvoice(orderId: string, emailTo: string) {
+  const order = await repo.findOrderById(orderId);
+  if (!order) throw ApiError.notFound('Order');
+
+  const shortId = order.id.slice(-8).toUpperCase();
+  const customer = [order.user?.firstName, order.user?.lastName].filter(Boolean).join(' ') || 'Customer';
+  const fmtPrice = (p: unknown) => `$${Number(p ?? 0).toFixed(2)}`;
+  const subject = `Invoice #${shortId} — The Jiggling Pig, LLC`;
+
+  const lineRows = (order.lines ?? [])
+    .map(
+      (l) => `
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${l.productNameSnapshot || '—'}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;color:#8094ae;">${l.skuSnapshot || '—'}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${fmtPrice(l.unitPriceSnapshot)}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${l.qty}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee;">${fmtPrice(l.lineTotal)}</td>
+      </tr>`,
+    )
+    .join('');
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${subject}</title></head>
+<body style="margin:0;padding:0;background:#f5f6fa;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f6fa;padding:40px 0;">
+    <tr><td align="center">
+      <table width="620" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <!-- Header -->
+        <tr><td style="background:#1c2b46;padding:32px;text-align:center;">
+          <img src="https://cdn.thejigglingpig.com/media/2026/03/79b614aa-f325-4b91-b81c-9a2c63aaa89a.png"
+               alt="The Jiggling Pig" height="60" style="max-height:60px;" />
+          <p style="color:#fff;margin:8px 0 0;font-size:18px;font-weight:bold;">The Jiggling Pig, LLC</p>
+        </td></tr>
+        <!-- Invoice meta -->
+        <tr><td style="padding:32px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="vertical-align:top;">
+                <p style="margin:0;font-size:11px;text-transform:uppercase;color:#8094ae;letter-spacing:1px;">Invoice To</p>
+                <p style="margin:4px 0 0;font-size:16px;font-weight:bold;color:#1c2b46;">${customer}</p>
+                <p style="margin:4px 0 0;color:#526484;">${emailTo}</p>
+              </td>
+              <td style="vertical-align:top;text-align:right;">
+                <p style="margin:0;font-size:22px;font-weight:bold;color:#1c2b46;">Invoice</p>
+                <p style="margin:4px 0 0;color:#526484;">Invoice #${shortId}</p>
+                <p style="margin:4px 0 0;color:#526484;">${new Date(order.orderDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+        <!-- Line items -->
+        <tr><td style="padding:0 32px 32px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+            <thead>
+              <tr style="background:#f5f6fa;">
+                <th style="padding:10px 8px;text-align:left;font-size:12px;color:#8094ae;text-transform:uppercase;">Description</th>
+                <th style="padding:10px 8px;text-align:left;font-size:12px;color:#8094ae;text-transform:uppercase;">SKU</th>
+                <th style="padding:10px 8px;text-align:left;font-size:12px;color:#8094ae;text-transform:uppercase;">Unit Price</th>
+                <th style="padding:10px 8px;text-align:left;font-size:12px;color:#8094ae;text-transform:uppercase;">Qty</th>
+                <th style="padding:10px 8px;text-align:left;font-size:12px;color:#8094ae;text-transform:uppercase;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>${lineRows}</tbody>
+          </table>
+          <!-- Totals -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">
+            <tr><td colspan="3"></td><td style="padding:6px 8px;color:#526484;">Subtotal</td><td style="padding:6px 8px;text-align:right;">${fmtPrice(order.subtotal)}</td></tr>
+            ${Number(order.discountTotal) > 0 ? `<tr><td colspan="3"></td><td style="padding:6px 8px;color:#526484;">Discount</td><td style="padding:6px 8px;text-align:right;color:#e85347;">-${fmtPrice(order.discountTotal)}</td></tr>` : ''}
+            <tr><td colspan="3"></td><td style="padding:6px 8px;color:#526484;">Tax</td><td style="padding:6px 8px;text-align:right;">${fmtPrice(order.taxTotal)}</td></tr>
+            ${Number(order.shippingTotal) > 0 ? `<tr><td colspan="3"></td><td style="padding:6px 8px;color:#526484;">Shipping</td><td style="padding:6px 8px;text-align:right;">${fmtPrice(order.shippingTotal)}</td></tr>` : ''}
+            <tr style="border-top:2px solid #1c2b46;">
+              <td colspan="3"></td>
+              <td style="padding:10px 8px;font-weight:bold;color:#1c2b46;">Grand Total</td>
+              <td style="padding:10px 8px;text-align:right;font-weight:bold;color:#1c2b46;font-size:16px;">${fmtPrice(order.grandTotal)}</td>
+            </tr>
+          </table>
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="background:#f5f6fa;padding:24px;text-align:center;color:#8094ae;font-size:12px;">
+          <p style="margin:0;">Invoice was created on a computer and is valid without the signature and seal.</p>
+          <p style="margin:8px 0 0;">&copy; ${new Date().getFullYear()} The Jiggling Pig, LLC. All Rights Reserved.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  const text = `Invoice #${shortId} — The Jiggling Pig, LLC\nTo: ${customer} <${emailTo}>\nGrand Total: ${fmtPrice(order.grandTotal)}`;
+
+  const providerMessageId = await sendEmail({ to: emailTo, subject, html, text });
+
+  await repo.createOutboxEmail({
+    toAddress: emailTo,
+    subject,
+    bodyHtml: html,
+    bodyText: text,
+    payloadJson: JSON.stringify({ orderId, shortId }),
+    providerMessageId,
+  });
+
+  return { sent: true, to: emailTo };
+}
+

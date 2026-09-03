@@ -1,118 +1,20 @@
-modules = ["nodejs-20", "web", "python-3.11", "postgresql-16"]
-[agent]
-expertMode = true
+modules = ["nodejs-24"]
 
-[nix]
-channel = "stable-25_05"
-packages = ["freetype", "glibcLocales"]
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
 
 [workflows]
 runButton = "Project"
 
-[[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "API Server"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Admin Panel"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Frontend"
-
-[[workflows.workflow]]
-name = "API Server"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash -c 'cd Api && PORT=8000 npm run dev'"
-waitForPort = 8000
-
-[[workflows.workflow]]
-name = "Admin Panel"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash -c 'cd Admin.Web && npm run dev'"
-waitForPort = 3001
-
-[[workflows.workflow]]
-name = "Frontend"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "webview"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash -c 'cd Frontend.WEB && npm run dev'"
-waitForPort = 5000
-
-[[ports]]
-localPort = 3000
-externalPort = 3000
-
-[[ports]]
-localPort = 3001
-externalPort = 3001
-
-[[ports]]
-localPort = 3002
-externalPort = 3003
-
-[[ports]]
-localPort = 5000
-externalPort = 80
-
-[[ports]]
-localPort = 8000
-externalPort = 8000
-
-[userenv]
-
-[userenv.shared]
-PORT = "8000"
-NODE_ENV = "development"
-CORS_ORIGINS = "http://localhost:3001,http://localhost:5000"
-BCRYPT_SALT_ROUNDS = "12"
-RATE_LIMIT_WINDOW_MS = "900000"
-RATE_LIMIT_MAX = "100"
-JWT_ACCESS_EXPIRES_IN = "15m"
-JWT_REFRESH_EXPIRES_IN = "7d"
-LOW_STOCK_THRESHOLD = "5"
-AUTO_DISABLE_OUT_OF_STOCK = "false"
-LOG_RETENTION_DAYS = "90"
-UPLOADS_DIR = "uploads"
-MAX_UPLOAD_SIZE_MB = "25"
-STORAGE_PROVIDER = "r2"
-R2_ACCOUNT_ID = "e90b1199eee199a788c51499000b368c"
-R2_BUCKET = "jpig-media"
-R2_PUBLIC_BASE_URL = "https://cdn.thejigglingpig.com"
-EXPORT_MAX_ROWS = "50000"
-STRIPE_TAX_ENABLED = "false"
-RESEND_FROM = "invoices@thejugglingpig.com"
-STRIPE_WEBHOOK_SECRET = ""
-AUTO_CANCEL_ORDER_DELAY_MS = "1800000"
-CACHE_LIVE_TTL_SECONDS = "60"
-CACHE_AGGREGATE_TTL_SECONDS = "600"
-NEXT_PUBLIC_API_URL = "http://localhost:8000/api/v1"
-ADMIN_EMAIL = "jeromealfredharrison@gmail.com"
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_test_51T8C1cFzZhARozyRPQehhPjwrW4R1rIJpbvJbkUBm2nJbkW3WjayD4IhXvl1is20ifQm9DlQl8k0b2fJvrI8xpbH00UoKUHOsi"
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
 
 [postMerge]
 path = "scripts/post-merge.sh"
-timeoutMs = 240000
+timeoutMs = 20000

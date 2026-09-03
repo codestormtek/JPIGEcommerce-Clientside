@@ -1,0 +1,35 @@
+Downloading cache...
+==> Cloning from https://github.com/codestormtek/JPIGEcommerce-Clientside
+==> Checking out commit 230a212ade2661c1f31fe521f77053d6bf602c2c in branch main
+==> Downloaded 275MB in 5s. Extraction took 5s.
+==> Using Node.js version 22.22.0 (default)
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm ci && npx prisma generate && npm run build'...
+added 414 packages, and audited 415 packages in 9s
+39 packages are looking for funding
+  run `npm fund` for details
+1 high severity vulnerability
+To address all issues, run:
+  npm audit fix
+Run `npm audit` for details.
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+Prisma schema loaded from prisma/schema.prisma
+┌─────────────────────────────────────────────────────────┐
+│  Update available 6.19.2 -> 7.5.0                       │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 517ms
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+> jpig-api@1.0.0 build
+> tsc
+src/modules/reviews/reviews.service.ts(1,10): error TS2614: Module '"../../lib/prisma"' has no exported member 'prisma'. Did you mean to use 'import prisma from "../../lib/prisma"' instead?
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

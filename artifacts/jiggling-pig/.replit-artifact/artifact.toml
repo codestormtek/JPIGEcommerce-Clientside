@@ -1,0 +1,35 @@
+kind = "web"
+previewPath = "/"
+title = "Jiggling Pig"
+description = "The Jiggling Pig customer ordering website for browsing products, managing a cart, placing orders, and accessing kiosk and account flows."
+version = "1.0.0"
+id = "artifacts/jiggling-pig"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19008
+
+[services.development]
+run = "pnpm --filter @workspace/jiggling-pig run dev"
+
+[services.production]
+
+[services.production.build]
+args = ["pnpm", "--filter", "@workspace/jiggling-pig", "run", "build"]
+
+[services.production.build.env]
+NODE_ENV = "production"
+
+[services.production.run]
+args = ["pnpm", "--filter", "@workspace/jiggling-pig", "run", "serve"]
+
+[services.production.run.env]
+PORT = "19008"
+BASE_PATH = "/"
+NODE_ENV = "production"
+
+[services.env]
+PORT = "19008"
+BASE_PATH = "/"

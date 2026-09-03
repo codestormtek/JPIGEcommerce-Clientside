@@ -1,0 +1,250 @@
+import prisma from '../../lib/prisma';
+import { ListOrdersInput, PlaceOrderInput, CheckoutInput } from './orders.schema';
+
+type TxClient = Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
+
+// ─── Shared include ───────────────────────────────────────────────────────────
+
+const orderInclude = {
+  orderStatus: true,
+  shippingMethod: true,
+  addresses: true,
+  user: { select: { id: true, firstName: true, lastName: true, emailAddress: true } },
+  shipment: true,
+  lines: {
+    include: {
+      productItem: { include: { product: true } },
+      options: { include: { variationOption: true } },
+    },
+  },
+  payments: true,
+  statusHistory: { include: { newStatus: true, oldStatus: true }, orderBy: { changedAt: 'desc' as const } },
+} as const;
+
+// ─── Queries ──────────────────────────────────────────────────────────────────
+
+export async function findOrders(input: ListOrdersInput, callerUserId?: string) {
+  const { page, limit, userId, statusId, orderType, orderBy, order } = input;
+  const skip = (page - 1) * limit;
+
+  const where: Record<string, unknown> = {};
+  // Non-admins can only see their own orders
+  if (callerUserId) where['userId'] = callerUserId;
+  else if (userId) where['userId'] = userId;
+  if (statusId) where['orderStatusId'] = statusId;
+  if (orderType) where['orderType'] = orderType;
+
+  const [data, total] = await Promise.all([
+    prisma.shopOrder.findMany({
+      where,
+      include: orderInclude,
+      orderBy: { [orderBy]: order },
+      skip,
+      take: limit,
+    }),
+    prisma.shopOrder.count({ where }),
+  ]);
+
+  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+}
+
+export async function findOrderById(id: string) {
+  return prisma.shopOrder.findUnique({ where: { id }, include: orderInclude });
+}
+
+export async function findOrderByIdAndUser(id: string, userId: string) {
+  return prisma.shopOrder.findFirst({ where: { id, userId }, include: orderInclude });
+}
+
+/**
+ * Public order tracking: match by order-id prefix (the ORD-XXXXXXXX short code is
+ * the first 8 hex chars of the uuid) AND the owning user's email (case-insensitive).
+ * Requiring both means a guessed order number alone never reveals an order.
+ */
+export async function findOrderForTracking(idPrefix: string, email: string) {
+  return prisma.shopOrder.findFirst({
+    where: {
+      id: { startsWith: idPrefix },
+      user: { emailAddress: { equals: email, mode: 'insensitive' } },
+    },
+    include: orderInclude,
+  });
+}
+
+// ─── Checkout (place order) ───────────────────────────────────────────────────
+
+export async function findProductItemPrices(ids: string[]) {
+  return prisma.productItem.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, price: true },
+  });
+}
+
+export async function placeOrder(
+  userId: string,
+  input: CheckoutInput & { kioskDeviceId?: string; kioskRequestId?: string },
+  taxTotal = 0,
+  discountTotal = 0,
+) {
+  return prisma.$transaction(async (tx: TxClient) => {
+    // Resolve "pending" status
+    const pendingStatus = await tx.orderStatus.findFirst({ where: { status: 'pending' } });
+    if (!pendingStatus) throw new Error('Order status "pending" not seeded in database');
+
+    // Fetch product items and validate stock
+    const itemIds = input.lines.map((l) => l.productItemId);
+    const productItems = await tx.productItem.findMany({
+      where: { id: { in: itemIds } },
+      include: { product: { select: { name: true } } },
+    });
+
+    let subtotal = 0;
+    const lineData = input.lines.map((l) => {
+      const item = productItems.find((p) => p.id === l.productItemId);
+      if (!item) throw new Error(`Product item ${l.productItemId} not found`);
+      if (item.qtyInStock < l.qty) throw new Error(`Insufficient stock for SKU ${item.sku}`);
+      // Server-computed surcharge for duplicate premium combo sides (kiosk only)
+      const unitPrice = Number(item.price) + (l.sideUpcharge ?? 0);
+      const lineTotal = unitPrice * l.qty;
+      subtotal += lineTotal;
+      return { item, l, unitPrice, lineTotal };
+    });
+
+    // Fetch shipping cost — Shippo rate takes priority over static method
+    let shippingTotal = 0;
+    if (input.shippoRateAmount != null) {
+      shippingTotal = input.shippoRateAmount;
+    } else if (input.shippingMethodId) {
+      const sm = await tx.shippingMethod.findUnique({ where: { id: input.shippingMethodId } });
+      if (sm) shippingTotal = Number(sm.price);
+    }
+
+    const grandTotal = subtotal + shippingTotal + taxTotal - discountTotal;
+
+    // Kiosk orders get a short daily sequential number (K-001, K-002...) assigned
+    // atomically with order creation. An advisory lock serializes concurrent
+    // kiosk checkouts so numbers never duplicate.
+    let kioskOrderNumber: string | undefined;
+    if (input.orderType === 'kiosk') {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('kiosk_order_number'))`;
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const countToday = await tx.shopOrder.count({
+        where: { orderType: 'kiosk', orderDate: { gte: startOfDay } },
+      });
+      kioskOrderNumber = `K-${String(countToday + 1).padStart(3, '0')}`;
+    }
+
+    // Create order
+    const order = await tx.shopOrder.create({
+      data: {
+        userId,
+        orderDate: new Date(),
+        orderStatusId: pendingStatus.id,
+        shippingMethodId: input.shippingMethodId,
+        currency: input.currency,
+        orderType: input.orderType,
+        kioskOrderNumber,
+        kioskDeviceId: input.kioskDeviceId,
+        kioskRequestId: input.kioskRequestId,
+        specialInstructions: input.specialInstructions,
+        subtotal,
+        discountTotal,
+        taxTotal,
+        shippingTotal,
+        grandTotal,
+        shippoRateId: input.shippoRateId,
+        shippoCarrier: input.shippoCarrier,
+        shippoServiceLevel: input.shippoServiceLevel,
+        addresses: { create: input.addresses },
+        lines: {
+          create: lineData.map(({ item, l, unitPrice, lineTotal }) => ({
+            productItemId: item.id,
+            qty: l.qty,
+            unitPriceSnapshot: unitPrice,
+            lineTotal,
+            skuSnapshot: item.sku,
+            productNameSnapshot: item.product.name,
+            sideSelectionsText: l.sidesText ?? null,
+          })),
+        },
+        statusHistory: {
+          create: { newStatusId: pendingStatus.id, changedAt: new Date() },
+        },
+      },
+      include: orderInclude,
+    });
+
+    // Decrement stock
+    for (const { item, l } of lineData) {
+      await tx.productItem.update({
+        where: { id: item.id },
+        data: { qtyInStock: { decrement: l.qty } },
+      });
+    }
+
+    return order;
+  });
+}
+
+// ─── Status update ────────────────────────────────────────────────────────────
+
+export async function updateOrderStatus(orderId: string, newStatusId: string, changedByUserId: string | null) {
+  return prisma.$transaction(async (tx: TxClient) => {
+    const order = await tx.shopOrder.findUnique({ where: { id: orderId }, select: { orderStatusId: true } });
+    if (!order) throw new Error('Order not found');
+
+    await tx.orderStatusHistory.create({
+      data: {
+        orderId,
+        oldStatusId: order.orderStatusId,
+        newStatusId,
+        changedAt: new Date(),
+        changedByUserId,
+      },
+    });
+
+    return tx.shopOrder.update({
+      where: { id: orderId },
+      data: { orderStatusId: newStatusId },
+      include: orderInclude,
+    });
+  });
+}
+
+// ─── Lookups ──────────────────────────────────────────────────────────────────
+
+export async function findAllStatuses() {
+  return prisma.orderStatus.findMany({ orderBy: { status: 'asc' } });
+}
+
+export async function findAllShippingMethods() {
+  return prisma.shippingMethod.findMany({ orderBy: { name: 'asc' } });
+}
+
+// ─── Outbox ───────────────────────────────────────────────────────────────────
+
+export async function createOutboxEmail(data: {
+  toAddress: string;
+  subject: string;
+  bodyHtml: string;
+  bodyText: string;
+  payloadJson: string;
+  providerMessageId?: string | null;
+}) {
+  return prisma.messageOutbox.create({
+    data: {
+      channel: 'email',
+      templateKey: 'invoice',
+      status: data.providerMessageId ? 'sent' : 'queued',
+      toAddress: data.toAddress,
+      subject: data.subject,
+      bodyHtml: data.bodyHtml,
+      bodyText: data.bodyText,
+      payloadJson: data.payloadJson,
+      providerMessageId: data.providerMessageId ?? null,
+      sentAt: data.providerMessageId ? new Date() : null,
+    },
+  });
+}
+

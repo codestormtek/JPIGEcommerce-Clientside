@@ -1,0 +1,32 @@
+2026-08-13T13:20:38.827936Z	Cloning repository...
+2026-08-13T13:20:43.302828Z	From https://github.com/codestormtek/JPIGEcommerce-Clientside
+2026-08-13T13:20:43.303113Z	 * branch            583423c66bca511fd36c2bc446d116672a5ee2e2 -> FETCH_HEAD
+2026-08-13T13:20:43.303179Z	
+2026-08-13T13:20:44.088117Z	HEAD is now at 583423c Extend rich-text editor to section summaries and step instructions
+2026-08-13T13:20:44.088462Z	
+2026-08-13T13:20:44.142276Z	
+2026-08-13T13:20:44.142747Z	Using v2 root directory strategy
+2026-08-13T13:20:44.156557Z	Success: Finished cloning repository files
+2026-08-13T13:20:46.351397Z	Checking for configuration in a Wrangler configuration file (BETA)
+2026-08-13T13:20:46.351818Z	
+2026-08-13T13:20:46.494015Z	No Wrangler configuration file found. Continuing.
+2026-08-13T13:20:46.668134Z	Detected the following tools from environment: npm@10.9.2, nodejs@22.16.0
+2026-08-13T13:20:46.668543Z	Installing project dependencies: npm clean-install --progress=false
+2026-08-13T13:20:50.55649Z	npm warn deprecated lodash.isequal@4.5.0: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+2026-08-13T13:21:59.893727Z	npm error code ENOTFOUND
+2026-08-13T13:21:59.894117Z	npm error syscall getaddrinfo
+2026-08-13T13:21:59.894214Z	npm error errno ENOTFOUND
+2026-08-13T13:21:59.894304Z	npm error network request to http://package-firewall.replit.local/npm/dompurify/-/dompurify-3.4.13.tgz failed, reason: getaddrinfo ENOTFOUND package-firewall.replit.local
+2026-08-13T13:21:59.894364Z	npm error network This is a problem related to network connectivity.
+2026-08-13T13:21:59.894412Z	npm error network In most cases you are behind a proxy or have bad network settings.
+2026-08-13T13:21:59.894458Z	npm error network
+2026-08-13T13:21:59.894489Z	npm error network If you are behind a proxy, please make sure that the
+2026-08-13T13:21:59.894519Z	npm error network 'proxy' config is set properly.  See: 'npm help config'
+2026-08-13T13:21:59.896094Z	npm error A complete log of this run can be found in: /opt/buildhome/.npm/_logs/2026-08-13T13_20_47_628Z-debug-0.log
+2026-08-13T13:21:59.956652Z	Error: Exit with error code: 1
+2026-08-13T13:21:59.957448Z	    at ChildProcess.<anonymous> (/snapshot/dist/run-build.js)
+2026-08-13T13:21:59.957662Z	    at Object.onceWrapper (node:events:652:26)
+2026-08-13T13:21:59.957812Z	    at ChildProcess.emit (node:events:537:28)
+2026-08-13T13:21:59.957949Z	    at ChildProcess._handle.onexit (node:internal/child_process:291:12)
+2026-08-13T13:21:59.963128Z	Failed: build command exited with code: 1
+2026-08-13T13:22:00.561563Z	Failed: error occurred while running build command

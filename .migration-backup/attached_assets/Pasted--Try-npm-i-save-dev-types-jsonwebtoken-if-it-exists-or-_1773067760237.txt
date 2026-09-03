@@ -1,0 +1,248 @@
+  Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+src/modules/carousel/carousel.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/carousel/carousel.controller.ts(36,47): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/carousel/carousel.controller.ts(42,47): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/carousel/carousel.controller.ts(42,75): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/carousel/carousel.controller.ts(48,33): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/carousel/carousel.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/cart/cart.controller.ts(1,26): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/cart/cart.controller.ts(17,50): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/cart/cart.controller.ts(24,22): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/cart/cart.controller.ts(25,61): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/cart/cart.controller.ts(32,22): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/cart/cart.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/checklists/checklists.controller.ts(1,26): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/checklists/checklists.controller.ts(22,59): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(29,52): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(36,63): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(43,55): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(43,78): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(50,37): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(57,50): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(57,73): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(66,45): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(66,68): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(72,45): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(72,64): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(78,32): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.controller.ts(84,34): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/checklists/checklists.repository.ts(1,10): error TS2614: Module '"../../lib/prisma"' has no exported member 'prisma'. Did you mean to use 'import prisma from "../../lib/prisma"' instead?
+src/modules/checklists/checklists.repository.ts(86,37): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/modules/checklists/checklists.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/content/content.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/content/content.controller.ts(27,60): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/content/content.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/dashboards/dashboards.controller.ts(1,26): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/dashboards/dashboards.controller.ts(18,22): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/dashboards/dashboards.controller.ts(26,50): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/dashboards/dashboards.controller.ts(32,22): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/dashboards/dashboards.controller.ts(33,54): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/dashboards/dashboards.controller.ts(39,22): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/dashboards/dashboards.controller.ts(48,22): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/dashboards/dashboards.controller.ts(49,51): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/dashboards/dashboards.controller.ts(55,28): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/dashboards/dashboards.controller.ts(56,57): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/dashboards/dashboards.controller.ts(62,28): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/dashboards/dashboards.controller.ts(69,28): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/dashboards/dashboards.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/exports/exports.controller.ts(1,26): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/exports/exports.controller.ts(19,46): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/exports/exports.controller.ts(25,48): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/exports/exports.controller.ts(31,43): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/exports/exports.controller.ts(37,60): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/exports/exports.controller.ts(40,39): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/exports/exports.controller.ts(46,10): error TS2339: Property 'pipe' does not exist on type 'Promise<Readable>'.
+src/modules/exports/exports.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/files/files.controller.ts(1,26): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/files/files.controller.ts(10,12): error TS2339: Property 'file' does not exist on type 'AuthRequest'.
+src/modules/files/files.controller.ts(13,47): error TS2339: Property 'file' does not exist on type 'AuthRequest'.
+src/modules/files/files.controller.ts(19,46): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/files/files.controller.ts(25,46): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/files/files.controller.ts(31,59): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/files/files.controller.ts(32,61): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/files/files.controller.ts(43,32): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/files/files.controller.ts(49,51): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/files/files.controller.ts(49,79): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/files/files.controller.ts(55,28): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/files/files.controller.ts(56,19): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/files/files.controller.ts(63,32): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/files/files.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/files/files.routes.ts(2,20): error TS7016: Could not find a declaration file for module 'multer'. '/opt/render/project/src/Api/node_modules/multer/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/multer` if it exists or add a new declaration (.d.ts) file containing `declare module 'multer';`
+src/modules/files/files.routes.ts(15,16): error TS7006: Parameter '_req' implicitly has an 'any' type.
+src/modules/files/files.routes.ts(15,22): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/modules/files/files.routes.ts(15,28): error TS7006: Parameter 'cb' implicitly has an 'any' type.
+src/modules/files/files.service.ts(18,9): error TS2503: Cannot find namespace 'Express'.
+src/modules/inventory/inventory.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/inventory/inventory.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/locations/locations.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/locations/locations.controller.ts(58,62): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/locations/locations.controller.ts(64,47): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/locations/locations.controller.ts(64,90): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/locations/locations.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/media/media.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/media/media.controller.ts(39,12): error TS2339: Property 'file' does not exist on type 'AuthRequest'.
+src/modules/media/media.controller.ts(41,23): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/media/media.controller.ts(42,51): error TS2339: Property 'file' does not exist on type 'AuthRequest'.
+src/modules/media/media.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/media/media.routes.ts(2,20): error TS7016: Could not find a declaration file for module 'multer'. '/opt/render/project/src/Api/node_modules/multer/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/multer` if it exists or add a new declaration (.d.ts) file containing `declare module 'multer';`
+src/modules/media/media.routes.ts(15,16): error TS7006: Parameter '_req' implicitly has an 'any' type.
+src/modules/media/media.routes.ts(15,22): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/modules/media/media.routes.ts(15,28): error TS7006: Parameter 'cb' implicitly has an 'any' type.
+src/modules/media/media.service.ts(41,45): error TS2503: Cannot find namespace 'Express'.
+src/modules/menus/menus.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/menus/menus.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/message-templates/message-templates.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/message-templates/message-templates.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/metrics/metrics.controller.ts(1,26): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/metrics/metrics.controller.ts(14,25): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/metrics/metrics.controller.ts(30,58): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/metrics/metrics.controller.ts(45,35): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/metrics/metrics.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/notifications/notifications.controller.ts(2,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/notifications/notifications.controller.ts(42,49): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/notifications/notifications.controller.ts(245,62): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/notifications/notifications.controller.ts(252,60): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/notifications/notifications.controller.ts(259,60): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/notifications/notifications.controller.ts(259,91): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/notifications/notifications.controller.ts(266,48): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/notifications/notifications.controller.ts(275,66): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/notifications/notifications.controller.ts(282,71): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/notifications/notifications.controller.ts(289,52): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/notifications/notifications.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/orders/orders.controller.ts(1,26): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/orders/orders.controller.ts(12,57): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/orders/orders.controller.ts(18,23): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/orders/orders.controller.ts(25,52): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/orders/orders.controller.ts(32,50): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/orders/orders.controller.ts(37,48): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/orders/orders.controller.ts(43,23): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/orders/orders.controller.ts(46,9): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/orders/orders.controller.ts(57,23): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/orders/orders.controller.ts(63,23): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/orders/orders.controller.ts(70,23): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/orders/orders.controller.ts(71,27): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/orders/orders.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/payments/payments.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/payments/payments.controller.ts(15,49): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/payments/payments.controller.ts(21,52): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/payments/payments.controller.ts(28,9): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/payments/payments.controller.ts(37,9): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/payments/payments.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/products/products.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/products/products.controller.ts(33,9): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(41,9): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(42,9): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(49,35): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(83,9): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(84,9): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(90,44): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(90,72): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(97,12): error TS2339: Property 'file' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(98,54): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(98,82): error TS2339: Property 'file' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(103,40): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(103,68): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(157,12): error TS2339: Property 'file' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(158,55): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/products/products.controller.ts(158,83): error TS2339: Property 'file' does not exist on type 'AuthRequest'.
+src/modules/products/products.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/products/products.routes.ts(2,20): error TS7016: Could not find a declaration file for module 'multer'. '/opt/render/project/src/Api/node_modules/multer/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/multer` if it exists or add a new declaration (.d.ts) file containing `declare module 'multer';`
+src/modules/products/products.routes.ts(24,16): error TS7006: Parameter '_req' implicitly has an 'any' type.
+src/modules/products/products.routes.ts(24,22): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/modules/products/products.routes.ts(24,28): error TS7006: Parameter 'cb' implicitly has an 'any' type.
+src/modules/products/products.service.ts(140,69): error TS2503: Cannot find namespace 'Express'.
+src/modules/products/products.service.ts(162,67): error TS2503: Cannot find namespace 'Express'.
+src/modules/promotions/promotions.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/promotions/promotions.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/recipes/recipes.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/recipes/recipes.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/shipments/shipments.controller.ts(1,26): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/shipments/shipments.controller.ts(12,50): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/shipments/shipments.controller.ts(18,54): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/shipments/shipments.controller.ts(25,9): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/shipments/shipments.controller.ts(34,9): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/shipments/shipments.controller.ts(35,9): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/shipments/shipments.controller.ts(44,9): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/shipments/shipments.controller.ts(54,59): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/shipments/shipments.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/subscribers/subscribers.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/subscribers/subscribers.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/users/users.controller.ts(1,35): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/modules/users/users.controller.ts(26,9): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(27,9): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(34,32): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(46,65): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(58,65): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(63,52): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(68,56): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(82,77): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(96,65): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(102,64): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(109,9): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(119,9): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(131,58): error TS2339: Property 'query' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(138,9): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(154,9): error TS2339: Property 'body' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(162,62): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/users/users.controller.ts(170,9): error TS2339: Property 'params' does not exist on type 'AuthRequest'.
+src/modules/users/users.routes.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/services/exportWriters/pdf.writer.ts(1,25): error TS7016: Could not find a declaration file for module 'pdfkit'. '/opt/render/project/src/Api/node_modules/pdfkit/js/pdfkit.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/pdfkit` if it exists or add a new declaration (.d.ts) file containing `declare module 'pdfkit';`
+src/types/index.ts(1,25): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/utils/apiResponse.ts(1,26): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/utils/asyncHandler.ts(1,65): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+src/utils/asyncHandler.ts(9,4): error TS7006: Parameter 'req' implicitly has an 'any' type.
+src/utils/asyncHandler.ts(9,9): error TS7006: Parameter 'res' implicitly has an 'any' type.
+src/utils/asyncHandler.ts(9,14): error TS7006: Parameter 'next' implicitly has an 'any' type.
+src/utils/auditLogger.ts(1,25): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/Api/node_modules/express/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`

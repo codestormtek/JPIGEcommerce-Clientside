@@ -1,0 +1,112 @@
+==> Downloading cache...
+==> Cloning from https://github.com/codestormtek/JPIGEcommerce-Clientside
+==> Checking out commit 2c2b54d33d8d8a7981addec829d1f0079805e4ce in branch main
+==> Downloaded 407MB in 5s. Extraction took 8s.
+==> Using Node.js version 22.22.0 (default)
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm ci && npm run build'...
+added 178 packages, and audited 179 packages in 8s
+31 packages are looking for funding
+  run `npm fund` for details
+1 critical severity vulnerability
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+Run `npm audit` for details.
+> ekomart-nextjs@0.1.0 build
+> next build
+ ⚠ Installing TypeScript as it was not found while loading "next.config.ts".
+Installing devDependencies (npm):
+- typescript
+added 11 packages, and audited 190 packages in 930ms
+35 packages are looking for funding
+  run `npm fund` for details
+1 critical severity vulnerability
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+Run `npm audit` for details.
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /opt/render/project/src/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /opt/render/project/src/Frontend.WEB/package-lock.json
+   ▲ Next.js 15.5.12
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 3.5s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/1) ...
+ ✓ Generating static pages (1/1)
+   Finalizing page optimization ...
+   Collecting build traces ...
+Route (app)                                 Size  First Load JS
+┌ ƒ /                                     9.2 kB         175 kB
+├ ƒ /_not-found                            134 B         102 kB
+├ ƒ /404                                   180 B         120 kB
+├ ƒ /about                               5.28 kB         151 kB
+├ ƒ /account                             10.5 kB         131 kB
+├ ƒ /blog                                4.65 kB         125 kB
+├ ƒ /blog-list-left-sidebar               5.8 kB         126 kB
+├ ƒ /blog-list-right-sidebar             5.51 kB         126 kB
+├ ƒ /blog/[slug]                         6.84 kB         127 kB
+├ ƒ /cart                                4.73 kB         125 kB
+├ ƒ /checkout                             1.8 kB         121 kB
+├ ƒ /contact                               180 B         120 kB
+├ ƒ /cookies-policy                        180 B         120 kB
+├ ƒ /forgot-password                     4.07 kB         125 kB
+├ ƒ /gallery                             2.66 kB         122 kB
+├ ƒ /invoice                              1.7 kB         104 kB
+├ ƒ /login                                4.1 kB         125 kB
+├ ƒ /privacy-policy                        180 B         120 kB
+├ ƒ /register                            4.24 kB         125 kB
+├ ƒ /reset-password                      4.29 kB         125 kB
+├ ƒ /shop                                3.96 kB         145 kB
+├ ƒ /shop-compare                         1.4 kB         131 kB
+├ ƒ /shop-details-2                      3.52 kB         176 kB
+├ ƒ /shop-details-4                      3.19 kB         176 kB
+├ ƒ /shop-details-affiliats               3.2 kB         176 kB
+├ ƒ /shop-details-right-sidebar          3.75 kB         176 kB
+├ ƒ /shop-details-variable               5.86 kB         178 kB
+├ ƒ /shop-grid-top-filter                3.57 kB         143 kB
+├ ƒ /shop-list-sidebar                   4.34 kB         144 kB
+├ ƒ /shop-list-top-filter                3.58 kB         143 kB
+├ ƒ /shop/[slug]                          3.2 kB         176 kB
+├ ƒ /store                                 182 B         120 kB
+├ ƒ /terms-condition                       180 B         120 kB
+├ ƒ /trackorder                          3.87 kB         124 kB
+├ ƒ /vendor-details                      5.03 kB         126 kB
+├ ƒ /vendor-grid                         4.63 kB         125 kB
+├ ƒ /vendor-list                         4.64 kB         125 kB
+└ ƒ /wishlist                            4.47 kB         134 kB
+Menu
++ First Load JS shared by all             102 kB
+  ├ chunks/1255-a390e12b70b4a9fb.js        46 kB
+  ├ chunks/4bd1b696-f785427dddbba9fb.js  54.2 kB
+  └ other shared chunks (total)          2.02 kB
+ƒ  (Dynamic)  server-rendered on demand
+==> Uploading build...
+==> Uploaded in 16.6s. Compression took 4.6s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'npm start'
+> ekomart-nextjs@0.1.0 start
+> next start -p 3000 -H 0.0.0.0
+   ▲ Next.js 15.5.12
+   - Local:        http://localhost:3000
+   - Network:      http://0.0.0.0:3000
+ ✓ Starting...
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /opt/render/project/src/package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * /opt/render/project/src/Frontend.WEB/package-lock.json
+ ✓ Ready in 6s
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://jpig-store.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////

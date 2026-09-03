@@ -1,0 +1,203 @@
+> 8290 | }
+       |  ^
+  8291 |
+  8292 | .bg_image--8 {
+Menu
+  8293 |   background-image: url(../images/bg/bg-image-8.jpg);
+Import trace:
+  Client Component Browser:
+    ./Frontend.WEB/public-dashboard/assets/css/style.css [Client Component Browser]
+    ./Frontend.WEB/src/app/dashboard/layout.tsx [Server Component]
+https://nextjs.org/docs/messages/module-not-found
+./Frontend.WEB/public-dashboard/assets/css/style.css:8294:22
+Module not found: Can't resolve '../images/bg/bg-image-8.jpg'
+  8292 | .bg_image--8 {
+  8293 |   background-image: url(../images/bg/bg-image-8.jpg);
+> 8294 | }
+       |  ^
+  8295 |
+  8296 | .bg_image--9 {
+  8297 |   background-image: url(../images/bg/bg-image-9.jpg);
+Import trace:
+  Client Component Browser:
+    ./Frontend.WEB/public-dashboard/assets/css/style.css [Client Component Browser]
+    ./Frontend.WEB/src/app/dashboard/layout.tsx [Server Component]
+https://nextjs.org/docs/messages/module-not-found
+./Frontend.WEB/public-dashboard/assets/css/style.css:8298:22
+Module not found: Can't resolve '../images/bg/bg-image-9.jpg'
+  8296 | .bg_image--9 {
+  8297 |   background-image: url(../images/bg/bg-image-9.jpg);
+> 8298 | }
+       |  ^
+  8299 |
+  8300 | .bg_image--10 {
+  8301 |   background-image: url(../images/bg/bg-image-10.jpg);
+Import trace:
+  Client Component Browser:
+    ./Frontend.WEB/public-dashboard/assets/css/style.css [Client Component Browser]
+    ./Frontend.WEB/src/app/dashboard/layout.tsx [Server Component]
+https://nextjs.org/docs/messages/module-not-found
+./Frontend.WEB/public-dashboard/assets/css/style.css:14279:22
+Module not found: Can't resolve '../images/form/01.png'
+  14277 |   position: absolute;
+  14278 |   background-image: url(../images/form/01.png);
+> 14279 |   height: 19px;
+        |                      ^
+  14280 |   width: 19px;
+  14281 |   background-repeat: no-repeat;
+  14282 |   filter: brightness(0) saturate(100%) invert(100%) sepia(100%) saturate(0%) hue-rotate(132deg) brightness(103%) contrast(103%);
+Import trace:
+  Client Component Browser:
+    ./Frontend.WEB/public-dashboard/assets/css/style.css [Client Component Browser]
+    ./Frontend.WEB/src/app/dashboard/layout.tsx [Server Component]
+https://nextjs.org/docs/messages/module-not-found
+./Frontend.WEB/public-dashboard/assets/css/style.css:14295:22
+Module not found: Can't resolve '../images/form/01.png'
+  14293 |   position: absolute;
+  14294 |   background-image: url(../images/form/01.png);
+> 14295 |   height: 19px;
+        |                      ^
+  14296 |   width: 19px;
+  14297 |   background-repeat: no-repeat;
+  14298 |   filter: brightness(0) saturate(100%) invert(100%) sepia(100%) saturate(0%) hue-rotate(132deg) brightness(103%) contrast(103%);
+Import trace:
+  Client Component Browser:
+    ./Frontend.WEB/public-dashboard/assets/css/style.css [Client Component Browser]
+    ./Frontend.WEB/src/app/dashboard/layout.tsx [Server Component]
+https://nextjs.org/docs/messages/module-not-found
+./Frontend.WEB/public-dashboard/assets/css/style.css:14316:22
+Module not found: Can't resolve '../images/form/02.png'
+  14314 |   position: absolute;
+  14315 |   background-image: url(../images/form/02.png);
+> 14316 |   height: 19px;
+        |                      ^
+  14317 |   width: 19px;
+  14318 |   background-repeat: no-repeat;
+  14319 |   filter: brightness(0) saturate(100%) invert(100%) sepia(100%) saturate(0%) hue-rotate(132deg) brightness(103%) contrast(103%);
+Import trace:
+  Client Component Browser:
+    ./Frontend.WEB/public-dashboard/assets/css/style.css [Client Component Browser]
+    ./Frontend.WEB/src/app/dashboard/layout.tsx [Server Component]
+https://nextjs.org/docs/messages/module-not-found
+./Frontend.WEB/public-dashboard/assets/css/style.css:13928:22
+Module not found: Can't resolve '../images/vendor/01.webp'
+  13926 | .banner-vendor-details {
+  13927 |   background-image: url(../images/vendor/01.webp);
+> 13928 |   height: 400px;
+        |                      ^
+  13929 |   border-radius: 6px;
+  13930 |   position: relative;
+  13931 |   padding: 40px;
+Import trace:
+  Client Component Browser:
+    ./Frontend.WEB/public-dashboard/assets/css/style.css [Client Component Browser]
+    ./Frontend.WEB/src/app/dashboard/layout.tsx [Server Component]
+https://nextjs.org/docs/messages/module-not-found
+./Frontend.WEB/public-dashboard/assets/css/style.css:14016:22
+Module not found: Can't resolve '../images/vendor/02.webp'
+  14014 |   margin-top: 30px;
+  14015 |   background-image: url(../images/vendor/02.webp);
+> 14016 | }
+        |  ^
+  14017 | .product-area-add-wrapper .title {
+  14018 |   margin-left: -50px;
+  14019 |   color: #fff;
+Import trace:
+  Client Component Browser:
+    ./Frontend.WEB/public-dashboard/assets/css/style.css [Client Component Browser]
+    ./Frontend.WEB/src/app/dashboard/layout.tsx [Server Component]
+https://nextjs.org/docs/messages/module-not-found
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:16140:11)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8266:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8302:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8306:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8310:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8314:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8318:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8322:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8326:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8330:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8334:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8338:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8270:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8342:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8346:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8350:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8354:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8358:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8362:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8366:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8370:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8374:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8378:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8274:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8382:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8386:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8390:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8394:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8398:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8402:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8406:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8410:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8414:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8418:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8278:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8422:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8282:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8286:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8290:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8294:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:8298:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:14279:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:14295:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:14316:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:13928:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (./Frontend.WEB/public-dashboard/assets/css/style.css:14016:22)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

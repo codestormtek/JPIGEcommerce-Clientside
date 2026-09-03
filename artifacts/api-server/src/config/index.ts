@@ -1,0 +1,124 @@
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const requiredEnv = (key: string): string => {
+  const value = process.env[key];
+  if (!value) throw new Error(`Missing required environment variable: ${key}`);
+  return value;
+};
+
+const jwtSecret = process.env.JWT_SECRET ?? requiredEnv('SESSION_SECRET');
+
+export const config = {
+  env: process.env.NODE_ENV ?? 'development',
+  port: parseInt(process.env.PORT ?? '8000', 10),
+
+  database: {
+    url: requiredEnv('EXTERNAL_DATABASE_URL'),
+  },
+
+  jwt: {
+    secret: jwtSecret,
+    accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
+    refreshSecret: process.env.JWT_REFRESH_SECRET ?? jwtSecret,
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
+  },
+
+  cors: {
+    allowedOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:3000,http://localhost:3001,http://localhost:5000,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:5000').split(','),
+  },
+
+  bcrypt: {
+    saltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS ?? '12', 10),
+  },
+
+  rateLimit: {
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? '900000', 10), // 15 min
+    max: parseInt(process.env.RATE_LIMIT_MAX ?? '100', 10),
+  },
+
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY ?? '',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+    taxEnabled: process.env.STRIPE_TAX_ENABLED === 'true',
+  },
+
+  jobs: {
+    lowStockThreshold: parseInt(process.env.LOW_STOCK_THRESHOLD ?? '5', 10),
+    autoDisableOutOfStock: process.env.AUTO_DISABLE_OUT_OF_STOCK === 'true',
+    logRetentionDays: parseInt(process.env.LOG_RETENTION_DAYS ?? '90', 10),
+  },
+
+  uploads: {
+    dir: process.env.UPLOADS_DIR ?? 'uploads',
+    maxFileSizeMb: parseInt(process.env.MAX_UPLOAD_SIZE_MB ?? '25', 10),
+  },
+
+  storage: {
+    provider: process.env.STORAGE_PROVIDER ?? 'r2', // 'local' | 'r2'
+    r2: {
+      endpoint: process.env.R2_ENDPOINT ?? `https://${process.env.R2_ACCOUNT_ID ?? ''}.r2.cloudflarestorage.com`,
+      accountId: process.env.R2_ACCOUNT_ID ?? '',
+      accessKeyId: process.env.R2_ACCESS_KEY_ID ?? '',
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? '',
+      bucket: process.env.R2_BUCKET ?? '',
+      publicBaseUrl: (process.env.R2_PUBLIC_BASE_URL ?? '').replace(/\/$/, ''),
+    },
+  },
+
+  exports: {
+    maxRows: parseInt(process.env.EXPORT_MAX_ROWS ?? '50000', 10),
+  },
+
+  resend: {
+    apiKey: process.env.RESEND_API_KEY ?? '',
+    from: process.env.RESEND_FROM ?? 'info@thejigglingpig.com',
+    webhookSecret: process.env.RESEND_WEBHOOK_SECRET ?? '',
+  },
+
+  telnyx: {
+    apiKey: process.env.TELNYX_API_KEY ?? '',
+    fromNumber: process.env.TELNYX_FROM_NUMBER ?? '',
+    voiceForwardTo: process.env.TELNYX_VOICE_FORWARD_TO ?? '',
+    // Public base URL of the telnyx routes (used for TeXML action callbacks)
+    publicUrl: process.env.TELNYX_PUBLIC_URL ?? 'https://api.thejigglingpig.com/api/v1/telnyx',
+    // Where missed-call voicemails are emailed
+    voicemailEmail: process.env.TELNYX_VOICEMAIL_EMAIL ?? process.env.ADMIN_EMAIL ?? 'info@thejigglingpig.com',
+    // Optional dedicated secret for signing TeXML action callback URLs (falls back to apiKey)
+    webhookToken: process.env.TELNYX_WEBHOOK_TOKEN ?? '',
+  },
+
+  store: {
+    name: 'The Jiggling Pig, LLC',
+    url: process.env.STORE_URL ?? 'https://thejigglingpig.com',
+    adminUrl: process.env.ADMIN_URL ?? 'https://admin-new.thejigglingpig.com',
+    adminEmail: process.env.ADMIN_EMAIL ?? 'info@thejigglingpig.com',
+    // Physical address used as the "from" address for Shippo shipments
+    address: {
+      name: process.env.STORE_SHIP_NAME ?? 'The Jiggling Pig',
+      street1: process.env.STORE_SHIP_STREET1 ?? '',
+      city: process.env.STORE_SHIP_CITY ?? '',
+      state: process.env.STORE_SHIP_STATE ?? '',
+      zip: process.env.STORE_SHIP_ZIP ?? '',
+      country: 'US',
+      phone: process.env.STORE_SHIP_PHONE ?? '',
+      email: process.env.ADMIN_EMAIL ?? 'info@thejigglingpig.com',
+    },
+  },
+
+  shippo: {
+    apiKey: process.env.SHIPPO_API_KEY ?? '',
+    enabled: !!process.env.SHIPPO_API_KEY,
+  },
+
+  square: {
+    accessToken: process.env.SQUARE_ACCESS_TOKEN ?? '',
+    locationId: process.env.SQUARE_LOCATION_ID ?? '',
+    environment: process.env.SQUARE_ENVIRONMENT ?? 'sandbox',
+    webhookSignatureKey: process.env.SQUARE_WEBHOOK_SIGNATURE_KEY ?? '',
+    applicationId: process.env.SQUARE_APPLICATION_ID ?? '',
+  },
+
+} as const;
+
