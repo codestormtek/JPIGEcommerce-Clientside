@@ -44,7 +44,13 @@ export async function sendTest(id: string) {
 export async function sendNewOrderStoreAlerts(order: {
   orderNumber: string;
   customerName: string;
+  customerPhone?: string | null;
   itemCount: number;
+  items: Array<{
+    name: string;
+    qty: number;
+    sides?: string | null;
+  }>;
   grandTotal: number;
   currency: string;
 }): Promise<void> {
@@ -52,10 +58,34 @@ export async function sendNewOrderStoreAlerts(order: {
     const recipients = await repo.findActive();
     if (recipients.length === 0) return;
 
-    const body =
-      `New order ${order.orderNumber} — ${order.customerName}. ` +
-      `${order.itemCount} item${order.itemCount === 1 ? '' : 's'}, ` +
-      `${order.currency} ${order.grandTotal.toFixed(2)}. — ${config.store.name}`;
+    const itemParts = order.items.map((item) => {
+      const sides = item.sides?.trim() ? ` (${item.sides.trim()})` : '';
+      return `${item.qty}x ${item.name}${sides}`;
+    });
+    const customer = order.customerPhone
+      ? `${order.customerName} (${order.customerPhone})`
+      : order.customerName;
+    const prefix =
+      `New order ${order.orderNumber} - ${customer}. ` +
+      `${order.itemCount} item${order.itemCount === 1 ? '' : 's'}: `;
+    const suffix = `. Total ${order.currency} ${order.grandTotal.toFixed(2)}. - ${config.store.name}`;
+    const maxBodyLength = 600;
+    const availableForItems = Math.max(40, maxBodyLength - prefix.length - suffix.length);
+    let itemSummary = '';
+    for (let index = 0; index < itemParts.length; index += 1) {
+      const separator = itemSummary ? '; ' : '';
+      const next = `${itemSummary}${separator}${itemParts[index]}`;
+      if (next.length <= availableForItems) {
+        itemSummary = next;
+        continue;
+      }
+      const remaining = itemParts.length - index;
+      const more = `${separator}+${remaining} more item${remaining === 1 ? '' : 's'}`;
+      itemSummary = `${itemSummary.slice(0, Math.max(0, availableForItems - more.length))}${more}`;
+      break;
+    }
+    if (!itemSummary) itemSummary = 'No item details';
+    const body = `${prefix}${itemSummary}${suffix}`.slice(0, maxBodyLength);
 
     await Promise.all(
       recipients.map((r) =>

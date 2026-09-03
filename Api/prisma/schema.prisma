@@ -499,6 +499,7 @@ model ShopOrder {
   orderType              String          @default("retail") // retail|catering|kiosk
   kioskOrderNumber       String?         // short callable number for kiosk pickup orders, e.g. K-047
   kioskDeviceId          String?
+  kioskRequestId         String?         // client-generated idempotency key for a kiosk payment attempt
   kioskDevice            KioskDevice?    @relation(fields: [kioskDeviceId], references: [id])
   fulfillmentType        String?
   requestedFulfillmentAt DateTime?
@@ -518,6 +519,7 @@ model ShopOrder {
   promotionUsages         PromotionUsage[]
   convertedCateringQuote  CateringQuote?
 
+  @@unique([kioskDeviceId, kioskRequestId])
   @@map("shop_orders")
 }
 

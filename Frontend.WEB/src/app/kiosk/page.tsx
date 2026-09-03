@@ -193,8 +193,11 @@ export default function KioskPage() {
   const handlePlaceOrder = async (
     paymentMethod: "terminal" | "card",
     squareNonce?: string,
+    clientRequestId?: string,
   ): Promise<KioskOrderResult> => {
+    if (!clientRequestId) throw new Error("Payment request could not be initialized");
     return placeKioskOrder({
+      clientRequestId,
       lines: cart.map((l) => ({
         productItemId: l.item.id,
         qty: l.qty,

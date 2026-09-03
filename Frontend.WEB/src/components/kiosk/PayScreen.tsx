@@ -10,7 +10,7 @@ interface Props {
   config: KioskConfig;
   onBack: () => void;
   /** Places the order via the API. Resolves with the order result. */
-  onPlaceOrder: (paymentMethod: "terminal" | "card", squareNonce?: string) => Promise<KioskOrderResult>;
+  onPlaceOrder: (paymentMethod: "terminal" | "card", squareNonce: string | undefined, clientRequestId: string) => Promise<KioskOrderResult>;
   /** Called when payment is confirmed — advances to the confirmation screen. */
   onPaid: (result: KioskOrderResult) => void;
 }
@@ -64,6 +64,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
   const [cardReady, setCardReady] = useState(false);
 
   const orderRef = useRef<KioskOrderResult | null>(null);
+  const requestIdRef = useRef<string | null>(null);
   const cardRef = useRef<SquareCard | null>(null);
   const cancelledRef = useRef(false);
 
@@ -74,7 +75,8 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
     setBusy(true);
     setError(null);
     try {
-      const result = await onPlaceOrder("terminal");
+      requestIdRef.current ??= crypto.randomUUID();
+      const result = await onPlaceOrder("terminal", undefined, requestIdRef.current);
       orderRef.current = result;
       cancelledRef.current = false;
       setMode("terminal-waiting");
@@ -101,6 +103,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
           return;
         }
         if (st.status === "canceled") {
+          requestIdRef.current = null;
           setMode("choose");
           setError("Payment was canceled on the reader. Please try again.");
           return;
@@ -131,6 +134,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
     setError(null);
     if (orderId) cancelKioskPayment(orderId).catch(() => {});
     orderRef.current = null;
+    requestIdRef.current = null;
   };
 
   // ── Card flow: mount Square card form, tokenize, place order ──
@@ -185,7 +189,8 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
       if (result.status !== "OK" || !result.token) {
         throw new Error(result.errors?.[0]?.message || "Card was declined — please check the details");
       }
-      const order = await onPlaceOrder("card", result.token);
+      requestIdRef.current ??= crypto.randomUUID();
+      const order = await onPlaceOrder("card", result.token, requestIdRef.current);
       onPaid(order);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Payment failed — please try again");

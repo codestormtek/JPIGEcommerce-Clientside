@@ -4,6 +4,7 @@ import { ApiError } from '../../utils/apiError';
 import { ListOrdersInput, PlaceOrderInput, UpdateOrderStatusInput, GuestCheckoutInput, TrackOrderInput, CheckoutInput } from './orders.schema';
 import { sendEmail } from '../../lib/mailer';
 import { sendSms } from '../../lib/telnyx';
+import { normalizePhone } from '../../lib/phone';
 import { config } from '../../config';
 import * as repo from './orders.repository';
 import * as userRepo from '../users/users.repository';
@@ -134,7 +135,7 @@ export async function trackOrder(input: TrackOrderInput) {
 
 export async function checkout(
   userId: string,
-  input: CheckoutInput & { kioskDeviceId?: string },
+  input: CheckoutInput & { kioskDeviceId?: string; kioskRequestId?: string },
   ctx?: AuditContext,
 ) {
   try {
@@ -304,13 +305,39 @@ export async function checkout(
     prisma.siteUser.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true, emailAddress: true, phoneNumber: true } })
       .then((usr) => {
         if (!usr) return;
-        const customerName = [usr.firstName, usr.lastName].filter(Boolean).join(' ') || 'Valued Customer';
-        const shipAddr = (order as unknown as { addresses?: Array<{ addressType: string; fullName?: string; addressLine1?: string; city?: string; region?: string; postalCode?: string }> }).addresses?.find(a => a.addressType === 'shipping');
+        const orderAddresses = (order as unknown as {
+          addresses?: Array<{
+            addressType: string;
+            fullName?: string;
+            phone?: string | null;
+            addressLine1?: string;
+            city?: string;
+            region?: string;
+            postalCode?: string;
+          }>;
+        }).addresses ?? [];
+        const billingAddr = orderAddresses.find(a => a.addressType === 'billing');
+        const accountName = [usr.firstName, usr.lastName].filter(Boolean).join(' ') || 'Valued Customer';
+        const customerName = order.orderType === 'kiosk' && billingAddr?.fullName
+          ? billingAddr.fullName
+          : accountName;
+        const customerPhone = normalizePhone(
+          order.orderType === 'kiosk' ? billingAddr?.phone : usr.phoneNumber,
+        );
+        const shipAddr = orderAddresses.find(a => a.addressType === 'shipping');
         const shippingLine = shipAddr
           ? [shipAddr.fullName, shipAddr.addressLine1, shipAddr.city, shipAddr.region, shipAddr.postalCode].filter(Boolean).join(', ')
           : null;
 
-        const lines = (order as unknown as { lines?: Array<{ productNameSnapshot?: string; qty?: number; unitPriceSnapshot?: unknown; lineTotal?: unknown }> }).lines ?? [];
+        const lines = (order as unknown as {
+          lines?: Array<{
+            productNameSnapshot?: string;
+            qty?: number;
+            unitPriceSnapshot?: unknown;
+            lineTotal?: unknown;
+            sideSelectionsText?: string | null;
+          }>;
+        }).lines ?? [];
 
         const notifyPromises: Promise<unknown>[] = [
           sendOrderConfirmationToCustomer({
@@ -359,7 +386,13 @@ export async function checkout(
           sendNewOrderStoreAlerts({
             orderNumber: orderNum,
             customerName,
-            itemCount: lines.length,
+            customerPhone,
+            itemCount: lines.reduce((total, line) => total + (line.qty ?? 1), 0),
+            items: lines.map(line => ({
+              name: line.productNameSnapshot || 'Item',
+              qty: line.qty ?? 1,
+              sides: line.sideSelectionsText,
+            })),
             grandTotal: n(order.grandTotal),
             currency: order.currency,
           }),

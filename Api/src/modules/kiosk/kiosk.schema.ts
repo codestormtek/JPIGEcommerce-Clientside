@@ -1,8 +1,10 @@
 import { z } from 'zod';
+import { normalizePhone } from '../../lib/phone';
 
 // ─── Kiosk order (device-authenticated, in-store pickup) ─────────────────────
 
 export const kioskOrderSchema = z.object({
+  clientRequestId: z.string().uuid(),
   lines: z
     .array(
       z.object({
@@ -15,7 +17,11 @@ export const kioskOrderSchema = z.object({
     .min(1, 'At least one item is required')
     .max(50),
   customerName: z.string().min(1, 'Customer name is required').max(100),
-  customerPhone: z.string().max(30).optional(),
+  customerPhone: z
+    .string()
+    .max(30)
+    .refine((phone) => !phone.trim() || normalizePhone(phone) !== null, 'Enter a valid US phone number')
+    .optional(),
   specialInstructions: z.string().max(500).optional(),
   /** 'terminal' pushes the checkout to the paired Square Terminal; 'card' uses an on-screen nonce */
   paymentMethod: z.enum(['terminal', 'card']),

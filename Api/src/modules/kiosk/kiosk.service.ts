@@ -6,6 +6,7 @@ import prisma from '../../lib/prisma';
 import { ApiError } from '../../utils/apiError';
 import { logger } from '../../utils/logger';
 import { config } from '../../config';
+import { normalizePhone } from '../../lib/phone';
 import { checkout } from '../orders/orders.service';
 import { hashKioskToken, invalidateKioskDeviceCache } from './kiosk.middleware';
 import { KioskOrderInput, CreateKioskDeviceInput, UpdateKioskDeviceInput } from './kiosk.schema';
@@ -233,6 +234,21 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
     throw ApiError.badRequest('Payment is required to place a kiosk order.');
   }
 
+  const existingOrder = await prisma.shopOrder.findFirst({
+    where: { kioskDeviceId: deviceId, kioskRequestId: input.clientRequestId },
+    include: { payments: { orderBy: { createdAt: 'desc' }, take: 1 } },
+  });
+  if (existingOrder) {
+    const existingPayment = existingOrder.payments[0];
+    return {
+      orderId: existingOrder.id,
+      kioskOrderNumber: existingOrder.kioskOrderNumber,
+      grandTotal: Number(existingOrder.grandTotal),
+      paymentStatus: existingPayment?.status === 'captured' ? 'paid' : 'pending',
+      terminalCheckoutId: parseTerminalCheckoutId(existingPayment?.providerTxnId ?? null),
+    };
+  }
+
   const linesWithSides = await resolveComboSides(input.lines);
 
   let terminalDeviceId: string | null = null;
@@ -268,41 +284,139 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
     specialInstructions: input.specialInstructions,
     squareNonce: input.paymentMethod === 'card' ? input.squareNonce : undefined,
     kioskDeviceId: deviceId,
+    kioskRequestId: input.clientRequestId,
   });
 
   let terminalCheckoutId: string | null = null;
 
   if (input.paymentMethod === 'terminal') {
+    let squareOrderId: string | null = null;
+    let terminalMayHaveStarted = false;
     try {
       const client = getSquareClient();
-      const resp = await client.terminal.checkouts.create({
-        idempotencyKey: randomUUID(),
-        checkout: {
-          amountMoney: {
-            amount: BigInt(Math.round(Number(order.grandTotal) * 100)),
-            currency: 'USD',
+      const locationId = config.square.locationId;
+      if (!locationId) throw new Error('Square location ID is not configured');
+
+      const grandTotalCents = Math.round(Number(order.grandTotal) * 100);
+      const orderLineTotalCents = order.lines.reduce(
+        (total, line) => total + Math.round(Number(line.lineTotal) * 100),
+        0,
+      );
+      const positiveAdjustmentCents = Math.max(0, grandTotalCents - orderLineTotalCents);
+      const discountCents = Math.max(0, orderLineTotalCents - grandTotalCents);
+      const squareLineItems = order.lines.map((line) => ({
+        name: line.productNameSnapshot,
+        quantity: String(line.qty),
+        note: line.sideSelectionsText?.slice(0, 500) || undefined,
+        basePriceMoney: {
+          amount: BigInt(Math.round(Number(line.unitPriceSnapshot) * 100)),
+          currency: 'USD' as const,
+        },
+      }));
+      if (positiveAdjustmentCents > 0) {
+        squareLineItems.push({
+          name: 'Tax and adjustments',
+          quantity: '1',
+          note: undefined,
+          basePriceMoney: {
+            amount: BigInt(positiveAdjustmentCents),
+            currency: 'USD' as const,
           },
-          deviceOptions: { deviceId: terminalDeviceId! },
+        });
+      }
+
+      const customerPhone = normalizePhone(input.customerPhone);
+      const squareOrderResp = await client.orders.create({
+        idempotencyKey: `sqo-${order.id}`,
+        order: {
+          locationId,
           referenceId: order.kioskOrderNumber ?? order.id.slice(0, 20),
-          note: `Kiosk order ${order.kioskOrderNumber ?? order.id}`,
+          ticketName: input.customerName.slice(0, 30),
+          lineItems: squareLineItems,
+          ...(discountCents > 0
+            ? {
+                discounts: [{
+                  name: 'Order discount',
+                  scope: 'ORDER' as const,
+                  amountMoney: { amount: BigInt(discountCents), currency: 'USD' as const },
+                }],
+              }
+            : {}),
+          ...(customerPhone
+            ? {
+                fulfillments: [{
+                  type: 'PICKUP' as const,
+                  state: 'PROPOSED' as const,
+                  pickupDetails: {
+                    scheduleType: 'ASAP' as const,
+                    recipient: {
+                      displayName: input.customerName,
+                      phoneNumber: customerPhone,
+                    },
+                  },
+                }],
+              }
+            : {}),
         },
       });
-      terminalCheckoutId = resp.checkout?.id ?? null;
-      if (!terminalCheckoutId) throw new Error('Square returned no Terminal checkout id');
+      squareOrderId = squareOrderResp.order?.id ?? null;
+      if (!squareOrderId) throw new Error('Square returned no order id');
+      const squareTotalCents = squareOrderResp.order?.totalMoney?.amount;
+      if (squareTotalCents == null || squareTotalCents !== BigInt(grandTotalCents)) {
+        throw new Error(
+          `Square order total ${squareTotalCents?.toString() ?? 'missing'} did not match local total ${grandTotalCents}`,
+        );
+      }
 
-      await prisma.payment.create({
+      const payment = await prisma.payment.create({
         data: {
           orderId: order.id,
           provider: 'square_terminal',
           amount: Number(order.grandTotal),
           status: 'pending',
-          providerTxnId: terminalCheckoutId,
+          providerTxnId: `order:${squareOrderId}`,
         },
       });
+
+      const createTerminalCheckout = () =>
+        client.terminal.checkouts.create({
+          idempotencyKey: `sqc-${order.id}`,
+          checkout: {
+            amountMoney: {
+              amount: BigInt(grandTotalCents),
+              currency: 'USD',
+            },
+            deviceOptions: { deviceId: terminalDeviceId! },
+            referenceId: order.kioskOrderNumber ?? order.id.slice(0, 20),
+            note: `Kiosk order ${order.kioskOrderNumber ?? order.id}`.slice(0, 500),
+            orderId: squareOrderId!,
+          },
+        });
+
+      terminalMayHaveStarted = true;
+      let resp;
+      try {
+        resp = await createTerminalCheckout();
+      } catch (firstError) {
+        logger.warn(`Retrying idempotent Terminal checkout for kiosk order ${order.id}: ${firstError}`);
+        resp = await createTerminalCheckout();
+      }
+      terminalCheckoutId = resp.checkout?.id ?? null;
+      if (!terminalCheckoutId) throw new Error('Square returned no Terminal checkout id');
+
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { providerTxnId: `checkout:${terminalCheckoutId}` },
+      });
     } catch (err) {
-      // Payment never started — release the stock and void the order so the
-      // customer can simply try again.
       logger.error(`Terminal checkout failed for kiosk order ${order.id}: ${err}`);
+      if (terminalMayHaveStarted) {
+        throw ApiError.unprocessable(
+          'The card reader result could not be confirmed. Please ask staff to check the payment before trying again.',
+        );
+      }
+      // No Terminal checkout was attempted, so no customer charge is possible.
+      // Release stock and void the local order; any Square Order is uncharged.
       await voidUnpaidKioskOrder(order.id).catch((e) =>
         logger.error(`Failed to void kiosk order ${order.id} after terminal error: ${e}`),
       );
@@ -363,6 +477,32 @@ async function voidUnpaidKioskOrder(orderId: string) {
 
 // ─── Terminal payment status / cancel ────────────────────────────────────────
 
+function parseTerminalCheckoutId(providerTxnId: string | null): string | null {
+  if (!providerTxnId || providerTxnId.startsWith('order:')) return null;
+  return providerTxnId.startsWith('checkout:')
+    ? providerTxnId.slice('checkout:'.length)
+    : providerTxnId; // Backward compatibility for existing checkout IDs.
+}
+
+async function recoverTerminalCheckoutId(
+  squareOrderId: string,
+  deviceId: string,
+  createdAt: Date,
+): Promise<string | null> {
+  const response = await getSquareClient().terminal.checkouts.search({
+    query: {
+      filter: {
+        deviceId,
+        createdAt: {
+          startAt: new Date(createdAt.getTime() - 5 * 60 * 1000).toISOString(),
+        },
+      },
+    },
+    limit: 100,
+  });
+  return response.checkouts?.find((checkout) => checkout.orderId === squareOrderId)?.id ?? null;
+}
+
 export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
   const order = await prisma.shopOrder.findFirst({
     where: { id: orderId, kioskDeviceId: deviceId },
@@ -382,8 +522,25 @@ export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
   }
 
   // Still pending — ask Square for the live Terminal checkout state
+  let checkoutId = parseTerminalCheckoutId(payment.providerTxnId);
+  if (!checkoutId && payment.providerTxnId?.startsWith('order:')) {
+    checkoutId = await recoverTerminalCheckoutId(
+      payment.providerTxnId.slice('order:'.length),
+      deviceId,
+      payment.createdAt,
+    );
+    if (checkoutId) {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { providerTxnId: `checkout:${checkoutId}` },
+      });
+    }
+  }
+  if (!checkoutId) {
+    return { status: 'pending' as const, terminalStatus: 'INITIALIZING' };
+  }
   const client = getSquareClient();
-  const resp = await client.terminal.checkouts.get({ checkoutId: payment.providerTxnId! });
+  const resp = await client.terminal.checkouts.get({ checkoutId });
   const checkoutStatus = resp.checkout?.status;
 
   if (checkoutStatus === 'COMPLETED') {
@@ -431,8 +588,28 @@ export async function cancelKioskPayment(deviceId: string, orderId: string) {
   });
   if (!payment) return { canceled: false, message: 'No pending terminal payment to cancel' };
 
+  let checkoutId = parseTerminalCheckoutId(payment.providerTxnId);
+  if (!checkoutId && payment.providerTxnId?.startsWith('order:')) {
+    checkoutId = await recoverTerminalCheckoutId(
+      payment.providerTxnId.slice('order:'.length),
+      deviceId,
+      payment.createdAt,
+    );
+    if (checkoutId) {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { providerTxnId: `checkout:${checkoutId}` },
+      });
+    }
+  }
+  if (!checkoutId) {
+    throw ApiError.unprocessable(
+      'The card reader status is still being confirmed. Please check the payment before trying again.',
+    );
+  }
+
   try {
-    await getSquareClient().terminal.checkouts.cancel({ checkoutId: payment.providerTxnId! });
+    await getSquareClient().terminal.checkouts.cancel({ checkoutId });
   } catch (err) {
     // Checkout may have already completed or been canceled at Square —
     // re-check and let getKioskPaymentStatus own any resulting state change.

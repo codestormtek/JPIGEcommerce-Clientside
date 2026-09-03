@@ -82,7 +82,7 @@ export async function findProductItemPrices(ids: string[]) {
 
 export async function placeOrder(
   userId: string,
-  input: CheckoutInput & { kioskDeviceId?: string },
+  input: CheckoutInput & { kioskDeviceId?: string; kioskRequestId?: string },
   taxTotal = 0,
   discountTotal = 0,
 ) {
@@ -93,7 +93,10 @@ export async function placeOrder(
 
     // Fetch product items and validate stock
     const itemIds = input.lines.map((l) => l.productItemId);
-    const productItems = await tx.productItem.findMany({ where: { id: { in: itemIds } } });
+    const productItems = await tx.productItem.findMany({
+      where: { id: { in: itemIds } },
+      include: { product: { select: { name: true } } },
+    });
 
     let subtotal = 0;
     const lineData = input.lines.map((l) => {
@@ -143,6 +146,7 @@ export async function placeOrder(
         orderType: input.orderType,
         kioskOrderNumber,
         kioskDeviceId: input.kioskDeviceId,
+        kioskRequestId: input.kioskRequestId,
         specialInstructions: input.specialInstructions,
         subtotal,
         discountTotal,
@@ -160,7 +164,7 @@ export async function placeOrder(
             unitPriceSnapshot: unitPrice,
             lineTotal,
             skuSnapshot: item.sku,
-            productNameSnapshot: item.sku, // will be enriched by service
+            productNameSnapshot: item.product.name,
             sideSelectionsText: l.sidesText ?? null,
           })),
         },
