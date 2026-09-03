@@ -8,6 +8,7 @@ import { logger } from '../../utils/logger';
 import { config } from '../../config';
 import { normalizePhone } from '../../lib/phone';
 import { checkout } from '../orders/orders.service';
+import { sendNewOrderStoreAlerts } from '../order-notifications/order-notifications.service';
 import { hashKioskToken, invalidateKioskDeviceCache } from './kiosk.middleware';
 import { KioskOrderInput, CreateKioskDeviceInput, UpdateKioskDeviceInput } from './kiosk.schema';
 
@@ -503,6 +504,31 @@ async function recoverTerminalCheckoutId(
   return response.checkouts?.find((checkout) => checkout.orderId === squareOrderId)?.id ?? null;
 }
 
+async function sendPaidKioskStoreAlert(orderId: string): Promise<void> {
+  const order = await prisma.shopOrder.findUnique({
+    where: { id: orderId },
+    include: {
+      addresses: true,
+      lines: true,
+    },
+  });
+  if (!order) return;
+  const billingAddress = order.addresses.find((address) => address.addressType === 'billing');
+  await sendNewOrderStoreAlerts({
+    orderNumber: `ORD-${order.id.replace(/-/g, '').slice(0, 8).toUpperCase()}`,
+    customerName: billingAddress?.fullName || 'Kiosk Customer',
+    customerPhone: normalizePhone(billingAddress?.phone),
+    itemCount: order.lines.reduce((total, line) => total + line.qty, 0),
+    items: order.lines.map((line) => ({
+      name: line.productNameSnapshot || 'Item',
+      qty: line.qty,
+      sides: line.sideSelectionsText,
+    })),
+    grandTotal: Number(order.grandTotal),
+    currency: order.currency,
+  });
+}
+
 export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
   const order = await prisma.shopOrder.findFirst({
     where: { id: orderId, kioskDeviceId: deviceId },
@@ -545,14 +571,19 @@ export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
 
   if (checkoutStatus === 'COMPLETED') {
     const squarePaymentId = resp.checkout?.paymentIds?.[0];
-    await prisma.payment.update({
-      where: { id: payment.id },
+    const transitioned = await prisma.payment.updateMany({
+      where: { id: payment.id, status: 'pending' },
       data: {
         status: 'captured',
         capturedAt: new Date(),
         providerTxnId: squarePaymentId ?? payment.providerTxnId,
       },
     });
+    if (transitioned.count === 1) {
+      void sendPaidKioskStoreAlert(orderId).catch((error) =>
+        logger.warn(`Paid kiosk store alert failed for order ${orderId}: ${error}`),
+      );
+    }
     logger.info(`Kiosk terminal payment captured for order ${orderId}`);
     return { status: 'paid' as const };
   }

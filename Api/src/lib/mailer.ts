@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 
-const resend = new Resend(config.resend.apiKey);
+const resend = config.resend.apiKey ? new Resend(config.resend.apiKey) : null;
 
 export interface SendEmailOptions {
   to: string;
@@ -13,7 +13,7 @@ export interface SendEmailOptions {
 }
 
 export async function sendEmail(opts: SendEmailOptions): Promise<string | null> {
-  if (!config.resend.apiKey) {
+  if (!resend) {
     logger.warn('mailer: RESEND_API_KEY not set — email skipped');
     return null;
   }

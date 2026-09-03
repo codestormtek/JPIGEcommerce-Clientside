@@ -8,6 +8,8 @@ const requiredEnv = (key: string): string => {
   return value;
 };
 
+const jwtSecret = process.env.JWT_SECRET ?? requiredEnv('SESSION_SECRET');
+
 export const config = {
   env: process.env.NODE_ENV ?? 'development',
   port: parseInt(process.env.PORT ?? '8000', 10),
@@ -17,9 +19,9 @@ export const config = {
   },
 
   jwt: {
-    secret: requiredEnv('JWT_SECRET'),
+    secret: jwtSecret,
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
-    refreshSecret: process.env.JWT_REFRESH_SECRET ?? requiredEnv('JWT_SECRET'),
+    refreshSecret: process.env.JWT_REFRESH_SECRET ?? jwtSecret,
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
   },
 

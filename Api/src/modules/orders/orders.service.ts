@@ -381,22 +381,25 @@ export async function checkout(
           }),
         );
 
-        // Store-side new-order alert — texts every active notification recipient
-        notifyPromises.push(
-          sendNewOrderStoreAlerts({
-            orderNumber: orderNum,
-            customerName,
-            customerPhone,
-            itemCount: lines.reduce((total, line) => total + (line.qty ?? 1), 0),
-            items: lines.map(line => ({
-              name: line.productNameSnapshot || 'Item',
-              qty: line.qty ?? 1,
-              sides: line.sideSelectionsText,
-            })),
-            grandTotal: n(order.grandTotal),
-            currency: order.currency,
-          }),
-        );
+        // Terminal kiosk alerts are deferred until polling confirms payment.
+        // On-screen Square card payments are already captured before this point.
+        if (order.orderType !== 'kiosk' || Boolean(input.squareNonce)) {
+          notifyPromises.push(
+            sendNewOrderStoreAlerts({
+              orderNumber: orderNum,
+              customerName,
+              customerPhone,
+              itemCount: lines.reduce((total, line) => total + (line.qty ?? 1), 0),
+              items: lines.map(line => ({
+                name: line.productNameSnapshot || 'Item',
+                qty: line.qty ?? 1,
+                sides: line.sideSelectionsText,
+              })),
+              grandTotal: n(order.grandTotal),
+              currency: order.currency,
+            }),
+          );
+        }
 
         return Promise.all(notifyPromises);
       })
