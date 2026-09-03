@@ -487,13 +487,13 @@ function parseTerminalCheckoutId(providerTxnId: string | null): string | null {
 
 async function recoverTerminalCheckoutId(
   squareOrderId: string,
-  deviceId: string,
+  squareTerminalDeviceId: string,
   createdAt: Date,
 ): Promise<string | null> {
   const response = await getSquareClient().terminal.checkouts.search({
     query: {
       filter: {
-        deviceId,
+        deviceId: squareTerminalDeviceId,
         createdAt: {
           startAt: new Date(createdAt.getTime() - 5 * 60 * 1000).toISOString(),
         },
@@ -550,9 +550,16 @@ export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
   // Still pending — ask Square for the live Terminal checkout state
   let checkoutId = parseTerminalCheckoutId(payment.providerTxnId);
   if (!checkoutId && payment.providerTxnId?.startsWith('order:')) {
+    const device = await prisma.kioskDevice.findUnique({
+      where: { id: deviceId },
+      select: { squareTerminalDeviceId: true },
+    });
+    if (!device?.squareTerminalDeviceId) {
+      return { status: 'pending' as const, terminalStatus: 'INITIALIZING' };
+    }
     checkoutId = await recoverTerminalCheckoutId(
       payment.providerTxnId.slice('order:'.length),
-      deviceId,
+      device.squareTerminalDeviceId,
       payment.createdAt,
     );
     if (checkoutId) {
@@ -621,9 +628,18 @@ export async function cancelKioskPayment(deviceId: string, orderId: string) {
 
   let checkoutId = parseTerminalCheckoutId(payment.providerTxnId);
   if (!checkoutId && payment.providerTxnId?.startsWith('order:')) {
+    const device = await prisma.kioskDevice.findUnique({
+      where: { id: deviceId },
+      select: { squareTerminalDeviceId: true },
+    });
+    if (!device?.squareTerminalDeviceId) {
+      throw ApiError.unprocessable(
+        'The card reader status is still being confirmed. Please check the payment before trying again.',
+      );
+    }
     checkoutId = await recoverTerminalCheckoutId(
       payment.providerTxnId.slice('order:'.length),
-      deviceId,
+      device.squareTerminalDeviceId,
       payment.createdAt,
     );
     if (checkoutId) {
