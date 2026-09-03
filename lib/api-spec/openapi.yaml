@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.0.3
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication and session operations
+  - name: staff-payments
+    description: Admin-only kiosk payment operations for staff
 paths:
   /healthz:
     get:
@@ -24,8 +28,234 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /v1/auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Create an authenticated session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Access and refresh tokens
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+  /v1/auth/refresh:
+    post:
+      operationId: refreshSession
+      tags: [auth]
+      summary: Rotate a refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshSessionRequest"
+      responses:
+        "200":
+          description: Rotated access and refresh tokens
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshSessionResponse"
+  /v1/auth/me:
+    get:
+      operationId: getCurrentSession
+      tags: [auth]
+      summary: Get the authenticated session user
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Authenticated user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentSessionResponse"
+  /v1/auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Revoke one refresh-token session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogoutRequest"
+      responses:
+        "204":
+          description: Session revoked
+  /v1/auth/logout-all:
+    post:
+      operationId: logoutAllSessions
+      tags: [auth]
+      summary: Revoke all sessions for the authenticated user
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204":
+          description: All sessions revoked
+  /v1/payments/mobile/dashboard:
+    get:
+      operationId: getStaffPaymentDashboard
+      tags: [staff-payments]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Kiosk payment dashboard totals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffPaymentDashboardResponse"
+  /v1/payments/mobile:
+    get:
+      operationId: listStaffPayments
+      tags: [staff-payments]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: status, in: query, schema: { type: string, enum: [pending, captured, failed, canceled, refunded, partially_refunded] } }
+        - { name: search, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+      responses:
+        "200":
+          description: Paginated kiosk payments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffPaymentListResponse"
+  /v1/payments/mobile/{paymentId}:
+    get:
+      operationId: getStaffPayment
+      tags: [staff-payments]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: Kiosk payment details with live Square status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffPaymentResponse"
+  /v1/payments/mobile/{paymentId}/cancel:
+    post:
+      operationId: cancelStaffPayment
+      tags: [staff-payments]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: Confirmed canceled Terminal checkout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffPaymentResponse"
+  /v1/payments/mobile/{paymentId}/refunds:
+    post:
+      operationId: createStaffPaymentRefund
+      tags: [staff-payments]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStaffRefundRequest"
+      responses:
+        "200":
+          description: Idempotently created refund; status is Square's confirmed status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffRefundResponse"
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
   schemas:
+    LoginRequest:
+      type: object
+      required: [emailAddress, password]
+      properties:
+        emailAddress: { type: string, format: email }
+        password: { type: string, minLength: 1 }
+    RefreshSessionRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string, minLength: 1 }
+    LogoutRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string, minLength: 1 }
+    AuthTokens:
+      type: object
+      required: [accessToken, refreshToken]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+    LoginData:
+      allOf:
+        - $ref: "#/components/schemas/AuthTokens"
+        - type: object
+          required: [userId]
+          properties:
+            userId: { type: string, format: uuid }
+    CurrentSessionUser:
+      type: object
+      required: [id, firstName, lastName, emailAddress, phoneNumber, avatarUrl, role]
+      properties:
+        id: { type: string, format: uuid }
+        firstName: { type: string, nullable: true }
+        lastName: { type: string, nullable: true }
+        emailAddress: { type: string, format: email }
+        phoneNumber: { type: string, nullable: true }
+        avatarUrl: { type: string, nullable: true, format: uri }
+        role:
+          type: string
+          enum: [user, admin]
+          description: Lowercase role returned by the API.
+    LoginResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/LoginData" }
+    RefreshSessionResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/AuthTokens" }
+    CurrentSessionResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/CurrentSessionUser" }
     HealthStatus:
       type: object
       properties:
@@ -33,4 +263,134 @@ components:
           type: string
       required:
         - status
+    Money:
+      type: object
+      required: [amountCents, currency]
+      properties:
+        amountCents: { type: integer }
+        currency: { type: string }
+    StaffRefund:
+      type: object
+      required: [id, paymentId, actorAdminId, provider, providerRefundId, providerStatus, reason, amount, requestId, restoreInventory, inventoryRestored, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        paymentId: { type: string, format: uuid }
+        actorAdminId: { type: string, format: uuid }
+        provider: { type: string, enum: [square] }
+        providerRefundId: { type: string, nullable: true }
+        providerStatus: { type: string, enum: [PENDING, COMPLETED, REJECTED, FAILED] }
+        reason: { type: string }
+        amount: { $ref: "#/components/schemas/Money" }
+        requestId: { type: string, format: uuid }
+        restoreInventory:
+          type: boolean
+          description: When true, the complete order inventory is restored once across all refunds or cancellation; partial per-line restoration is not supported.
+        inventoryRestored:
+          type: boolean
+          description: True when this refund was the durable trigger for the order's one-time complete inventory restoration.
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    StaffPayment:
+      type: object
+      required: [id, orderId, orderNumber, orderStatus, provider, localStatus, liveProviderStatus, amount, refundedAmount, refundableAmount, receiptUrl, customerName, customerPhone, items, createdAt, capturedAt, canCancel, canRefund, refunds]
+      properties:
+        id: { type: string, format: uuid }
+        orderId: { type: string, format: uuid }
+        orderNumber: { type: string, nullable: true }
+        orderStatus: { type: string, description: Current local kiosk order status. }
+        provider: { type: string }
+        localStatus: { type: string }
+        liveProviderStatus: { type: string, nullable: true }
+        amount: { $ref: "#/components/schemas/Money" }
+        refundedAmount: { $ref: "#/components/schemas/Money" }
+        refundableAmount: { $ref: "#/components/schemas/Money" }
+        receiptUrl: { type: string, nullable: true, format: uri }
+        customerName: { type: string, nullable: true }
+        customerPhone: { type: string, nullable: true }
+        items:
+          type: array
+          description: Snapshot of kiosk order items and selected options.
+          items:
+            $ref: "#/components/schemas/StaffPaymentLineItem"
+        createdAt: { type: string, format: date-time }
+        capturedAt: { type: string, nullable: true, format: date-time }
+        canCancel: { type: boolean }
+        canRefund: { type: boolean }
+        refunds:
+          type: array
+          items: { $ref: "#/components/schemas/StaffRefund" }
+    StaffPaymentLineItem:
+      type: object
+      required: [productName, quantity, selectedSides, options]
+      properties:
+        productName: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        selectedSides: { type: string, nullable: true }
+        options:
+          type: array
+          items: { type: string }
+    StaffPaymentDashboard:
+      type: object
+      required: [pendingCount, capturedCount, failedCount, refundedCount, capturedTotal, refundedTotal]
+      properties:
+        pendingCount: { type: integer }
+        capturedCount: { type: integer }
+        failedCount: { type: integer }
+        refundedCount: { type: integer }
+        capturedTotal: { $ref: "#/components/schemas/Money" }
+        refundedTotal: { $ref: "#/components/schemas/Money" }
+    CreateStaffRefundRequest:
+      type: object
+      required: [requestId, reason, amountCents, restoreInventory]
+      properties:
+        requestId: { type: string, format: uuid }
+        reason: { type: string, minLength: 3, maxLength: 192 }
+        amountCents: { type: integer, minimum: 1 }
+        restoreInventory:
+          type: boolean
+          description: Restore the complete order inventory once if Square confirms this refund. This endpoint does not support per-line inventory restoration.
+    SuccessEnvelope:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, enum: [true] }
+    StaffPaymentResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/StaffPayment" }
+    StaffRefundResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/StaffRefund" }
+    StaffPaymentDashboardResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/StaffPaymentDashboard" }
+    PaginationMeta:
+      type: object
+      required: [total, page, limit, totalPages]
+      properties:
+        total: { type: integer }
+        page: { type: integer }
+        limit: { type: integer }
+        totalPages: { type: integer }
+    StaffPaymentListResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          required: [data, meta]
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/StaffPayment" }
+            meta: { $ref: "#/components/schemas/PaginationMeta" }
 

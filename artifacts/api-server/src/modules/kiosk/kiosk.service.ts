@@ -7,8 +7,9 @@ import { ApiError } from '../../utils/apiError';
 import { logger } from '../../utils/logger';
 import { config } from '../../config';
 import { normalizePhone } from '../../lib/phone';
+import { restoreOrderInventoryOnceTx } from '../../services/orderInventoryRestoration';
+import { reconcileCompletedKioskTerminalPayment } from '../../services/kioskTerminalReconciliation';
 import { checkout } from '../orders/orders.service';
-import { sendNewOrderStoreAlerts } from '../order-notifications/order-notifications.service';
 import { hashKioskToken, invalidateKioskDeviceCache } from './kiosk.middleware';
 import { KioskOrderInput, CreateKioskDeviceInput, UpdateKioskDeviceInput } from './kiosk.schema';
 
@@ -438,14 +439,14 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
 
 /**
  * Restores stock and marks an unpaid kiosk order cancelled (payment never completed).
- * Idempotent: uses an advisory lock + already-cancelled check so overlapping
- * poll/cancel/error paths can never restock the same order twice.
+ * Idempotent: uses the shared payment_inventory lock and durable restoration
+ * invariant, so kiosk and staff recovery paths can never restock twice.
  */
 async function voidUnpaidKioskOrder(orderId: string) {
   await prisma.$transaction(async (tx) => {
-    // Serialize concurrent void attempts for this order within the transaction
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`kiosk_void:${orderId}`}))`;
-
+    // Acquire the same order lock used by staff/refund recovery before loading
+    // status, so stale reads cannot create duplicate history entries.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`payment_inventory:${orderId}`}))`;
     const order = await tx.shopOrder.findUnique({
       where: { id: orderId },
       include: { lines: true, orderStatus: true },
@@ -456,21 +457,19 @@ async function voidUnpaidKioskOrder(orderId: string) {
       where: { status: { in: ['cancelled', 'canceled'], mode: 'insensitive' } },
     });
 
-    // Already voided by another path — nothing to do (prevents double restock)
-    if (cancelled && order.orderStatusId === cancelled.id) return;
-
-    for (const line of order.lines) {
-      if (line.productItemId) {
-        await tx.productItem.update({
-          where: { id: line.productItemId },
-          data: { qtyInStock: { increment: line.qty } },
-        });
-      }
-    }
-    if (cancelled) {
+    // Always pass through the shared durable restock helper, even if a prior
+    // crash already set the canceled status. This repairs incomplete legacy
+    // state without ever incrementing inventory twice.
+    await restoreOrderInventoryOnceTx(tx, orderId, { trigger: 'kiosk_void' });
+    if (cancelled && order.orderStatusId !== cancelled.id) {
       await tx.shopOrder.update({ where: { id: orderId }, data: { orderStatusId: cancelled.id } });
       await tx.orderStatusHistory.create({
-        data: { orderId, newStatusId: cancelled.id, changedAt: new Date() },
+        data: {
+          orderId,
+          oldStatusId: order.orderStatusId,
+          newStatusId: cancelled.id,
+          changedAt: new Date(),
+        },
       });
     }
   });
@@ -504,31 +503,6 @@ async function recoverTerminalCheckoutId(
   return response.checkouts?.find((checkout) => checkout.orderId === squareOrderId)?.id ?? null;
 }
 
-async function sendPaidKioskStoreAlert(orderId: string): Promise<void> {
-  const order = await prisma.shopOrder.findUnique({
-    where: { id: orderId },
-    include: {
-      addresses: true,
-      lines: true,
-    },
-  });
-  if (!order) return;
-  const billingAddress = order.addresses.find((address) => address.addressType === 'billing');
-  await sendNewOrderStoreAlerts({
-    orderNumber: `ORD-${order.id.replace(/-/g, '').slice(0, 8).toUpperCase()}`,
-    customerName: billingAddress?.fullName || 'Kiosk Customer',
-    customerPhone: normalizePhone(billingAddress?.phone),
-    itemCount: order.lines.reduce((total, line) => total + line.qty, 0),
-    items: order.lines.map((line) => ({
-      name: line.productNameSnapshot || 'Item',
-      qty: line.qty,
-      sides: line.sideSelectionsText,
-    })),
-    grandTotal: Number(order.grandTotal),
-    currency: order.currency,
-  });
-}
-
 export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
   const order = await prisma.shopOrder.findFirst({
     where: { id: orderId, kioskDeviceId: deviceId },
@@ -543,7 +517,13 @@ export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
   if (!payment) throw ApiError.notFound('Terminal payment');
 
   if (payment.status === 'captured') return { status: 'paid' as const };
-  if (payment.status === 'canceled' || payment.status === 'failed') {
+  if (payment.status === 'canceled') {
+    // Recovery for a process failure after local cancellation: this is a
+    // no-op when the durable restoration already exists.
+    await voidUnpaidKioskOrder(orderId);
+    return { status: 'canceled' as const };
+  }
+  if (payment.status === 'failed') {
     return { status: 'canceled' as const };
   }
 
@@ -571,19 +551,7 @@ export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
 
   if (checkoutStatus === 'COMPLETED') {
     const squarePaymentId = resp.checkout?.paymentIds?.[0];
-    const transitioned = await prisma.payment.updateMany({
-      where: { id: payment.id, status: 'pending' },
-      data: {
-        status: 'captured',
-        capturedAt: new Date(),
-        providerTxnId: squarePaymentId ?? payment.providerTxnId,
-      },
-    });
-    if (transitioned.count === 1) {
-      void sendPaidKioskStoreAlert(orderId).catch((error) =>
-        logger.warn(`Paid kiosk store alert failed for order ${orderId}: ${error}`),
-      );
-    }
+    await reconcileCompletedKioskTerminalPayment(payment.id, orderId, squarePaymentId);
     logger.info(`Kiosk terminal payment captured for order ${orderId}`);
     return { status: 'paid' as const };
   }
@@ -617,7 +585,16 @@ export async function cancelKioskPayment(deviceId: string, orderId: string) {
     where: { orderId, provider: 'square_terminal', status: 'pending' },
     orderBy: { createdAt: 'desc' },
   });
-  if (!payment) return { canceled: false, message: 'No pending terminal payment to cancel' };
+  if (!payment) {
+    // Preserve the legacy response for repeat cancels, while allowing that
+    // repeat request to complete a previously interrupted local void.
+    const canceledPayment = await prisma.payment.findFirst({
+      where: { orderId, provider: 'square_terminal', status: 'canceled' },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (canceledPayment) await voidUnpaidKioskOrder(orderId);
+    return { canceled: false, message: 'No pending terminal payment to cancel' };
+  }
 
   let checkoutId = parseTerminalCheckoutId(payment.providerTxnId);
   if (!checkoutId && payment.providerTxnId?.startsWith('order:')) {

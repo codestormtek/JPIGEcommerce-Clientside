@@ -53,6 +53,8 @@ model SiteUser {
   liveSessions          LiveSession[]         @relation("LiveSessionCreator")
   smsCampaigns          SmsAlertCampaign[]    @relation("SmsCampaignCreator")
   smsBroadcasts         SmsBroadcast[]        @relation("SmsBroadcastCreator")
+  paymentRefunds        PaymentRefund[]        @relation("RefundActor")
+  inventoryRestorations InventoryRestoration[] @relation("InventoryRestorationActor")
 
   @@map("site_users")
 }
@@ -518,6 +520,7 @@ model ShopOrder {
   cateringDeliveryAddress CateringDeliveryAddress?
   promotionUsages         PromotionUsage[]
   convertedCateringQuote  CateringQuote?
+  inventoryRestoration    InventoryRestoration?
 
   @@unique([kioskDeviceId, kioskRequestId])
   @@map("shop_orders")
@@ -641,8 +644,45 @@ model Payment {
   createdAt            DateTime            @default(now())
   authorizedAt         DateTime?
   capturedAt           DateTime?
+  refunds              PaymentRefund[]
 
   @@map("payments")
+}
+
+model PaymentRefund {
+  id                  String   @id @default(uuid())
+  paymentId           String
+  payment             Payment  @relation(fields: [paymentId], references: [id])
+  actorAdminId        String
+  actorAdmin          SiteUser @relation("RefundActor", fields: [actorAdminId], references: [id])
+  provider            String
+  providerRefundId    String?  @unique
+  providerStatus      String
+  reason              String
+  amountCents         Int
+  currency            String   @default("USD")
+  idempotencyRequestId String   @unique
+  restoreInventory    Boolean
+  inventoryRestoration InventoryRestoration?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([paymentId, createdAt])
+  @@map("payment_refunds")
+}
+
+model InventoryRestoration {
+  id           String         @id @default(uuid())
+  orderId      String         @unique
+  order        ShopOrder      @relation(fields: [orderId], references: [id])
+  trigger      String         // refund|terminal_cancel|kiosk_void
+  refundId     String?        @unique
+  refund       PaymentRefund? @relation(fields: [refundId], references: [id])
+  actorAdminId String?
+  actorAdmin   SiteUser?      @relation("InventoryRestorationActor", fields: [actorAdminId], references: [id])
+  restoredAt   DateTime       @default(now())
+
+  @@map("inventory_restorations")
 }
 
 model PaymentMethodToken {

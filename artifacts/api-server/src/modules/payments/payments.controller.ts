@@ -2,7 +2,11 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../../types';
 import { sendSuccess, sendPaginated } from '../../utils/apiResponse';
 import { ctxFromRequest } from '../../utils/auditLogger';
-import { ListPaymentsInput } from './payments.schema';
+import {
+  CreateStaffRefundInput,
+  ListPaymentsInput,
+  StaffPaymentsListInput,
+} from './payments.schema';
 import * as service from './payments.service';
 import * as stripeService from '../../services/stripeService';
 import * as squareService from '../../services/squareService';
@@ -57,6 +61,40 @@ export async function refundPayment(req: AuthRequest, res: Response): Promise<vo
   sendSuccess(res, payment, 'Payment refunded');
 }
 
+export async function getStaffPaymentDashboard(_req: AuthRequest, res: Response): Promise<void> {
+  sendSuccess(res, await service.getStaffPaymentDashboard());
+}
+
+export async function listStaffPayments(req: AuthRequest, res: Response): Promise<void> {
+  sendPaginated(res, await service.listStaffPayments(req.query as unknown as StaffPaymentsListInput));
+}
+
+export async function getStaffPayment(req: AuthRequest, res: Response): Promise<void> {
+  sendSuccess(res, await service.getStaffPayment(req.params['paymentId'] as string));
+}
+
+export async function cancelStaffPayment(req: AuthRequest, res: Response): Promise<void> {
+  sendSuccess(
+    res,
+    await service.cancelStaffPayment(
+      req.params['paymentId'] as string,
+      ctxFromRequest(req, req.user!.sub),
+    ),
+    'Terminal checkout canceled',
+  );
+}
+
+export async function createStaffPaymentRefund(req: AuthRequest, res: Response): Promise<void> {
+  sendSuccess(
+    res,
+    await service.createStaffPaymentRefund(
+      req.params['paymentId'] as string,
+      req.body as CreateStaffRefundInput,
+      ctxFromRequest(req, req.user!.sub),
+    ),
+  );
+}
+
 // POST /api/v1/payments/square-webhook  (no auth — verified by Square HMAC)
 export async function handleSquareWebhook(req: Request, res: Response): Promise<void> {
   const sig = req.headers['x-square-hmacsha256-signature'] as string | undefined;
@@ -104,6 +142,8 @@ export async function handleSquareWebhook(req: Request, res: Response): Promise<
     const paymentId = event?.data?.object?.payment?.id ?? '';
     const paymentStatus = event?.data?.object?.payment?.status ?? '';
     const refundPaymentId = event?.data?.object?.refund?.payment_id ?? '';
+    const refundId = event?.data?.object?.refund?.id ?? '';
+    const refundStatus = event?.data?.object?.refund?.status ?? '';
 
     switch (eventType) {
       case 'payment.completed':
@@ -113,9 +153,11 @@ export async function handleSquareWebhook(req: Request, res: Response): Promise<
         if (paymentId) await service.handleSquarePaymentFailed(paymentId);
         break;
       case 'refund.created':
-      case 'refund.completed':
+      case 'refund.updated':
         // Refund events reference the original payment via payment_id
-        if (refundPaymentId) await service.handleSquareRefundCompleted(refundPaymentId);
+        if (refundPaymentId && refundId && refundStatus) {
+          await service.handleSquareRefundUpdated(refundPaymentId, refundId, refundStatus);
+        }
         break;
       default:
         logger.debug('Unhandled Square webhook event', { type: eventType });

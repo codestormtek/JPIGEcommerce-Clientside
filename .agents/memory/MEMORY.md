@@ -1,1 +1,2 @@
 - [Legacy platform runtime](legacy-platform-runtime.md) — preserve the existing Next.js and Prisma architecture during multi-artifact work; avoid framework or ORM rewrites.
+- [External payment reconciliation](external-payment-reconciliation.md) — provider-confirmed financial actions need atomic, retry-safe local finalization and strict event correlation.

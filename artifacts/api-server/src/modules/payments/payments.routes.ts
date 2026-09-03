@@ -2,7 +2,12 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validate.middleware';
 import { asyncHandler } from '../../utils/asyncHandler';
-import { listPaymentsSchema } from './payments.schema';
+import {
+  createStaffRefundSchema,
+  listPaymentsSchema,
+  paymentIdSchema,
+  staffPaymentsListSchema,
+} from './payments.schema';
 import * as ctrl from './payments.controller';
 
 export const paymentsRouter = Router();
@@ -17,6 +22,42 @@ paymentsRouter.post('/square-webhook', asyncHandler(ctrl.handleSquareWebhook));
 paymentsRouter.get('/gateway-config', asyncHandler(ctrl.getGatewayConfig));
 
 // All other payments routes are admin-only
+
+paymentsRouter.get(
+  '/mobile/dashboard',
+  authenticate,
+  authorize('admin'),
+  asyncHandler(ctrl.getStaffPaymentDashboard),
+);
+paymentsRouter.get(
+  '/mobile',
+  authenticate,
+  authorize('admin'),
+  validate(staffPaymentsListSchema, 'query'),
+  asyncHandler(ctrl.listStaffPayments),
+);
+paymentsRouter.get(
+  '/mobile/:paymentId',
+  authenticate,
+  authorize('admin'),
+  validate(paymentIdSchema, 'params'),
+  asyncHandler(ctrl.getStaffPayment),
+);
+paymentsRouter.post(
+  '/mobile/:paymentId/cancel',
+  authenticate,
+  authorize('admin'),
+  validate(paymentIdSchema, 'params'),
+  asyncHandler(ctrl.cancelStaffPayment),
+);
+paymentsRouter.post(
+  '/mobile/:paymentId/refunds',
+  authenticate,
+  authorize('admin'),
+  validate(paymentIdSchema, 'params'),
+  validate(createStaffRefundSchema, 'body'),
+  asyncHandler(ctrl.createStaffPaymentRefund),
+);
 
 // GET    /api/v1/payments
 paymentsRouter.get(

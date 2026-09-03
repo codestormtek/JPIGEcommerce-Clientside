@@ -113,10 +113,9 @@ export async function refundPayment(
   amountCents: number,
   currency: string,
   reason?: string,
+  idempotencyKey: string = crypto.randomUUID(),
 ): Promise<SquareRefundResult> {
   const client = getSquareClient();
-  // Square caps idempotency_key at 45 chars; use a UUID (36 chars) to stay safely under.
-  const idempotencyKey = crypto.randomUUID();
 
   const response = await client.refunds.refundPayment({
     paymentId: squarePaymentId,
@@ -136,6 +135,13 @@ export async function refundPayment(
     refundId: refund.id,
     status: refund.status ?? 'UNKNOWN',
   };
+}
+
+export async function getRefund(squareRefundId: string): Promise<SquareRefundResult> {
+  const response = await getSquareClient().refunds.get({ refundId: squareRefundId });
+  const refund = response.refund;
+  if (!refund?.id) throw new Error(`Square refund not found: ${squareRefundId}`);
+  return { refundId: refund.id, status: refund.status ?? 'UNKNOWN' };
 }
 
 // ─── Webhook signature verification ───────────────────────────────────────────
