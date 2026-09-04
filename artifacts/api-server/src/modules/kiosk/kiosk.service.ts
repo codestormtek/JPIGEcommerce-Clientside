@@ -9,6 +9,7 @@ import { config } from '../../config';
 import { normalizePhone } from '../../lib/phone';
 import { restoreOrderInventoryOnceTx } from '../../services/orderInventoryRestoration';
 import { reconcileCompletedKioskTerminalPayment } from '../../services/kioskTerminalReconciliation';
+import { enqueueStaffOrderPush } from '../../services/expoPushNotifications';
 import { checkout } from '../orders/orders.service';
 import { hashKioskToken, invalidateKioskDeviceCache } from './kiosk.middleware';
 import { KioskOrderInput, CreateKioskDeviceInput, UpdateKioskDeviceInput } from './kiosk.schema';
@@ -242,6 +243,11 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
   });
   if (existingOrder) {
     const existingPayment = existingOrder.payments[0];
+    if (existingPayment?.status === 'captured') {
+      void enqueueStaffOrderPush(existingOrder.id, 'kiosk_order_captured').catch((error) =>
+        logger.warn(`Failed to repair captured kiosk push for order ${existingOrder.id}: ${error}`),
+      );
+    }
     return {
       orderId: existingOrder.id,
       kioskOrderNumber: existingOrder.kioskOrderNumber,

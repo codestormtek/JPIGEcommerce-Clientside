@@ -55,6 +55,7 @@ model SiteUser {
   smsBroadcasts         SmsBroadcast[]        @relation("SmsBroadcastCreator")
   paymentRefunds        PaymentRefund[]        @relation("RefundActor")
   inventoryRestorations InventoryRestoration[] @relation("InventoryRestorationActor")
+  expoPushTokens       ExpoPushToken[]
 
   @@map("site_users")
 }
@@ -521,9 +522,67 @@ model ShopOrder {
   promotionUsages         PromotionUsage[]
   convertedCateringQuote  CateringQuote?
   inventoryRestoration    InventoryRestoration?
+  pushNotificationEvents  PushNotificationEvent[]
 
   @@unique([kioskDeviceId, kioskRequestId])
   @@map("shop_orders")
+}
+
+model ExpoPushToken {
+  id             String   @id @default(uuid())
+  userId         String
+  user           SiteUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token          String   @unique
+  rolePreference String
+  enabled        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([enabled, rolePreference])
+  @@map("expo_push_tokens")
+}
+
+model PushNotificationEvent {
+  id          String    @id @default(uuid())
+  orderId     String
+  order       ShopOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  eventType   String
+  audience    String
+  status      String    @default("pending")
+  attemptCount Int      @default(0)
+  createdAt   DateTime  @default(now())
+  claimedAt   DateTime?
+  leaseExpiresAt DateTime?
+  nextAttemptAt DateTime @default(now())
+  sentAt      DateTime?
+  completedAt DateTime?
+  lastError   String?
+  deliveries  PushNotificationDelivery[]
+
+  @@unique([orderId, eventType])
+  @@index([status, createdAt])
+  @@map("push_notification_events")
+}
+
+model PushNotificationDelivery {
+  id          String                @id @default(uuid())
+  eventId     String
+  event       PushNotificationEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  token       String
+  ticketId    String?
+  status      String                @default("pending")
+  attemptCount Int                  @default(0)
+  nextAttemptAt DateTime            @default(now())
+  leaseExpiresAt DateTime?
+  sentAt      DateTime?
+  completedAt DateTime?
+  receiptJson String?
+  lastError   String?
+
+  @@unique([eventId, token])
+  @@index([status, nextAttemptAt])
+  @@index([ticketId])
+  @@map("push_notification_deliveries")
 }
 
 

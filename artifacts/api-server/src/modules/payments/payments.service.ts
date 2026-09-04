@@ -10,6 +10,7 @@ import * as squareService from '../../services/squareService';
 import { restoreOrderInventoryOnceTx } from '../../services/orderInventoryRestoration';
 import { reconcileCompletedKioskTerminalPayment } from '../../services/kioskTerminalReconciliation';
 import { CreateStaffRefundInput, StaffPaymentsListInput } from './payments.schema';
+import { enqueueStaffOrderPush } from '../../services/expoPushNotifications';
 
 // ─── Payments (admin) ─────────────────────────────────────────────────────────
 
@@ -43,6 +44,15 @@ export async function capturePayment(id: string, ctx?: AuditContext) {
   }
 
   const updated = await repo.capturePayment(id);
+  const capturedOrder = await prisma.shopOrder.findUnique({
+    where: { id: payment.orderId },
+    select: { id: true, orderType: true },
+  });
+  if (capturedOrder?.orderType === 'kiosk') {
+    enqueueStaffOrderPush(capturedOrder.id, 'kiosk_order_captured').catch((error) =>
+      logger.warn('Failed to enqueue captured kiosk push', { orderId: capturedOrder.id, error }),
+    );
+  }
 
   logAudit({
     action: AuditAction.PAYMENT_CAPTURED,
@@ -283,6 +293,11 @@ export async function getStaffPayment(id: string) {
     }
   }
   payment = await requireKioskPayment(id);
+  if (['captured', 'partially_refunded'].includes(payment.status)) {
+    void enqueueStaffOrderPush(payment.orderId, 'kiosk_order_captured').catch((error) =>
+      logger.warn('Failed to repair captured kiosk push', { orderId: payment.orderId, error }),
+    );
+  }
   let liveStatus: string | null = null;
   let receiptUrl: string | null = null;
   try {
@@ -293,6 +308,7 @@ export async function getStaffPayment(id: string) {
       receiptUrl = live.receiptUrl ?? null;
       if (live.status === 'COMPLETED' && payment.status === 'pending') {
         await prisma.payment.update({ where: { id }, data: { status: 'captured', capturedAt: new Date() } });
+        await enqueueStaffOrderPush(payment.orderId, 'kiosk_order_captured');
         payment = await requireKioskPayment(id);
       }
     } else {
@@ -651,6 +667,13 @@ export async function handlePaymentIntentSucceeded(providerTxnId: string): Promi
     await repo.updatePaymentStatus(payment.id, 'captured', { capturedAt: new Date() });
     logger.info('Webhook: payment captured via webhook', { paymentId: payment.id });
   }
+  const order = await prisma.shopOrder.findUnique({
+    where: { id: payment.orderId },
+    select: { orderType: true },
+  });
+  if (order?.orderType === 'kiosk') {
+    await enqueueStaffOrderPush(payment.orderId, 'kiosk_order_captured');
+  }
 }
 
 export async function handlePaymentIntentFailed(providerTxnId: string): Promise<void> {
@@ -692,6 +715,13 @@ export async function handleSquarePaymentCompleted(squarePaymentId: string, _sta
   if (payment.status !== 'captured') {
     await repo.updatePaymentStatus(payment.id, 'captured', { capturedAt: new Date() });
     logger.info('Square webhook: payment marked captured', { paymentId: payment.id });
+  }
+  const order = await prisma.shopOrder.findUnique({
+    where: { id: payment.orderId },
+    select: { orderType: true },
+  });
+  if (order?.orderType === 'kiosk') {
+    await enqueueStaffOrderPush(payment.orderId, 'kiosk_order_captured');
   }
 }
 

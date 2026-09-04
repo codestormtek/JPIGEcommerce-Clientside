@@ -2,6 +2,7 @@ import prisma from '../lib/prisma';
 import { logger } from '../utils/logger';
 import { normalizePhone } from '../lib/phone';
 import { sendNewOrderStoreAlerts } from '../modules/order-notifications/order-notifications.service';
+import { enqueueStaffOrderPush } from './expoPushNotifications';
 
 async function sendPaidKioskStoreAlert(orderId: string): Promise<void> {
   const order = await prisma.shopOrder.findUnique({
@@ -65,5 +66,12 @@ export async function reconcileCompletedKioskTerminalPayment(
       logger.warn(`Paid kiosk store alert failed for order ${orderId}: ${error}`),
     );
   }
+  // Also repair a prior process failure between capture and outbox insertion.
+  // The durable unique event key keeps repeat reconciliation from double-sending.
+  void prisma.payment.findFirst({ where: { id: paymentId, status: 'captured' }, select: { id: true } })
+    .then((captured) => captured
+      ? enqueueStaffOrderPush(orderId, 'kiosk_order_captured')
+      : undefined)
+    .catch((error) => logger.warn(`Paid kiosk push enqueue failed for order ${orderId}: ${error}`));
   return { capturedNow: transitioned };
 }

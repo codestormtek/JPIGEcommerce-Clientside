@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { setAuthTokenGetter, login as loginApi, getCurrentSession, logout as logoutApi } from '@workspace/api-client-react';
+import { setAuthTokenGetter, login as loginApi, getCurrentSession, logout as logoutApi, deleteStaffPushToken } from '@workspace/api-client-react';
 import { router, useSegments } from 'expo-router';
 import { deleteSecureItem, getSecureItem, setSecureItem } from '../lib/secureStorage';
+import { getPushTokenId, clearPushStorage } from '../lib/pushStorage';
 
 // The User type expected from the backend
 type User = { id: string; role: string; firstName: string; lastName: string; email: string };
@@ -67,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (res.data) {
       await setSecureItem(TOKEN_KEY, res.data.accessToken);
       await setSecureItem(REFRESH_TOKEN_KEY, res.data.refreshToken);
-      
+
       const sessionRes = await getCurrentSession();
       if (sessionRes.data.role !== 'admin') {
         await deleteSecureItem(TOKEN_KEY);
@@ -79,6 +80,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    try {
+      const pushTokenId = await getPushTokenId();
+      if (pushTokenId) {
+        await deleteStaffPushToken(pushTokenId);
+        await clearPushStorage();
+      }
+    } catch (e: any) {
+      throw new Error('Failed to revoke push notifications. Disable notifications in settings or try again.');
+    }
+
     try {
       const refreshToken = await getSecureItem(REFRESH_TOKEN_KEY);
       if (refreshToken) {

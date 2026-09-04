@@ -18,6 +18,7 @@ import { sendOrderConfirmationToCustomer, sendAdminNewOrderNotification } from '
 import { resolveOrderSmsRecipient, sendOrderStatusSms } from './orderSms';
 import { sendNewOrderStoreAlerts } from '../order-notifications/order-notifications.service';
 import prisma from '../../lib/prisma';
+import { enqueueStaffOrderPush } from '../../services/expoPushNotifications';
 
 // ─── User-facing ──────────────────────────────────────────────────────────────
 
@@ -231,7 +232,7 @@ export async function checkout(
         taxCalculationId: taxCalculationId || undefined, // Stripe-only: links Stripe Tax calculation for reporting
       });
 
-      await paymentRepo.createPayment({
+      const payment = await paymentRepo.createPayment({
         orderId: order.id,
         paymentMethodTokenId,
         provider: gatewayResult.gateway, // gatewayName: stripe | square
@@ -242,6 +243,11 @@ export async function checkout(
           ? new Date()
           : undefined,
       });
+      if (order.orderType === 'kiosk' && gatewayResult.status === 'captured') {
+        enqueueStaffOrderPush(order.id, 'kiosk_order_captured').catch((err: unknown) =>
+          logger.warn('Failed to enqueue captured kiosk push', { orderId: order.id, paymentId: payment.id, err }),
+        );
+      }
     }
 
     // ── Step 4: Audit log ─────────────────────────────────────────────────────

@@ -5,12 +5,14 @@ import prisma from './lib/prisma';
 import { startScheduler } from './jobs/scheduler';
 import { seedDefaultSettings } from './modules/site-settings/site-settings.service';
 import { seedSystemFolders } from './modules/media/media.repository';
+import { startExpoPushOutboxWorker, stopExpoPushOutboxWorker } from './services/expoPushNotifications';
 
 async function main(): Promise<void> {
   // Verify DB connection before accepting traffic
   await prisma.$connect();
   logger.info('Database connected');
   startScheduler();
+  startExpoPushOutboxWorker();
   await seedDefaultSettings().catch((err) => logger.warn('Site settings seed skipped', { err }));
   await seedSystemFolders().catch((err) => logger.warn('Media folder seed skipped', { err }));
 
@@ -22,6 +24,7 @@ async function main(): Promise<void> {
   const shutdown = async (signal: string): Promise<void> => {
     logger.info(`Received ${signal} — shutting down gracefully…`);
     server.close(async () => {
+      stopExpoPushOutboxWorker();
       await prisma.$disconnect();
       logger.info('Database disconnected. Bye!');
       process.exit(0);

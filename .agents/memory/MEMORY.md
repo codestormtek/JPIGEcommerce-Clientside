@@ -1,2 +1,3 @@
 - [Legacy platform runtime](legacy-platform-runtime.md) — preserve the existing Next.js and Prisma architecture during multi-artifact work; avoid framework or ORM rewrites.
 - [External payment reconciliation](external-payment-reconciliation.md) — provider-confirmed financial actions need atomic, retry-safe local finalization and strict event correlation.
+- [Operational push delivery](operational-push-delivery.md) — treat Expo push as an at-least-once outbox with receipt tracking; keep lock-screen content free of customer PII.

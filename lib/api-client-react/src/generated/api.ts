@@ -23,15 +23,22 @@ import type {
   CreateStaffRefundRequest,
   CurrentSessionResponse,
   HealthStatus,
+  ListStaffOrdersParams,
   ListStaffPaymentsParams,
   LoginRequest,
   LoginResponse,
   LogoutRequest,
   RefreshSessionRequest,
   RefreshSessionResponse,
+  StaffOrderDashboardResponse,
+  StaffOrderListResponse,
+  StaffOrderResponse,
   StaffPaymentDashboardResponse,
   StaffPaymentListResponse,
   StaffPaymentResponse,
+  StaffPushTokenRequest,
+  StaffPushTokenResponse,
+  StaffPushTokenUpdateRequest,
   StaffRefundResponse
 } from './api.schemas';
 
@@ -116,6 +123,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 export type HealthCheckQueryResult = NonNullable<Awaited<ReturnType<typeof healthCheck>>>
 export type HealthCheckQueryError = ErrorType<unknown>
+
 
 /**
  * @summary Health check
@@ -849,4 +857,615 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateStaffPaymentRefundMutationOptions(options));
+    }
+
+export const getGetStaffOrderDashboardUrl = () => {
+
+
+
+
+  return `/api/v1/orders/mobile/dashboard`
+}
+
+export const getStaffOrderDashboard = async ( options?: Parameters<typeof customFetch>[1]): Promise<StaffOrderDashboardResponse> => {
+
+  return customFetch<StaffOrderDashboardResponse>(getGetStaffOrderDashboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStaffOrderDashboardQueryKey = () => {
+    return [
+    `/api/v1/orders/mobile/dashboard`
+    ] as const;
+    }
+
+
+export const getGetStaffOrderDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getStaffOrderDashboard>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffOrderDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStaffOrderDashboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffOrderDashboard>>> = ({ signal }) => getStaffOrderDashboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStaffOrderDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStaffOrderDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getStaffOrderDashboard>>>
+export type GetStaffOrderDashboardQueryError = ErrorType<unknown>
+
+
+
+export function useGetStaffOrderDashboard<TData = Awaited<ReturnType<typeof getStaffOrderDashboard>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffOrderDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStaffOrderDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListStaffOrdersUrl = (params?: ListStaffOrdersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/orders/mobile?${stringifiedParams}` : `/api/v1/orders/mobile`
+}
+
+export const listStaffOrders = async (params?: ListStaffOrdersParams, options?: Parameters<typeof customFetch>[1]): Promise<StaffOrderListResponse> => {
+
+  return customFetch<StaffOrderListResponse>(getListStaffOrdersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListStaffOrdersQueryKey = (params?: ListStaffOrdersParams,) => {
+    return [
+    `/api/v1/orders/mobile`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListStaffOrdersQueryOptions = <TData = Awaited<ReturnType<typeof listStaffOrders>>, TError = ErrorType<unknown>>(params?: ListStaffOrdersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStaffOrders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStaffOrdersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStaffOrders>>> = ({ signal }) => listStaffOrders(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStaffOrders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListStaffOrdersQueryResult = NonNullable<Awaited<ReturnType<typeof listStaffOrders>>>
+export type ListStaffOrdersQueryError = ErrorType<unknown>
+
+
+
+export function useListStaffOrders<TData = Awaited<ReturnType<typeof listStaffOrders>>, TError = ErrorType<unknown>>(
+ params?: ListStaffOrdersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStaffOrders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListStaffOrdersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetStaffOrderUrl = (orderId: string,) => {
+
+
+
+
+  return `/api/v1/orders/mobile/${orderId}`
+}
+
+export const getStaffOrder = async (orderId: string, options?: Parameters<typeof customFetch>[1]): Promise<StaffOrderResponse> => {
+
+  return customFetch<StaffOrderResponse>(getGetStaffOrderUrl(orderId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStaffOrderQueryKey = (orderId: string,) => {
+    return [
+    `/api/v1/orders/mobile/${orderId}`
+    ] as const;
+    }
+
+
+export const getGetStaffOrderQueryOptions = <TData = Awaited<ReturnType<typeof getStaffOrder>>, TError = ErrorType<unknown>>(orderId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffOrder>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStaffOrderQueryKey(orderId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffOrder>>> = ({ signal }) => getStaffOrder(orderId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: orderId !== null && orderId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStaffOrder>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStaffOrderQueryResult = NonNullable<Awaited<ReturnType<typeof getStaffOrder>>>
+export type GetStaffOrderQueryError = ErrorType<unknown>
+
+
+
+export function useGetStaffOrder<TData = Awaited<ReturnType<typeof getStaffOrder>>, TError = ErrorType<unknown>>(
+ orderId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffOrder>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStaffOrderQueryOptions(orderId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartStaffOrderUrl = (orderId: string,) => {
+
+
+
+
+  return `/api/v1/orders/mobile/${orderId}/start`
+}
+
+export const startStaffOrder = async (orderId: string, options?: Parameters<typeof customFetch>[1]): Promise<StaffOrderResponse> => {
+
+  return customFetch<StaffOrderResponse>(getStartStaffOrderUrl(orderId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartStaffOrderMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startStaffOrder>>, TError,{orderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startStaffOrder>>, TError,{orderId: string}, TContext> => {
+
+const mutationKey = ['startStaffOrder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startStaffOrder>>, {orderId: string}> = (props) => {
+          const {orderId} = props ?? {};
+
+          return  startStaffOrder(orderId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartStaffOrderMutationResult = NonNullable<Awaited<ReturnType<typeof startStaffOrder>>>
+
+    export type StartStaffOrderMutationError = ErrorType<unknown>
+
+    export const useStartStaffOrder = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startStaffOrder>>, TError,{orderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startStaffOrder>>,
+        TError,
+        {orderId: string},
+        TContext
+      > => {
+      return useMutation(getStartStaffOrderMutationOptions(options));
+    }
+
+export const getMarkStaffOrderReadyUrl = (orderId: string,) => {
+
+
+
+
+  return `/api/v1/orders/mobile/${orderId}/ready`
+}
+
+export const markStaffOrderReady = async (orderId: string, options?: Parameters<typeof customFetch>[1]): Promise<StaffOrderResponse> => {
+
+  return customFetch<StaffOrderResponse>(getMarkStaffOrderReadyUrl(orderId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkStaffOrderReadyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markStaffOrderReady>>, TError,{orderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markStaffOrderReady>>, TError,{orderId: string}, TContext> => {
+
+const mutationKey = ['markStaffOrderReady'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markStaffOrderReady>>, {orderId: string}> = (props) => {
+          const {orderId} = props ?? {};
+
+          return  markStaffOrderReady(orderId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkStaffOrderReadyMutationResult = NonNullable<Awaited<ReturnType<typeof markStaffOrderReady>>>
+
+    export type MarkStaffOrderReadyMutationError = ErrorType<unknown>
+
+    export const useMarkStaffOrderReady = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markStaffOrderReady>>, TError,{orderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markStaffOrderReady>>,
+        TError,
+        {orderId: string},
+        TContext
+      > => {
+      return useMutation(getMarkStaffOrderReadyMutationOptions(options));
+    }
+
+export const getMarkStaffOrderPickedUpUrl = (orderId: string,) => {
+
+
+
+
+  return `/api/v1/orders/mobile/${orderId}/picked-up`
+}
+
+export const markStaffOrderPickedUp = async (orderId: string, options?: Parameters<typeof customFetch>[1]): Promise<StaffOrderResponse> => {
+
+  return customFetch<StaffOrderResponse>(getMarkStaffOrderPickedUpUrl(orderId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getMarkStaffOrderPickedUpMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markStaffOrderPickedUp>>, TError,{orderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markStaffOrderPickedUp>>, TError,{orderId: string}, TContext> => {
+
+const mutationKey = ['markStaffOrderPickedUp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markStaffOrderPickedUp>>, {orderId: string}> = (props) => {
+          const {orderId} = props ?? {};
+
+          return  markStaffOrderPickedUp(orderId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkStaffOrderPickedUpMutationResult = NonNullable<Awaited<ReturnType<typeof markStaffOrderPickedUp>>>
+
+    export type MarkStaffOrderPickedUpMutationError = ErrorType<unknown>
+
+    export const useMarkStaffOrderPickedUp = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markStaffOrderPickedUp>>, TError,{orderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markStaffOrderPickedUp>>,
+        TError,
+        {orderId: string},
+        TContext
+      > => {
+      return useMutation(getMarkStaffOrderPickedUpMutationOptions(options));
+    }
+
+export const getRegisterStaffPushTokenUrl = () => {
+
+
+
+
+  return `/api/v1/orders/mobile/push-tokens`
+}
+
+export const registerStaffPushToken = async (staffPushTokenRequest: StaffPushTokenRequest, options?: Parameters<typeof customFetch>[1]): Promise<StaffPushTokenResponse> => {
+
+  return customFetch<StaffPushTokenResponse>(getRegisterStaffPushTokenUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(staffPushTokenRequest)
+  }
+);}
+
+
+
+
+
+export const getRegisterStaffPushTokenMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerStaffPushToken>>, TError,{data: BodyType<StaffPushTokenRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof registerStaffPushToken>>, TError,{data: BodyType<StaffPushTokenRequest>}, TContext> => {
+
+const mutationKey = ['registerStaffPushToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof registerStaffPushToken>>, {data: BodyType<StaffPushTokenRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  registerStaffPushToken(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegisterStaffPushTokenMutationResult = NonNullable<Awaited<ReturnType<typeof registerStaffPushToken>>>
+    export type RegisterStaffPushTokenMutationBody = BodyType<StaffPushTokenRequest>
+    export type RegisterStaffPushTokenMutationError = ErrorType<unknown>
+
+    export const useRegisterStaffPushToken = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof registerStaffPushToken>>, TError,{data: BodyType<StaffPushTokenRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof registerStaffPushToken>>,
+        TError,
+        {data: BodyType<StaffPushTokenRequest>},
+        TContext
+      > => {
+      return useMutation(getRegisterStaffPushTokenMutationOptions(options));
+    }
+
+export const getUpdateStaffPushTokenUrl = (tokenId: string,) => {
+
+
+
+
+  return `/api/v1/orders/mobile/push-tokens/${tokenId}`
+}
+
+export const updateStaffPushToken = async (tokenId: string,
+    staffPushTokenUpdateRequest: StaffPushTokenUpdateRequest, options?: Parameters<typeof customFetch>[1]): Promise<StaffPushTokenResponse> => {
+
+  return customFetch<StaffPushTokenResponse>(getUpdateStaffPushTokenUrl(tokenId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(staffPushTokenUpdateRequest)
+  }
+);}
+
+
+
+
+
+export const getUpdateStaffPushTokenMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStaffPushToken>>, TError,{tokenId: string;data: BodyType<StaffPushTokenUpdateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStaffPushToken>>, TError,{tokenId: string;data: BodyType<StaffPushTokenUpdateRequest>}, TContext> => {
+
+const mutationKey = ['updateStaffPushToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStaffPushToken>>, {tokenId: string;data: BodyType<StaffPushTokenUpdateRequest>}> = (props) => {
+          const {tokenId,data} = props ?? {};
+
+          return  updateStaffPushToken(tokenId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStaffPushTokenMutationResult = NonNullable<Awaited<ReturnType<typeof updateStaffPushToken>>>
+    export type UpdateStaffPushTokenMutationBody = BodyType<StaffPushTokenUpdateRequest>
+    export type UpdateStaffPushTokenMutationError = ErrorType<unknown>
+
+    export const useUpdateStaffPushToken = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStaffPushToken>>, TError,{tokenId: string;data: BodyType<StaffPushTokenUpdateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateStaffPushToken>>,
+        TError,
+        {tokenId: string;data: BodyType<StaffPushTokenUpdateRequest>},
+        TContext
+      > => {
+      return useMutation(getUpdateStaffPushTokenMutationOptions(options));
+    }
+
+export const getDeleteStaffPushTokenUrl = (tokenId: string,) => {
+
+
+
+
+  return `/api/v1/orders/mobile/push-tokens/${tokenId}`
+}
+
+export const deleteStaffPushToken = async (tokenId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteStaffPushTokenUrl(tokenId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteStaffPushTokenMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStaffPushToken>>, TError,{tokenId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStaffPushToken>>, TError,{tokenId: string}, TContext> => {
+
+const mutationKey = ['deleteStaffPushToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStaffPushToken>>, {tokenId: string}> = (props) => {
+          const {tokenId} = props ?? {};
+
+          return  deleteStaffPushToken(tokenId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStaffPushTokenMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStaffPushToken>>>
+
+    export type DeleteStaffPushTokenMutationError = ErrorType<unknown>
+
+    export const useDeleteStaffPushToken = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStaffPushToken>>, TError,{tokenId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStaffPushToken>>,
+        TError,
+        {tokenId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteStaffPushTokenMutationOptions(options));
     }

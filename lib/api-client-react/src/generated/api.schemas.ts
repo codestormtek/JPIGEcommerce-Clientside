@@ -75,10 +75,163 @@ export type CurrentSessionResponse = SuccessEnvelope & {
 export interface HealthStatus {
   status: string;
 }
+
 export interface Money {
   amountCents: number;
   currency: string;
 }
+
+export type StaffOrderStatus = typeof StaffOrderStatus[keyof typeof StaffOrderStatus];
+
+
+export const StaffOrderStatus = {
+  new: 'new',
+  processing: 'processing',
+  ready: 'ready',
+  picked_up: 'picked_up',
+} as const;
+
+export interface StaffOrderLine {
+  id: string;
+  productName: string;
+  sku: string;
+  /** @minimum 1 */
+  quantity: number;
+  unitPrice: Money;
+  lineTotal: Money;
+  /** @nullable */
+  selectedSides: string | null;
+  options: string[];
+}
+
+export interface StaffOrderHistory {
+  id: string;
+  status: string;
+  displayStatus: StaffOrderStatus;
+  changedAt: string;
+  /** @nullable */
+  changedBy: string | null;
+}
+
+export type StaffOrderPaymentStatus = typeof StaffOrderPaymentStatus[keyof typeof StaffOrderPaymentStatus];
+
+
+export const StaffOrderPaymentStatus = {
+  captured: 'captured',
+  partially_refunded: 'partially_refunded',
+} as const;
+
+export type StaffOrderPayment = {
+  id: string;
+  provider: string;
+  status: StaffOrderPaymentStatus;
+  amount: Money;
+  /** @nullable */
+  capturedAt: string | null;
+};
+
+export interface StaffOrder {
+  id: string;
+  /** @nullable */
+  orderNumber: string | null;
+  /** @nullable */
+  customerName: string | null;
+  /** @nullable */
+  customerPhone: string | null;
+  /** @nullable */
+  customerEmail: string | null;
+  status: StaffOrderStatus;
+  databaseStatus: string;
+  orderDate: string;
+  /** @nullable */
+  specialInstructions: string | null;
+  total: Money;
+  items: StaffOrderLine[];
+  payment: StaffOrderPayment;
+  history: StaffOrderHistory[];
+}
+
+export interface StaffOrderDashboard {
+  newCount: number;
+  processingCount: number;
+  readyCount: number;
+  activeCount: number;
+}
+
+export type StaffPushTokenRequestRolePreference = typeof StaffPushTokenRequestRolePreference[keyof typeof StaffPushTokenRequestRolePreference];
+
+
+export const StaffPushTokenRequestRolePreference = {
+  kitchen: 'kitchen',
+  cashier: 'cashier',
+  both: 'both',
+} as const;
+
+export interface StaffPushTokenRequest {
+  /**
+     * @minLength 10
+     * @maxLength 512
+     */
+  token: string;
+  rolePreference: StaffPushTokenRequestRolePreference;
+  enabled?: boolean;
+}
+
+export type StaffPushTokenUpdateRequestRolePreference = typeof StaffPushTokenUpdateRequestRolePreference[keyof typeof StaffPushTokenUpdateRequestRolePreference];
+
+
+export const StaffPushTokenUpdateRequestRolePreference = {
+  kitchen: 'kitchen',
+  cashier: 'cashier',
+  both: 'both',
+} as const;
+
+export interface StaffPushTokenUpdateRequest {
+  rolePreference?: StaffPushTokenUpdateRequestRolePreference;
+  enabled?: boolean;
+}
+
+export type StaffPushTokenRolePreference = typeof StaffPushTokenRolePreference[keyof typeof StaffPushTokenRolePreference];
+
+
+export const StaffPushTokenRolePreference = {
+  kitchen: 'kitchen',
+  cashier: 'cashier',
+  both: 'both',
+} as const;
+
+export interface StaffPushToken {
+  id: string;
+  token: string;
+  rolePreference: StaffPushTokenRolePreference;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type StaffOrderResponse = SuccessEnvelope & {
+  data: StaffOrder;
+};
+
+export type StaffOrderDashboardResponse = SuccessEnvelope & {
+  data: StaffOrderDashboard;
+};
+
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export type StaffOrderListResponse = SuccessEnvelope & {
+  data: StaffOrder[];
+  meta: PaginationMeta;
+};
+
+export type StaffPushTokenResponse = SuccessEnvelope & {
+  data: StaffPushToken;
+};
 
 export type StaffRefundProvider = typeof StaffRefundProvider[keyof typeof StaffRefundProvider];
 
@@ -189,13 +342,6 @@ export type StaffPaymentDashboardResponse = SuccessEnvelope & {
   data: StaffPaymentDashboard;
 };
 
-export interface PaginationMeta {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
 export type StaffPaymentListResponse = SuccessEnvelope & {
   data: StaffPayment[];
   meta: PaginationMeta;
@@ -231,3 +377,20 @@ export const ListStaffPaymentsStatus = {
   refunded: 'refunded',
   partially_refunded: 'partially_refunded',
 } as const;
+
+export type ListStaffOrdersParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+status?: StaffOrderStatus;
+/**
+ * @maxLength 100
+ */
+search?: string;
+};

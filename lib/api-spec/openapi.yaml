@@ -14,6 +14,10 @@ tags:
     description: Authentication and session operations
   - name: staff-payments
     description: Admin-only kiosk payment operations for staff
+  - name: staff-orders
+    description: Admin-only active kiosk order workflow
+  - name: staff-push
+    description: Admin device push notification preferences
 paths:
   /healthz:
     get:
@@ -179,6 +183,128 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StaffRefundResponse"
+  /v1/orders/mobile/dashboard:
+    get:
+      operationId: getStaffOrderDashboard
+      tags: [staff-orders]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Active paid kiosk order counts by fulfillment state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffOrderDashboardResponse" }
+  /v1/orders/mobile:
+    get:
+      operationId: listStaffOrders
+      tags: [staff-orders]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/StaffOrderStatus" } }
+        - { name: search, in: query, schema: { type: string, maxLength: 100 } }
+      responses:
+        "200":
+          description: Active paid kiosk orders
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffOrderListResponse" }
+  /v1/orders/mobile/{orderId}:
+    get:
+      operationId: getStaffOrder
+      tags: [staff-orders]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+      responses:
+        "200":
+          description: Paid kiosk order detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffOrderResponse" }
+  /v1/orders/mobile/{orderId}/start:
+    post:
+      operationId: startStaffOrder
+      tags: [staff-orders]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+      responses:
+        "200":
+          description: Order started, or its existing processing state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffOrderResponse" }
+  /v1/orders/mobile/{orderId}/ready:
+    post:
+      operationId: markStaffOrderReady
+      tags: [staff-orders]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+      responses:
+        "200":
+          description: Order marked ready, or its existing ready state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffOrderResponse" }
+  /v1/orders/mobile/{orderId}/picked-up:
+    post:
+      operationId: markStaffOrderPickedUp
+      tags: [staff-orders]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+      responses:
+        "200":
+          description: Order marked delivered, or its existing delivered state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffOrderResponse" }
+  /v1/orders/mobile/push-tokens:
+    put:
+      operationId: registerStaffPushToken
+      tags: [staff-push]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffPushTokenRequest" }
+      responses:
+        "200":
+          description: Idempotently registered or updated device token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffPushTokenResponse" }
+  /v1/orders/mobile/push-tokens/{tokenId}:
+    patch:
+      operationId: updateStaffPushToken
+      tags: [staff-push]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/TokenId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffPushTokenUpdateRequest" }
+      responses:
+        "200":
+          description: Updated device notification preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffPushTokenResponse" }
+    delete:
+      operationId: deleteStaffPushToken
+      tags: [staff-push]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/TokenId"
+      responses:
+        "204":
+          description: Device token deleted
 components:
   securitySchemes:
     bearerAuth:
@@ -188,6 +314,16 @@ components:
   parameters:
     PaymentId:
       name: paymentId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    TokenId:
+      name: tokenId
       in: path
       required: true
       schema: { type: string, format: uuid }
@@ -269,6 +405,123 @@ components:
       properties:
         amountCents: { type: integer }
         currency: { type: string }
+    StaffOrderStatus:
+      type: string
+      enum: [new, processing, ready, picked_up]
+    StaffOrderLine:
+      type: object
+      required: [id, productName, sku, quantity, unitPrice, lineTotal, selectedSides, options]
+      properties:
+        id: { type: string, format: uuid }
+        productName: { type: string }
+        sku: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        unitPrice: { $ref: "#/components/schemas/Money" }
+        lineTotal: { $ref: "#/components/schemas/Money" }
+        selectedSides: { type: string, nullable: true }
+        options:
+          type: array
+          items: { type: string }
+    StaffOrderHistory:
+      type: object
+      required: [id, status, displayStatus, changedAt, changedBy]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string }
+        displayStatus: { $ref: "#/components/schemas/StaffOrderStatus" }
+        changedAt: { type: string, format: date-time }
+        changedBy: { type: string, nullable: true }
+    StaffOrder:
+      type: object
+      required: [id, orderNumber, customerName, customerPhone, customerEmail, status, databaseStatus, orderDate, specialInstructions, total, items, payment, history]
+      properties:
+        id: { type: string, format: uuid }
+        orderNumber: { type: string, nullable: true }
+        customerName: { type: string, nullable: true }
+        customerPhone: { type: string, nullable: true }
+        customerEmail: { type: string, nullable: true }
+        status: { $ref: "#/components/schemas/StaffOrderStatus" }
+        databaseStatus: { type: string }
+        orderDate: { type: string, format: date-time }
+        specialInstructions: { type: string, nullable: true }
+        total: { $ref: "#/components/schemas/Money" }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/StaffOrderLine" }
+        payment:
+          type: object
+          required: [id, provider, status, amount, capturedAt]
+          properties:
+            id: { type: string, format: uuid }
+            provider: { type: string }
+            status: { type: string, enum: [captured, partially_refunded] }
+            amount: { $ref: "#/components/schemas/Money" }
+            capturedAt: { type: string, format: date-time, nullable: true }
+        history:
+          type: array
+          items: { $ref: "#/components/schemas/StaffOrderHistory" }
+    StaffOrderDashboard:
+      type: object
+      required: [newCount, processingCount, readyCount, activeCount]
+      properties:
+        newCount: { type: integer }
+        processingCount: { type: integer }
+        readyCount: { type: integer }
+        activeCount: { type: integer }
+    StaffPushTokenRequest:
+      type: object
+      required: [token, rolePreference]
+      properties:
+        token: { type: string, minLength: 10, maxLength: 512 }
+        rolePreference: { type: string, enum: [kitchen, cashier, both] }
+        enabled: { type: boolean, default: true }
+    StaffPushTokenUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        rolePreference: { type: string, enum: [kitchen, cashier, both] }
+        enabled: { type: boolean }
+    StaffPushToken:
+      type: object
+      required: [id, token, rolePreference, enabled, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        token: { type: string }
+        rolePreference: { type: string, enum: [kitchen, cashier, both] }
+        enabled: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    StaffOrderResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/StaffOrder" }
+    StaffOrderDashboardResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/StaffOrderDashboard" }
+    StaffOrderListResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          required: [data, meta]
+          properties:
+            data:
+              type: array
+              items: { $ref: "#/components/schemas/StaffOrder" }
+            meta: { $ref: "#/components/schemas/PaginationMeta" }
+    StaffPushTokenResponse:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/StaffPushToken" }
     StaffRefund:
       type: object
       required: [id, paymentId, actorAdminId, provider, providerRefundId, providerStatus, reason, amount, requestId, restoreInventory, inventoryRestored, createdAt, updatedAt]

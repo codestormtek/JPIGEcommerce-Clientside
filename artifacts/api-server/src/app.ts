@@ -48,6 +48,7 @@ import { socialLinksRouter } from './modules/social-links/social-links.routes';
 import { reviewsRouter } from './modules/reviews/reviews.routes';
 import { paymentGatewayRouter } from './modules/payment-gateway/payment-gateway.routes';
 import { telnyxVoiceRouter } from './modules/telnyx-voice/telnyx-voice.routes';
+import { staffOrdersRouter } from './modules/staff-orders/staff-orders.routes';
 
 const app = express();
 
@@ -114,6 +115,7 @@ const API = '/api/v1';
 app.use(`${API}/auth`, authRouter);
 app.use(`${API}/users`, usersRouter);
 app.use(`${API}/products`, productsRouter);
+app.use(`${API}/orders/mobile`, staffOrdersRouter);
 app.use(`${API}/orders`, ordersRouter);
 app.use(`${API}/kiosk`, kioskRouter);
 app.use(`${API}/cart`, cartRouter);
