@@ -16,6 +16,7 @@ interface Props {
 const TAB_FOOD = "jiggling food menu";
 const TAB_SIDES = "sides";
 const TAB_PRODUCTS = "jiggling pig products";
+const PRODUCT_TABS = ["sauces", "rubs", "fry mixes", "teas", "drinks"] as const;
 
 const norm = (s: string) => s.trim().toLowerCase();
 
@@ -37,10 +38,14 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
 
   const tabs = useMemo(() => {
     const byName = (name: string) => menu.categories.find((c) => norm(c.name) === name);
-    const found = [byName(TAB_FOOD), byName(TAB_SIDES), byName(TAB_PRODUCTS)].filter(
+    const found = [
+      byName(TAB_FOOD),
+      byName(TAB_SIDES),
+      ...PRODUCT_TABS.map(byName),
+    ].filter(
       (c): c is NonNullable<typeof c> => Boolean(c),
     );
-    return found.length === 3 ? found : menu.categories;
+    return found.length > 0 ? found : menu.categories;
   }, [menu.categories]);
 
   const activeCat =
@@ -80,7 +85,6 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
         { title: "Plates", products: combo },
         { title: "Sides", products: sides },
         { title: "Other Items", products: other },
-        { title: "Drinks", products: drinks },
       ].filter((s) => s.products.length > 0);
     }
 
@@ -194,7 +198,7 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
               className={`k-cat ${activeCat === c.id ? "active" : ""}`}
               onClick={() => setSelectedCat(c.id)}
             >
-              {c.name}
+              {norm(c.name) === TAB_FOOD ? "BBQ Combos" : c.name}
             </button>
           ))}
         </div>
