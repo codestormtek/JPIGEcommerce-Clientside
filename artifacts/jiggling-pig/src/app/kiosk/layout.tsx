@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Anton, Outfit } from "next/font/google";
 import "./kiosk.css";
+
+const anton = Anton({ weight: "400", subsets: ["latin"], variable: "--font-anton" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata: Metadata = {
   title: "The Jiggling Pig — Order Here",
@@ -26,5 +30,5 @@ export const viewport: Viewport = {
 };
 
 export default function KioskLayout({ children }: { children: React.ReactNode }) {
-  return <div className="kiosk-root">{children}</div>;
+  return <div className={`kiosk-root ${anton.variable} ${outfit.variable}`}>{children}</div>;
 }

@@ -13,9 +13,6 @@ interface Props {
   onStartOver: () => void;
 }
 
-// Top-level navigation tabs (matched against category names, case-insensitive).
-// Everything else (Combo Dinners, Drinks, Sauces, Rubs, …) becomes a section
-// header inside a tab instead of its own tab.
 const TAB_FOOD = "jiggling food menu";
 const TAB_SIDES = "sides";
 const TAB_PRODUCTS = "jiggling pig products";
@@ -31,7 +28,6 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [sidePicker, setSidePicker] = useState<KioskProduct | null>(null);
   const [chosenSides, setChosenSides] = useState<KioskSideChoice[]>([]);
-  // Side pending confirmation because picking it again incurs an upcharge
   const [upchargeConfirm, setUpchargeConfirm] = useState<KioskProduct | null>(null);
 
   const catById = useMemo(
@@ -44,13 +40,9 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
     const found = [byName(TAB_FOOD), byName(TAB_SIDES), byName(TAB_PRODUCTS)].filter(
       (c): c is NonNullable<typeof c> => Boolean(c),
     );
-    // Fallback: if any of the expected categories is missing, show all
-    // categories as tabs so no products become unreachable.
     return found.length === 3 ? found : menu.categories;
   }, [menu.categories]);
 
-  // Default to the first tab (Food Menu) instead of an "All" view. If the
-  // selected tab disappears after a menu refresh, fall back to the first tab.
   const activeCat =
     selectedCat && tabs.some((t) => t.id === selectedCat)
       ? selectedCat
@@ -85,7 +77,7 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
           !drinkIds.has(p.id),
       );
       return [
-        { title: "Combo Items", products: combo },
+        { title: "Plates", products: combo },
         { title: "Sides", products: sides },
         { title: "Other Items", products: other },
         { title: "Drinks", products: drinks },
@@ -97,8 +89,6 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
     }
 
     if (tabName === TAB_PRODUCTS) {
-      // Members: anything in the Products category, plus orphans that don't fit
-      // in the food tab (e.g. a rub that was never added to the Products category).
       const inFoodTab = (p: KioskProduct) =>
         hasCat(p, TAB_FOOD) ||
         hasCat(p, "combo dinners") ||
@@ -127,7 +117,6 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
       return titles.map((t) => ({ title: t, products: groups.get(t)! }));
     }
 
-    // Unknown tab (fallback mode): plain category filter.
     return [{ title: null, products: all.filter((p) => p.categoryIds.includes(tab.id)) }];
   }, [menu.products, tabs, activeCat, catById]);
 
@@ -185,10 +174,16 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
     <div className="k-screen k-menu">
       <div className="k-menu-main">
         <div className="k-menu-header">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="k-menu-logo" src="/kiosk-logo.png" alt="The Jiggling Pig" />
+          <div className="k-menu-header-brand">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="k-menu-logo" src="/kiosk-logo.png" alt="Logo" />
+            <div className="k-menu-header-text">
+              <h2>THE JIGGLING PIG</h2>
+              <span>Select your items below</span>
+            </div>
+          </div>
           <button className="k-btn k-btn-ghost k-start-over" onClick={onStartOver}>
-            Start Over
+            Start over
           </button>
         </div>
 
@@ -215,18 +210,8 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
                   const inCart = qtyByItem.get(item.id) ?? 0;
                   return (
                     <div className="k-card-wrap" key={p.id}>
-                      <button
-                        className="k-card"
-                        onClick={() => handleCardTap(p)}
-                        style={{ width: "100%" }}
-                      >
-                        {p.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img className="k-card-img" src={p.imageUrl} alt={p.name} loading="lazy" />
-                        ) : (
-                          <div className="k-card-img-fallback">🍖</div>
-                        )}
-                        <div className="k-card-body">
+                      <button className="k-card" onClick={() => handleCardTap(p)}>
+                        <div className="k-card-content">
                           <div className="k-card-name">{p.name}</div>
                           {p.description && <div className="k-card-desc">{p.description}</div>}
                           {p.comboSideCount > 0 && (
@@ -234,10 +219,17 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
                               Includes {p.comboSideCount} side{p.comboSideCount > 1 ? "s" : ""}
                             </div>
                           )}
+                        </div>
+                        <div className="k-card-bottom">
                           <div className="k-card-price">{formatMoney(item.price)}</div>
+                          <div className="k-card-add-btn">+</div>
                         </div>
                       </button>
-                      {inCart > 0 && <div className="k-card-qty">×{inCart}</div>}
+                      {inCart > 0 && (
+                        <div className="k-card-qty" aria-label={`${inCart} in cart`}>
+                          {inCart}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -248,11 +240,19 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
       </div>
 
       <div className="k-cart">
-        <div className="k-cart-header">Your Order {itemCount > 0 && `(${itemCount})`}</div>
+        <div className="k-cart-header">
+          <div className="k-cart-title">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+            YOUR ORDER
+          </div>
+          <div className="k-cart-count">{itemCount}</div>
+        </div>
         <div className="k-cart-lines">
           {cart.length === 0 && (
             <div className="k-cart-empty">
-              Tap an item on the left to add it to your order.
+              Tap anything on the menu to add it.
             </div>
           )}
           {cart.map((l) => {
@@ -262,28 +262,27 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
               <div className="k-line" key={key}>
                 <div className="k-line-top">
                   <span>{l.product.name}</span>
-                  <span className="k-line-price">{formatMoney(unitPrice * l.qty)}</span>
                 </div>
                 {l.sides && l.sides.length > 0 && (
                   <div className="k-line-sides">
-                    Sides: {l.sides.map((s) => s.name).join(", ")}
+                    {l.sides.map((s) => s.name).join(" + ")}
                   </div>
                 )}
-                <div className="k-line-controls">
-                  <button className="k-qty-btn" onClick={() => onSetQty(key, l.qty - 1)}>
-                    −
-                  </button>
-                  <span className="k-line-qty">{l.qty}</span>
-                  <button className="k-qty-btn" onClick={() => onSetQty(key, l.qty + 1)}>
-                    +
-                  </button>
-                  <button
-                    className="k-line-remove"
-                    aria-label={`Remove ${l.product.name} from order`}
-                    onClick={() => onSetQty(key, 0)}
-                  >
-                    Remove
-                  </button>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div className="k-line-controls">
+                    <button className="k-qty-action" onClick={() => onSetQty(key, l.qty <= 1 ? 0 : l.qty - 1)}>
+                      {l.qty <= 1 ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                        </svg>
+                      ) : "−"}
+                    </button>
+                    <span className="k-line-qty">{l.qty}</span>
+                    <button className="k-qty-action" onClick={() => onSetQty(key, l.qty + 1)}>
+                      +
+                    </button>
+                  </div>
+                  <div className="k-line-price">{formatMoney(unitPrice * l.qty)}</div>
                 </div>
               </div>
             );
@@ -291,15 +290,15 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
         </div>
         <div className="k-cart-footer">
           <div className="k-total-row">
-            <span>Subtotal</span>
-            <span>{formatMoney(subtotal)}</span>
+            <span>Total</span>
+            <span className="k-total-amount">{formatMoney(subtotal)}</span>
           </div>
           <button
             className="k-btn k-btn-primary k-checkout-btn"
             disabled={cart.length === 0}
             onClick={onCheckout}
           >
-            Checkout
+            Pay at Terminal
           </button>
         </div>
       </div>
@@ -308,8 +307,8 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
         <div className="k-modal-overlay" onClick={() => setSidePicker(null)}>
           <div className="k-modal" onClick={(e) => e.stopPropagation()}>
             <div className="k-modal-title">
-              Choose {sidePicker.comboSideCount} side{sidePicker.comboSideCount > 1 ? "s" : ""} for{" "}
-              {sidePicker.name}
+              CHOOSE {sidePicker.comboSideCount} SIDE{sidePicker.comboSideCount > 1 ? "S" : ""} FOR{" "}
+              {sidePicker.name.toUpperCase()}
             </div>
             <div className="k-modal-sub">
               {chosenSides.length} of {sidePicker.comboSideCount} chosen
@@ -344,16 +343,16 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
               </div>
             )}
             <div className="k-modal-actions">
-              <button className="k-btn k-btn-ghost" onClick={() => setSidePicker(null)}>
+              <button className="k-btn k-btn-ghost k-btn-lg" onClick={() => setSidePicker(null)}>
                 Cancel
               </button>
               {chosenSides.length > 0 && (
-                <button className="k-btn k-btn-ghost" onClick={() => setChosenSides([])}>
+                <button className="k-btn k-btn-ghost k-btn-lg" onClick={() => setChosenSides([])}>
                   Clear
                 </button>
               )}
               <button
-                className="k-btn k-btn-primary"
+                className="k-btn k-btn-primary k-btn-lg"
                 disabled={chosenSides.length !== sidePicker.comboSideCount}
                 onClick={confirmSides}
               >
@@ -364,18 +363,18 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
             {upchargeConfirm && (
               <div className="k-modal-overlay k-upcharge-overlay" onClick={() => setUpchargeConfirm(null)}>
                 <div className="k-modal k-upcharge-modal" onClick={(e) => e.stopPropagation()}>
-                  <div className="k-modal-title">Extra {upchargeConfirm.name}?</div>
+                  <div className="k-modal-title">EXTRA {upchargeConfirm.name.toUpperCase()}?</div>
                   <div className="k-modal-sub">
                     Adding another {upchargeConfirm.name} has a{" "}
                     <strong>{formatMoney(upchargeConfirm.duplicateSideUpcharge)} upcharge</strong>. Would
                     you like to proceed?
                   </div>
-                  <div className="k-modal-actions">
-                    <button className="k-btn k-btn-ghost" onClick={() => setUpchargeConfirm(null)}>
+                  <div className="k-modal-actions" style={{ marginTop: 24 }}>
+                    <button className="k-btn k-btn-ghost k-btn-lg" onClick={() => setUpchargeConfirm(null)}>
                       No, Go Back
                     </button>
                     <button
-                      className="k-btn k-btn-primary"
+                      className="k-btn k-btn-primary k-btn-lg"
                       onClick={() => {
                         addSide(upchargeConfirm);
                         setUpchargeConfirm(null);

@@ -63,7 +63,7 @@ export default function DetailsScreen({ cart, initialName, initialPhone, onBack,
             </div>
           ))}
           <div className="k-summary-row total">
-            <span>Subtotal</span>
+            <span>Total</span>
             <span>{formatMoney(subtotal)}</span>
           </div>
         </div>
@@ -77,7 +77,7 @@ export default function DetailsScreen({ cart, initialName, initialPhone, onBack,
             disabled={!name.trim()}
             onClick={() => onContinue(name.trim(), phone.trim())}
           >
-            Continue to Payment
+            Continue
           </button>
         </div>
       </div>

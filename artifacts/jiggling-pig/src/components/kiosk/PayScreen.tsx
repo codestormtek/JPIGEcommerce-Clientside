@@ -9,18 +9,15 @@ interface Props {
   customerName: string;
   config: KioskConfig;
   onBack: () => void;
-  /** Places the order via the API. Resolves with the order result. */
   onPlaceOrder: (paymentMethod: "terminal" | "card", squareNonce: string | undefined, clientRequestId: string) => Promise<KioskOrderResult>;
-  /** Called when payment is confirmed — advances to the confirmation screen. */
   onPaid: (result: KioskOrderResult) => void;
 }
 
 type Mode = "choose" | "terminal-waiting" | "card-entry";
 
 const POLL_INTERVAL_MS = 2000;
-const TERMINAL_TIMEOUT_MS = 3 * 60_000; // give up after 3 minutes at the reader
+const TERMINAL_TIMEOUT_MS = 3 * 60_000;
 
-// Minimal typing for the Square Web Payments SDK
 interface SquareCard {
   attach: (selector: string) => Promise<void>;
   tokenize: () => Promise<{ status: string; token?: string; errors?: { message?: string }[] }>;
@@ -30,8 +27,6 @@ interface SquarePayments {
   card: () => Promise<SquareCard>;
 }
 
-// The global Window.Square type is declared in the checkout page; use a local
-// cast here to avoid conflicting global augmentations.
 function getSquareGlobal(): { payments: (appId: string, locId: string) => Promise<SquarePayments> } | undefined {
   return (window as unknown as { Square?: { payments: (appId: string, locId: string) => Promise<SquarePayments> } }).Square;
 }
@@ -70,7 +65,6 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
 
   const subtotal = cartSubtotal(cart);
 
-  // ── Terminal flow: place order, then poll until paid/canceled ──
   const startTerminal = async () => {
     setBusy(true);
     setError(null);
@@ -137,7 +131,6 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
     requestIdRef.current = null;
   };
 
-  // ── Card flow: mount Square card form, tokenize, place order ──
   const startCardEntry = async () => {
     if (!config.applicationId || !config.locationId) return;
     setError(null);
@@ -204,7 +197,6 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
     setError(null);
   }, []);
 
-  // ── Render ──
   if (mode === "terminal-waiting") {
     return (
       <div className="k-screen k-center">
@@ -214,7 +206,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
           <p style={{ color: "var(--k-muted)", fontSize: 19, margin: 0, lineHeight: 1.5 }}>
             Tap, insert, or swipe your card on the reader next to this screen.
             <br />
-            Total: <strong style={{ color: "var(--k-text)" }}>{formatMoney(subtotal)}</strong>
+            Total: <strong style={{ color: "var(--k-accent)" }}>{formatMoney(subtotal)}</strong>
           </p>
           <button className="k-btn k-btn-ghost k-btn-lg" onClick={cancelTerminal}>
             Cancel Payment
