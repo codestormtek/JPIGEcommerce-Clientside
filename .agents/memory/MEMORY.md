@@ -2,3 +2,4 @@
 - [External payment reconciliation](external-payment-reconciliation.md) — provider-confirmed financial actions need atomic, retry-safe local finalization and strict event correlation.
 - [Operational push delivery](operational-push-delivery.md) — treat Expo push as an at-least-once outbox with receipt tracking; keep lock-screen content free of customer PII.
 - [Kiosk interaction design](kiosk-interaction-design.md) — visual refreshes must preserve touchscreen speed, visible focus, large targets, reduced motion, and the real payment flow.
+- [Preview-safe legacy styles](preview-safe-legacy-styles.md) — avoid server-rendered custom head links that conflict with Replit’s injected preview script.

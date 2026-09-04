@@ -4,6 +4,7 @@ import "./globals.css";
 
 export const dynamic = 'force-dynamic';
 
+import LegacyStylesheets from "./LegacyStylesheets";
 import Providers from "./Providers";
 
 const geistSans = Geist({
@@ -34,14 +35,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
-        <link rel="stylesheet" href="/assets/css/plugins.css" />
-        <link rel="stylesheet" href="/assets/css/style.css" />
-      </head>
-
+    <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <LegacyStylesheets />
         <Providers>
           {children}
         </Providers>
