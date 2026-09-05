@@ -24,6 +24,8 @@ export interface CreatePaymentIntentOptions {
    * reporting and compliance.
    */
   taxCalculationId?: string;
+  /** Stable key for retry-safe PaymentIntent creation. */
+  idempotencyKey?: string;
 }
 
 // ─── Payment Intents ──────────────────────────────────────────────────────────
@@ -63,7 +65,10 @@ export async function createPaymentIntent(
     params.off_session = true; // merchant-initiated; bypasses 3DS redirect
   }
 
-  return stripe.paymentIntents.create(params);
+  return stripe.paymentIntents.create(
+    params,
+    options.idempotencyKey ? { idempotencyKey: options.idempotencyKey } : undefined,
+  );
 }
 
 /**

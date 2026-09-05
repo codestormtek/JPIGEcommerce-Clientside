@@ -286,7 +286,9 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
                       +
                     </button>
                   </div>
-                  <div className="k-line-price">{formatMoney(unitPrice * l.qty)}</div>
+                  <div className="k-line-price">
+                    {formatMoney(unitPrice * l.qty - (l.upsellQty ?? 0))}
+                  </div>
                 </div>
               </div>
             );

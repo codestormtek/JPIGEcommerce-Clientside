@@ -142,8 +142,9 @@ export async function checkout(
   try {
     // ── Step 1: Fetch product prices (needed for tax and/or coupon discount) ──
     let taxTotal = 0;
-    let discountTotal = 0;
+    let discountTotal = input.lines.reduce((sum, line) => sum + (line.lineDiscount ?? 0), 0);
     let taxCalculationId = '';
+    let checkoutPaymentStatus: string | null = null;
 
     const needsPrices = (config.stripe.taxEnabled || !!input.couponCode) && input.lines.length > 0;
     const priceMap = new Map<string, number>();
@@ -193,7 +194,7 @@ export async function checkout(
         0,
       );
       const couponResult = await validateCoupon({ code: input.couponCode, subtotal });
-      discountTotal = couponResult.discountAmount;
+      discountTotal += couponResult.discountAmount;
     }
 
     // ── Step 2: Create the order in the database ──────────────────────────────
@@ -230,7 +231,9 @@ export async function checkout(
         sourceId,
         metadata: { orderId: order.id, userId },
         taxCalculationId: taxCalculationId || undefined, // Stripe-only: links Stripe Tax calculation for reporting
+        idempotencyKey: order.orderType === 'kiosk' ? `kiosk-${order.id}` : undefined,
       });
+      checkoutPaymentStatus = gatewayResult.status;
 
       const payment = await paymentRepo.createPayment({
         orderId: order.id,
@@ -243,7 +246,23 @@ export async function checkout(
           ? new Date()
           : undefined,
       });
-      if (order.orderType === 'kiosk' && gatewayResult.status === 'captured') {
+      if (order.orderType === 'kiosk' && gatewayResult.status === 'authorized') {
+        const captured = await paymentGateway.capturePayment(
+          gatewayResult.paymentId,
+          gatewayResult.gateway,
+        );
+        checkoutPaymentStatus = captured.status;
+        if (captured.status !== payment.status) {
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: captured.status,
+              capturedAt: captured.status === 'captured' ? new Date() : undefined,
+            },
+          });
+        }
+      }
+      if (order.orderType === 'kiosk' && checkoutPaymentStatus === 'captured') {
         enqueueStaffOrderPush(order.id, 'kiosk_order_captured').catch((err: unknown) =>
           logger.warn('Failed to enqueue captured kiosk push', { orderId: order.id, paymentId: payment.id, err }),
         );
@@ -389,7 +408,7 @@ export async function checkout(
 
         // Terminal kiosk alerts are deferred until polling confirms payment.
         // On-screen Square card payments are already captured before this point.
-        if (order.orderType !== 'kiosk' || Boolean(input.squareNonce)) {
+        if (order.orderType !== 'kiosk' || checkoutPaymentStatus === 'captured') {
           notifyPromises.push(
             sendNewOrderStoreAlerts({
               orderNumber: orderNum,
@@ -411,7 +430,7 @@ export async function checkout(
       })
       .catch((err: unknown) => logger.warn('Post-order notifications failed', { orderId: order.id, err }));
 
-    return order;
+    return { ...order, checkoutPaymentStatus };
   } catch (err: unknown) {
     if (err instanceof ApiError) throw err;
     const msg = err instanceof Error ? err.message : 'Checkout failed';

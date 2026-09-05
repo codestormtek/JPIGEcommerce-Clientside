@@ -97,12 +97,25 @@ export async function placeOrder(
       where: { id: { in: itemIds } },
       include: { product: { select: { name: true } } },
     });
+    const requestedQtyByItem = new Map<string, number>();
+    for (const line of input.lines) {
+      requestedQtyByItem.set(
+        line.productItemId,
+        (requestedQtyByItem.get(line.productItemId) ?? 0) + line.qty,
+      );
+    }
+    for (const [itemId, requestedQty] of requestedQtyByItem) {
+      const item = productItems.find((candidate) => candidate.id === itemId);
+      if (!item) throw new Error(`Product item ${itemId} not found`);
+      if (item.qtyInStock < requestedQty) {
+        throw new Error(`Insufficient stock for SKU ${item.sku}`);
+      }
+    }
 
     let subtotal = 0;
     const lineData = input.lines.map((l) => {
       const item = productItems.find((p) => p.id === l.productItemId);
       if (!item) throw new Error(`Product item ${l.productItemId} not found`);
-      if (item.qtyInStock < l.qty) throw new Error(`Insufficient stock for SKU ${item.sku}`);
       // Server-computed surcharge for duplicate premium combo sides (kiosk only)
       const unitPrice = Number(item.price) + (l.sideUpcharge ?? 0);
       const lineTotal = unitPrice * l.qty;

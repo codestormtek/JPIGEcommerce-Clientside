@@ -54,7 +54,10 @@ export interface KioskSideChoice {
 
 /** Display-only cart subtotal including duplicate-side upcharges (server recomputes authoritatively). */
 export function cartSubtotal(cart: KioskCartLine[]): number {
-  return cart.reduce((s, l) => s + (l.item.price + sidesUpcharge(l.sides)) * l.qty, 0);
+  return cart.reduce(
+    (s, l) => s + (l.item.price + sidesUpcharge(l.sides)) * l.qty - (l.upsellQty ?? 0),
+    0,
+  );
 }
 
 /**
@@ -83,6 +86,8 @@ export interface KioskCartLine {
   product: KioskProduct;
   item: KioskMenuItem;
   qty: number;
+  /** Quantity added from the checkout drink offer at $1 off each. */
+  upsellQty?: number;
   /** Chosen combo sides (empty for non-combo items) */
   sides?: KioskSideChoice[];
 }
@@ -160,7 +165,7 @@ export function fetchKioskConfig(): Promise<KioskConfig> {
 
 export function placeKioskOrder(input: {
   clientRequestId: string;
-  lines: { productItemId: string; qty: number; sideProductIds?: string[] }[];
+  lines: { productItemId: string; qty: number; upsellQty?: number; sideProductIds?: string[] }[];
   customerName: string;
   customerPhone?: string;
   specialInstructions?: string;

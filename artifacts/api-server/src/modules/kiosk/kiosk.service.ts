@@ -10,6 +10,7 @@ import { normalizePhone } from '../../lib/phone';
 import { restoreOrderInventoryOnceTx } from '../../services/orderInventoryRestoration';
 import { reconcileCompletedKioskTerminalPayment } from '../../services/kioskTerminalReconciliation';
 import { enqueueStaffOrderPush } from '../../services/expoPushNotifications';
+import * as paymentGateway from '../../services/paymentGateway';
 import { checkout } from '../orders/orders.service';
 import { hashKioskToken, invalidateKioskDeviceCache } from './kiosk.middleware';
 import { KioskOrderInput, CreateKioskDeviceInput, UpdateKioskDeviceInput } from './kiosk.schema';
@@ -25,6 +26,8 @@ import { KioskOrderInput, CreateKioskDeviceInput, UpdateKioskDeviceInput } from 
 const COMBO_CATEGORY_NAME = 'combo dinners';
 const SIDES_CATEGORY_NAME = 'sides';
 const DEFAULT_COMBO_SIDE_COUNT = 2;
+const UPSELL_CATEGORY_NAMES = new Set(['teas', 'drinks']);
+const UPSELL_DISCOUNT_PER_ITEM = 1;
 
 async function getSidesCategoryId(): Promise<string | null> {
   const cat = await prisma.productCategory.findFirst({
@@ -239,10 +242,51 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
 
   const existingOrder = await prisma.shopOrder.findFirst({
     where: { kioskDeviceId: deviceId, kioskRequestId: input.clientRequestId },
-    include: { payments: { orderBy: { createdAt: 'desc' }, take: 1 } },
+    include: {
+      orderStatus: true,
+      payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+    },
   });
   if (existingOrder) {
-    const existingPayment = existingOrder.payments[0];
+    const existingStatus = existingOrder.orderStatus.status.trim().toLowerCase();
+    if (existingStatus === 'canceled' || existingStatus === 'cancelled') {
+      throw ApiError.unprocessable(
+        'This checkout was canceled. Go back and begin checkout again.',
+      );
+    }
+    let existingPayment = existingOrder.payments[0];
+    if (!existingPayment && input.paymentMethod === 'card' && input.squareNonce) {
+      let resumed = await paymentGateway.createPayment({
+        amountCents: Math.round(Number(existingOrder.grandTotal) * 100),
+        currency: existingOrder.currency,
+        sourceId: input.squareNonce,
+        metadata: { orderId: existingOrder.id, userId: existingOrder.userId },
+        idempotencyKey: `kiosk-${existingOrder.id}`,
+      });
+      existingPayment = await prisma.payment.create({
+        data: {
+          orderId: existingOrder.id,
+          provider: resumed.gateway,
+          amount: Number(existingOrder.grandTotal),
+          status: resumed.status,
+          providerTxnId: resumed.paymentId,
+          authorizedAt:
+            resumed.status === 'authorized' || resumed.status === 'captured'
+              ? new Date()
+              : undefined,
+        },
+      });
+      if (resumed.status === 'authorized') {
+        resumed = await paymentGateway.capturePayment(resumed.paymentId, resumed.gateway);
+        existingPayment = await prisma.payment.update({
+          where: { id: existingPayment.id },
+          data: {
+            status: resumed.status,
+            capturedAt: resumed.status === 'captured' ? new Date() : undefined,
+          },
+        });
+      }
+    }
     if (existingPayment?.status === 'captured') {
       void enqueueStaffOrderPush(existingOrder.id, 'kiosk_order_captured').catch((error) =>
         logger.warn(`Failed to repair captured kiosk push for order ${existingOrder.id}: ${error}`),
@@ -257,7 +301,41 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
     };
   }
 
-  const linesWithSides = await resolveComboSides(input.lines);
+  const requestedUpsells = input.lines.filter((line) => line.upsellQty);
+  if (requestedUpsells.length > 0) {
+    for (const line of requestedUpsells) {
+      if ((line.upsellQty ?? 0) > line.qty) {
+        throw ApiError.badRequest('Upsell quantity cannot exceed the purchased quantity.');
+      }
+    }
+    const upsellItems = await prisma.productItem.findMany({
+      where: { id: { in: requestedUpsells.map((line) => line.productItemId) } },
+      include: {
+        product: { include: { categoryMaps: { include: { category: true } } } },
+      },
+    });
+    const itemById = new Map(upsellItems.map((item) => [item.id, item]));
+    for (const line of requestedUpsells) {
+      const item = itemById.get(line.productItemId);
+      const eligible = item?.product.categoryMaps.some((map) =>
+        UPSELL_CATEGORY_NAMES.has(map.category.name.trim().toLowerCase()),
+      );
+      if (
+        !item ||
+        item.product.isDeleted ||
+        !['kiosk', 'both'].includes(item.product.visibility) ||
+        !eligible ||
+        Number(item.price) <= UPSELL_DISCOUNT_PER_ITEM
+      ) {
+        throw ApiError.badRequest('One of the selected items is not eligible for the drink offer.');
+      }
+    }
+  }
+
+  const linesWithSides = (await resolveComboSides(input.lines)).map((line, index) => ({
+    ...line,
+    lineDiscount: (input.lines[index]?.upsellQty ?? 0) * UPSELL_DISCOUNT_PER_ITEM,
+  }));
 
   let terminalDeviceId: string | null = null;
   if (input.paymentMethod === 'terminal') {
@@ -438,7 +516,10 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
     orderId: order.id,
     kioskOrderNumber: order.kioskOrderNumber,
     grandTotal: Number(order.grandTotal),
-    paymentStatus: input.paymentMethod === 'terminal' ? 'pending' : 'paid',
+    paymentStatus:
+      input.paymentMethod === 'card' && order.checkoutPaymentStatus === 'captured'
+        ? 'paid'
+        : 'pending',
     terminalCheckoutId,
   };
 }
@@ -517,10 +598,10 @@ export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
   if (!order) throw ApiError.notFound('Order');
 
   const payment = await prisma.payment.findFirst({
-    where: { orderId, provider: 'square_terminal' },
+    where: { orderId },
     orderBy: { createdAt: 'desc' },
   });
-  if (!payment) throw ApiError.notFound('Terminal payment');
+  if (!payment) throw ApiError.notFound('Payment');
 
   if (payment.status === 'captured') return { status: 'paid' as const };
   if (payment.status === 'canceled') {
@@ -530,7 +611,41 @@ export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
     return { status: 'canceled' as const };
   }
   if (payment.status === 'failed') {
+    await voidUnpaidKioskOrder(orderId);
     return { status: 'canceled' as const };
+  }
+
+  if (payment.provider !== 'square_terminal') {
+    if (!['square', 'stripe'].includes(payment.provider) || !payment.providerTxnId) {
+      return { status: 'pending' as const };
+    }
+    let live = await paymentGateway.getPayment(
+      payment.providerTxnId,
+      payment.provider as paymentGateway.GatewayName,
+    );
+    if (live.status === 'authorized') {
+      live = await paymentGateway.capturePayment(
+        payment.providerTxnId,
+        payment.provider as paymentGateway.GatewayName,
+      );
+    }
+    if (live.status !== payment.status) {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: live.status },
+      });
+    }
+    if (live.status === 'captured') {
+      void enqueueStaffOrderPush(orderId, 'kiosk_order_captured').catch((error) =>
+        logger.warn(`Failed to enqueue captured kiosk push for order ${orderId}: ${error}`),
+      );
+      return { status: 'paid' as const };
+    }
+    if (live.status === 'failed' || live.status === 'canceled') {
+      await voidUnpaidKioskOrder(orderId);
+      return { status: 'canceled' as const };
+    }
+    return { status: 'pending' as const };
   }
 
   // Still pending — ask Square for the live Terminal checkout state

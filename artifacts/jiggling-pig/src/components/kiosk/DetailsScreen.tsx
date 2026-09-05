@@ -55,11 +55,16 @@ export default function DetailsScreen({ cart, initialName, initialPhone, onBack,
             <div className="k-summary-row" key={cartLineKey(l.item.id, l.sides)}>
               <span>
                 {l.qty}× {l.product.name}
+                {!!l.upsellQty && <span className="k-upsell-tag"> ${l.upsellQty} off</span>}
                 {l.sides && l.sides.length > 0 && (
                   <span className="k-summary-sides"> ({l.sides.map((s) => s.name).join(", ")})</span>
                 )}
               </span>
-              <span>{formatMoney((l.item.price + sidesUpcharge(l.sides)) * l.qty)}</span>
+              <span>
+                {formatMoney(
+                  (l.item.price + sidesUpcharge(l.sides)) * l.qty - (l.upsellQty ?? 0),
+                )}
+              </span>
             </div>
           ))}
           <div className="k-summary-row total">

@@ -30,10 +30,12 @@ const orderLineSchema = z.object({
  * - `sidesText`: display-only snapshot of chosen combo sides.
  * - `sideUpcharge`: per-unit surcharge for duplicate premium sides, computed
  *   from Product.duplicateSideUpcharge — added to the line's unit price.
+ * - `lineDiscount`: trusted total discount for this line, computed server-side.
  */
 export type CheckoutLine = z.infer<typeof orderLineSchema> & {
   sidesText?: string;
   sideUpcharge?: number;
+  lineDiscount?: number;
 };
 
 /** PlaceOrderInput with internal-only line fields (see CheckoutLine). */

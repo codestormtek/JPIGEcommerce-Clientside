@@ -111,6 +111,8 @@ export interface CreateGatewayPaymentOptions {
   metadata: { orderId: string; userId: string };
   /** Stripe-only: tax calculation id for Stripe Tax reporting */
   taxCalculationId?: string;
+  /** Stable key for retry-safe payment creation. */
+  idempotencyKey?: string;
 }
 
 export async function createPayment(options: CreateGatewayPaymentOptions): Promise<GatewayPaymentResult> {
@@ -126,6 +128,7 @@ export async function createPayment(options: CreateGatewayPaymentOptions): Promi
       options.sourceId,
       locationId,
       options.metadata,
+      options.idempotencyKey,
     );
     return fromSquare(result);
   }
@@ -134,6 +137,7 @@ export async function createPayment(options: CreateGatewayPaymentOptions): Promi
     paymentMethodId: options.sourceId,
     metadata: { order_id: options.metadata.orderId, user_id: options.metadata.userId },
     taxCalculationId: options.taxCalculationId,
+    idempotencyKey: options.idempotencyKey,
   });
   return {
     gateway: 'stripe',

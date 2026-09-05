@@ -13,7 +13,7 @@ interface Props {
   onPaid: (result: KioskOrderResult) => void;
 }
 
-type Mode = "choose" | "terminal-waiting" | "card-entry";
+type Mode = "choose" | "terminal-waiting" | "payment-waiting" | "card-entry";
 
 const POLL_INTERVAL_MS = 2000;
 const TERMINAL_TIMEOUT_MS = 3 * 60_000;
@@ -61,6 +61,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
   const orderRef = useRef<KioskOrderResult | null>(null);
   const requestIdRef = useRef<string | null>(null);
   const cardRef = useRef<SquareCard | null>(null);
+  const cardTokenRef = useRef<string | null>(null);
   const cancelledRef = useRef(false);
 
   const subtotal = cartSubtotal(cart);
@@ -82,7 +83,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
   };
 
   useEffect(() => {
-    if (mode !== "terminal-waiting" || !orderRef.current) return;
+    if ((mode !== "terminal-waiting" && mode !== "payment-waiting") || !orderRef.current) return;
     const orderId = orderRef.current.orderId;
     const startedAt = Date.now();
     let stopped = false;
@@ -106,9 +107,13 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
         // transient network/API error — keep polling
       }
       if (Date.now() - startedAt > TERMINAL_TIMEOUT_MS) {
-        cancelKioskPayment(orderId).catch(() => {});
-        setMode("choose");
-        setError("The card reader timed out. Please try again.");
+        if (mode === "terminal-waiting") {
+          cancelKioskPayment(orderId).catch(() => {});
+          setMode("choose");
+          setError("The card reader timed out. Please try again.");
+        } else {
+          setError("Payment is taking longer than expected. Please ask a staff member for help.");
+        }
         return;
       }
       timer = setTimeout(tick, POLL_INTERVAL_MS);
@@ -178,13 +183,21 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
     setBusy(true);
     setError(null);
     try {
-      const result = await cardRef.current.tokenize();
-      if (result.status !== "OK" || !result.token) {
-        throw new Error(result.errors?.[0]?.message || "Card was declined — please check the details");
+      if (!cardTokenRef.current) {
+        const result = await cardRef.current.tokenize();
+        if (result.status !== "OK" || !result.token) {
+          throw new Error(result.errors?.[0]?.message || "Card was declined — please check the details");
+        }
+        cardTokenRef.current = result.token;
       }
       requestIdRef.current ??= crypto.randomUUID();
-      const order = await onPlaceOrder("card", result.token, requestIdRef.current);
-      onPaid(order);
+      const order = await onPlaceOrder("card", cardTokenRef.current, requestIdRef.current);
+      if (order.paymentStatus === "paid") {
+        onPaid(order);
+      } else {
+        orderRef.current = order;
+        setMode("payment-waiting");
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Payment failed — please try again");
     } finally {
@@ -197,20 +210,26 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
     setError(null);
   }, []);
 
-  if (mode === "terminal-waiting") {
+  if (mode === "terminal-waiting" || mode === "payment-waiting") {
+    const terminalWaiting = mode === "terminal-waiting";
     return (
       <div className="k-screen k-center">
         <div className="k-panel" style={{ textAlign: "center", alignItems: "center" }}>
-          <h2>Follow the card reader</h2>
+          <h2>{terminalWaiting ? "Follow the card reader" : "Confirming payment"}</h2>
           <div className="k-spinner" />
           <p style={{ color: "var(--k-muted)", fontSize: 19, margin: 0, lineHeight: 1.5 }}>
-            Tap, insert, or swipe your card on the reader next to this screen.
+            {terminalWaiting
+              ? "Tap, insert, or swipe your card on the reader next to this screen."
+              : "Please wait while we confirm your payment."}
             <br />
             Total: <strong style={{ color: "var(--k-accent)" }}>{formatMoney(subtotal)}</strong>
           </p>
-          <button className="k-btn k-btn-ghost k-btn-lg" onClick={cancelTerminal}>
-            Cancel Payment
-          </button>
+          {error && <p className="k-error">{error}</p>}
+          {terminalWaiting && (
+            <button className="k-btn k-btn-ghost k-btn-lg" onClick={cancelTerminal}>
+              Cancel Payment
+            </button>
+          )}
         </div>
       </div>
     );

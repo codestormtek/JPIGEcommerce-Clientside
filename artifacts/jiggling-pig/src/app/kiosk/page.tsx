@@ -21,11 +21,12 @@ import {
 import SetupScreen from "@/components/kiosk/SetupScreen";
 import AttractScreen from "@/components/kiosk/AttractScreen";
 import MenuScreen from "@/components/kiosk/MenuScreen";
+import UpsellScreen from "@/components/kiosk/UpsellScreen";
 import DetailsScreen from "@/components/kiosk/DetailsScreen";
 import PayScreen from "@/components/kiosk/PayScreen";
 import ConfirmScreen from "@/components/kiosk/ConfirmScreen";
 
-type Screen = "loading" | "setup" | "attract" | "menu" | "details" | "pay" | "confirm";
+type Screen = "loading" | "setup" | "attract" | "menu" | "upsell" | "details" | "pay" | "confirm";
 
 const IDLE_RESET_MS = 120_000; // return to attract after 2 min of inactivity
 const MENU_REFRESH_MS = 5 * 60_000;
@@ -179,9 +180,32 @@ export default function KioskPage() {
       qty <= 0
         ? prev.filter((l) => cartLineKey(l.item.id, l.sides) !== lineKey)
         : prev.map((l) =>
-            cartLineKey(l.item.id, l.sides) === lineKey ? { ...l, qty: Math.min(qty, 50) } : l,
+            cartLineKey(l.item.id, l.sides) === lineKey
+              ? { ...l, qty: Math.min(qty, 50), upsellQty: Math.min(l.upsellQty ?? 0, qty) }
+              : l,
           ),
     );
+  };
+
+  const handleUpsellAdd = (product: KioskProduct) => {
+    const item = product.items[0];
+    if (!item || item.price <= 1) return;
+    setCart((prev) => {
+      const existing = prev.find((line) => line.item.id === item.id && !line.sides?.length);
+      if (existing) {
+        if (existing.qty >= 50) return prev;
+        return prev.map((line) =>
+          line === existing
+            ? {
+                ...line,
+                qty: Math.min(line.qty + 1, 50),
+                upsellQty: Math.min((line.upsellQty ?? 0) + 1, 50),
+              }
+            : line,
+        );
+      }
+      return [...prev, { product, item, qty: 1, upsellQty: 1 }];
+    });
   };
 
   const handleDetailsContinue = (name: string, phone: string) => {
@@ -201,6 +225,7 @@ export default function KioskPage() {
       lines: cart.map((l) => ({
         productItemId: l.item.id,
         qty: l.qty,
+        upsellQty: l.upsellQty || undefined,
         sideProductIds: l.sides?.length ? l.sides.map((s) => s.id) : undefined,
       })),
       customerName,
@@ -249,8 +274,18 @@ export default function KioskPage() {
           cart={cart}
           onAdd={handleAdd}
           onSetQty={handleSetQty}
-          onCheckout={() => setScreen("details")}
+          onCheckout={() => setScreen("upsell")}
           onStartOver={resetToAttract}
+        />
+      );
+    case "upsell":
+      return (
+        <UpsellScreen
+          menu={menu}
+          cart={cart}
+          onAdd={handleUpsellAdd}
+          onBack={() => setScreen("menu")}
+          onContinue={() => setScreen("details")}
         />
       );
     case "details":
@@ -259,7 +294,7 @@ export default function KioskPage() {
           cart={cart}
           initialName={customerName}
           initialPhone={customerPhone}
-          onBack={() => setScreen("menu")}
+          onBack={() => setScreen("upsell")}
           onContinue={handleDetailsContinue}
         />
       );

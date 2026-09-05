@@ -25,10 +25,9 @@ export async function createPayment(
   sourceId: string,
   locationId: string,
   metadata: { orderId: string; userId: string },
+  idempotencyKey: string = crypto.randomUUID(),
 ): Promise<SquarePaymentResult> {
   const client = getSquareClient();
-  // Square caps idempotency_key at 45 chars; order IDs are long, so use a UUID (36 chars).
-  const idempotencyKey = crypto.randomUUID();
 
   const response = await client.payments.create({
     sourceId,
