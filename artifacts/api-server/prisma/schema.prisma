@@ -217,6 +217,7 @@ model Product {
   promotionProducts PromotionProduct[]
   menuItemMaps     MenuItemProductMap[]
   recipeMaps       RecipeProductMap[]
+  kioskCampaignTargets KioskCampaignProduct[]
 
   @@map("products")
 }
@@ -364,6 +365,7 @@ model MediaAsset {
   galleryImages      GalleryImage[]
   cateringMenuItems  CateringMenuItem[]
   cateringPackages   CateringPackage[]
+  kioskCampaigns     KioskCampaign[]
 
   @@map("media_assets")
 }
@@ -2308,4 +2310,39 @@ model KioskDevice {
   orders ShopOrder[]
 
   @@map("kiosk_devices")
+}
+
+model KioskCampaign {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  title           String?
+  body            String?
+  campaignType    String
+  isActive        Boolean  @default(false)
+  startsAt        DateTime?
+  endsAt          DateTime?
+  priority        Int      @default(0)
+  amountOff       Decimal? @db.Decimal(10, 2)
+  mediaAssetId    String?
+  mediaAsset      MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+  durationSeconds Int      @default(10)
+  allKiosks       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  products        KioskCampaignProduct[]
+
+  @@index([isActive, startsAt, endsAt])
+  @@index([priority, createdAt])
+  @@map("kiosk_campaigns")
+}
+
+model KioskCampaignProduct {
+  campaignId String
+  campaign   KioskCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+
+  @@id([campaignId, productId])
+  @@map("kiosk_campaign_products")
 }

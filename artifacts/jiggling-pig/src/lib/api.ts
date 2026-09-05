@@ -45,7 +45,9 @@ export async function apiFetch<T = unknown>(
     throw new Error(baseMsg);
   }
 
-  return res.json();
+  if (res.status === 204) return undefined as T;
+  const responseText = await res.text();
+  return responseText ? JSON.parse(responseText) as T : undefined as T;
 }
 
 export function apiGet<T = unknown>(path: string, opts?: Omit<ApiOptions, "method" | "body">) {

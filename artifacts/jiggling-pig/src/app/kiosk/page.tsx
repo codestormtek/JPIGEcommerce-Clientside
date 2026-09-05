@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   KioskApiError,
+  KioskCampaign,
   KioskCartLine,
   KioskConfig,
   KioskMenu,
@@ -11,6 +12,7 @@ import {
   KioskSideChoice,
   cartLineKey,
   clearKioskToken,
+  fetchKioskCampaigns,
   fetchKioskConfig,
   fetchKioskMenu,
   getKioskToken,
@@ -25,8 +27,9 @@ import UpsellScreen from "@/components/kiosk/UpsellScreen";
 import DetailsScreen from "@/components/kiosk/DetailsScreen";
 import PayScreen from "@/components/kiosk/PayScreen";
 import ConfirmScreen from "@/components/kiosk/ConfirmScreen";
+import PostSaleAdScreen from "@/components/kiosk/PostSaleAdScreen";
 
-type Screen = "loading" | "setup" | "attract" | "menu" | "upsell" | "details" | "pay" | "confirm";
+type Screen = "loading" | "setup" | "attract" | "menu" | "upsell" | "details" | "pay" | "confirm" | "post_sale_ad";
 
 const IDLE_RESET_MS = 120_000; // return to attract after 2 min of inactivity
 const MENU_REFRESH_MS = 5 * 60_000;
@@ -42,6 +45,7 @@ export default function KioskPage() {
     terminalEnabled: false,
     cardEnabled: false,
   });
+  const [campaigns, setCampaigns] = useState<KioskCampaign[]>([]);
   const [cart, setCart] = useState<KioskCartLine[]>([]);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -64,6 +68,14 @@ export default function KioskPage() {
     const data = await fetchKioskMenu();
     setMenu(data);
     return data;
+  }, []);
+
+  const loadCampaigns = useCallback(async () => {
+    try {
+      setCampaigns(await fetchKioskCampaigns());
+    } catch {
+      // safe to ignore, will just not show campaigns
+    }
   }, []);
 
   const loadConfig = useCallback(async () => {
@@ -91,6 +103,7 @@ export default function KioskPage() {
       try {
         await loadMenu();
         loadConfig();
+        loadCampaigns();
         setScreen(params.get("start") === "menu" ? "menu" : "attract");
       } catch (e) {
         if (e instanceof KioskApiError && e.status === 401) {
@@ -114,13 +127,14 @@ export default function KioskPage() {
       // Don't swap the menu mid-checkout
       if (screenRef.current === "attract" || screenRef.current === "menu") {
         loadMenu().catch(() => {});
+        loadCampaigns().catch(() => {});
       }
     }, MENU_REFRESH_MS);
     return () => {
       clearInterval(hb);
       clearInterval(mr);
     };
-  }, [screen === "setup" || screen === "loading", loadMenu]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [screen === "setup" || screen === "loading", loadMenu, loadCampaigns]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Idle reset ──
   useEffect(() => {
@@ -147,6 +161,7 @@ export default function KioskPage() {
     try {
       await loadMenu();
       loadConfig();
+      loadCampaigns();
       setLoadError(null);
       setScreen("attract");
     } catch (e) {
@@ -158,6 +173,7 @@ export default function KioskPage() {
   const handleStart = async () => {
     setScreen("menu");
     loadMenu().catch(() => {});
+    loadCampaigns().catch(() => {});
   };
 
   const handleAdd = (product: KioskProduct, sides?: KioskSideChoice[]) => {
@@ -187,11 +203,12 @@ export default function KioskPage() {
     );
   };
 
-  const handleUpsellAdd = (product: KioskProduct) => {
+  const handleUpsellAdd = (product: KioskProduct, campaign: KioskCampaign) => {
     const item = product.items[0];
-    if (!item || item.price <= 1) return;
+    if (!item) return;
+    const discount = campaign.amountOff || 0;
     setCart((prev) => {
-      const existing = prev.find((line) => line.item.id === item.id && !line.sides?.length);
+      const existing = prev.find((line) => line.item.id === item.id && !line.sides?.length && line.campaignId === campaign.id);
       if (existing) {
         if (existing.qty >= 50) return prev;
         return prev.map((line) =>
@@ -204,7 +221,14 @@ export default function KioskPage() {
             : line,
         );
       }
-      return [...prev, { product, item, qty: 1, upsellQty: 1 }];
+      return [...prev, {
+        product,
+        item,
+        qty: 1,
+        upsellQty: 1,
+        campaignId: campaign.id,
+        campaignDiscountAmount: discount
+      }];
     });
   };
 
@@ -226,6 +250,7 @@ export default function KioskPage() {
         productItemId: l.item.id,
         qty: l.qty,
         upsellQty: l.upsellQty || undefined,
+        campaignId: l.campaignId,
         sideProductIds: l.sides?.length ? l.sides.map((s) => s.id) : undefined,
       })),
       customerName,
@@ -239,6 +264,15 @@ export default function KioskPage() {
     setOrderNumber(result.kioskOrderNumber);
     setScreen("confirm");
     loadMenu().catch(() => {}); // refresh stock after sale
+  };
+
+  const handleConfirmDone = () => {
+    const hasAds = campaigns.some(c => c.campaignType === 'post_sale_ad' && c.isActive);
+    if (hasAds) {
+      setScreen("post_sale_ad");
+    } else {
+      resetToAttract();
+    }
   };
 
   // ── Render ──
@@ -274,14 +308,17 @@ export default function KioskPage() {
           cart={cart}
           onAdd={handleAdd}
           onSetQty={handleSetQty}
-          onCheckout={() => setScreen("upsell")}
+          onCheckout={() => {
+            const hasUpsells = campaigns.some(c => c.campaignType === 'upsell' && c.isActive);
+            setScreen(hasUpsells ? "upsell" : "details");
+          }}
           onStartOver={resetToAttract}
         />
       );
     case "upsell":
       return (
         <UpsellScreen
-          menu={menu}
+          campaigns={campaigns.filter(c => c.campaignType === 'upsell' && c.isActive)}
           cart={cart}
           onAdd={handleUpsellAdd}
           onBack={() => setScreen("menu")}
@@ -310,7 +347,9 @@ export default function KioskPage() {
         />
       );
     case "confirm":
-      return <ConfirmScreen orderNumber={orderNumber} customerName={customerName} onDone={resetToAttract} />;
+      return <ConfirmScreen orderNumber={orderNumber} customerName={customerName} onDone={handleConfirmDone} />;
+    case "post_sale_ad":
+      return <PostSaleAdScreen campaigns={campaigns.filter(c => c.campaignType === 'post_sale_ad' && c.isActive)} onDone={resetToAttract} />;
     default:
       return null;
   }

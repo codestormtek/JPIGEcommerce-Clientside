@@ -55,7 +55,7 @@ export interface KioskSideChoice {
 /** Display-only cart subtotal including duplicate-side upcharges (server recomputes authoritatively). */
 export function cartSubtotal(cart: KioskCartLine[]): number {
   return cart.reduce(
-    (s, l) => s + (l.item.price + sidesUpcharge(l.sides)) * l.qty - (l.upsellQty ?? 0),
+    (s, l) => s + (l.item.price + sidesUpcharge(l.sides)) * l.qty - ((l.upsellQty ?? 0) * (l.campaignDiscountAmount ?? 1)),
     0,
   );
 }
@@ -88,6 +88,10 @@ export interface KioskCartLine {
   qty: number;
   /** Quantity added from the checkout drink offer at $1 off each. */
   upsellQty?: number;
+  /** Associated campaign ID if this line was added via an upsell campaign. */
+  campaignId?: string;
+  /** Associated campaign discount if added via an upsell campaign. */
+  campaignDiscountAmount?: number;
   /** Chosen combo sides (empty for non-combo items) */
   sides?: KioskSideChoice[];
 }
@@ -185,6 +189,30 @@ export function cancelKioskPayment(orderId: string): Promise<{ canceled: boolean
 
 export function fetchKioskOrderStatus(orderId: string): Promise<{ status: string }> {
   return kioskFetch<{ status: string }>(`/orders/${orderId}/status`);
+}
+
+export interface KioskCampaign {
+  id: string;
+  name: string;
+  description: string | null;
+  title: string | null;
+  body: string | null;
+  campaignType: "upsell" | "post_sale_ad";
+  isActive: boolean;
+  startsAt: string | null;
+  endsAt: string | null;
+  priority: number;
+  amountOff: number | null;
+  mediaAssetId: string | null;
+  durationSeconds: number;
+  allKiosks: boolean;
+  productIds: string[];
+  imageUrl: string | null;
+  products: KioskProduct[];
+}
+
+export function fetchKioskCampaigns(): Promise<KioskCampaign[]> {
+  return kioskFetch<KioskCampaign[]>("/campaigns");
 }
 
 export function formatMoney(n: number): string {

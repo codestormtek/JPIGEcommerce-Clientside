@@ -1,8 +1,14 @@
 import { Request, Response } from 'express';
 import * as service from './kiosk.service';
 import { KioskRequest } from './kiosk.middleware';
-import { KioskOrderInput, CreateKioskDeviceInput, UpdateKioskDeviceInput } from './kiosk.schema';
-import { sendSuccess, sendCreated } from '../../utils/apiResponse';
+import {
+  KioskOrderInput,
+  CreateKioskDeviceInput,
+  UpdateKioskDeviceInput,
+  CreateKioskCampaignInput,
+  UpdateKioskCampaignInput,
+} from './kiosk.schema';
+import { sendSuccess, sendCreated, sendNoContent } from '../../utils/apiResponse';
 
 // ─── Kiosk-facing (device token auth) ────────────────────────────────────────
 
@@ -35,6 +41,13 @@ export async function heartbeat(req: KioskRequest, res: Response): Promise<void>
 export async function getConfig(req: KioskRequest, res: Response): Promise<void> {
   const cfg = await service.getKioskConfig(req.kioskDevice!.id);
   sendSuccess(res, cfg);
+}
+
+export async function listCampaigns(req: KioskRequest, res: Response): Promise<void> {
+  const campaigns = req.kioskDevice
+    ? await service.getActiveKioskCampaigns()
+    : await service.listKioskCampaignsAdmin();
+  sendSuccess(res, campaigns);
 }
 
 export async function getPaymentStatus(req: KioskRequest, res: Response): Promise<void> {
@@ -89,4 +102,26 @@ export async function checkPairing(req: Request, res: Response): Promise<void> {
     req.params['codeId'] as string,
   );
   sendSuccess(res, result);
+}
+
+export async function getCampaign(req: Request, res: Response): Promise<void> {
+  sendSuccess(res, await service.getKioskCampaign(req.params['id'] as string));
+}
+
+export async function createCampaign(req: Request, res: Response): Promise<void> {
+  const campaign = await service.createKioskCampaign(req.body as CreateKioskCampaignInput);
+  sendCreated(res, campaign, 'Kiosk campaign created');
+}
+
+export async function updateCampaign(req: Request, res: Response): Promise<void> {
+  const campaign = await service.updateKioskCampaign(
+    req.params['id'] as string,
+    req.body as UpdateKioskCampaignInput,
+  );
+  sendSuccess(res, campaign, 'Kiosk campaign updated');
+}
+
+export async function deleteCampaign(req: Request, res: Response): Promise<void> {
+  await service.deleteKioskCampaign(req.params['id'] as string);
+  sendNoContent(res);
 }

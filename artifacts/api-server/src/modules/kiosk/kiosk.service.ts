@@ -13,7 +13,13 @@ import { enqueueStaffOrderPush } from '../../services/expoPushNotifications';
 import * as paymentGateway from '../../services/paymentGateway';
 import { checkout } from '../orders/orders.service';
 import { hashKioskToken, invalidateKioskDeviceCache } from './kiosk.middleware';
-import { KioskOrderInput, CreateKioskDeviceInput, UpdateKioskDeviceInput } from './kiosk.schema';
+import {
+  KioskOrderInput,
+  CreateKioskDeviceInput,
+  UpdateKioskDeviceInput,
+  CreateKioskCampaignInput,
+  UpdateKioskCampaignInput,
+} from './kiosk.schema';
 
 // ─── Menu ─────────────────────────────────────────────────────────────────────
 
@@ -26,8 +32,6 @@ import { KioskOrderInput, CreateKioskDeviceInput, UpdateKioskDeviceInput } from 
 const COMBO_CATEGORY_NAME = 'combo dinners';
 const SIDES_CATEGORY_NAME = 'sides';
 const DEFAULT_COMBO_SIDE_COUNT = 2;
-const UPSELL_CATEGORY_NAMES = new Set(['teas', 'drinks']);
-const UPSELL_DISCOUNT_PER_ITEM = 1;
 
 async function getSidesCategoryId(): Promise<string | null> {
   const cat = await prisma.productCategory.findFirst({
@@ -302,39 +306,72 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
   }
 
   const requestedUpsells = input.lines.filter((line) => line.upsellQty);
+  const trustedUpsellAmountByCampaign = new Map<string, number>();
   if (requestedUpsells.length > 0) {
+    const seenItemIds = new Set<string>();
+    for (const line of input.lines) {
+      if (seenItemIds.has(line.productItemId)) {
+        throw ApiError.badRequest('Duplicate product lines are not allowed with campaign discounts.');
+      }
+      seenItemIds.add(line.productItemId);
+    }
     for (const line of requestedUpsells) {
       if ((line.upsellQty ?? 0) > line.qty) {
         throw ApiError.badRequest('Upsell quantity cannot exceed the purchased quantity.');
       }
     }
+    const now = new Date();
+    const campaignIds = [...new Set(requestedUpsells.map((line) => line.campaignId!))];
+    const campaigns = await prisma.kioskCampaign.findMany({
+      where: {
+        id: { in: campaignIds },
+        campaignType: 'upsell',
+        isActive: true,
+        allKiosks: true,
+        AND: [
+          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+          { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+        ],
+      },
+      include: { products: true },
+    });
+    const campaignById = new Map(campaigns.map((campaign) => [campaign.id, campaign]));
+    if (campaigns.length !== campaignIds.length) {
+      throw ApiError.badRequest('One of the selected upsell campaigns is no longer active.');
+    }
     const upsellItems = await prisma.productItem.findMany({
       where: { id: { in: requestedUpsells.map((line) => line.productItemId) } },
-      include: {
-        product: { include: { categoryMaps: { include: { category: true } } } },
-      },
+      include: { product: true },
     });
     const itemById = new Map(upsellItems.map((item) => [item.id, item]));
     for (const line of requestedUpsells) {
       const item = itemById.get(line.productItemId);
-      const eligible = item?.product.categoryMaps.some((map) =>
-        UPSELL_CATEGORY_NAMES.has(map.category.name.trim().toLowerCase()),
-      );
+      const campaign = campaignById.get(line.campaignId!);
+      const amountOff = Number(campaign?.amountOff ?? 0);
+      const eligible = campaign?.products.some((target) => target.productId === item?.productId);
       if (
         !item ||
         item.product.isDeleted ||
         !['kiosk', 'both'].includes(item.product.visibility) ||
         !eligible ||
-        Number(item.price) <= UPSELL_DISCOUNT_PER_ITEM
+        amountOff <= 0 ||
+        amountOff > Number(item.price)
       ) {
-        throw ApiError.badRequest('One of the selected items is not eligible for the drink offer.');
+        throw ApiError.badRequest('One of the selected items is not eligible for this upsell campaign.');
       }
+      trustedUpsellAmountByCampaign.set(line.campaignId!, amountOff);
     }
   }
 
   const linesWithSides = (await resolveComboSides(input.lines)).map((line, index) => ({
     ...line,
-    lineDiscount: (input.lines[index]?.upsellQty ?? 0) * UPSELL_DISCOUNT_PER_ITEM,
+    lineDiscount: (() => {
+      const requested = input.lines[index];
+      if (!requested?.upsellQty || !requested.campaignId) return 0;
+      const amountOff = trustedUpsellAmountByCampaign.get(requested.campaignId);
+      if (amountOff === undefined) throw ApiError.badRequest('Invalid upsell campaign.');
+      return Math.round(requested.upsellQty * amountOff * 100) / 100;
+    })(),
   }));
 
   let terminalDeviceId: string | null = null;
@@ -890,4 +927,221 @@ export async function deleteKioskDevice(id: string) {
   await prisma.kioskDevice.delete({ where: { id } });
   invalidateKioskDeviceCache();
   return { deleted: true, revoked: false };
+}
+
+// ─── Kiosk marketing campaigns ───────────────────────────────────────────────
+
+const campaignInclude = {
+  mediaAsset: true,
+  products: {
+    include: {
+      product: {
+        include: {
+          items: {
+            where: { isPublished: true },
+            orderBy: { price: 'asc' as const },
+          },
+          media: {
+            include: { mediaAsset: true },
+            orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }],
+            take: 1,
+          },
+        },
+      },
+    },
+    orderBy: { product: { name: 'asc' as const } },
+  },
+};
+
+function presentCampaign(campaign: any) {
+  return {
+    id: campaign.id,
+    name: campaign.name,
+    description: campaign.description,
+    title: campaign.title,
+    body: campaign.body,
+    campaignType: campaign.campaignType,
+    isActive: campaign.isActive,
+    startsAt: campaign.startsAt,
+    endsAt: campaign.endsAt,
+    priority: campaign.priority,
+    amountOff: campaign.amountOff == null ? null : Number(campaign.amountOff),
+    mediaAssetId: campaign.mediaAssetId,
+    image: campaign.mediaAsset
+      ? {
+          id: campaign.mediaAsset.id,
+          url: campaign.mediaAsset.url,
+          altText: campaign.mediaAsset.altText,
+        }
+      : null,
+    imageUrl: campaign.mediaAsset?.url ?? null,
+    durationSeconds: campaign.durationSeconds,
+    allKiosks: campaign.allKiosks,
+    createdAt: campaign.createdAt,
+    updatedAt: campaign.updatedAt,
+    products: campaign.products.map(({ product }: any) => ({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      imageUrl: product.media[0]?.mediaAsset?.url ?? null,
+      items: product.items.map((item: any) => ({
+        id: item.id,
+        sku: item.sku,
+        price: Number(item.price),
+        qtyInStock: item.qtyInStock,
+      })),
+    })),
+  };
+}
+
+async function validateCampaignReferences(input: {
+  mediaAssetId?: string | null;
+  productIds?: string[];
+}) {
+  if (input.mediaAssetId) {
+    const media = await prisma.mediaAsset.findFirst({
+      where: { id: input.mediaAssetId, isDeleted: false, mediaType: 'image' },
+      select: { id: true },
+    });
+    if (!media) throw ApiError.badRequest('Campaign media must be an active image asset.');
+  }
+  if (input.productIds) {
+    const uniqueIds = [...new Set(input.productIds)];
+    if (uniqueIds.length !== input.productIds.length) {
+      throw ApiError.badRequest('productIds must not contain duplicates.');
+    }
+    const count = await prisma.product.count({
+      where: { id: { in: uniqueIds }, isDeleted: false },
+    });
+    if (count !== uniqueIds.length) {
+      throw ApiError.badRequest('One or more targeted products do not exist.');
+    }
+  }
+}
+
+function validateCompleteCampaign(input: {
+  campaignType: string;
+  isActive: boolean;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  amountOff: number | null;
+  mediaAssetId: string | null;
+  productIds: string[];
+}) {
+  if (input.startsAt && input.endsAt && input.startsAt >= input.endsAt) {
+    throw ApiError.badRequest('endsAt must be after startsAt.');
+  }
+  if (input.campaignType === 'upsell') {
+    if (!input.amountOff || input.amountOff <= 0) {
+      throw ApiError.badRequest('Upsell campaigns require a positive amountOff.');
+    }
+    if (input.isActive && input.productIds.length === 0) {
+      throw ApiError.badRequest('Active upsell campaigns require at least one product.');
+    }
+  } else if (input.campaignType === 'post_sale_ad') {
+    if (!input.mediaAssetId) throw ApiError.badRequest('Post-sale ads require an image media asset.');
+  } else {
+    throw ApiError.badRequest('Unsupported campaign type.');
+  }
+}
+
+export async function listKioskCampaignsAdmin() {
+  const campaigns = await prisma.kioskCampaign.findMany({
+    include: campaignInclude,
+    orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
+  });
+  return campaigns.map(presentCampaign);
+}
+
+export async function getActiveKioskCampaigns() {
+  const now = new Date();
+  const campaigns = await prisma.kioskCampaign.findMany({
+    where: {
+      isActive: true,
+      allKiosks: true,
+      AND: [
+        { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+        { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+      ],
+    },
+    include: campaignInclude,
+    orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
+  });
+  return campaigns.map(presentCampaign);
+}
+
+export async function getKioskCampaign(id: string) {
+  const campaign = await prisma.kioskCampaign.findUnique({
+    where: { id },
+    include: campaignInclude,
+  });
+  if (!campaign) throw ApiError.notFound('Kiosk campaign');
+  return presentCampaign(campaign);
+}
+
+export async function createKioskCampaign(input: CreateKioskCampaignInput) {
+  await validateCampaignReferences(input);
+  const productIds = input.productIds;
+  validateCompleteCampaign({
+    campaignType: input.campaignType,
+    isActive: input.isActive,
+    startsAt: input.startsAt ?? null,
+    endsAt: input.endsAt ?? null,
+    amountOff: input.amountOff ?? null,
+    mediaAssetId: input.mediaAssetId ?? null,
+    productIds,
+  });
+  const { productIds: _, ...data } = input;
+  const campaign = await prisma.kioskCampaign.create({
+    data: {
+      ...data,
+      products: { create: productIds.map((productId) => ({ productId })) },
+    },
+    include: campaignInclude,
+  });
+  return presentCampaign(campaign);
+}
+
+export async function updateKioskCampaign(id: string, input: UpdateKioskCampaignInput) {
+  const existing = await prisma.kioskCampaign.findUnique({
+    where: { id },
+    include: { products: true },
+  });
+  if (!existing) throw ApiError.notFound('Kiosk campaign');
+  await validateCampaignReferences(input);
+  const productIds = input.productIds ?? existing.products.map((target) => target.productId);
+  validateCompleteCampaign({
+    campaignType: input.campaignType ?? existing.campaignType,
+    isActive: input.isActive ?? existing.isActive,
+    startsAt: input.startsAt === undefined ? existing.startsAt : input.startsAt,
+    endsAt: input.endsAt === undefined ? existing.endsAt : input.endsAt,
+    amountOff: input.amountOff === undefined
+      ? (existing.amountOff == null ? null : Number(existing.amountOff))
+      : input.amountOff,
+    mediaAssetId: input.mediaAssetId === undefined ? existing.mediaAssetId : input.mediaAssetId,
+    productIds,
+  });
+  const { productIds: _, ...data } = input;
+  const campaign = await prisma.kioskCampaign.update({
+    where: { id },
+    data: {
+      ...data,
+      ...(input.productIds
+        ? {
+            products: {
+              deleteMany: {},
+              create: productIds.map((productId) => ({ productId })),
+            },
+          }
+        : {}),
+    },
+    include: campaignInclude,
+  });
+  return presentCampaign(campaign);
+}
+
+export async function deleteKioskCampaign(id: string) {
+  const existing = await prisma.kioskCampaign.findUnique({ where: { id }, select: { id: true } });
+  if (!existing) throw ApiError.notFound('Kiosk campaign');
+  await prisma.kioskCampaign.delete({ where: { id } });
 }

@@ -1,53 +1,52 @@
 "use client";
 
 import { useMemo } from "react";
-import type { KioskCartLine, KioskMenu, KioskProduct } from "@/lib/kiosk";
+import type { KioskCartLine, KioskCampaign, KioskProduct } from "@/lib/kiosk";
 import { cartSubtotal, formatMoney } from "@/lib/kiosk";
 
 interface Props {
-  menu: KioskMenu;
+  campaigns: KioskCampaign[];
   cart: KioskCartLine[];
-  onAdd: (product: KioskProduct) => void;
+  onAdd: (product: KioskProduct, campaign: KioskCampaign) => void;
   onBack: () => void;
   onContinue: () => void;
 }
 
-const OFFER_CATEGORIES = new Set(["teas", "drinks"]);
-
-export default function UpsellScreen({ menu, cart, onAdd, onBack, onContinue }: Props) {
-  const offers = useMemo(
-    () =>
-      menu.products.filter((product) => {
-        const inOfferCategory = product.categoryIds.some((id) => {
-          const category = menu.categories.find((candidate) => candidate.id === id);
-          return category ? OFFER_CATEGORIES.has(category.name.trim().toLowerCase()) : false;
-        });
-        return inOfferCategory && product.items[0] && product.items[0].price > 1;
-      }),
-    [menu],
-  );
+export default function UpsellScreen({ campaigns, cart, onAdd, onBack, onContinue }: Props) {
+  // If there are multiple active upsell campaigns, we take the highest priority one.
+  const activeCampaign = useMemo(() => {
+    return campaigns.sort((a, b) => b.priority - a.priority)[0] || null;
+  }, [campaigns]);
 
   const addedCount = cart.reduce((sum, line) => sum + (line.upsellQty ?? 0), 0);
+
+  if (!activeCampaign) {
+    // Failsafe, shouldn't reach here if handled correctly in router
+    return null;
+  }
+
+  const { title, body, amountOff, products } = activeCampaign;
 
   return (
     <div className="k-screen k-upsell">
       <div className="k-upsell-panel">
         <div className="k-upsell-heading">
           <div className="k-upsell-kicker">ONE MORE THING</div>
-          <h2>Thirsty?</h2>
-          <p>Add any iced tea or drink now and save <strong>$1 on each one.</strong></p>
+          <h2>{title || "Wait! Don't miss this"}</h2>
+          <p>{body || `Add an item now and save ${amountOff ? formatMoney(amountOff) : ''}.`}</p>
         </div>
 
         <div className="k-upsell-grid">
-          {offers.map((product) => {
+          {products.map((product) => {
             const item = product.items[0];
             if (!item) return null;
-            const discountedPrice = item.price - 1;
+            const discountedPrice = Math.max(0, item.price - (amountOff || 0));
             const added = cart
-              .filter((line) => line.item.id === item.id)
+              .filter((line) => line.item.id === item.id && line.campaignId === activeCampaign.id)
               .reduce((sum, line) => sum + (line.upsellQty ?? 0), 0);
+
             return (
-              <button className="k-upsell-card" key={product.id} onClick={() => onAdd(product)}>
+              <button className="k-upsell-card" key={product.id} onClick={() => onAdd(product, activeCampaign)}>
                 <span className="k-upsell-name">{product.name}</span>
                 <span className="k-upsell-prices">
                   <del>{formatMoney(item.price)}</del>

@@ -1,11 +1,17 @@
-import { Router } from 'express';
+import { NextFunction, Request, Response, Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import * as ctrl from './kiosk.controller';
 import { authenticateKiosk, lookupKioskDevice } from './kiosk.middleware';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validate.middleware';
 import { asyncHandler } from '../../utils/asyncHandler';
-import { kioskOrderSchema, createKioskDeviceSchema, updateKioskDeviceSchema } from './kiosk.schema';
+import {
+  kioskOrderSchema,
+  createKioskDeviceSchema,
+  updateKioskDeviceSchema,
+  createKioskCampaignSchema,
+  updateKioskCampaignSchema,
+} from './kiosk.schema';
 
 export const kioskRouter = Router();
 
@@ -57,6 +63,20 @@ const kioskDeviceLimiter = rateLimit({
 // per-device throughput ceiling.
 const kioskLimiters = [kioskGeneralLimiter, kioskDeviceLimiter];
 
+// GET /campaigns intentionally serves both device clients and admins. Select
+// the authentication convention from the presented credential without ever
+// accepting an unauthenticated request.
+function authenticateCampaignList(req: Request, res: Response, next: NextFunction): void {
+  if (req.header('x-kiosk-token')) {
+    authenticateKiosk(req, res, next);
+    return;
+  }
+  authenticate(req, res, (error?: unknown) => {
+    if (error) return next(error);
+    authorize('admin')(req, res, next);
+  });
+}
+
 // ─── Kiosk-facing (X-Kiosk-Token) ────────────────────────────────────────────
 
 // GET    /api/v1/kiosk/menu
@@ -73,6 +93,9 @@ kioskRouter.post('/heartbeat', ...kioskLimiters, authenticateKiosk, asyncHandler
 
 // GET    /api/v1/kiosk/config — payment capabilities for this device
 kioskRouter.get('/config', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.getConfig));
+
+// GET    /api/v1/kiosk/campaigns — active campaigns for devices; all for admins
+kioskRouter.get('/campaigns', ...kioskLimiters, authenticateCampaignList, asyncHandler(ctrl.listCampaigns));
 
 // GET    /api/v1/kiosk/orders/:id/payment — poll Terminal payment status
 kioskRouter.get('/orders/:id/payment', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.getPaymentStatus));
@@ -99,3 +122,10 @@ kioskRouter.post('/devices/:id/pair-terminal', authenticate, authorize('admin'),
 
 // GET    /api/v1/kiosk/devices/:id/pair-terminal/:codeId — poll pairing status
 kioskRouter.get('/devices/:id/pair-terminal/:codeId', authenticate, authorize('admin'), asyncHandler(ctrl.checkPairing));
+
+// ─── Admin kiosk campaign management (JWT) ───────────────────────────────────
+
+kioskRouter.post('/campaigns', authenticate, authorize('admin'), validate(createKioskCampaignSchema), asyncHandler(ctrl.createCampaign));
+kioskRouter.get('/campaigns/:id', authenticate, authorize('admin'), asyncHandler(ctrl.getCampaign));
+kioskRouter.patch('/campaigns/:id', authenticate, authorize('admin'), validate(updateKioskCampaignSchema), asyncHandler(ctrl.updateCampaign));
+kioskRouter.delete('/campaigns/:id', authenticate, authorize('admin'), asyncHandler(ctrl.deleteCampaign));
