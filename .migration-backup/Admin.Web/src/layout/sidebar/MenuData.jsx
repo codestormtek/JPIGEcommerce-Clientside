@@ -16,6 +16,7 @@ const menu = [
     subMenu: [
       { text: "Kitchen Queue", link: "/kitchen-queue" },
       { text: "Kiosk Devices", link: "/kiosk-devices" },
+      { text: "Kiosk Marketing", link: "/kiosk-marketing" },
     ],
   },
 

@@ -119,6 +119,7 @@ import AdminSocialLinks from "@/pages/pre-built/social-links/AdminSocialLinks";
 import AdminOrderList from "@/pages/pre-built/orders/AdminOrderList";
 import KitchenOrderQueue from "@/pages/pre-built/kiosk/KitchenOrderQueue";
 import KioskDeviceManager from "@/pages/pre-built/kiosk/KioskDeviceManager";
+import AdminKioskMarketing from "@/pages/pre-built/kiosk/AdminKioskMarketing";
 import AdminPromotionList from "@/pages/pre-built/promotions/AdminPromotionList";
 import AdminReviews from "@/pages/pre-built/reviews/AdminReviews";
 import AdminPaymentMethodList from "@/pages/pre-built/payment-methods/AdminPaymentMethodList";
@@ -234,6 +235,7 @@ const Pages = () => {
               <Route path="orders" element={<AdminOrderList />}></Route>
               <Route path="kitchen-queue" element={<KitchenOrderQueue />}></Route>
               <Route path="kiosk-devices" element={<KioskDeviceManager />}></Route>
+              <Route path="kiosk-marketing" element={<AdminKioskMarketing />}></Route>
               <Route path="promotions" element={<AdminPromotionList />}></Route>
               <Route path="reviews" element={<AdminReviews />}></Route>
               <Route path="payment-methods" element={<AdminPaymentMethodList />}></Route>

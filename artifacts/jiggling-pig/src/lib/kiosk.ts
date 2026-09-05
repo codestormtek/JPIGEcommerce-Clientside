@@ -169,7 +169,13 @@ export function fetchKioskConfig(): Promise<KioskConfig> {
 
 export function placeKioskOrder(input: {
   clientRequestId: string;
-  lines: { productItemId: string; qty: number; upsellQty?: number; sideProductIds?: string[] }[];
+  lines: {
+    productItemId: string;
+    qty: number;
+    upsellQty?: number;
+    campaignId?: string;
+    sideProductIds?: string[];
+  }[];
   customerName: string;
   customerPhone?: string;
   specialInstructions?: string;
