@@ -301,7 +301,9 @@
 }
 
 .k-cat {
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  width: max-content;
+  max-width: none;
   min-height: 44px;
   background: var(--k-surface-2);
   color: var(--k-text);
