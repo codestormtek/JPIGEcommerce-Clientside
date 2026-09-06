@@ -1,0 +1,99 @@
+ironment
+Source
+Deployment
+Status
+Production
+main
+4ad7e72
+Add kiosk campaign management to production admin
+https://e7a35741.jpig-admin.pages.dev
+20 minutes ago
+Details
+
+Production
+main
+4ad7e72
+Add kiosk campaign management to production admin
+No deployment available
+29 minutes ago
+Details
+
+Production
+main
+4ad7e72
+Add kiosk campaign management to production admin
+No deployment available
+39 minutes ago
+Details
+
+Production
+main
+ad9819b
+Add live admin kiosk marketing screenshot Replit-Commit-Author: Agent
+No deployment available
+7 hours ago
+Details
+
+Production
+main
+2ea68c6
+Published your App Replit-Commit-Author: Deployment Replit-Commit-Deployment-Build-Id: b2f1d505-beff-479e-be2d-4d38ff323f25
+No deployment available
+11 hours ago
+Details
+
+Production
+main
+1f3f33a
+Published your App Replit-Commit-Author: Deployment Replit-Commit-Deployment-Build-Id: 0c9cfeab-072b-4918-b2c5-9771f77dd83b
+No deployment available
+19 hours ago
+Details
+
+Production
+main
+719c6db
+Published your App Replit-Commit-Author: Deployment Replit-Commit-Deployment-Build-Id: 1b687a68-5ffa-42f5-ad7d-84290cba3222
+No deployment available
+a day ago
+Details
+
+Production
+main
+86de257
+Published your App Replit-Commit-Author: Deployment Replit-Commit-Deployment-Build-Id: 15326661-1ce2-48ef-8755-f263494d0f57
+No deployment available
+a day ago
+Details
+
+Production
+main
+e1d10b8
+Published your App Replit-Commit-Author: Deployment Replit-Commit-Deployment-Build-Id: b28c7032-9d69-4ca1-ad9e-7cb7219068e2
+No deployment available
+a day ago
+Details
+
+Production
+main
+c9c4d44
+Update menu screen component logic Replit-Commit-Author: Agent
+No deployment available
+a day ago
+Details
+
+Production
+main
+6e9475f
+Implement legacy stylesheet support in jiggling pig and update memory context Replit-Commit-Author: Agent
+No deployment available
+a day ago
+Details
+
+Production
+main
+74c7250
+Published your App Replit-Commit-Author: Deployment Replit-Commit-Deployment-Build-Id: 35ee3bee-0e0f-40ba-8188-d2e4f40b25cb
+No deployment available
+2 days ago
+Details

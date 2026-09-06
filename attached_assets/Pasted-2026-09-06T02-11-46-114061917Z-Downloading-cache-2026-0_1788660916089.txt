@@ -1,0 +1,70 @@
+2026-09-06T02:11:46.114061917Z ==> Downloading cache...
+2026-09-06T02:11:46.142912221Z ==> Cloning from https://github.com/codestormtek/JPIGEcommerce-Clientside
+2026-09-06T02:11:55.416328256Z ==> Checking out commit 4ad7e72f5b02492801d199be2a8bf98219c25624 in branch main
+2026-09-06T02:12:01.953751536Z ==> Downloaded 342MB in 7s. Extraction took 6s.
+2026-09-06T02:12:03.227788854Z ==> Using Node.js version 22.22.0 (default)
+2026-09-06T02:12:03.227799911Z ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+2026-09-06T02:12:03.227902096Z ==> Installing Node.js version 22.22.0...
+2026-09-06T02:12:03.852084828Z ==> Running build command 'npx --yes pnpm@10.26.1 install --frozen-lockfile && npx --yes pnpm@10.26.1 --filter @workspace/api-server run prisma:generate && npx --yes pnpm@10.26.1 --filter @workspace/api-server run build && npx --yes pnpm@10.26.1 --filter @workspace/api-server run prisma:migrate:deploy'...
+2026-09-06T02:12:26.869096178Z 
+2026-09-06T02:12:26.869103989Z > @workspace/api-server@1.0.0 prisma:generate /opt/render/project/src/artifacts/api-server
+2026-09-06T02:12:26.869106563Z > prisma generate
+2026-09-06T02:12:26.86910786Z 
+2026-09-06T02:12:27.475117907Z warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+2026-09-06T02:12:27.475124837Z For more information, see: https://pris.ly/prisma-config
+2026-09-06T02:12:27.475126304Z 
+2026-09-06T02:12:27.616588312Z Prisma schema loaded from prisma/schema.prisma
+2026-09-06T02:12:28.657755933Z 
+2026-09-06T02:12:28.65777472Z ✔ Generated Prisma Client (v6.19.3) to ./../../node_modules/.pnpm/@prisma+client@6.19.3_prisma@6.19.3_typescript@5.9.3__typescript@5.9.3/node_modules/@prisma/client in 534ms
+2026-09-06T02:12:28.657777508Z 
+2026-09-06T02:12:28.657779345Z Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+2026-09-06T02:12:28.657780703Z 
+2026-09-06T02:12:28.657782502Z Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+2026-09-06T02:12:28.657783771Z 
+2026-09-06T02:12:29.931952113Z 
+2026-09-06T02:12:29.931970788Z > @workspace/api-server@1.0.0 build /opt/render/project/src/artifacts/api-server
+2026-09-06T02:12:29.931973055Z > tsc
+2026-09-06T02:12:29.931974322Z 
+2026-09-06T02:12:46.723126164Z 
+2026-09-06T02:12:46.723140661Z > @workspace/api-server@1.0.0 prisma:migrate:deploy /opt/render/project/src/artifacts/api-server
+2026-09-06T02:12:46.723142923Z > prisma migrate deploy
+2026-09-06T02:12:46.723144199Z 
+2026-09-06T02:12:47.317887202Z warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+2026-09-06T02:12:47.317898269Z For more information, see: https://pris.ly/prisma-config
+2026-09-06T02:12:47.317899731Z 
+2026-09-06T02:12:47.457895489Z Prisma schema loaded from prisma/schema.prisma
+2026-09-06T02:12:47.46606765Z Datasource "db": PostgreSQL database "jpig", schema "public" at "dpg-d6jghn14tr6s739g6adg-a.virginia-postgres.render.com"
+2026-09-06T02:12:47.644022177Z 
+2026-09-06T02:12:47.644031585Z 3 migrations found in prisma/migrations
+2026-09-06T02:12:47.644033039Z 
+2026-09-06T02:12:47.824145481Z 
+2026-09-06T02:12:47.825504423Z ┌─────────────────────────────────────────────────────────┐
+2026-09-06T02:12:47.825517234Z │  Update available 6.19.3 -> 8.0.0-rc.13                 │
+2026-09-06T02:12:47.825520404Z │                                                         │
+2026-09-06T02:12:47.825522795Z │  This is a major update - please follow the guide at    │
+2026-09-06T02:12:47.825525094Z │  https://pris.ly/d/major-version-upgrade                │
+2026-09-06T02:12:47.82552732Z │                                                         │
+2026-09-06T02:12:47.825529611Z │  Run the following to update                            │
+2026-09-06T02:12:47.825532108Z │    npm i --save-dev prisma@latest                       │
+2026-09-06T02:12:47.825534459Z │    npm i @prisma/client@latest                          │
+2026-09-06T02:12:47.825537179Z └─────────────────────────────────────────────────────────┘
+2026-09-06T02:12:47.825601185Z No pending migrations to apply.
+2026-09-06T02:12:49.211292211Z ==> Uploading build...
+2026-09-06T02:13:21.026220011Z ==> Uploaded in 21.2s. Compression took 10.6s
+2026-09-06T02:13:21.039062194Z ==> Build successful 🎉
+2026-09-06T02:13:22.100827368Z ==> Deploying...
+2026-09-06T02:13:22.205237542Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-09-06T02:14:35.117180825Z ==> No open ports detected, continuing to scan...
+2026-09-06T02:14:35.294613005Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+2026-09-06T02:14:37.682692054Z ==> Running 'node artifacts/api-server/dist/server.js'
+2026-09-06T02:14:44.473318527Z {"level":"info","message":"Database connected","timestamp":"2026-09-06T02:14:44.467Z"}
+2026-09-06T02:14:44.485908809Z {"level":"info","message":"Scheduler started: 5 cron jobs + DB-driven task runner registered","timestamp":"2026-09-06T02:14:44.485Z"}
+2026-09-06T02:14:44.486652642Z {"level":"info","message":"Expo push outbox worker started","timestamp":"2026-09-06T02:14:44.486Z"}
+2026-09-06T02:14:44.703447929Z {"level":"info","message":"🚀 API running on http://localhost:10000 [production]","timestamp":"2026-09-06T02:14:44.703Z"}
+2026-09-06T02:14:53.127939281Z ==> Your service is live 🎉
+2026-09-06T02:14:53.248609391Z ==> 
+2026-09-06T02:14:53.254853471Z ==> ///////////////////////////////////////////////////////////
+2026-09-06T02:14:53.258147338Z ==> 
+2026-09-06T02:14:53.260870875Z ==> Available at your primary URL https://api.thejigglingpig.com + 1 more domain
+2026-09-06T02:14:53.267270276Z ==> 
+2026-09-06T02:14:53.276537615Z ==> ///////////////////////////////////////////////////////////
