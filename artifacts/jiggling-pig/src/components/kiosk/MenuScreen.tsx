@@ -12,6 +12,8 @@ interface Props {
   onUpdateSides: (lineKey: string, sides: KioskSideChoice[]) => string | null;
   onCheckout: () => void;
   onStartOver: () => void;
+  onSideSelected: (productId: string, sideProductId: string, selectionPosition: "first" | "additional") => void;
+  onSideEdit: (productId: string | undefined, sideProductId: string, action: "add" | "remove" | "replace") => void;
 }
 
 const TAB_FOOD = "jiggling food menu";
@@ -26,7 +28,7 @@ interface MenuSection {
   products: KioskProduct[];
 }
 
-export default function MenuScreen({ menu, cart, onAdd, onSetQty, onUpdateSides, onCheckout, onStartOver }: Props) {
+export default function MenuScreen({ menu, cart, onAdd, onSetQty, onUpdateSides, onCheckout, onStartOver, onSideSelected, onSideEdit }: Props) {
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [sidePicker, setSidePicker] = useState<KioskProduct | null>(null);
   const [chosenSides, setChosenSides] = useState<KioskSideChoice[]>([]);
@@ -155,6 +157,7 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onUpdateSides,
 
   const addSide = (s: KioskProduct) => {
     setChosenSides((prev) => [...prev, { id: s.id, name: s.name, upcharge: s.duplicateSideUpcharge }]);
+    if (sidePicker) onSideSelected(sidePicker.id, s.id, chosenSides.length === 0 ? "first" : "additional");
   };
 
   const handleSideTap = (s: KioskProduct) => {
@@ -174,6 +177,29 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onUpdateSides,
       if (error) {
         setSideEditError(error);
         return;
+      }
+      const originalSides = cart.find(
+        (line) => cartLineKey(line.item.id, line.sides) === editingLineKey,
+      )?.sides ?? [];
+      const countById = (sides: KioskSideChoice[]) =>
+        sides.reduce((counts, side) => {
+          counts.set(side.id, (counts.get(side.id) ?? 0) + 1);
+          return counts;
+        }, new Map<string, number>());
+      const originalCounts = countById(originalSides);
+      const chosenCounts = countById(chosenSides);
+      const changedSides = chosenSides.filter((side, index) =>
+        index >= (originalCounts.get(side.id) ?? 0),
+      );
+      const removedSides = originalSides.filter((side, index) =>
+        index >= (chosenCounts.get(side.id) ?? 0),
+      );
+      if (changedSides.length) {
+        changedSides.forEach((side) =>
+          onSideEdit(sidePicker.id, side.id, removedSides.length ? "replace" : "add"),
+        );
+      } else {
+        removedSides.forEach((side) => onSideEdit(sidePicker.id, side.id, "remove"));
       }
     } else {
       onAdd(sidePicker, chosenSides);
@@ -305,16 +331,20 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onUpdateSides,
               <div className="k-line" key={key}>
                 <div className="k-line-top">
                   <span>{l.product.name}</span>
-                </div>
-                {l.sides && l.sides.length > 0 && (
-                  <>
-                    <div className="k-line-sides">
-                      {l.sides.map((s) => s.name).join(" + ")}
-                    </div>
-                    <button className="k-edit-sides" onClick={() => editSides(l, key)}>
+                  {l.sides && l.sides.length > 0 && (
+                    <button
+                      className="k-edit-sides"
+                      aria-label={`Edit sides for ${l.product.name}`}
+                      onClick={() => editSides(l, key)}
+                    >
                       Edit sides
                     </button>
-                  </>
+                  )}
+                </div>
+                {l.sides && l.sides.length > 0 && (
+                  <div className="k-line-sides">
+                    {l.sides.map((s) => s.name).join(" + ")}
+                  </div>
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div className="k-line-controls">

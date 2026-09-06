@@ -11,6 +11,7 @@ import {
   updateKioskDeviceSchema,
   createKioskCampaignSchema,
   updateKioskCampaignSchema,
+  kioskAnalyticsEventSchema,
 } from './kiosk.schema';
 
 export const kioskRouter = Router();
@@ -90,6 +91,9 @@ kioskRouter.get('/orders/:id/status', ...kioskLimiters, authenticateKiosk, async
 
 // POST   /api/v1/kiosk/heartbeat
 kioskRouter.post('/heartbeat', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.heartbeat));
+
+// Explicit, noncritical telemetry write; kiosk/order flows never depend on it.
+kioskRouter.post('/analytics/events', ...kioskLimiters, authenticateKiosk, validate(kioskAnalyticsEventSchema), asyncHandler(ctrl.createAnalyticsEvent));
 
 // GET    /api/v1/kiosk/config — payment capabilities for this device
 kioskRouter.get('/config', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.getConfig));

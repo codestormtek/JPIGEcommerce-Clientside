@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../../types';
 import { sendSuccess } from '../../utils/apiResponse';
-import { SummaryQuery, TimeseriesQuery, TopProductsQuery } from './metrics.schema';
+import { KioskAnalyticsQuery, SummaryQuery, TimeseriesQuery, TopProductsQuery } from './metrics.schema';
 import * as service from './metrics.service';
 
 /**
@@ -81,5 +81,10 @@ export async function getIncompleteOrders(req: AuthRequest, res: Response): Prom
 export async function getCommonStats(req: AuthRequest, res: Response): Promise<void> {
   const data = await service.getCommonStats();
   sendSuccess(res, data);
+}
+
+export async function getKioskAnalytics(req: AuthRequest, res: Response): Promise<void> {
+  const { days } = req.query as unknown as KioskAnalyticsQuery;
+  sendSuccess(res, await service.getKioskAnalytics(days));
 }
 

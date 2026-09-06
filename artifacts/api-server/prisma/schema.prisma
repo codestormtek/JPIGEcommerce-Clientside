@@ -218,6 +218,8 @@ model Product {
   menuItemMaps     MenuItemProductMap[]
   recipeMaps       RecipeProductMap[]
   kioskCampaignTargets KioskCampaignProduct[]
+  kioskAnalyticsProducts KioskAnalyticsEvent[] @relation("KioskAnalyticsProduct")
+  kioskAnalyticsSides    KioskAnalyticsEvent[] @relation("KioskAnalyticsSideProduct")
 
   @@map("products")
 }
@@ -2308,8 +2310,34 @@ model KioskDevice {
   squareTerminalDeviceId String?
 
   orders ShopOrder[]
+  analyticsEvents KioskAnalyticsEvent[]
 
   @@map("kiosk_devices")
+}
+
+/// Privacy-safe, append-only operational telemetry emitted by kiosk devices.
+/// metadata is accepted only through the server's event-specific allowlists.
+model KioskAnalyticsEvent {
+  id            String      @id @default(uuid())
+  eventId       String      @unique
+  createdAt     DateTime    @default(now())
+  occurredAt    DateTime
+  kioskDeviceId String
+  kioskDevice   KioskDevice @relation(fields: [kioskDeviceId], references: [id], onDelete: Restrict)
+  sessionId     String
+  eventType     String
+  durationMs    Int?
+  productId     String?
+  product       Product?    @relation("KioskAnalyticsProduct", fields: [productId], references: [id], onDelete: Restrict)
+  sideProductId String?
+  sideProduct   Product?    @relation("KioskAnalyticsSideProduct", fields: [sideProductId], references: [id], onDelete: Restrict)
+  metadata      Json
+
+  @@index([occurredAt])
+  @@index([kioskDeviceId, occurredAt])
+  @@index([eventType, occurredAt])
+  @@index([sideProductId, occurredAt])
+  @@map("kiosk_analytics_events")
 }
 
 model KioskCampaign {

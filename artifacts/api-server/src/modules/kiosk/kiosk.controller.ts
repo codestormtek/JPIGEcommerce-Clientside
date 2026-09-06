@@ -7,6 +7,7 @@ import {
   UpdateKioskDeviceInput,
   CreateKioskCampaignInput,
   UpdateKioskCampaignInput,
+  KioskAnalyticsEventInput,
 } from './kiosk.schema';
 import { sendSuccess, sendCreated, sendNoContent } from '../../utils/apiResponse';
 
@@ -36,6 +37,14 @@ export async function getOrderStatus(req: KioskRequest, res: Response): Promise<
 export async function heartbeat(req: KioskRequest, res: Response): Promise<void> {
   // authenticateKiosk already bumped lastSeenAt
   sendSuccess(res, { ok: true, device: req.kioskDevice!.name });
+}
+
+export async function createAnalyticsEvent(req: KioskRequest, res: Response): Promise<void> {
+  await service.createKioskAnalyticsEvent(
+    req.kioskDevice!.id,
+    req.body as KioskAnalyticsEventInput,
+  );
+  sendCreated(res, { accepted: true }, 'Analytics event accepted');
 }
 
 export async function getConfig(req: KioskRequest, res: Response): Promise<void> {

@@ -19,7 +19,41 @@ import {
   UpdateKioskDeviceInput,
   CreateKioskCampaignInput,
   UpdateKioskCampaignInput,
+  KioskAnalyticsEventInput,
 } from './kiosk.schema';
+
+export async function createKioskAnalyticsEvent(
+  kioskDeviceId: string,
+  input: KioskAnalyticsEventInput,
+): Promise<void> {
+  const productIds = [
+    ...new Set([
+      ...('productId' in input && input.productId ? [input.productId] : []),
+      ...('sideProductId' in input && input.sideProductId ? [input.sideProductId] : []),
+    ]),
+  ];
+  if (productIds.length > 0) {
+    const existingProducts = await prisma.product.count({ where: { id: { in: productIds } } });
+    if (existingProducts !== productIds.length) {
+      throw ApiError.badRequest('One of the analytics product IDs does not exist.');
+    }
+  }
+  await prisma.kioskAnalyticsEvent.upsert({
+    where: { eventId: input.eventId },
+    create: {
+      eventId: input.eventId,
+      kioskDeviceId,
+      occurredAt: input.occurredAt,
+      sessionId: input.sessionId,
+      eventType: input.eventType,
+      durationMs: 'durationMs' in input ? input.durationMs : undefined,
+      productId: 'productId' in input ? input.productId : undefined,
+      sideProductId: 'sideProductId' in input ? input.sideProductId : undefined,
+      metadata: input.metadata,
+    },
+    update: {},
+  });
+}
 
 // ─── Menu ─────────────────────────────────────────────────────────────────────
 

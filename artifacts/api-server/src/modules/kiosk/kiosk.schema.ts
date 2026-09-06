@@ -50,6 +50,99 @@ export const kioskOrderSchema = z.object({
 
 export type KioskOrderInput = z.infer<typeof kioskOrderSchema>;
 
+// ─── Privacy-safe operational analytics ─────────────────────────────────────
+
+const analyticsBase = {
+  eventId: z.string().uuid(),
+  occurredAt: z.string().datetime({ offset: true }).transform((value) => new Date(value)),
+  sessionId: z.string().uuid(),
+  durationMs: z.number().int().min(0).max(86_400_000).optional(),
+};
+const paymentMetadata = z.object({
+  paymentMethod: z.enum(['terminal', 'card']),
+}).strict();
+
+export const kioskAnalyticsEventSchema = z.discriminatedUnion('eventType', [
+  z.object({
+    ...analyticsBase,
+    eventType: z.literal('session_started'),
+    metadata: z.object({
+      entryPoint: z.enum(['idle', 'post_checkout', 'timeout', 'manual']),
+    }).strict().default({ entryPoint: 'idle' }),
+  }).strict(),
+  z.object({
+    ...analyticsBase,
+    eventType: z.literal('cart_started'),
+    metadata: z.object({
+      source: z.enum(['menu', 'campaign']),
+    }).strict().default({ source: 'menu' }),
+  }).strict(),
+  z.object({
+    ...analyticsBase,
+    eventType: z.literal('cart_abandoned'),
+    metadata: z.object({
+      reason: z.enum(['idle_timeout', 'customer_cancelled', 'navigation_reset', 'unknown']),
+      cartSizeBucket: z.enum(['1', '2-3', '4-6', '7+']),
+    }).strict(),
+  }).strict(),
+  z.object({
+    ...analyticsBase,
+    eventType: z.literal('timeout_reset'),
+    metadata: z.object({
+      stage: z.enum(['menu', 'cart', 'side_selection', 'checkout', 'payment']),
+    }).strict(),
+  }).strict(),
+  z.object({
+    ...analyticsBase,
+    eventType: z.literal('side_selected'),
+    productId: z.string().uuid().optional(),
+    sideProductId: z.string().uuid(),
+    metadata: z.object({
+      selectionPosition: z.enum(['first', 'additional']),
+    }).strict().default({ selectionPosition: 'first' }),
+  }).strict(),
+  z.object({
+    ...analyticsBase,
+    eventType: z.literal('side_edit'),
+    productId: z.string().uuid().optional(),
+    sideProductId: z.string().uuid(),
+    metadata: z.object({
+      action: z.enum(['add', 'remove', 'replace']),
+    }).strict(),
+  }).strict(),
+  z.object({
+    ...analyticsBase,
+    eventType: z.literal('checkout_started'),
+    metadata: paymentMetadata,
+  }).strict(),
+  z.object({
+    ...analyticsBase,
+    eventType: z.literal('checkout_completed'),
+    metadata: paymentMetadata,
+  }).strict(),
+  z.object({
+    ...analyticsBase,
+    eventType: z.literal('checkout_failed'),
+    metadata: z.object({
+      paymentMethod: z.enum(['terminal', 'card']),
+      failureCategory: z.enum([
+        'declined', 'cancelled', 'reader_unavailable', 'network',
+        'timeout', 'validation', 'unknown',
+      ]),
+    }).strict(),
+  }).strict(),
+]).superRefine((event, ctx) => {
+  if (event.occurredAt.getTime() > Date.now() + 5 * 60 * 1000) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['occurredAt'],
+      message: 'occurredAt cannot be more than five minutes in the future',
+    });
+  }
+});
+
+export type KioskAnalyticsEventInput = z.infer<typeof kioskAnalyticsEventSchema>;
+
 // ─── Admin: kiosk device management ──────────────────────────────────────────
 
 export const createKioskDeviceSchema = z.object({

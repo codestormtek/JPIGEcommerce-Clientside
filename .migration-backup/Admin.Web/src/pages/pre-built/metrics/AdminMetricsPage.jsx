@@ -53,6 +53,17 @@ const STATUS_COLORS = {
 
 const fmt = (v) => "$" + Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtNum = (v) => Number(v || 0).toLocaleString("en-US");
+const fmtPercent = (v) => `${(Number(v || 0) * 100).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
+const fmtDuration = (ms) => {
+  const totalSeconds = Math.round(Number(ms || 0) / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
+};
+const fmtKioskDate = (date) => {
+  const parsed = new Date(`${date}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? date : parsed.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
 
 function daysAgo(n) {
   const d = new Date();
@@ -82,6 +93,10 @@ const AdminMetricsPage = () => {
 
   const [openOrders, setOpenOrders] = useState([]);
   const [ooLoading, setOoLoading] = useState(false);
+
+  const [kioskAnalytics, setKioskAnalytics] = useState(null);
+  const [kioskLoading, setKioskLoading] = useState(false);
+  const [kioskError, setKioskError] = useState(null);
 
   const [error, setError] = useState(null);
 
@@ -124,11 +139,27 @@ const AdminMetricsPage = () => {
     finally { setOoLoading(false); }
   }, []);
 
+  const loadKioskAnalytics = useCallback(async (r) => {
+    setKioskLoading(true);
+    setKioskError(null);
+    try {
+      const days = r === "30d" ? 30 : 7;
+      const res = await apiGet(`/admin/metrics/kiosk-analytics?days=${days}`);
+      setKioskAnalytics(res?.data ?? res);
+    } catch (e) {
+      setKioskAnalytics(null);
+      setKioskError(e.message || "Unable to load kiosk analytics.");
+    } finally {
+      setKioskLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadSummary(range.value);
     loadTimeseries(metricKey.value, range.value);
     loadTopProducts(range.value, topLimit.value);
     loadOpenOrders();
+    loadKioskAnalytics(range.value);
   }, [range.value]);
 
   useEffect(() => {
@@ -187,6 +218,54 @@ const AdminMetricsPage = () => {
       },
     ],
   };
+
+  const kioskDaily = Array.isArray(kioskAnalytics?.daily) ? kioskAnalytics.daily : [];
+  const popularSides = Array.isArray(kioskAnalytics?.popularSides) ? kioskAnalytics.popularSides : [];
+  const failureCategories = Array.isArray(kioskAnalytics?.failureCategories) ? kioskAnalytics.failureCategories : [];
+  const kioskTotals = kioskAnalytics?.totals || {};
+  const kioskRates = kioskAnalytics?.rates || {};
+  const kioskChartData = {
+    labels: kioskDaily.map((day) => fmtKioskDate(day.date)),
+    datasets: [
+      {
+        label: "Abandoned carts",
+        data: kioskDaily.map((day) => Number(day.abandonedCarts || 0)),
+        borderColor: "#e85347",
+        backgroundColor: "rgba(232,83,71,0.08)",
+        tension: 0.3,
+        pointRadius: 3,
+      },
+      {
+        label: "Timeout resets",
+        data: kioskDaily.map((day) => Number(day.timeoutResets || 0)),
+        borderColor: "#f4bd0e",
+        backgroundColor: "rgba(244,189,14,0.08)",
+        tension: 0.3,
+        pointRadius: 3,
+      },
+      {
+        label: "Payment failures",
+        data: kioskDaily.map((day) => Number(day.paymentFailures || 0)),
+        borderColor: "#6576ff",
+        backgroundColor: "rgba(101,118,255,0.08)",
+        tension: 0.3,
+        pointRadius: 3,
+      },
+    ],
+  };
+  const kioskChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: "bottom", labels: { usePointStyle: true, padding: 16 } } },
+    scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 } } },
+  };
+  const kioskCards = kioskAnalytics ? [
+    { label: "Kiosk Sessions", value: fmtNum(kioskTotals.sessions), note: `${fmtPercent(kioskRates.checkoutCompletion)} checkout completion`, icon: "monitor", color: "primary" },
+    { label: "Abandoned Carts", value: fmtNum(kioskTotals.abandonedCarts), note: `${fmtPercent(kioskRates.cartAbandonment)} of carts started`, icon: "cart", color: "danger" },
+    { label: "Timeout Resets", value: fmtNum(kioskTotals.timeoutResets), note: `${fmtPercent(kioskRates.timeoutResetPerSession)} per session`, icon: "reload", color: "warning" },
+    { label: "Payment Failures", value: fmtNum(kioskTotals.paymentFailures), note: `${fmtPercent(kioskRates.paymentFailure)} payment failure rate`, icon: "report", color: "danger" },
+    { label: "Avg. Checkout Time", value: fmtDuration(kioskTotals.averageCheckoutDurationMs), note: `${fmtNum(kioskTotals.sideEdits)} side edits (${fmtPercent(kioskRates.sideEditsPerSession)} / session)`, icon: "clock", color: "info" },
+  ] : [];
 
   return (
     <React.Fragment>
@@ -358,6 +437,122 @@ const AdminMetricsPage = () => {
               )}
             </div>
           </Card>
+        </Block>
+
+        <Block>
+          <div className="card-title-group mb-3">
+            <div className="card-title">
+              <h5 className="title">Kiosk Analytics</h5>
+              <span className="sub-text">Operational trends for the selected {range.label.toLowerCase()}</span>
+            </div>
+          </div>
+          {kioskError ? (
+            <Card className="card-bordered">
+              <div className="card-inner text-center text-danger py-4">{kioskError}</div>
+            </Card>
+          ) : kioskLoading && !kioskAnalytics ? (
+            <Card className="card-bordered">
+              <div className="card-inner text-center py-5"><Spinner color="primary" /></div>
+            </Card>
+          ) : !kioskAnalytics ? (
+            <Card className="card-bordered">
+              <div className="card-inner text-center text-muted py-5">No kiosk analytics are available for this period.</div>
+            </Card>
+          ) : (
+            <>
+              <Row className="g-gs mb-4">
+                {kioskCards.map((card) => (
+                  <Col xxl={true} lg={4} sm={6} key={card.label}>
+                    <Card className="card-bordered h-100">
+                      <div className="card-inner">
+                        <div className="d-flex align-items-center justify-content-between">
+                          <div>
+                            <div className="card-title-group mb-1"><div className="card-title"><h6 className="title">{card.label}</h6></div></div>
+                            <div className="card-amount"><span className="amount">{card.value}</span></div>
+                            <span className="sub-text">{card.note}</span>
+                          </div>
+                          <div className={`icon-circle icon-circle-lg bg-${card.color}-dim`}>
+                            <Icon name={card.icon} className={`text-${card.color}`} />
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+              <Row className="g-gs">
+                <Col xxl={7} lg={7}>
+                  <Card className="card-bordered card-full h-100">
+                    <div className="card-inner">
+                      <div className="card-title-group mb-3">
+                        <div className="card-title">
+                          <h6 className="title">Kiosk Friction by Day</h6>
+                          <span className="sub-text">Abandoned carts, timeout resets, and payment failures</span>
+                        </div>
+                      </div>
+                      {kioskDaily.length === 0 ? (
+                        <div className="text-center text-muted py-5">No daily kiosk activity for this period</div>
+                      ) : (
+                        <div style={{ height: 300 }}><Line data={kioskChartData} options={kioskChartOptions} /></div>
+                      )}
+                    </div>
+                  </Card>
+                </Col>
+                <Col xxl={5} lg={5}>
+                  <Card className="card-bordered card-full h-100">
+                    <div className="card-inner">
+                      <div className="card-title-group mb-3">
+                        <div className="card-title">
+                          <h6 className="title">Failure Categories</h6>
+                          <span className="sub-text">Reported checkout failure totals</span>
+                        </div>
+                      </div>
+                      {failureCategories.length === 0 ? (
+                        <div className="text-center text-muted py-5">No checkout failures for this period</div>
+                      ) : (
+                        <ul className="nk-store-statistics">
+                          {failureCategories.map((failure, index) => (
+                            <li key={`${failure.category}-${index}`} className="d-flex justify-content-between align-items-center py-2 border-bottom">
+                              <span className="text-capitalize">{String(failure.category || "Uncategorized").replace(/[_-]/g, " ")}</span>
+                              <span className="badge bg-outline-danger">{fmtNum(failure.count)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </Card>
+                </Col>
+              </Row>
+              <Card className="card-bordered mt-4">
+                <div className="card-inner">
+                  <div className="card-title-group mb-3">
+                    <div className="card-title">
+                      <h6 className="title">Popular Side Selections</h6>
+                      <span className="sub-text">Most selected sides during kiosk orders</span>
+                    </div>
+                  </div>
+                  {popularSides.length === 0 ? (
+                    <div className="text-center text-muted py-4">No side selections for this period</div>
+                  ) : (
+                    <DataTable className="card-stretch">
+                      <DataTableBody compact>
+                        <DataTableHead>
+                          <DataTableRow><span className="sub-text">Side</span></DataTableRow>
+                          <DataTableRow><span className="sub-text text-end d-block">Selections</span></DataTableRow>
+                        </DataTableHead>
+                        {popularSides.map((side, index) => (
+                          <DataTableItem key={`${side.productId || side.productName}-${index}`}>
+                            <DataTableRow><span className="fw-bold">{side.productName || "Unnamed side"}</span></DataTableRow>
+                            <DataTableRow><span className="text-end d-block">{fmtNum(side.selections)}</span></DataTableRow>
+                          </DataTableItem>
+                        ))}
+                      </DataTableBody>
+                    </DataTable>
+                  )}
+                </div>
+              </Card>
+            </>
+          )}
         </Block>
       </Content>
     </React.Fragment>

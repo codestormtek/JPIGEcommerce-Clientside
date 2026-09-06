@@ -25,7 +25,12 @@ export const topProductsQuerySchema = z.object({
   sortBy: z.enum(['amount', 'quantity']).optional().default('amount'),
 });
 
+export const kioskAnalyticsQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(90).default(30),
+}).strict();
+
 export type SummaryQuery = z.infer<typeof summaryQuerySchema>;
 export type TimeseriesQuery = z.infer<typeof timeseriesQuerySchema>;
 export type TopProductsQuery = z.infer<typeof topProductsQuerySchema>;
+export type KioskAnalyticsQuery = z.infer<typeof kioskAnalyticsQuerySchema>;
 

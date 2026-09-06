@@ -15,8 +15,10 @@ import {
   fetchKioskCampaigns,
   fetchKioskConfig,
   fetchKioskMenu,
+  flushKioskAnalyticsEvents,
   getKioskToken,
   placeKioskOrder,
+  sendKioskAnalyticsEvent,
   sendHeartbeat,
   setKioskToken,
 } from "@/lib/kiosk";
@@ -25,11 +27,12 @@ import AttractScreen from "@/components/kiosk/AttractScreen";
 import MenuScreen from "@/components/kiosk/MenuScreen";
 import UpsellScreen from "@/components/kiosk/UpsellScreen";
 import DetailsScreen from "@/components/kiosk/DetailsScreen";
+import ReviewScreen from "@/components/kiosk/ReviewScreen";
 import PayScreen from "@/components/kiosk/PayScreen";
 import ConfirmScreen from "@/components/kiosk/ConfirmScreen";
 import PostSaleAdScreen from "@/components/kiosk/PostSaleAdScreen";
 
-type Screen = "loading" | "setup" | "attract" | "menu" | "upsell" | "details" | "pay" | "confirm" | "post_sale_ad";
+type Screen = "loading" | "setup" | "attract" | "menu" | "upsell" | "details" | "review" | "pay" | "confirm" | "post_sale_ad";
 
 const DEFAULT_IDLE_TIMEOUT_SECONDS = 120;
 const DEFAULT_IDLE_PROMPT_SECONDS = 30;
@@ -63,9 +66,53 @@ export default function KioskPage() {
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
   const screenRef = useRef<Screen>("loading");
+  const cartRef = useRef<KioskCartLine[]>([]);
+  const sessionIdRef = useRef<string | null>(null);
+  const sessionStartedAtRef = useRef(0);
+  const cartStartedRef = useRef(false);
+  const checkoutStartedAtRef = useRef(0);
+  const checkoutPaymentMethodRef = useRef<"terminal" | "card" | null>(null);
   screenRef.current = screen;
+  cartRef.current = cart;
 
-  const resetToAttract = useCallback(() => {
+  const trackEvent = useCallback((
+    eventType: Parameters<typeof sendKioskAnalyticsEvent>[0]["eventType"],
+    extra: Omit<Parameters<typeof sendKioskAnalyticsEvent>[0], "sessionId" | "eventType" | "occurredAt">,
+  ) => {
+    const sessionId = sessionIdRef.current;
+    if (!sessionId) return;
+    sendKioskAnalyticsEvent({
+      sessionId,
+      eventType,
+      occurredAt: new Date().toISOString(),
+      durationMs: sessionStartedAtRef.current
+        ? Date.now() - sessionStartedAtRef.current
+        : undefined,
+      ...extra,
+    });
+  }, []);
+
+  const resetToAttract = useCallback((reason?: "timeout" | "start_over") => {
+    const activeCart = cartRef.current;
+    if (reason && activeCart.length > 0) {
+      const itemCount = activeCart.reduce((sum, line) => sum + line.qty, 0);
+      trackEvent("cart_abandoned", {
+        metadata: {
+          reason: reason === "timeout" ? "idle_timeout" : "customer_cancelled",
+          cartSizeBucket: itemCount === 1 ? "1" : itemCount <= 3 ? "2-3" : itemCount <= 6 ? "4-6" : "7+",
+        },
+      });
+    }
+    if (reason === "timeout") {
+      trackEvent("timeout_reset", {
+        metadata: {
+          stage:
+            screenRef.current === "menu"
+              ? activeCart.length ? "cart" : "menu"
+              : "checkout",
+        },
+      });
+    }
     setShowTimeoutWarning(false);
     timeoutWarningRef.current = false;
     setCart([]);
@@ -73,7 +120,11 @@ export default function KioskPage() {
     setCustomerPhone("");
     setOrderNumber(null);
     setScreen("attract");
-  }, []);
+    sessionIdRef.current = null;
+    cartStartedRef.current = false;
+    checkoutStartedAtRef.current = 0;
+    checkoutPaymentMethodRef.current = null;
+  }, [trackEvent]);
 
   const loadMenu = useCallback(async () => {
     const data = await fetchKioskMenu();
@@ -96,6 +147,15 @@ export default function KioskPage() {
       // keep defaults — payment options simply stay disabled
     }
   }, []);
+
+  // Covers both the attract-screen CTA and the provisioning-only ?start=menu shortcut.
+  useEffect(() => {
+    if (screen !== "menu" || sessionIdRef.current) return;
+    sessionIdRef.current = crypto.randomUUID();
+    sessionStartedAtRef.current = Date.now();
+    cartStartedRef.current = false;
+    trackEvent("session_started", { metadata: { entryPoint: "idle" } });
+  }, [screen, trackEvent]);
 
   // ── Boot: check token, load menu ──
   useEffect(() => {
@@ -148,9 +208,22 @@ export default function KioskPage() {
     };
   }, [screen === "setup" || screen === "loading", loadMenu, loadCampaigns, loadConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const flushAnalytics = () => {
+      void flushKioskAnalyticsEvents();
+    };
+    flushAnalytics();
+    window.addEventListener("online", flushAnalytics);
+    const retry = window.setInterval(flushAnalytics, 30_000);
+    return () => {
+      window.removeEventListener("online", flushAnalytics);
+      window.clearInterval(retry);
+    };
+  }, []);
+
   // ── Idle reset ──
   useEffect(() => {
-    const timeoutScreens: Screen[] = ["menu", "upsell", "details"];
+    const timeoutScreens: Screen[] = ["menu", "upsell", "details", "review"];
     if (!timeoutScreens.includes(screen)) {
       setShowTimeoutWarning(false);
       timeoutWarningRef.current = false;
@@ -171,7 +244,7 @@ export default function KioskPage() {
         timeoutWarningRef.current = true;
         setShowTimeoutWarning(true);
       }, timeoutMs - promptMs);
-      idleResetTimer.current = setTimeout(resetToAttract, timeoutMs);
+      idleResetTimer.current = setTimeout(() => resetToAttract("timeout"), timeoutMs);
     };
     bump();
     const events = ["touchstart", "mousedown", "keydown"] as const;
@@ -247,6 +320,12 @@ export default function KioskPage() {
   };
 
   const handleStart = async () => {
+    sessionIdRef.current = crypto.randomUUID();
+    sessionStartedAtRef.current = Date.now();
+    cartStartedRef.current = false;
+    checkoutStartedAtRef.current = 0;
+    checkoutPaymentMethodRef.current = null;
+    trackEvent("session_started", { metadata: { entryPoint: "idle" } });
     setScreen("menu");
     loadMenu().catch(() => {});
     loadCampaigns().catch(() => {});
@@ -255,6 +334,10 @@ export default function KioskPage() {
   const handleAdd = (product: KioskProduct, sides?: KioskSideChoice[]) => {
     const item = product.items[0];
     if (!item) return;
+    if (!cartStartedRef.current) {
+      cartStartedRef.current = true;
+      trackEvent("cart_started", { metadata: { source: "menu" } });
+    }
     const key = cartLineKey(item.id, sides);
     setCart((prev) => {
       const existing = prev.find((l) => cartLineKey(l.item.id, l.sides) === key);
@@ -366,7 +449,7 @@ export default function KioskPage() {
   const handleDetailsContinue = (name: string, phone: string) => {
     setCustomerName(name);
     setCustomerPhone(phone);
-    setScreen("pay");
+    setScreen("review");
   };
 
   const handlePlaceOrder = async (
@@ -392,6 +475,13 @@ export default function KioskPage() {
   };
 
   const handlePaid = (result: KioskOrderResult) => {
+    const paymentMethod = checkoutPaymentMethodRef.current;
+    if (paymentMethod && checkoutStartedAtRef.current) {
+      trackEvent("checkout_completed", {
+        durationMs: Date.now() - checkoutStartedAtRef.current,
+        metadata: { paymentMethod },
+      });
+    }
     setOrderNumber(result.kioskOrderNumber);
     setScreen("confirm");
     loadMenu().catch(() => {}); // refresh stock after sale
@@ -442,11 +532,22 @@ export default function KioskPage() {
           onAdd={handleAdd}
           onSetQty={handleSetQty}
           onUpdateSides={handleUpdateSides}
+          onSideSelected={(productId, sideProductId, selectionPosition) =>
+            trackEvent("side_selected", { productId, sideProductId, metadata: { selectionPosition } })
+          }
+          onSideEdit={(productId, sideProductId, action) =>
+            trackEvent("side_edit", {
+              ...(productId ? { productId } : {}),
+              sideProductId,
+              metadata: { action },
+            })
+          }
           onCheckout={() => {
+            checkoutStartedAtRef.current ||= Date.now();
             const hasUpsells = campaigns.some(c => c.campaignType === 'upsell' && c.isActive);
             setScreen(hasUpsells ? "upsell" : "details");
           }}
-          onStartOver={resetToAttract}
+          onStartOver={() => resetToAttract("start_over")}
         />
       );
       break;
@@ -472,15 +573,39 @@ export default function KioskPage() {
         />
       );
       break;
+    case "review":
+      screenContent = (
+        <ReviewScreen
+          cart={cart}
+          customerName={customerName}
+          customerPhone={customerPhone}
+          onBack={() => setScreen("details")}
+          onConfirm={() => setScreen("pay")}
+        />
+      );
+      break;
     case "pay":
       screenContent = (
         <PayScreen
           cart={cart}
           customerName={customerName}
           config={config}
-          onBack={() => setScreen("details")}
+          onBack={() => setScreen("review")}
           onPlaceOrder={handlePlaceOrder}
           onPaid={handlePaid}
+          onCheckoutStarted={(paymentMethod) => {
+            checkoutStartedAtRef.current ||= Date.now();
+            checkoutPaymentMethodRef.current = paymentMethod;
+            trackEvent("checkout_started", { metadata: { paymentMethod } });
+          }}
+          onCheckoutFailed={(paymentMethod, failureCategory) =>
+            trackEvent("checkout_failed", {
+              durationMs: checkoutStartedAtRef.current
+                ? Date.now() - checkoutStartedAtRef.current
+                : undefined,
+              metadata: { paymentMethod, failureCategory },
+            })
+          }
         />
       );
       break;
@@ -505,7 +630,7 @@ export default function KioskPage() {
             <h2 id="k-timeout-title">Still ordering?</h2>
             <p>Your order will be cleared soon to protect your privacy.</p>
             <div className="k-timeout-actions">
-              <button className="k-btn k-btn-ghost k-btn-lg" onClick={resetToAttract}>
+              <button className="k-btn k-btn-ghost k-btn-lg" onClick={() => resetToAttract("timeout")}>
                 Start over
               </button>
               <button

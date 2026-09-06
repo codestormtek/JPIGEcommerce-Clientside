@@ -11,6 +11,11 @@ interface Props {
   onBack: () => void;
   onPlaceOrder: (paymentMethod: "terminal" | "card", squareNonce: string | undefined, clientRequestId: string) => Promise<KioskOrderResult>;
   onPaid: (result: KioskOrderResult) => void;
+  onCheckoutStarted: (paymentMethod: "terminal" | "card") => void;
+  onCheckoutFailed: (
+    paymentMethod: "terminal" | "card",
+    failureCategory: "declined" | "cancelled" | "reader_unavailable" | "network" | "timeout" | "validation" | "unknown",
+  ) => void;
 }
 
 type Mode = "choose" | "terminal-waiting" | "payment-waiting" | "card-entry";
@@ -52,7 +57,7 @@ function loadSquareSdk(environment: string): Promise<void> {
   });
 }
 
-export default function PayScreen({ cart, customerName, config, onBack, onPlaceOrder, onPaid }: Props) {
+export default function PayScreen({ cart, customerName, config, onBack, onPlaceOrder, onPaid, onCheckoutStarted, onCheckoutFailed }: Props) {
   const [mode, setMode] = useState<Mode>("choose");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -71,12 +76,19 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
     setError(null);
     try {
       requestIdRef.current ??= crypto.randomUUID();
+      onCheckoutStarted("terminal");
       const result = await onPlaceOrder("terminal", undefined, requestIdRef.current);
       orderRef.current = result;
       cancelledRef.current = false;
       setMode("terminal-waiting");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not start the card reader");
+      onCheckoutFailed("terminal", "reader_unavailable");
+      const message = e instanceof Error ? e.message : "Could not start the card reader";
+      if (!message.includes("result could not be confirmed")) {
+        orderRef.current = null;
+        requestIdRef.current = null;
+      }
+      setError(message);
     } finally {
       setBusy(false);
     }
@@ -98,6 +110,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
           return;
         }
         if (st.status === "canceled") {
+          onCheckoutFailed(mode === "terminal-waiting" ? "terminal" : "card", "cancelled");
           requestIdRef.current = null;
           setMode("choose");
           setError("Payment was canceled on the reader. Please try again.");
@@ -108,10 +121,27 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
       }
       if (Date.now() - startedAt > TERMINAL_TIMEOUT_MS) {
         if (mode === "terminal-waiting") {
-          cancelKioskPayment(orderId).catch(() => {});
-          setMode("choose");
-          setError("The card reader timed out. Please try again.");
+          onCheckoutFailed("terminal", "timeout");
+          try {
+            const result = await cancelKioskPayment(orderId);
+            if (!result.canceled) {
+              const status = await fetchKioskPaymentStatus(orderId);
+              if (status.status === "paid") {
+                onPaid(orderRef.current!);
+                return;
+              }
+              if (status.status !== "canceled") throw new Error("Cancellation was not confirmed");
+            }
+            cancelledRef.current = true;
+            orderRef.current = null;
+            requestIdRef.current = null;
+            setMode("choose");
+            setError("The card reader timed out. Please try again.");
+          } catch {
+            setError("The payment result could not be confirmed. Please ask a staff member for help before trying again.");
+          }
         } else {
+          onCheckoutFailed("card", "timeout");
           setError("Payment is taking longer than expected. Please ask a staff member for help.");
         }
         return;
@@ -124,16 +154,39 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
       stopped = true;
       clearTimeout(timer);
     };
-  }, [mode, onPaid]);
+  }, [mode, onPaid, onCheckoutFailed]);
 
   const cancelTerminal = async () => {
-    cancelledRef.current = true;
     const orderId = orderRef.current?.orderId;
-    setMode("choose");
-    setError(null);
-    if (orderId) cancelKioskPayment(orderId).catch(() => {});
-    orderRef.current = null;
-    requestIdRef.current = null;
+    if (!orderId) {
+      requestIdRef.current = null;
+      setMode("choose");
+      setError(null);
+      return;
+    }
+    setBusy(true);
+    onCheckoutFailed("terminal", "cancelled");
+    try {
+      const result = await cancelKioskPayment(orderId);
+      if (!result.canceled) {
+        const status = await fetchKioskPaymentStatus(orderId);
+        if (status.status === "paid") {
+          onPaid(orderRef.current!);
+          return;
+        }
+        if (status.status !== "canceled") throw new Error("Cancellation was not confirmed");
+      }
+      cancelledRef.current = true;
+      orderRef.current = null;
+      requestIdRef.current = null;
+      setMode("choose");
+      setError(null);
+    } catch {
+      cancelledRef.current = false;
+      setError("The payment could not be canceled safely. Please ask a staff member for help.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const startCardEntry = async () => {
@@ -163,6 +216,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
         setCardReady(true);
       } catch (e) {
         if (!disposed) {
+          onCheckoutFailed("card", "network");
           setMode("choose");
           setError(e instanceof Error ? e.message : "Could not load the payment form");
         }
@@ -191,6 +245,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
         cardTokenRef.current = result.token;
       }
       requestIdRef.current ??= crypto.randomUUID();
+      onCheckoutStarted("card");
       const order = await onPlaceOrder("card", cardTokenRef.current, requestIdRef.current);
       if (order.paymentStatus === "paid") {
         onPaid(order);
@@ -199,6 +254,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
         setMode("payment-waiting");
       }
     } catch (e) {
+      onCheckoutFailed("card", "declined");
       setError(e instanceof Error ? e.message : "Payment failed — please try again");
     } finally {
       setBusy(false);

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validate.middleware';
 import { asyncHandler } from '../../utils/asyncHandler';
-import { summaryQuerySchema, timeseriesQuerySchema, topProductsQuerySchema } from './metrics.schema';
+import { kioskAnalyticsQuerySchema, summaryQuerySchema, timeseriesQuerySchema, topProductsQuerySchema } from './metrics.schema';
 import * as ctrl from './metrics.controller';
 
 export const metricsRouter = Router();
@@ -30,4 +30,7 @@ metricsRouter.get('/incomplete-orders', asyncHandler(ctrl.getIncompleteOrders));
 
 // GET /api/v1/admin/metrics/common-stats
 metricsRouter.get('/common-stats', asyncHandler(ctrl.getCommonStats));
+
+// Aggregate-only kiosk telemetry. Raw and per-session events are never returned.
+metricsRouter.get('/kiosk-analytics', validate(kioskAnalyticsQuerySchema, 'query'), asyncHandler(ctrl.getKioskAnalytics));
 

@@ -125,6 +125,35 @@ export interface KioskPaymentStatus {
   terminalStatus?: string;
 }
 
+export type KioskAnalyticsEventType =
+  | "session_started"
+  | "cart_started"
+  | "cart_abandoned"
+  | "timeout_reset"
+  | "side_selected"
+  | "side_edit"
+  | "checkout_started"
+  | "checkout_completed"
+  | "checkout_failed";
+
+export interface KioskAnalyticsEvent {
+  sessionId: string;
+  occurredAt: string;
+  eventType: KioskAnalyticsEventType;
+  durationMs?: number;
+  productId?: string;
+  sideProductId?: string;
+  metadata: Record<string, string>;
+}
+
+interface QueuedKioskAnalyticsEvent extends KioskAnalyticsEvent {
+  eventId: string;
+}
+
+const KIOSK_ANALYTICS_QUEUE_KEY = "jpig_kiosk_analytics_v1";
+const KIOSK_ANALYTICS_QUEUE_LIMIT = 100;
+let analyticsFlushPromise: Promise<void> | null = null;
+
 // ─── Fetch helper ─────────────────────────────────────────────────────────────
 
 export class KioskApiError extends Error {
@@ -163,6 +192,170 @@ export function fetchKioskMenu(): Promise<KioskMenu> {
 
 export function sendHeartbeat(): Promise<{ ok: boolean }> {
   return kioskFetch<{ ok: boolean }>("/heartbeat", { method: "POST" });
+}
+
+function sanitizeKioskAnalyticsMetadata(event: KioskAnalyticsEvent): Record<string, string> {
+  // Keep this boundary deliberately narrow: callers cannot add identifiers,
+  // customer data, or arbitrary diagnostic text to analytics metadata.
+  let metadata: Record<string, string>;
+  switch (event.eventType) {
+    case "session_started":
+      metadata = {
+        entryPoint: ["idle", "post_checkout", "timeout", "manual"].includes(event.metadata.entryPoint)
+          ? event.metadata.entryPoint
+          : "idle",
+      };
+      break;
+    case "cart_started":
+      metadata = { source: event.metadata.source === "campaign" ? "campaign" : "menu" };
+      break;
+    case "cart_abandoned":
+      metadata = {
+        reason: ["idle_timeout", "customer_cancelled", "navigation_reset", "unknown"].includes(event.metadata.reason)
+          ? event.metadata.reason
+          : "unknown",
+        cartSizeBucket: ["1", "2-3", "4-6", "7+"].includes(event.metadata.cartSizeBucket)
+          ? event.metadata.cartSizeBucket
+          : "1",
+      };
+      break;
+    case "timeout_reset":
+      metadata = {
+        stage: ["menu", "cart", "side_selection", "checkout", "payment"].includes(event.metadata.stage)
+          ? event.metadata.stage
+          : "menu",
+      };
+      break;
+    case "side_selected":
+      metadata = {
+        selectionPosition: event.metadata.selectionPosition === "additional" ? "additional" : "first",
+      };
+      break;
+    case "side_edit":
+      metadata = {
+        action: ["add", "remove", "replace"].includes(event.metadata.action)
+          ? event.metadata.action
+          : "replace",
+      };
+      break;
+    case "checkout_started":
+    case "checkout_completed":
+      metadata = { paymentMethod: event.metadata.paymentMethod === "card" ? "card" : "terminal" };
+      break;
+    case "checkout_failed":
+      metadata = {
+        paymentMethod: event.metadata.paymentMethod === "card" ? "card" : "terminal",
+        failureCategory: [
+          "declined", "cancelled", "reader_unavailable", "network",
+          "timeout", "validation", "unknown",
+        ].includes(event.metadata.failureCategory)
+          ? event.metadata.failureCategory
+          : "unknown",
+      };
+      break;
+  }
+  return metadata;
+}
+
+function readKioskAnalyticsQueue(): QueuedKioskAnalyticsEvent[] {
+  try {
+    const stored = JSON.parse(localStorage.getItem(KIOSK_ANALYTICS_QUEUE_KEY) ?? "[]");
+    return Array.isArray(stored) ? stored.slice(-KIOSK_ANALYTICS_QUEUE_LIMIT) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeKioskAnalyticsQueue(queue: QueuedKioskAnalyticsEvent[]): void {
+  try {
+    localStorage.setItem(
+      KIOSK_ANALYTICS_QUEUE_KEY,
+      JSON.stringify(queue.slice(-KIOSK_ANALYTICS_QUEUE_LIMIT)),
+    );
+  } catch {
+    // Analytics storage is noncritical and must never interrupt ordering.
+  }
+}
+
+function analyticsRequestBody(event: QueuedKioskAnalyticsEvent) {
+  const safeEvent: KioskAnalyticsEvent = {
+    sessionId: event.sessionId,
+    occurredAt: event.occurredAt,
+    eventType: event.eventType,
+    metadata: event.metadata && typeof event.metadata === "object" ? event.metadata : {},
+    ...(typeof event.durationMs === "number" ? { durationMs: event.durationMs } : {}),
+    ...(typeof event.productId === "string" ? { productId: event.productId } : {}),
+    ...(typeof event.sideProductId === "string" ? { sideProductId: event.sideProductId } : {}),
+  };
+  return {
+    eventId: event.eventId,
+    sessionId: safeEvent.sessionId,
+    occurredAt: safeEvent.occurredAt,
+    eventType: safeEvent.eventType,
+    ...(typeof safeEvent.durationMs === "number" && safeEvent.durationMs >= 0
+      ? { durationMs: Math.min(86_400_000, Math.round(safeEvent.durationMs)) }
+      : {}),
+    ...(safeEvent.productId ? { productId: safeEvent.productId } : {}),
+    ...(safeEvent.sideProductId ? { sideProductId: safeEvent.sideProductId } : {}),
+    metadata: sanitizeKioskAnalyticsMetadata(safeEvent),
+  };
+}
+
+export function flushKioskAnalyticsEvents(): Promise<void> {
+  if (analyticsFlushPromise) return analyticsFlushPromise;
+  analyticsFlushPromise = (async () => {
+    while (true) {
+      const next = readKioskAnalyticsQueue()[0];
+      if (!next) return;
+      try {
+        await kioskFetch<{ ok: boolean }>("/analytics/events", {
+          method: "POST",
+          body: analyticsRequestBody(next),
+        });
+        writeKioskAnalyticsQueue(
+          readKioskAnalyticsQueue().filter((event) => event.eventId !== next.eventId),
+        );
+      } catch (error) {
+        if (
+          error instanceof KioskApiError &&
+          error.status >= 400 &&
+          error.status < 500 &&
+          error.status !== 401 &&
+          error.status !== 429
+        ) {
+          writeKioskAnalyticsQueue(
+            readKioskAnalyticsQueue().filter((event) => event.eventId !== next.eventId),
+          );
+          continue;
+        }
+        return;
+      }
+    }
+  })().finally(() => {
+    analyticsFlushPromise = null;
+  });
+  return analyticsFlushPromise;
+}
+
+/**
+ * Queues privacy-safe kiosk analytics and retries the same event ID after
+ * transient failures. Analytics delivery never blocks ordering or payment.
+ */
+export function sendKioskAnalyticsEvent(event: KioskAnalyticsEvent): void {
+  const queuedEvent: QueuedKioskAnalyticsEvent = {
+    eventId: crypto.randomUUID(),
+    sessionId: event.sessionId,
+    occurredAt: event.occurredAt,
+    eventType: event.eventType,
+    ...(typeof event.durationMs === "number" && event.durationMs >= 0
+      ? { durationMs: Math.min(86_400_000, Math.round(event.durationMs)) }
+      : {}),
+    ...(event.productId ? { productId: event.productId } : {}),
+    ...(event.sideProductId ? { sideProductId: event.sideProductId } : {}),
+    metadata: sanitizeKioskAnalyticsMetadata(event),
+  };
+  writeKioskAnalyticsQueue([...readKioskAnalyticsQueue(), queuedEvent]);
+  void flushKioskAnalyticsEvents();
 }
 
 export function fetchKioskConfig(): Promise<KioskConfig> {
