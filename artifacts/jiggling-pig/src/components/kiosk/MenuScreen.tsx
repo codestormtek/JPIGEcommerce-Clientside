@@ -215,6 +215,15 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
                   return (
                     <div className="k-card-wrap" key={p.id}>
                       <button className="k-card" onClick={() => handleCardTap(p)}>
+                        {p.imageUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            className="k-card-image"
+                            src={p.imageUrl}
+                            alt={p.name}
+                            loading="lazy"
+                          />
+                        )}
                         <div className="k-card-content">
                           <div className="k-card-name">{p.name}</div>
                           {p.description && <div className="k-card-desc">{p.description}</div>}
