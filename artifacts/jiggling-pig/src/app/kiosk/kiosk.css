@@ -256,6 +256,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-shrink: 0;
 }
 
 .k-menu-logo {
@@ -268,6 +269,7 @@
   margin: 0;
   font-size: 28px;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .k-menu-header-text span {
