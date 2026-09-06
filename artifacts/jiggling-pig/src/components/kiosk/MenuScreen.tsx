@@ -274,15 +274,31 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div className="k-line-controls">
-                    <button className="k-qty-action" onClick={() => onSetQty(key, l.qty <= 1 ? 0 : l.qty - 1)}>
-                      {l.qty <= 1 ? (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                        </svg>
-                      ) : "−"}
+                    <button
+                      className="k-qty-action"
+                      aria-label={`Remove ${l.product.name} from order`}
+                      title="Remove item"
+                      onClick={() => onSetQty(key, 0)}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                      </svg>
                     </button>
+                    {l.qty > 1 && (
+                      <button
+                        className="k-qty-action"
+                        aria-label={`Decrease ${l.product.name} quantity`}
+                        onClick={() => onSetQty(key, l.qty - 1)}
+                      >
+                        −
+                      </button>
+                    )}
                     <span className="k-line-qty">{l.qty}</span>
-                    <button className="k-qty-action" onClick={() => onSetQty(key, l.qty + 1)}>
+                    <button
+                      className="k-qty-action"
+                      aria-label={`Increase ${l.product.name} quantity`}
+                      onClick={() => onSetQty(key, l.qty + 1)}
+                    >
                       +
                     </button>
                   </div>
