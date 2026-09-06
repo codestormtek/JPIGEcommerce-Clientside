@@ -6,7 +6,7 @@ import {
 } from "@/components/Component";
 import Content from "@/layout/content/Content";
 import Head from "@/layout/head/Head";
-import { apiGet, apiPost, apiPatch, apiDelete } from "@/utils/apiClient";
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from "@/utils/apiClient";
 
 const blankForm = () => ({
   settingKey: "",
@@ -72,6 +72,13 @@ const AdminSiteSettings = () => {
   const [footerSuccess, setFooterSuccess] = useState(null);
   const [footerError, setFooterError] = useState(null);
 
+  // ── Kiosk order timeout quick-edit state ───────────────────────
+  const [kioskTimeoutMinutes, setKioskTimeoutMinutes] = useState("2");
+  const [kioskPromptSeconds, setKioskPromptSeconds] = useState("30");
+  const [kioskTimeoutSaving, setKioskTimeoutSaving] = useState(false);
+  const [kioskTimeoutSuccess, setKioskTimeoutSuccess] = useState(null);
+  const [kioskTimeoutError, setKioskTimeoutError] = useState(null);
+
   const loadSettings = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -98,6 +105,8 @@ const AdminSiteSettings = () => {
       const ftVals = {};
       FOOTER_KEYS.forEach(({ key }) => { ftVals[key] = map[key] ?? ""; });
       setFooterValues(ftVals);
+      setKioskTimeoutMinutes(String((Number(map["kiosk_order_inactivity_timeout_seconds"] ?? 120) / 60)));
+      setKioskPromptSeconds(String(Number(map["kiosk_order_inactivity_prompt_seconds"] ?? 30)));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -163,6 +172,38 @@ const AdminSiteSettings = () => {
       setFooterError(e.message || "Failed to save footer settings.");
     } finally {
       setFooterSaving(false);
+    }
+  };
+
+  const saveKioskTimeout = async () => {
+    const minutes = Number(kioskTimeoutMinutes);
+    const promptSeconds = Number(kioskPromptSeconds);
+    const timeoutSeconds = Math.round(minutes * 60);
+    if (!Number.isFinite(minutes) || timeoutSeconds < 60 || timeoutSeconds > 1800) {
+      setKioskTimeoutError("Order timeout must be between 1 and 30 minutes.");
+      return;
+    }
+    if (!Number.isFinite(promptSeconds) || promptSeconds < 10 || promptSeconds > Math.min(300, timeoutSeconds - 10)) {
+      setKioskTimeoutError("Warning must be at least 10 seconds and shorter than the order timeout.");
+      return;
+    }
+    setKioskTimeoutSaving(true);
+    setKioskTimeoutError(null);
+    setKioskTimeoutSuccess(null);
+    try {
+      await apiPut("/site-settings/bulk", {
+        settings: [
+          { settingKey: "kiosk_order_inactivity_timeout_seconds", settingValue: String(timeoutSeconds) },
+          { settingKey: "kiosk_order_inactivity_prompt_seconds", settingValue: String(Math.round(promptSeconds)) },
+        ],
+      });
+      setKioskTimeoutSuccess("Kiosk timeout settings saved.");
+      await loadSettings();
+      setTimeout(() => setKioskTimeoutSuccess(null), 3000);
+    } catch (e) {
+      setKioskTimeoutError(e.message || "Failed to save kiosk timeout settings.");
+    } finally {
+      setKioskTimeoutSaving(false);
     }
   };
 
@@ -302,6 +343,73 @@ const AdminSiteSettings = () => {
             {success}
           </Alert>
         )}
+
+        {/* ── Kiosk Order Timeout Quick-Edit Card ─────────────────── */}
+        <Block>
+          <div className="card card-bordered mb-4">
+            <div className="card-inner-group">
+              <div className="card-inner py-3" style={{ background: "#fff5f1", borderBottom: "1px solid #ffd4c4" }}>
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <h6 className="overline-title mb-0" style={{ color: "#d94816" }}>
+                      Kiosk Order Timeout
+                    </h6>
+                    <p className="text-soft mb-0 fs-12px mt-1">
+                      Clear inactive orders and warn customers before their cart is reset.
+                    </p>
+                  </div>
+                  <Button color="primary" size="sm" onClick={saveKioskTimeout} disabled={kioskTimeoutSaving}>
+                    {kioskTimeoutSaving ? (
+                      <><Spinner size="sm" className="me-1" /> Saving…</>
+                    ) : (
+                      <><Icon name="save" className="me-1" />Save Timeout</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+              {kioskTimeoutSuccess && (
+                <Alert color="success" className="mx-3 mt-3 mb-0" toggle={() => setKioskTimeoutSuccess(null)}>
+                  {kioskTimeoutSuccess}
+                </Alert>
+              )}
+              {kioskTimeoutError && (
+                <Alert color="danger" className="mx-3 mt-3 mb-0" toggle={() => setKioskTimeoutError(null)}>
+                  {kioskTimeoutError}
+                </Alert>
+              )}
+              <div className="card-inner py-3">
+                <Row className="g-3">
+                  <Col md="6">
+                    <label className="form-label">Order timeout (minutes)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      step="0.5"
+                      className="form-control"
+                      value={kioskTimeoutMinutes}
+                      onChange={(e) => setKioskTimeoutMinutes(e.target.value)}
+                    />
+                    <small className="text-soft">The current order is cleared after this much inactivity.</small>
+                  </Col>
+                  <Col md="6">
+                    <label className="form-label">Show warning before reset (seconds)</label>
+                    <input
+                      type="number"
+                      min="10"
+                      max="300"
+                      step="5"
+                      className="form-control"
+                      value={kioskPromptSeconds}
+                      onChange={(e) => setKioskPromptSeconds(e.target.value)}
+                    />
+                    <small className="text-soft">Customers can extend their session from the warning.</small>
+                  </Col>
+                </Row>
+              </div>
+            </div>
+          </div>
+        </Block>
 
         {/* ── Available Offers Quick-Edit Card ─────────────────────── */}
         <Block>

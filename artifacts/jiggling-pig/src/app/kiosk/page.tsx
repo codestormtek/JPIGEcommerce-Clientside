@@ -31,7 +31,8 @@ import PostSaleAdScreen from "@/components/kiosk/PostSaleAdScreen";
 
 type Screen = "loading" | "setup" | "attract" | "menu" | "upsell" | "details" | "pay" | "confirm" | "post_sale_ad";
 
-const IDLE_RESET_MS = 120_000; // return to attract after 2 min of inactivity
+const DEFAULT_IDLE_TIMEOUT_SECONDS = 120;
+const DEFAULT_IDLE_PROMPT_SECONDS = 30;
 const MENU_REFRESH_MS = 5 * 60_000;
 const HEARTBEAT_MS = 60_000;
 
@@ -44,6 +45,8 @@ export default function KioskPage() {
     environment: "sandbox",
     terminalEnabled: false,
     cardEnabled: false,
+    orderInactivityTimeoutSeconds: DEFAULT_IDLE_TIMEOUT_SECONDS,
+    orderInactivityPromptSeconds: DEFAULT_IDLE_PROMPT_SECONDS,
   });
   const [campaigns, setCampaigns] = useState<KioskCampaign[]>([]);
   const [cart, setCart] = useState<KioskCartLine[]>([]);
@@ -52,11 +55,19 @@ export default function KioskPage() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idleWarningTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idleResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeoutWarningRef = useRef(false);
+  const timeoutDialogRef = useRef<HTMLDivElement | null>(null);
+  const kioskContentRef = useRef<HTMLDivElement | null>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
   const screenRef = useRef<Screen>("loading");
   screenRef.current = screen;
 
   const resetToAttract = useCallback(() => {
+    setShowTimeoutWarning(false);
+    timeoutWarningRef.current = false;
     setCart([]);
     setCustomerName("");
     setCustomerPhone("");
@@ -128,32 +139,97 @@ export default function KioskPage() {
       if (screenRef.current === "attract" || screenRef.current === "menu") {
         loadMenu().catch(() => {});
         loadCampaigns().catch(() => {});
+        loadConfig().catch(() => {});
       }
     }, MENU_REFRESH_MS);
     return () => {
       clearInterval(hb);
       clearInterval(mr);
     };
-  }, [screen === "setup" || screen === "loading", loadMenu, loadCampaigns]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [screen === "setup" || screen === "loading", loadMenu, loadCampaigns, loadConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Idle reset ──
   useEffect(() => {
-    if (screen === "setup" || screen === "loading" || screen === "attract") return;
+    const timeoutScreens: Screen[] = ["menu", "upsell", "details"];
+    if (!timeoutScreens.includes(screen)) {
+      setShowTimeoutWarning(false);
+      timeoutWarningRef.current = false;
+      return;
+    }
+
+    const timeoutMs = Math.max(60, config.orderInactivityTimeoutSeconds) * 1000;
+    const promptMs = Math.min(
+      timeoutMs - 10_000,
+      Math.max(10, config.orderInactivityPromptSeconds) * 1000,
+    );
 
     const bump = () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-      idleTimer.current = setTimeout(() => {
-        if (screenRef.current !== "confirm") resetToAttract();
-      }, IDLE_RESET_MS);
+      if (timeoutWarningRef.current) return;
+      if (idleWarningTimer.current) clearTimeout(idleWarningTimer.current);
+      if (idleResetTimer.current) clearTimeout(idleResetTimer.current);
+      idleWarningTimer.current = setTimeout(() => {
+        timeoutWarningRef.current = true;
+        setShowTimeoutWarning(true);
+      }, timeoutMs - promptMs);
+      idleResetTimer.current = setTimeout(resetToAttract, timeoutMs);
     };
     bump();
     const events = ["touchstart", "mousedown", "keydown"] as const;
     events.forEach((ev) => window.addEventListener(ev, bump));
+    window.addEventListener("kiosk-extend-timeout", bump);
     return () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current);
+      if (idleWarningTimer.current) clearTimeout(idleWarningTimer.current);
+      if (idleResetTimer.current) clearTimeout(idleResetTimer.current);
       events.forEach((ev) => window.removeEventListener(ev, bump));
+      window.removeEventListener("kiosk-extend-timeout", bump);
     };
-  }, [screen, resetToAttract]);
+  }, [
+    screen,
+    config.orderInactivityTimeoutSeconds,
+    config.orderInactivityPromptSeconds,
+    resetToAttract,
+  ]);
+
+  useEffect(() => {
+    const content = kioskContentRef.current;
+    if (!showTimeoutWarning) {
+      content?.removeAttribute("inert");
+      return;
+    }
+
+    content?.setAttribute("inert", "");
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const dialog = timeoutDialogRef.current;
+    const focusable = () =>
+      Array.from(dialog?.querySelectorAll<HTMLElement>("button:not([disabled])") ?? []);
+    focusable()[0]?.focus();
+
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const controls = focusable();
+      if (controls.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", trapFocus);
+    return () => {
+      content?.removeAttribute("inert");
+      document.removeEventListener("keydown", trapFocus);
+      if (previouslyFocusedRef.current?.isConnected) previouslyFocusedRef.current.focus();
+    };
+  }, [showTimeoutWarning]);
 
   // ── Handlers ──
   const handleSetupSave = async (token: string) => {
@@ -201,6 +277,61 @@ export default function KioskPage() {
               : l,
           ),
     );
+  };
+
+  const handleUpdateSides = (lineKey: string, sides: KioskSideChoice[]): string | null => {
+    const sourceIndex = cart.findIndex((line) => cartLineKey(line.item.id, line.sides) === lineKey);
+    if (sourceIndex < 0) return "This item is no longer in the order.";
+    const source = cart[sourceIndex];
+    const destinationKey = cartLineKey(source.item.id, sides);
+    const destination = cart.find(
+      (line, index) =>
+        index !== sourceIndex && cartLineKey(line.item.id, line.sides) === destinationKey,
+    );
+    if (destination) {
+      if (
+        destination.campaignId !== source.campaignId ||
+        destination.campaignDiscountAmount !== source.campaignDiscountAmount
+      ) {
+        return "These items have different discounts and cannot be combined.";
+      }
+      if (destination.qty + source.qty > 50) {
+        return "The updated side combination would exceed the 50-item limit. Reduce the quantity first.";
+      }
+    }
+
+    setCart((prev) => {
+      const currentSourceIndex = prev.findIndex((line) => cartLineKey(line.item.id, line.sides) === lineKey);
+      if (currentSourceIndex < 0) return prev;
+
+      const currentSource = prev[currentSourceIndex];
+      const currentDestinationKey = cartLineKey(currentSource.item.id, sides);
+      if (currentDestinationKey === lineKey) {
+        return prev.map((line, index) => (index === currentSourceIndex ? { ...line, sides } : line));
+      }
+
+      const destinationIndex = prev.findIndex(
+        (line, index) =>
+          index !== currentSourceIndex && cartLineKey(line.item.id, line.sides) === currentDestinationKey,
+      );
+      if (destinationIndex < 0) {
+        return prev.map((line, index) => (index === currentSourceIndex ? { ...line, sides } : line));
+      }
+
+      const currentDestination = prev[destinationIndex];
+      return prev
+        .filter((_, index) => index !== currentSourceIndex)
+        .map((line) =>
+          line === currentDestination
+            ? {
+                ...line,
+                qty: line.qty + currentSource.qty,
+                upsellQty: (line.upsellQty ?? 0) + (currentSource.upsellQty ?? 0) || undefined,
+              }
+            : line,
+        );
+    });
+    return null;
   };
 
   const handleUpsellAdd = (product: KioskProduct, campaign: KioskCampaign) => {
@@ -298,16 +429,19 @@ export default function KioskPage() {
     );
   }
 
+  let screenContent;
   switch (screen) {
     case "attract":
-      return <AttractScreen onStart={handleStart} />;
+      screenContent = <AttractScreen onStart={handleStart} />;
+      break;
     case "menu":
-      return (
+      screenContent = (
         <MenuScreen
           menu={menu}
           cart={cart}
           onAdd={handleAdd}
           onSetQty={handleSetQty}
+          onUpdateSides={handleUpdateSides}
           onCheckout={() => {
             const hasUpsells = campaigns.some(c => c.campaignType === 'upsell' && c.isActive);
             setScreen(hasUpsells ? "upsell" : "details");
@@ -315,8 +449,9 @@ export default function KioskPage() {
           onStartOver={resetToAttract}
         />
       );
+      break;
     case "upsell":
-      return (
+      screenContent = (
         <UpsellScreen
           campaigns={campaigns.filter(c => c.campaignType === 'upsell' && c.isActive)}
           cart={cart}
@@ -325,8 +460,9 @@ export default function KioskPage() {
           onContinue={() => setScreen("details")}
         />
       );
+      break;
     case "details":
-      return (
+      screenContent = (
         <DetailsScreen
           cart={cart}
           initialName={customerName}
@@ -335,8 +471,9 @@ export default function KioskPage() {
           onContinue={handleDetailsContinue}
         />
       );
+      break;
     case "pay":
-      return (
+      screenContent = (
         <PayScreen
           cart={cart}
           customerName={customerName}
@@ -346,11 +483,45 @@ export default function KioskPage() {
           onPaid={handlePaid}
         />
       );
+      break;
     case "confirm":
-      return <ConfirmScreen orderNumber={orderNumber} customerName={customerName} onDone={handleConfirmDone} />;
+      screenContent = <ConfirmScreen orderNumber={orderNumber} customerName={customerName} onDone={handleConfirmDone} />;
+      break;
     case "post_sale_ad":
-      return <PostSaleAdScreen campaigns={campaigns.filter(c => c.campaignType === 'post_sale_ad' && c.isActive)} onDone={resetToAttract} />;
+      screenContent = <PostSaleAdScreen campaigns={campaigns.filter(c => c.campaignType === 'post_sale_ad' && c.isActive)} onDone={resetToAttract} />;
+      break;
     default:
       return null;
   }
+
+  return (
+    <>
+      <div ref={kioskContentRef} aria-hidden={showTimeoutWarning || undefined}>
+        {screenContent}
+      </div>
+      {showTimeoutWarning && (
+        <div className="k-timeout-overlay" role="dialog" aria-modal="true" aria-labelledby="k-timeout-title">
+          <div className="k-timeout-dialog" ref={timeoutDialogRef}>
+            <h2 id="k-timeout-title">Still ordering?</h2>
+            <p>Your order will be cleared soon to protect your privacy.</p>
+            <div className="k-timeout-actions">
+              <button className="k-btn k-btn-ghost k-btn-lg" onClick={resetToAttract}>
+                Start over
+              </button>
+              <button
+                className="k-btn k-btn-primary k-btn-lg"
+                onClick={() => {
+                  setShowTimeoutWarning(false);
+                  timeoutWarningRef.current = false;
+                  window.dispatchEvent(new Event("kiosk-extend-timeout"));
+                }}
+              >
+                Extend time
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }

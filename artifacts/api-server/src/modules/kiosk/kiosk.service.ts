@@ -803,7 +803,28 @@ export async function cancelKioskPayment(deviceId: string, orderId: string) {
 // ─── Kiosk config (payment capabilities) ─────────────────────────────────────
 
 export async function getKioskConfig(deviceId: string) {
-  const device = await prisma.kioskDevice.findUnique({ where: { id: deviceId } });
+  const [device, timeoutSettings] = await Promise.all([
+    prisma.kioskDevice.findUnique({ where: { id: deviceId } }),
+    prisma.siteSetting.findMany({
+      where: {
+        settingKey: {
+          in: [
+            'kiosk_order_inactivity_timeout_seconds',
+            'kiosk_order_inactivity_prompt_seconds',
+          ],
+        },
+      },
+    }),
+  ]);
+  const settingMap = new Map(timeoutSettings.map((setting) => [setting.settingKey, setting.settingValue]));
+  const timeoutSeconds = Math.min(
+    1800,
+    Math.max(60, Number.parseInt(settingMap.get('kiosk_order_inactivity_timeout_seconds') ?? '120', 10) || 120),
+  );
+  const promptSeconds = Math.min(
+    Math.min(300, timeoutSeconds - 10),
+    Math.max(10, Number.parseInt(settingMap.get('kiosk_order_inactivity_prompt_seconds') ?? '30', 10) || 30),
+  );
   const sq = config.square;
   const hasSquare = Boolean(sq.accessToken);
   return {
@@ -812,6 +833,8 @@ export async function getKioskConfig(deviceId: string) {
     environment: sq.environment,
     terminalEnabled: hasSquare && Boolean(device?.squareTerminalDeviceId),
     cardEnabled: hasSquare && Boolean(sq.applicationId && sq.locationId),
+    orderInactivityTimeoutSeconds: timeoutSeconds,
+    orderInactivityPromptSeconds: promptSeconds,
   };
 }
 

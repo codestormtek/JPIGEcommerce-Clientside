@@ -65,6 +65,8 @@ const DEFAULT_SETTINGS = [
   { settingKey: 'footer_location', settingValue: 'Located in the metro DC area', label: 'Footer Location Text', category: 'footer' },
   { settingKey: 'footer_newsletter_text', settingValue: 'Subscribe to the mailing list to receive updates on the new arrivals and other discounts', label: 'Footer Newsletter Tagline', category: 'footer' },
   { settingKey: 'active_payment_gateway', settingValue: 'stripe', label: 'Active Payment Gateway', category: 'payments' },
+  { settingKey: 'kiosk_order_inactivity_timeout_seconds', settingValue: '120', label: 'Kiosk Order Timeout (seconds)', category: 'kiosk' },
+  { settingKey: 'kiosk_order_inactivity_prompt_seconds', settingValue: '30', label: 'Kiosk Timeout Warning (seconds before reset)', category: 'kiosk' },
 ];
 
 export async function seedDefaultSettings() {

@@ -9,6 +9,7 @@ interface Props {
   cart: KioskCartLine[];
   onAdd: (product: KioskProduct, sides?: KioskSideChoice[]) => void;
   onSetQty: (lineKey: string, qty: number) => void;
+  onUpdateSides: (lineKey: string, sides: KioskSideChoice[]) => string | null;
   onCheckout: () => void;
   onStartOver: () => void;
 }
@@ -25,11 +26,13 @@ interface MenuSection {
   products: KioskProduct[];
 }
 
-export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, onStartOver }: Props) {
+export default function MenuScreen({ menu, cart, onAdd, onSetQty, onUpdateSides, onCheckout, onStartOver }: Props) {
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [sidePicker, setSidePicker] = useState<KioskProduct | null>(null);
   const [chosenSides, setChosenSides] = useState<KioskSideChoice[]>([]);
   const [upchargeConfirm, setUpchargeConfirm] = useState<KioskProduct | null>(null);
+  const [editingLineKey, setEditingLineKey] = useState<string | null>(null);
+  const [sideEditError, setSideEditError] = useState<string | null>(null);
 
   const catById = useMemo(
     () => new Map(menu.categories.map((c) => [c.id, c])),
@@ -142,6 +145,8 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
     if (needsSides) {
       setChosenSides([]);
       setUpchargeConfirm(null);
+      setEditingLineKey(null);
+      setSideEditError(null);
       setSidePicker(p);
     } else {
       onAdd(p);
@@ -164,10 +169,35 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
 
   const confirmSides = () => {
     if (!sidePicker || chosenSides.length !== sidePicker.comboSideCount) return;
-    onAdd(sidePicker, chosenSides);
+    if (editingLineKey) {
+      const error = onUpdateSides(editingLineKey, chosenSides);
+      if (error) {
+        setSideEditError(error);
+        return;
+      }
+    } else {
+      onAdd(sidePicker, chosenSides);
+    }
     setSidePicker(null);
     setChosenSides([]);
     setUpchargeConfirm(null);
+    setEditingLineKey(null);
+  };
+
+  const editSides = (line: KioskCartLine, lineKey: string) => {
+    setSidePicker(line.product);
+    setChosenSides([...(line.sides ?? [])]);
+    setUpchargeConfirm(null);
+    setEditingLineKey(lineKey);
+    setSideEditError(null);
+  };
+
+  const closeSidePicker = () => {
+    setSidePicker(null);
+    setChosenSides([]);
+    setUpchargeConfirm(null);
+    setEditingLineKey(null);
+    setSideEditError(null);
   };
 
   const pickerUpcharge = sidesUpcharge(chosenSides);
@@ -277,9 +307,14 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
                   <span>{l.product.name}</span>
                 </div>
                 {l.sides && l.sides.length > 0 && (
-                  <div className="k-line-sides">
-                    {l.sides.map((s) => s.name).join(" + ")}
-                  </div>
+                  <>
+                    <div className="k-line-sides">
+                      {l.sides.map((s) => s.name).join(" + ")}
+                    </div>
+                    <button className="k-edit-sides" onClick={() => editSides(l, key)}>
+                      Edit sides
+                    </button>
+                  </>
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div className="k-line-controls">
@@ -335,7 +370,7 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
       </div>
 
       {sidePicker && (
-        <div className="k-modal-overlay" onClick={() => setSidePicker(null)}>
+        <div className="k-modal-overlay" onClick={closeSidePicker}>
           <div className="k-modal" onClick={(e) => e.stopPropagation()}>
             <div className="k-modal-title">
               CHOOSE {sidePicker.comboSideCount} SIDE{sidePicker.comboSideCount > 1 ? "S" : ""} FOR{" "}
@@ -348,6 +383,11 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
                 <span className="k-upcharge-note"> (+{formatMoney(pickerUpcharge)} upcharge)</span>
               )}
             </div>
+            {sideEditError && (
+              <div className="k-modal-error" role="alert">
+                {sideEditError}
+              </div>
+            )}
             {sideOptions.length === 0 ? (
               <div className="k-modal-empty">No sides are available right now.</div>
             ) : (
@@ -374,7 +414,7 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
               </div>
             )}
             <div className="k-modal-actions">
-              <button className="k-btn k-btn-ghost k-btn-lg" onClick={() => setSidePicker(null)}>
+              <button className="k-btn k-btn-ghost k-btn-lg" onClick={closeSidePicker}>
                 Cancel
               </button>
               {chosenSides.length > 0 && (
@@ -387,7 +427,8 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onCheckout, on
                 disabled={chosenSides.length !== sidePicker.comboSideCount}
                 onClick={confirmSides}
               >
-                Add to Order{pickerUpcharge > 0 && ` (+${formatMoney(pickerUpcharge)})`}
+                {editingLineKey ? "Save Side Changes" : "Add to Order"}
+                {pickerUpcharge > 0 && ` (+${formatMoney(pickerUpcharge)})`}
               </button>
             </div>
 

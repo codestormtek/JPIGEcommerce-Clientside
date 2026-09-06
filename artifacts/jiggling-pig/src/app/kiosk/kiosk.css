@@ -831,8 +831,71 @@
 .k-line-sides {
   color: var(--k-muted);
   font-size: 15px;
-  margin: 4px 0 8px;
+  margin: 4px 0;
   line-height: 1.4;
+}
+
+.k-edit-sides {
+  min-height: 36px;
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--k-accent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.k-timeout-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: rgb(10 7 5 / 76%);
+}
+
+.k-timeout-dialog {
+  width: min(560px, 100%);
+  padding: 36px;
+  border: 2px solid var(--k-accent);
+  border-radius: 24px;
+  background: var(--k-surface);
+  color: var(--k-text);
+  text-align: center;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 55%);
+}
+
+.k-timeout-dialog h2 {
+  margin: 0 0 12px;
+  font-size: 40px;
+}
+
+.k-timeout-dialog p {
+  margin: 0;
+  color: var(--k-muted);
+  font-size: 20px;
+  line-height: 1.45;
+}
+
+.k-timeout-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.k-modal-error {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid #c84a35;
+  border-radius: 10px;
+  background: rgb(200 74 53 / 14%);
+  color: #ffb5a8;
+  font-weight: 700;
 }
 
 .k-summary-sides {

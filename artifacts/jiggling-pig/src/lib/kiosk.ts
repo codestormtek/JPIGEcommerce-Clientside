@@ -116,6 +116,8 @@ export interface KioskConfig {
   environment: string;
   terminalEnabled: boolean;
   cardEnabled: boolean;
+  orderInactivityTimeoutSeconds: number;
+  orderInactivityPromptSeconds: number;
 }
 
 export interface KioskPaymentStatus {
