@@ -16,7 +16,7 @@ interface Props {
 const TAB_FOOD = "jiggling food menu";
 const TAB_SIDES = "sides";
 const TAB_PRODUCTS = "jiggling pig products";
-const PRODUCT_TABS = ["sauces", "rubs", "fry mixes", "teas", "drinks"] as const;
+const PRODUCT_TABS = ["drinks", "sauces", "rubs", "fry mixes", "teas"] as const;
 
 const norm = (s: string) => s.trim().toLowerCase();
 
