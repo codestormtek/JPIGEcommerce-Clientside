@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { KioskCartLine } from "@/lib/kiosk";
 import { cartLineKey, cartSubtotal, formatMoney, sidesUpcharge } from "@/lib/kiosk";
 
@@ -15,8 +15,22 @@ interface Props {
 export default function DetailsScreen({ cart, initialName, initialPhone, onBack, onContinue }: Props) {
   const [name, setName] = useState(initialName);
   const [phone, setPhone] = useState(initialPhone);
+  const [showNameRequired, setShowNameRequired] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const subtotal = cartSubtotal(cart);
+  const closeNameRequired = () => {
+    setShowNameRequired(false);
+    window.requestAnimationFrame(() => nameInputRef.current?.focus());
+  };
+  const handleContinue = () => {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setShowNameRequired(true);
+      return;
+    }
+    onContinue(trimmedName, phone.trim());
+  };
 
   return (
     <div className="k-screen k-center">
@@ -26,6 +40,7 @@ export default function DetailsScreen({ cart, initialName, initialPhone, onBack,
         <label>
           Name (we&apos;ll call it out)
           <input
+            ref={nameInputRef}
             className="k-input"
             type="text"
             placeholder="First name"
@@ -34,6 +49,7 @@ export default function DetailsScreen({ cart, initialName, initialPhone, onBack,
             onChange={(e) => setName(e.target.value)}
             autoCapitalize="words"
             autoCorrect="off"
+            aria-invalid={showNameRequired}
           />
         </label>
 
@@ -79,13 +95,37 @@ export default function DetailsScreen({ cart, initialName, initialPhone, onBack,
           </button>
           <button
             className="k-btn k-btn-primary"
-            disabled={!name.trim()}
-            onClick={() => onContinue(name.trim(), phone.trim())}
+            onClick={handleContinue}
           >
             Continue
           </button>
         </div>
       </div>
+
+      {showNameRequired && (
+        <div className="k-modal-overlay" onClick={closeNameRequired}>
+          <div
+            className="k-modal k-name-required-modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="k-name-required-title"
+            aria-describedby="k-name-required-message"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="k-modal-title" id="k-name-required-title">
+              PLEASE ENTER YOUR NAME
+            </div>
+            <div className="k-modal-sub" id="k-name-required-message">
+              We need a name so our team knows who to call when the order is ready.
+            </div>
+            <div className="k-modal-actions">
+              <button className="k-btn k-btn-primary" onClick={closeNameRequired} autoFocus>
+                Enter name
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
