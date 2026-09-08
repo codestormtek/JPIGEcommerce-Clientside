@@ -5,3 +5,4 @@
 - [Preview-safe legacy styles](preview-safe-legacy-styles.md) — avoid server-rendered custom head links that conflict with Replit’s injected preview script.
 - [Turbopack PostCSS resolution](turbopack-postcss-resolution.md) — monorepo dev previews may require PostCSS plugins at both artifact and workspace-root scope.
 - [Kiosk operational analytics](kiosk-operational-analytics.md) — keep telemetry anonymous, aggregate-only, retry-safe, and nonblocking; exclude customer and payment identifiers.
+- [Standalone CI dependencies](standalone-ci-dependencies.md) — validate nested standalone packages from isolated installs because monorepo dependencies can hide missing declarations.
