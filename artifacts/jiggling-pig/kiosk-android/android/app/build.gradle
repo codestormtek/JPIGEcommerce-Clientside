@@ -1,5 +1,43 @@
 apply plugin: 'com.android.application'
 
+def env = System.getenv()
+def kioskVersionName = env['KIOSK_VERSION_NAME'] ?: '1.0.0'
+def kioskVersionCodeText = env['KIOSK_VERSION_CODE'] ?: '1'
+if (!(kioskVersionName ==~ /\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?/)) {
+    throw new GradleException('KIOSK_VERSION_NAME must be a semantic version such as 1.2.3')
+}
+if (!(kioskVersionCodeText ==~ /[1-9]\d*/) || kioskVersionCodeText.toLong() > 2100000000L) {
+    throw new GradleException('KIOSK_VERSION_CODE must be an integer from 1 through 2100000000')
+}
+def releaseSigningVariables = [
+    'ANDROID_KEYSTORE_PATH',
+    'ANDROID_KEYSTORE_PASSWORD',
+    'ANDROID_KEY_ALIAS',
+    'ANDROID_KEY_PASSWORD',
+]
+def missingReleaseSigningVariables = releaseSigningVariables.findAll { !env[it]?.trim() }
+def releaseTaskRequested = gradle.startParameter.taskNames.any {
+    it.toLowerCase(java.util.Locale.ROOT).contains('release')
+}
+if (releaseTaskRequested && !missingReleaseSigningVariables.isEmpty()) {
+    throw new GradleException(
+        "Release signing credentials are missing. Set these environment variables: " +
+        missingReleaseSigningVariables.join(', ')
+    )
+}
+gradle.taskGraph.whenReady { taskGraph ->
+    def includesReleaseTask = taskGraph.allTasks.any {
+        it.project == project && it.name.toLowerCase(java.util.Locale.ROOT).contains('release')
+    }
+    if (includesReleaseTask && !missingReleaseSigningVariables.isEmpty()) {
+        throw new GradleException(
+            "Release signing credentials are missing. Set these environment variables: " +
+            missingReleaseSigningVariables.join(', ')
+        )
+    }
+}
+def hasReleaseSigningCredentials = missingReleaseSigningVariables.isEmpty()
+
 android {
     namespace = "app.replit.jpigecommerce.kiosk"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +45,8 @@ android {
         applicationId "app.replit.jpigecommerce.kiosk"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode kioskVersionCodeText.toInteger()
+        versionName kioskVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +54,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseSigningCredentials) {
+            release {
+                storeFile file(env['ANDROID_KEYSTORE_PATH'])
+                storePassword env['ANDROID_KEYSTORE_PASSWORD']
+                keyAlias env['ANDROID_KEY_ALIAS']
+                keyPassword env['ANDROID_KEY_PASSWORD']
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hasReleaseSigningCredentials) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled true
             shrinkResources true
             debuggable false

@@ -51,31 +51,104 @@ pnpm run build:debug
 The debug APK, when the build succeeds, is:
 `android/app/build/outputs/apk/debug/app-debug.apk`.
 
-For release, first run `pnpm run build:release` for an AAB or
-`pnpm run build:release-apk` for a sideloadable APK. Without an externally
-configured release signing setup these outputs are unsigned; this project does
-not create or manage signing credentials. Use an organization owned keystore
-stored outside the repository (preferably in a managed secret store/HSM),
-configure signing through a protected local Gradle properties file or CI secret
-injection, and run the selected task again. Prefer Google Play App Signing for
-managed distribution. Never commit the keystore, aliases, passwords,
-`local.properties`, APKs, or AABs. Record the certificate fingerprint separately
-so future upgrades use the same signing identity.
+Release builds are signed only from environment variables. Gradle deliberately
+fails any release task with a list of missing variables rather than creating an
+unsigned release. Set `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`,
+`ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`; set `KIOSK_VERSION_NAME` to a
+semantic version and `KIOSK_VERSION_CODE` to an integer from `1` through
+`2100000000`. The version variables default to `1.0.0` and `1` for debug builds.
+Then run `pnpm run build:release` for an AAB or
+`pnpm run build:release-apk` for an APK. Do not put credentials in Gradle
+properties or commit them.
 
-For direct release sideloading, have the release manager produce a signed APK
-with Android Studio or `apksigner`, verify it with `apksigner verify --verbose`,
-then install it with:
+Verify a direct-sideload APK before installing it:
 
 ```sh
+apksigner verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk
 adb install --replace path/to/verified-signed-release.apk
 ```
 
 Debug APKs are suitable only for development checks.
 
-The repository includes a copy-ready manual GitHub Actions workflow template at
-`github-actions/jiggling-pig-kiosk-android-debug.yml`. It is stored outside
-`.github/workflows` because GitHub rejects workflow-file pushes made through
-OAuth credentials that do not have the separate `workflow` permission.
+## Signed GitHub Releases
+
+Create the organization-owned upload keystore once, in a secure working
+directory, on Windows, macOS, or Linux (the JDK `keytool` command is the same):
+
+```sh
+keytool -genkeypair -v -keystore jiggling-pig-kiosk-release.jks -alias jiggling-pig-kiosk -keyalg RSA -keysize 4096 -validity 10000
+```
+
+Choose and securely record the keystore password, alias, and key password. Back
+up the keystore in the organization's protected credential store and record its
+certificate fingerprint. **Never lose, delete, or rotate this keystore.** Android
+will reject an APK signed with a different key as an update to installed kiosks.
+Never commit the keystore or passwords.
+
+Encode the binary keystore as one-line base64 for GitHub:
+
+**Windows PowerShell**
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes((Resolve-Path ".\jiggling-pig-kiosk-release.jks"))) | Set-Clipboard
+```
+
+**macOS**
+
+```sh
+base64 < jiggling-pig-kiosk-release.jks | tr -d '\n' | pbcopy
+```
+
+**Linux**
+
+```sh
+base64 -w 0 jiggling-pig-kiosk-release.jks
+```
+
+Before using the release template, create the protected GitHub environment
+**`kiosk-production-signing`** under **Settings → Environments**. Configure its
+deployment branch rule to allow only `main` and require an authorized release
+reviewer. The job itself also refuses to run unless `github.ref` is
+`refs/heads/main`.
+
+Put these signing secrets in that **`kiosk-production-signing` environment**
+(not in the repository's general Actions secrets):
+
+- `ANDROID_KEYSTORE_BASE64`: the one-line encoded keystore
+- `ANDROID_KEYSTORE_PASSWORD`: its store password
+- `ANDROID_KEY_ALIAS`: its alias
+- `ANDROID_KEY_PASSWORD`: the private-key password
+
+In the same protected environment (or as a non-secret repository Actions
+variable), set `KIOSK_SIGNING_CERT_SHA256` to the SHA-256 fingerprint for the
+signing certificate. Obtain it locally without sharing the keystore or password:
+
+```sh
+keytool -list -v -keystore jiggling-pig-kiosk-release.jks -alias jiggling-pig-kiosk
+```
+
+Copy the `SHA256:` certificate fingerprint into the variable; colons and letter
+case are normalized by the workflow. Do not put a fingerprint or any secret
+value into chat, tickets, workflow YAML, logs, issues, or release notes.
+
+Do not paste secret values into workflow YAML, logs, issues, or release notes.
+The release workflow decodes the keystore only into the GitHub runner's
+temporary directory immediately before Gradle runs and deletes it immediately
+afterward.
+
+The repository includes two copy-ready manual GitHub Actions templates:
+
+- `github-actions/jiggling-pig-kiosk-android-debug.yml` keeps the existing
+  unsigned debug artifact build.
+- `github-actions/jiggling-pig-kiosk-android-release.yml` validates a semantic
+  version and bounded Android version code, runs type and native checks, builds
+  the signed APK, verifies it with `apksigner --verbose --print-certs` against
+  the configured certificate fingerprint, creates a versioned APK, SHA-256, and
+  release metadata JSON, and publishes all three with the GitHub CLI.
+
+They are stored outside `.github/workflows` because GitHub rejects workflow-file
+pushes made through OAuth credentials that do not have the separate `workflow`
+permission.
 
 After the app code has been pushed, create
 `.github/workflows/jiggling-pig-kiosk-android-debug.yml` in GitHub's web editor,
@@ -83,6 +156,27 @@ copy the template into it, and commit it there. Then run
 **Actions → Build Jiggling Pig kiosk debug APK → Run workflow** to obtain a
 14-day `jiggling-pig-kiosk-debug-apk` artifact. The workflow uses the standalone
 frozen lockfile and does not access signing secrets or produce a release build.
+
+For releases, similarly copy the release template to
+`.github/workflows/jiggling-pig-kiosk-android-release.yml` in GitHub's web
+editor. Run **Actions → Release signed Jiggling Pig kiosk APK → Run workflow**,
+enter a semantic version without `v` (for example `1.2.3`) and a new,
+monotonically increasing version code (between `1` and `2100000000`). Every
+release must use a new, unique semantic version/tag and a code greater than the
+highest prior `kiosk-v*` release metadata code. The workflow requires metadata
+on every prior kiosk release and rejects an existing tag, release, or
+non-increasing code both before building and again immediately before
+publication. History retrieval fails closed, and one fixed non-cancelling
+concurrency group serializes all production kiosk releases. It creates the tag
+for the exact checked-out `GITHUB_SHA`, has only
+`contents: write`, uses the built-in `GITHUB_TOKEN`, and marks the created release
+as latest. The first kiosk release may use any code in the allowed range. The
+stable download page is:
+
+`https://github.com/codestormtek/JPIGEcommerce-Clientside/releases/latest`
+
+Web-only kiosk changes served by the production URL do **not** require a new APK;
+release one only when the native Android shell changes.
 
 ## Samsung device setup and physical verification
 
