@@ -72,9 +72,16 @@ adb install --replace path/to/verified-signed-release.apk
 
 Debug APKs are suitable only for development checks.
 
-The repository also includes the manual-only GitHub Actions workflow
-`Build Jiggling Pig kiosk debug APK`. Run it with **Actions → Run workflow** to
-obtain a 14-day `jiggling-pig-kiosk-debug-apk` artifact. It uses the standalone
+The repository includes a copy-ready manual GitHub Actions workflow template at
+`github-actions/jiggling-pig-kiosk-android-debug.yml`. It is stored outside
+`.github/workflows` because GitHub rejects workflow-file pushes made through
+OAuth credentials that do not have the separate `workflow` permission.
+
+After the app code has been pushed, create
+`.github/workflows/jiggling-pig-kiosk-android-debug.yml` in GitHub's web editor,
+copy the template into it, and commit it there. Then run
+**Actions → Build Jiggling Pig kiosk debug APK → Run workflow** to obtain a
+14-day `jiggling-pig-kiosk-debug-apk` artifact. The workflow uses the standalone
 frozen lockfile and does not access signing secrets or produce a release build.
 
 ## Samsung device setup and physical verification
