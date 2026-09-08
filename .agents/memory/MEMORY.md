@@ -6,3 +6,4 @@
 - [Turbopack PostCSS resolution](turbopack-postcss-resolution.md) — monorepo dev previews may require PostCSS plugins at both artifact and workspace-root scope.
 - [Kiosk operational analytics](kiosk-operational-analytics.md) — keep telemetry anonymous, aggregate-only, retry-safe, and nonblocking; exclude customer and payment identifiers.
 - [Standalone CI dependencies](standalone-ci-dependencies.md) — validate nested standalone packages from isolated installs because monorepo dependencies can hide missing declarations.
+- [Android release signing](android-release-signing.md) — production APK workflows must pin identity, source, version history, and signing-job dependencies before publication.
