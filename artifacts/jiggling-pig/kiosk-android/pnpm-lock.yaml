@@ -18,6 +18,9 @@ importers:
       '@capacitor/cli':
         specifier: 8.5.1
         version: 8.5.1
+      '@types/node':
+        specifier: 26.5.0
+        version: 26.5.0
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
