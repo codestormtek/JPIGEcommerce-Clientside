@@ -8,17 +8,19 @@ interface Props {
   cart: KioskCartLine[];
   customerName: string;
   config: KioskConfig;
+  terminalOnly?: boolean;
   onBack: () => void;
   onPlaceOrder: (paymentMethod: "terminal" | "card", squareNonce: string | undefined, clientRequestId: string) => Promise<KioskOrderResult>;
   onPaid: (result: KioskOrderResult) => void;
-  onCheckoutStarted: (paymentMethod: "terminal" | "card") => void;
+  onCheckoutStarted: (paymentMethod: "terminal" | "card") => boolean;
+  onPaymentSafeToLeave?: () => void;
   onCheckoutFailed: (
     paymentMethod: "terminal" | "card",
     failureCategory: "declined" | "cancelled" | "reader_unavailable" | "network" | "timeout" | "validation" | "unknown",
   ) => void;
 }
 
-type Mode = "choose" | "terminal-waiting" | "payment-waiting" | "card-entry";
+type Mode = "choose" | "terminal-waiting" | "payment-waiting" | "card-entry" | "uncertain";
 
 const POLL_INTERVAL_MS = 2000;
 const TERMINAL_TIMEOUT_MS = 3 * 60_000;
@@ -57,7 +59,18 @@ function loadSquareSdk(environment: string): Promise<void> {
   });
 }
 
-export default function PayScreen({ cart, customerName, config, onBack, onPlaceOrder, onPaid, onCheckoutStarted, onCheckoutFailed }: Props) {
+export default function PayScreen({
+  cart,
+  customerName,
+  config,
+  terminalOnly = false,
+  onBack,
+  onPlaceOrder,
+  onPaid,
+  onCheckoutStarted,
+  onPaymentSafeToLeave,
+  onCheckoutFailed,
+}: Props) {
   const [mode, setMode] = useState<Mode>("choose");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -76,19 +89,25 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
     setError(null);
     try {
       requestIdRef.current ??= crypto.randomUUID();
-      onCheckoutStarted("terminal");
+      if (!onCheckoutStarted("terminal")) {
+        onCheckoutFailed("terminal", "unknown");
+        setMode("uncertain");
+        setError(
+          "The kiosk could not secure payment recovery. Do not retry; please ask a staff member for help.",
+        );
+        return;
+      }
       const result = await onPlaceOrder("terminal", undefined, requestIdRef.current);
       orderRef.current = result;
       cancelledRef.current = false;
       setMode("terminal-waiting");
     } catch (e) {
-      onCheckoutFailed("terminal", "reader_unavailable");
-      const message = e instanceof Error ? e.message : "Could not start the card reader";
-      if (!message.includes("result could not be confirmed")) {
-        orderRef.current = null;
-        requestIdRef.current = null;
-      }
-      setError(message);
+      // The POST may have reached the order controller even when the browser
+      // observed an HTTP error (including 422) or a network failure. Preserve
+      // the idempotency key and fail closed until staff reconcile the outcome.
+      onCheckoutFailed("terminal", "unknown");
+      setError(e instanceof Error ? e.message : "The payment result could not be confirmed");
+      setMode("uncertain");
     } finally {
       setBusy(false);
     }
@@ -112,6 +131,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
         if (st.status === "canceled") {
           onCheckoutFailed(mode === "terminal-waiting" ? "terminal" : "card", "cancelled");
           requestIdRef.current = null;
+          onPaymentSafeToLeave?.();
           setMode("choose");
           setError("Payment was canceled on the reader. Please try again.");
           return;
@@ -135,6 +155,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
             cancelledRef.current = true;
             orderRef.current = null;
             requestIdRef.current = null;
+            onPaymentSafeToLeave?.();
             setMode("choose");
             setError("The card reader timed out. Please try again.");
           } catch {
@@ -154,14 +175,13 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
       stopped = true;
       clearTimeout(timer);
     };
-  }, [mode, onPaid, onCheckoutFailed]);
+  }, [mode, onPaid, onCheckoutFailed, onPaymentSafeToLeave]);
 
   const cancelTerminal = async () => {
     const orderId = orderRef.current?.orderId;
     if (!orderId) {
-      requestIdRef.current = null;
-      setMode("choose");
-      setError(null);
+      setMode("uncertain");
+      setError("The payment result could not be confirmed. Please ask a staff member for help.");
       return;
     }
     setBusy(true);
@@ -179,6 +199,7 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
       cancelledRef.current = true;
       orderRef.current = null;
       requestIdRef.current = null;
+      onPaymentSafeToLeave?.();
       setMode("choose");
       setError(null);
     } catch {
@@ -245,7 +266,9 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
         cardTokenRef.current = result.token;
       }
       requestIdRef.current ??= crypto.randomUUID();
-      onCheckoutStarted("card");
+      if (!onCheckoutStarted("card")) {
+        throw new Error("Payment recovery could not be initialized");
+      }
       const order = await onPlaceOrder("card", cardTokenRef.current, requestIdRef.current);
       if (order.paymentStatus === "paid") {
         onPaid(order);
@@ -286,6 +309,20 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
               Cancel Payment
             </button>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === "uncertain") {
+    return (
+      <div className="k-screen k-center">
+        <div className="k-panel" style={{ textAlign: "center", alignItems: "center" }}>
+          <h2>Ask a staff member for help</h2>
+          <p style={{ color: "var(--k-muted)", fontSize: 19, margin: 0, lineHeight: 1.5 }}>
+            The payment result could not be confirmed. Do not retry or take another payment until staff verify the order and reader status.
+          </p>
+          {error && <p className="k-error">{error}</p>}
         </div>
       </div>
     );
@@ -349,13 +386,15 @@ export default function PayScreen({ cart, customerName, config, onBack, onPlaceO
             </span>
           </button>
 
-          <button className="k-pay-option" disabled={!config.cardEnabled || busy} onClick={startCardEntry}>
-            <span className="k-pay-icon">⌨️</span>
-            <span>
-              Enter card on screen
-              <small>{config.cardEnabled ? "Type your card number here" : "Not available"}</small>
-            </span>
-          </button>
+          {!terminalOnly && (
+            <button className="k-pay-option" disabled={!config.cardEnabled || busy} onClick={startCardEntry}>
+              <span className="k-pay-icon">⌨️</span>
+              <span>
+                Enter card on screen
+                <small>{config.cardEnabled ? "Type your card number here" : "Not available"}</small>
+              </span>
+            </button>
+          )}
         </div>
 
         {error && <p className="k-error">{error}</p>}

@@ -1,0 +1,57 @@
+name: Build Jiggling Pig kiosk debug APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: artifacts/jiggling-pig/kiosk-android
+
+jobs:
+  debug-apk:
+    name: Android debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.26.1"
+          run_install: false
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install standalone dependencies
+        run: pnpm install --frozen-lockfile --ignore-workspace
+
+      - name: Check TypeScript and native contract
+        run: pnpm run typecheck && pnpm run check:native
+
+      - name: Build debug APK
+        run: pnpm run build:debug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: jiggling-pig-kiosk-debug-apk
+          path: artifacts/jiggling-pig/kiosk-android/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

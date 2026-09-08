@@ -1,0 +1,22 @@
+{
+  "name": "@workspace/jiggling-pig-kiosk-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android customer kiosk shell for the Jiggling Pig web kiosk",
+  "scripts": {
+    "sync": "cap sync android",
+    "typecheck": "tsc --noEmit",
+    "check:native": "node scripts/check-native.mjs",
+    "build:debug": "pnpm run sync && cd android && ./gradlew assembleDebug",
+    "build:release": "pnpm run sync && cd android && ./gradlew bundleRelease",
+    "build:release-apk": "pnpm run sync && cd android && ./gradlew assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.1",
+    "@capacitor/core": "8.5.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.1",
+    "typescript": "~5.9.3"
+  }
+}

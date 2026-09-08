@@ -34,12 +34,22 @@ import PostSaleAdScreen from "@/components/kiosk/PostSaleAdScreen";
 
 type Screen = "loading" | "setup" | "attract" | "menu" | "upsell" | "details" | "review" | "pay" | "confirm" | "post_sale_ad";
 
+declare global {
+  interface Window {
+    JigglingPigKioskPaymentLock?: {
+      markActive: () => boolean;
+      clearIfSafe: () => boolean;
+    };
+  }
+}
+
 const DEFAULT_IDLE_TIMEOUT_SECONDS = 120;
 const DEFAULT_IDLE_PROMPT_SECONDS = 30;
 const MENU_REFRESH_MS = 5 * 60_000;
 const HEARTBEAT_MS = 60_000;
 
 export default function KioskPage() {
+  const [isAndroidKiosk, setIsAndroidKiosk] = useState(false);
   const [screen, setScreen] = useState<Screen>("loading");
   const [menu, setMenu] = useState<KioskMenu | null>(null);
   const [config, setConfig] = useState<KioskConfig>({
@@ -74,6 +84,47 @@ export default function KioskPage() {
   const checkoutPaymentMethodRef = useRef<"terminal" | "card" | null>(null);
   screenRef.current = screen;
   cartRef.current = cart;
+
+  useEffect(() => {
+    setIsAndroidKiosk(
+      new URLSearchParams(window.location.search).get("kioskClient") === "android",
+    );
+  }, []);
+
+  const clearAndroidPaymentMarker = useCallback(() => {
+    if (!isAndroidKiosk || window.location.hash !== "#payment-active") return;
+    window.history.replaceState({}, "", `${window.location.pathname}${window.location.search}`);
+  }, [isAndroidKiosk]);
+
+  const clearAndroidPaymentLockIfSafe = useCallback((): boolean => {
+    if (!isAndroidKiosk) return true;
+    // Native storage is cleared only after a paid/canceled/not-created outcome.
+    try {
+      if (window.JigglingPigKioskPaymentLock?.clearIfSafe() !== true) return false;
+    } catch {
+      return false;
+    }
+    clearAndroidPaymentMarker();
+    return true;
+  }, [clearAndroidPaymentMarker, isAndroidKiosk]);
+
+  const markAndroidPaymentActive = useCallback((): boolean => {
+    if (!isAndroidKiosk) return true;
+    // This synchronous native call occurs before the terminal order POST.
+    const bridge = window.JigglingPigKioskPaymentLock;
+    if (!bridge) return false;
+    try {
+      if (bridge.markActive() !== true) return false;
+    } catch {
+      return false;
+    }
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}${window.location.search}#payment-active`,
+    );
+    return true;
+  }, [isAndroidKiosk]);
 
   const trackEvent = useCallback((
     eventType: Parameters<typeof sendKioskAnalyticsEvent>[0]["eventType"],
@@ -124,7 +175,8 @@ export default function KioskPage() {
     cartStartedRef.current = false;
     checkoutStartedAtRef.current = 0;
     checkoutPaymentMethodRef.current = null;
-  }, [trackEvent]);
+    clearAndroidPaymentMarker();
+  }, [trackEvent, clearAndroidPaymentMarker]);
 
   const loadMenu = useCallback(async () => {
     const data = await fetchKioskMenu();
@@ -165,7 +217,9 @@ export default function KioskPage() {
       const urlToken = params.get("token");
       if (urlToken) {
         setKioskToken(urlToken);
-        window.history.replaceState({}, "", "/kiosk");
+        params.delete("token");
+        const remainingQuery = params.toString();
+        window.history.replaceState({}, "", `/kiosk${remainingQuery ? `?${remainingQuery}` : ""}`);
       }
       if (!getKioskToken()) {
         setScreen("setup");
@@ -483,6 +537,7 @@ export default function KioskPage() {
       });
     }
     setOrderNumber(result.kioskOrderNumber);
+    clearAndroidPaymentLockIfSafe();
     setScreen("confirm");
     loadMenu().catch(() => {}); // refresh stock after sale
   };
@@ -590,14 +645,20 @@ export default function KioskPage() {
           cart={cart}
           customerName={customerName}
           config={config}
+          terminalOnly={isAndroidKiosk}
           onBack={() => setScreen("review")}
           onPlaceOrder={handlePlaceOrder}
           onPaid={handlePaid}
           onCheckoutStarted={(paymentMethod) => {
+            if (paymentMethod === "terminal" && !markAndroidPaymentActive()) {
+              return false;
+            }
             checkoutStartedAtRef.current ||= Date.now();
             checkoutPaymentMethodRef.current = paymentMethod;
             trackEvent("checkout_started", { metadata: { paymentMethod } });
+            return true;
           }}
+          onPaymentSafeToLeave={clearAndroidPaymentLockIfSafe}
           onCheckoutFailed={(paymentMethod, failureCategory) =>
             trackEvent("checkout_failed", {
               durationMs: checkoutStartedAtRef.current

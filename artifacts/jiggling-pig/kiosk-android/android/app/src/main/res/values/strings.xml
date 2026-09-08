@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Jiggling Pig Kiosk</string>
+    <string name="title_activity_main">Jiggling Pig Kiosk</string>
+    <string name="package_name">app.replit.jpigecommerce.kiosk</string>
+    <string name="custom_url_scheme">app.replit.jpigecommerce.kiosk</string>
+</resources>

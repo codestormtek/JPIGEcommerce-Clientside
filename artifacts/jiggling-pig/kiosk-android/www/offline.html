@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Kiosk unavailable</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body { display: grid; place-items: center; padding: 32px; background: #17100c; color: #fff8eb; font-family: system-ui, sans-serif; text-align: center; }
+      main { max-width: 560px; }
+      h1 { margin: 0 0 12px; font-size: 38px; }
+      p { margin: 0 0 28px; color: #e8d6c3; font-size: 20px; line-height: 1.45; }
+      a { display: inline-grid; min-height: 52px; place-items: center; padding: 0 32px; border-radius: 8px; background: #f2a23a; color: #21140c; font-size: 20px; font-weight: 800; text-decoration: none; }
+      a:focus-visible { outline: 4px solid white; outline-offset: 4px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Kiosk unavailable</h1>
+      <p>Check the internet connection, then try again. The kiosk will not reload automatically.</p>
+      <a href="jpig-kiosk://retry">Try again</a>
+    </main>
+  </body>
+</html>
