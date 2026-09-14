@@ -1,0 +1,69 @@
+The job is failing in the Android release packaging step, and the root cause is the signing keystore password being incorrect.
+
+Failure point
+In the log, Gradle fails here:
+
+:app:packageRelease
+com.android.ide.common.signing.KeytoolException: Failed to read key *** from store "/home/runner/work/_temp/jiggling-pig-kiosk-release.jks": keystore password was incorrect
+That means the APK build reaches signing, but the keystore credentials do not match the keystore file being decoded into the runner.
+
+Relevant workflow/code
+The release workflow is:
+
+.github/workflows/jiggling-pig-kiosk-android-release.yml
+The signing flow is:
+
+Decode release keystore
+Build signed release APK
+The app build reads these env vars in:
+
+artifacts/jiggling-pig/kiosk-android/android/app/build.gradle
+Gradle
+storeFile file(env['ANDROID_KEYSTORE_PATH'])
+storePassword env['ANDROID_KEYSTORE_PASSWORD']
+keyAlias env['ANDROID_KEY_ALIAS']
+keyPassword env['ANDROID_KEY_PASSWORD']
+Most likely cause
+One of these is wrong or mismatched:
+
+ANDROID_KEYSTORE_PASSWORD
+ANDROID_KEY_ALIAS
+ANDROID_KEY_PASSWORD
+the decoded ANDROID_KEYSTORE_BASE64 keystore file itself
+The workflow’s validation only checks that the secrets exist, not that they are correct for the uploaded keystore. So the job passes validation, then fails when Gradle tries to sign the release APK.
+
+Solution
+Fix the signing secrets so they all correspond to the same keystore:
+
+Re-export the keystore from the source keystore used to generate the release key.
+Re-encode that keystore into ANDROID_KEYSTORE_BASE64.
+Confirm the exact alias name in ANDROID_KEY_ALIAS.
+Confirm the keystore password and key password are correct.
+If the key password differs from the store password, that is fine, but both must be accurate.
+Recommended hardening
+To make the failure easier to diagnose, add an explicit keystore sanity check before the Gradle build step. For example, in the workflow after decoding the keystore:
+
+bash
+keytool -list \
+  -keystore "$ANDROID_KEYSTORE_PATH" \
+  -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+  -alias "$ANDROID_KEY_ALIAS"
+If the alias or password is wrong, this fails immediately with a clearer error than the Gradle packaging failure.
+
+You could also add a more direct check in the workflow before pnpm run build:release-apk:
+
+YAML
+- name: Verify keystore credentials
+  shell: bash
+  env:
+    ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+    ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+    ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+  run: |
+    set -euo pipefail
+    keytool -list \
+      -keystore "$ANDROID_KEYSTORE_PATH" \
+      -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+      -alias "$ANDROID_KEY_ALIAS"
+Bottom line
+This is not a code compilation issue. The release build is failing because the Android signing credentials do not match the decoded keystore. Correct the signing secrets in the kiosk-production-signing environment, and the APK packaging step should succeed.
