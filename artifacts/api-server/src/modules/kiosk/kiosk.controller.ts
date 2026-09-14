@@ -34,6 +34,14 @@ export async function getOrderStatus(req: KioskRequest, res: Response): Promise<
   sendSuccess(res, result);
 }
 
+export async function recoverPaymentAttempt(req: KioskRequest, res: Response): Promise<void> {
+  const result = await service.recoverKioskPaymentAttempt(
+    req.kioskDevice!.id,
+    req.params['clientRequestId'] as string,
+  );
+  sendSuccess(res, result);
+}
+
 export async function heartbeat(req: KioskRequest, res: Response): Promise<void> {
   // authenticateKiosk already bumped lastSeenAt
   sendSuccess(res, { ok: true, device: req.kioskDevice!.name });

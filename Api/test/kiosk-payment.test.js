@@ -26,6 +26,12 @@ const square = {
     },
   },
 };
+const paymentGateway = {
+  getActiveGateway: async () => 'square',
+  createPayment: async () => ({ gateway: 'square', paymentId: 'unused', status: 'captured' }),
+  capturePayment: async () => ({ gateway: 'square', paymentId: 'unused', status: 'captured' }),
+  getPayment: async () => ({ gateway: 'square', paymentId: 'unused', status: 'pending' }),
+};
 
 let checkoutCalls = [];
 const checkout = async (_userId, input) => {
@@ -43,6 +49,7 @@ const checkout = async (_userId, input) => {
         sideSelectionsText: 'Mac & Cheese, Collard Greens',
       },
     ],
+    payments: [{ id: 'payment-1', provider: 'square_terminal', status: 'pending' }],
   };
 };
 
@@ -53,6 +60,7 @@ function mockModule(relativePath, exports) {
 
 mockModule('../src/lib/prisma', { __esModule: true, default: prisma });
 mockModule('../src/lib/square', { getSquareClient: () => square });
+mockModule('../src/services/paymentGateway', paymentGateway);
 mockModule('../src/modules/orders/orders.service', { checkout });
 mockModule('../src/modules/kiosk/kiosk.middleware', {
   hashKioskToken: (value) => value,
@@ -96,8 +104,20 @@ beforeEach(() => {
     },
   }];
   prisma.product.findMany = async () => [
-    { id: 'mac', name: 'Mac & Cheese', duplicateSideUpcharge: 0, categoryMaps: [{ categoryId: 'sides-category' }] },
-    { id: 'greens', name: 'Collard Greens', duplicateSideUpcharge: 0, categoryMaps: [{ categoryId: 'sides-category' }] },
+    {
+      id: 'mac',
+      name: 'Mac & Cheese',
+      duplicateSideUpcharge: 0,
+      categoryMaps: [{ categoryId: 'sides-category' }],
+      items: [{ id: 'mac-sku' }],
+    },
+    {
+      id: 'greens',
+      name: 'Collard Greens',
+      duplicateSideUpcharge: 0,
+      categoryMaps: [{ categoryId: 'sides-category' }],
+      items: [{ id: 'greens-sku' }],
+    },
   ];
   prisma.payment.create = async () => ({ id: 'payment-1' });
   prisma.payment.update = async () => ({});
@@ -122,6 +142,7 @@ test('sends itemized pickup details and the exact local total to Square', async 
     productItemId: 'combo-item',
     qty: 2,
     sidesText: 'Mac & Cheese, Collard Greens',
+    sideProductItemIds: ['mac-sku', 'greens-sku'],
   }]);
   assert.equal(checkoutCalls[0].addresses[0].addressType, 'billing');
   assert.equal(checkoutCalls[0].addresses[0].fullName, 'Pat Customer');
@@ -176,6 +197,41 @@ test('reuses an existing local and Square attempt for a duplicate client request
     paymentStatus: 'pending',
     terminalCheckoutId: 'existing-checkout',
   });
+});
+
+test('repairs a lost card response with one durable provider idempotency key and never inserts another payment', async () => {
+  const payment = { id: 'payment-1', provider: 'square', status: 'pending', providerTxnId: null };
+  prisma.shopOrder.findFirst = async () => ({
+    id: 'existing-order',
+    userId: 'kiosk-user',
+    kioskOrderNumber: 'K-008',
+    grandTotal: 18,
+    currency: 'USD',
+    orderStatus: { status: 'pending' },
+    payments: [payment],
+  });
+  let providerCalls = 0;
+  let paymentCreates = 0;
+  paymentGateway.createPayment = async (request) => {
+    providerCalls += 1;
+    assert.equal(request.idempotencyKey, 'kiosk-existing-order');
+    assert.equal(request.gatewayOverride, 'square');
+    return { gateway: 'square', paymentId: 'square-payment-1', status: 'captured' };
+  };
+  prisma.payment.create = async () => {
+    paymentCreates += 1;
+    assert.fail('an existing pending payment must be repaired, not duplicated');
+  };
+  prisma.payment.update = async ({ data }) => Object.assign(payment, data);
+
+  const cardInput = { ...input, paymentMethod: 'card', squareNonce: 'card-nonce' };
+  const first = await createKioskOrder('kiosk-device-1', cardInput);
+  const second = await createKioskOrder('kiosk-device-1', cardInput);
+
+  assert.equal(first.paymentStatus, 'paid');
+  assert.equal(second.paymentStatus, 'paid');
+  assert.equal(providerCalls, 1);
+  assert.equal(paymentCreates, 0);
 });
 
 test('retries a lost Terminal response with the same durable Square request ID', async () => {

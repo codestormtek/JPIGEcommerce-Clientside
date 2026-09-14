@@ -23,8 +23,10 @@ const AUTO_CANCEL_THRESHOLD_MS = parseInt(
 );
 
 /**
- * Cancels any pending orders older than AUTO_CANCEL_THRESHOLD_MS that have no
- * authorized or captured payment. Runs every 5 minutes via cron.
+ * Cancels only ordinary local pending orders. Kiosk, remote pickup and event
+ * QR orders may have an in-flight provider request whose response/webhook is
+ * delayed; only their authoritative reconciliation paths may cancel them.
+ * Runs every 5 minutes via cron.
  */
 export async function autoCancelSweeper(): Promise<void> {
   const cutoff = new Date(Date.now() - AUTO_CANCEL_THRESHOLD_MS);
@@ -41,6 +43,7 @@ export async function autoCancelSweeper(): Promise<void> {
     where: {
       orderDate: { lt: cutoff },
       orderStatus: { status: 'pending' },
+      orderType: { notIn: ['kiosk', 'remote_pickup', 'event_qr'] },
       payments: {
         none: { status: { in: ['authorized', 'captured'] } },
       },
@@ -55,10 +58,22 @@ export async function autoCancelSweeper(): Promise<void> {
   for (const order of staleOrders) {
     try {
       await prisma.$transaction(async (tx) => {
+        // Re-read inside the transaction so a payment capture or staff status
+        // change after the sweep query cannot be overwritten with "cancelled".
+        const current = await tx.shopOrder.findUnique({
+          where: { id: order.id },
+          include: { orderStatus: true, payments: { select: { status: true } } },
+        });
+        if (
+          !current
+          || current.orderStatus.status !== 'pending'
+          || ['kiosk', 'remote_pickup', 'event_qr'].includes(current.orderType)
+          || current.payments.some((payment) => ['authorized', 'captured'].includes(payment.status))
+        ) return;
         await tx.orderStatusHistory.create({
           data: {
             orderId: order.id,
-            oldStatusId: order.orderStatusId,
+            oldStatusId: current.orderStatusId,
             newStatusId: cancelledStatus.id,
             changedAt: new Date(),
             changedByUserId: null,

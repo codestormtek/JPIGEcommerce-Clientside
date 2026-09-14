@@ -18,6 +18,8 @@ import {
   flushKioskAnalyticsEvents,
   getKioskToken,
   placeKioskOrder,
+  clearKioskPaymentAttempt,
+  readKioskPaymentAttempt,
   sendKioskAnalyticsEvent,
   sendHeartbeat,
   setKioskToken,
@@ -229,7 +231,10 @@ export default function KioskPage() {
         await loadMenu();
         loadConfig();
         loadCampaigns();
-        setScreen(params.get("start") === "menu" ? "menu" : "attract");
+        // A durable unresolved payment attempt always wins over navigation or
+        // idle state. PayScreen will reconcile it before permitting another
+        // checkout.
+        setScreen(readKioskPaymentAttempt() ? "pay" : (params.get("start") === "menu" ? "menu" : "attract"));
       } catch (e) {
         if (e instanceof KioskApiError && e.status === 401) {
           clearKioskToken();
@@ -537,9 +542,11 @@ export default function KioskPage() {
       });
     }
     setOrderNumber(result.kioskOrderNumber);
-    clearAndroidPaymentLockIfSafe();
+    if (!clearAndroidPaymentLockIfSafe()) return false;
+    clearKioskPaymentAttempt();
     setScreen("confirm");
     loadMenu().catch(() => {}); // refresh stock after sale
+    return true;
   };
 
   const handleConfirmDone = () => {

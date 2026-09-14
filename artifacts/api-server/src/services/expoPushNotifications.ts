@@ -2,7 +2,10 @@ import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { logger } from '../utils/logger';
 
-export type StaffPushEventType = 'kiosk_order_captured' | 'kiosk_order_ready';
+export type StaffPushEventType =
+  | 'kiosk_order_captured' | 'kiosk_order_ready'
+  | 'event_qr_order_captured' | 'event_qr_order_ready'
+  | 'remote_pickup_order_captured' | 'remote_pickup_order_ready';
 const MAX_ATTEMPTS = 6;
 const LEASE_MS = 60_000;
 const RECEIPT_DELAY_MS = 20_000;
@@ -11,6 +14,10 @@ let worker: NodeJS.Timeout | undefined;
 const eventConfig: Record<StaffPushEventType, { audience: 'kitchen' | 'cashier'; title: string }> = {
   kiosk_order_captured: { audience: 'kitchen', title: 'New kiosk order' },
   kiosk_order_ready: { audience: 'cashier', title: 'Order ready' },
+  event_qr_order_captured: { audience: 'kitchen', title: 'New event QR order' },
+  event_qr_order_ready: { audience: 'cashier', title: 'Event QR order ready' },
+  remote_pickup_order_captured: { audience: 'kitchen', title: 'New remote pickup' },
+  remote_pickup_order_ready: { audience: 'cashier', title: 'Remote pickup ready' },
 };
 
 const retryAt = (attempt: number) => new Date(Date.now() + Math.min(15 * 60_000, 5_000 * 2 ** Math.min(attempt, 7)));
@@ -245,18 +252,25 @@ async function pollReceipts() {
 }
 
 async function reconcileMissingEvents() {
-  const captured = await prisma.shopOrder.findMany({
-    where: { orderType: 'kiosk', payments: { some: { status: { in: ['captured', 'partially_refunded'] } } }, pushNotificationEvents: { none: { eventType: 'kiosk_order_captured' } } },
-    take: 25, select: { id: true },
-  });
-  const ready = await prisma.shopOrder.findMany({
-    where: { orderType: 'kiosk', orderStatus: { status: 'ready_to_ship' }, payments: { some: { status: { in: ['captured', 'partially_refunded'] } } }, pushNotificationEvents: { none: { eventType: 'kiosk_order_ready' } } },
-    take: 25, select: { id: true },
-  });
-  await Promise.all([
-    ...captured.map((order) => enqueueStaffOrderPush(order.id, 'kiosk_order_captured')),
-    ...ready.map((order) => enqueueStaffOrderPush(order.id, 'kiosk_order_ready')),
-  ]);
+  const channels = ['kiosk', 'event_qr', 'remote_pickup'] as const;
+  await Promise.all(channels.flatMap(async (channel) => {
+    const capturedEvent = `${channel}_order_captured` as StaffPushEventType;
+    const readyEvent = `${channel}_order_ready` as StaffPushEventType;
+    const [captured, ready] = await Promise.all([
+      prisma.shopOrder.findMany({
+        where: { orderType: channel, payments: { some: { status: { in: ['captured', 'partially_refunded'] } } }, pushNotificationEvents: { none: { eventType: capturedEvent } } },
+        take: 25, select: { id: true },
+      }),
+      prisma.shopOrder.findMany({
+        where: { orderType: channel, orderStatus: { status: 'ready_to_ship' }, payments: { some: { status: { in: ['captured', 'partially_refunded'] } } }, pushNotificationEvents: { none: { eventType: readyEvent } } },
+        take: 25, select: { id: true },
+      }),
+    ]);
+    await Promise.all([
+      ...captured.map((order) => enqueueStaffOrderPush(order.id, capturedEvent)),
+      ...ready.map((order) => enqueueStaffOrderPush(order.id, readyEvent)),
+    ]);
+  }));
 }
 
 export async function runExpoPushOutboxOnce(): Promise<void> {

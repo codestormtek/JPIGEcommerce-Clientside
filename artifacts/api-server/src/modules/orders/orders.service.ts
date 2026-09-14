@@ -8,7 +8,6 @@ import { normalizePhone } from '../../lib/phone';
 import { config } from '../../config';
 import * as repo from './orders.repository';
 import * as userRepo from '../users/users.repository';
-import * as paymentRepo from '../payments/payments.repository';
 import * as stripeService from '../../services/stripeService';
 import * as paymentGateway from '../../services/paymentGateway';
 import { validateCoupon, redeemCoupon } from '../promotions/promotions.service';
@@ -19,6 +18,7 @@ import { resolveOrderSmsRecipient, sendOrderStatusSms } from './orderSms';
 import { sendNewOrderStoreAlerts } from '../order-notifications/order-notifications.service';
 import prisma from '../../lib/prisma';
 import { enqueueStaffOrderPush } from '../../services/expoPushNotifications';
+import { enqueueCapturedOrderKitchenTickets } from '../cloudprnt/cloudprnt.service';
 
 // ─── User-facing ──────────────────────────────────────────────────────────────
 
@@ -136,7 +136,12 @@ export async function trackOrder(input: TrackOrderInput) {
 
 export async function checkout(
   userId: string,
-  input: CheckoutInput & { kioskDeviceId?: string; kioskRequestId?: string },
+  input: CheckoutInput & {
+    kioskDeviceId?: string;
+    kioskRequestId?: string;
+    /** Kiosk/pickup callers create this durable attempt atomically with stock. */
+    pendingPaymentProvider?: string;
+  },
   ctx?: AuditContext,
 ) {
   try {
@@ -197,8 +202,22 @@ export async function checkout(
       discountTotal += couponResult.discountAmount;
     }
 
-    // ── Step 2: Create the order in the database ──────────────────────────────
-    const order = await repo.placeOrder(userId, input, taxTotal, discountTotal);
+    // ── Step 2: Atomically create the order, pending payment and stock hold ──
+    // The provider is selected before the transaction so the local attempt
+    // exists before a customer-facing payment request can be sent.
+    const pendingPaymentProvider = input.pendingPaymentProvider
+      ?? (input.squareNonce || input.paymentMethodTokenId
+        ? await paymentGateway.getActiveGateway()
+        : undefined);
+    const order = await repo.placeOrder(
+      userId,
+      input,
+      taxTotal,
+      discountTotal,
+      pendingPaymentProvider
+        ? { provider: pendingPaymentProvider }
+        : undefined,
+    );
 
     // ── Step 2b: Record coupon redemption (fire-and-forget, non-blocking) ─────
     if (input.couponCode) {
@@ -232,19 +251,28 @@ export async function checkout(
         metadata: { orderId: order.id, userId },
         taxCalculationId: taxCalculationId || undefined, // Stripe-only: links Stripe Tax calculation for reporting
         idempotencyKey: order.orderType === 'kiosk' ? `kiosk-${order.id}` : undefined,
+        gatewayOverride: pendingPaymentProvider as paymentGateway.GatewayName | undefined,
       });
       checkoutPaymentStatus = gatewayResult.status;
 
-      const payment = await paymentRepo.createPayment({
-        orderId: order.id,
-        paymentMethodTokenId,
-        provider: gatewayResult.gateway, // gatewayName: stripe | square
-        amount: Number(order.grandTotal),
-        status: gatewayResult.status,
-        providerTxnId: gatewayResult.paymentId,
-        authorizedAt: gatewayResult.status === 'authorized' || gatewayResult.status === 'captured'
-          ? new Date()
-          : undefined,
+      const payment = order.payments.find((candidate) => candidate.status === 'pending');
+      if (!payment) {
+        throw new Error('The checkout payment reservation is missing');
+      }
+      if (payment.provider !== gatewayResult.gateway) {
+        throw new Error('The checkout payment gateway changed during this attempt');
+      }
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          paymentMethodTokenId: paymentMethodTokenId ?? null,
+          status: gatewayResult.status,
+          providerTxnId: gatewayResult.paymentId,
+          authorizedAt: gatewayResult.status === 'authorized' || gatewayResult.status === 'captured'
+            ? new Date()
+            : undefined,
+          capturedAt: gatewayResult.status === 'captured' ? new Date() : undefined,
+        },
       });
       if (order.orderType === 'kiosk' && gatewayResult.status === 'authorized') {
         const captured = await paymentGateway.capturePayment(
@@ -262,9 +290,16 @@ export async function checkout(
           });
         }
       }
-      if (order.orderType === 'kiosk' && checkoutPaymentStatus === 'captured') {
-        enqueueStaffOrderPush(order.id, 'kiosk_order_captured').catch((err: unknown) =>
-          logger.warn('Failed to enqueue captured kiosk push', { orderId: order.id, paymentId: payment.id, err }),
+      if (['kiosk', 'event_qr', 'remote_pickup'].includes(order.orderType) && checkoutPaymentStatus === 'captured') {
+        const eventType = `${order.orderType}_order_captured` as
+          | 'kiosk_order_captured' | 'event_qr_order_captured' | 'remote_pickup_order_captured';
+        enqueueStaffOrderPush(order.id, eventType).catch((err: unknown) =>
+          logger.warn('Failed to enqueue captured pickup push', { orderId: order.id, paymentId: payment.id, err }),
+        );
+      }
+      if (checkoutPaymentStatus === 'captured') {
+        enqueueCapturedOrderKitchenTickets(order.id).catch((err: unknown) =>
+          logger.warn('Failed to enqueue captured order kitchen tickets', { orderId: order.id, err }),
         );
       }
     }

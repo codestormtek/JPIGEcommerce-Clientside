@@ -1,6 +1,14 @@
 // Kiosk device API client — authenticates with X-Kiosk-Token (stored on-device).
 
 const TOKEN_KEY = "kiosk_device_token";
+const PAYMENT_ATTEMPT_KEY = "jpig_kiosk_payment_attempt_v1";
+
+export type KioskPaymentAttempt = {
+  clientRequestId: string;
+  paymentMethod: "terminal" | "card";
+  orderId?: string;
+  grandTotal?: number;
+};
 
 export function getKioskToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -13,6 +21,54 @@ export function setKioskToken(token: string) {
 
 export function clearKioskToken() {
   localStorage.removeItem(TOKEN_KEY);
+}
+
+/**
+ * This is a financial safety lock, not a cache: it is written synchronously
+ * before a payment request and only removed after an authoritative outcome.
+ * It intentionally contains no card nonce or customer data.
+ */
+export function beginKioskPaymentAttempt(
+  paymentMethod: KioskPaymentAttempt["paymentMethod"],
+): KioskPaymentAttempt {
+  const attempt: KioskPaymentAttempt = {
+    clientRequestId: crypto.randomUUID(),
+    paymentMethod,
+  };
+  localStorage.setItem(PAYMENT_ATTEMPT_KEY, JSON.stringify(attempt));
+  const persisted = readKioskPaymentAttempt();
+  if (!persisted || persisted.clientRequestId !== attempt.clientRequestId) {
+    throw new Error("Payment recovery could not be saved on this kiosk.");
+  }
+  return persisted;
+}
+
+export function readKioskPaymentAttempt(): KioskPaymentAttempt | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = JSON.parse(localStorage.getItem(PAYMENT_ATTEMPT_KEY) ?? "null");
+    return value
+      && typeof value.clientRequestId === "string"
+      && (value.paymentMethod === "terminal" || value.paymentMethod === "card")
+      ? value
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveKioskPaymentAttemptOrder(order: KioskOrderResult): void {
+  const attempt = readKioskPaymentAttempt();
+  if (!attempt) throw new Error("Payment recovery record is missing.");
+  localStorage.setItem(PAYMENT_ATTEMPT_KEY, JSON.stringify({
+    ...attempt,
+    orderId: order.orderId,
+    grandTotal: order.grandTotal,
+  }));
+}
+
+export function clearKioskPaymentAttempt(): void {
+  if (typeof window !== "undefined") localStorage.removeItem(PAYMENT_ATTEMPT_KEY);
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -106,7 +162,7 @@ export interface KioskOrderResult {
   orderId: string;
   kioskOrderNumber: string | null;
   grandTotal: number;
-  paymentStatus: "pending" | "paid";
+  paymentStatus: "pending" | "paid" | "canceled";
   terminalCheckoutId: string | null;
 }
 
@@ -382,6 +438,12 @@ export function placeKioskOrder(input: {
 
 export function fetchKioskPaymentStatus(orderId: string): Promise<KioskPaymentStatus> {
   return kioskFetch<KioskPaymentStatus>(`/orders/${orderId}/payment`);
+}
+
+export function recoverKioskPaymentAttempt(clientRequestId: string): Promise<
+  { found: false } | ({ found: true } & KioskOrderResult)
+> {
+  return kioskFetch(`/orders/attempt/${encodeURIComponent(clientRequestId)}`);
 }
 
 export function cancelKioskPayment(orderId: string): Promise<{ canceled: boolean }> {

@@ -12,6 +12,7 @@ import { reconcileCompletedKioskTerminalPayment } from '../../services/kioskTerm
 import { enqueueStaffOrderPush } from '../../services/expoPushNotifications';
 import * as paymentGateway from '../../services/paymentGateway';
 import { checkout } from '../orders/orders.service';
+import { enqueueCapturedOrderKitchenTickets } from '../cloudprnt/cloudprnt.service';
 import { hashKioskToken, invalidateKioskDeviceCache } from './kiosk.middleware';
 import {
   KioskOrderInput,
@@ -206,7 +207,17 @@ export async function resolveComboSides(lines: KioskOrderInput['lines']) {
           isDeleted: false,
           visibility: { in: ['kiosk', 'both'] },
         },
-        include: { categoryMaps: true },
+        include: {
+          categoryMaps: true,
+          // A side is a product selection, but inventory is held at SKU level.
+          // Select a deterministic sellable SKU now; the transaction performs
+          // the authoritative conditional reservation later.
+          items: {
+            where: { isPublished: true, qtyInStock: { gt: 0 } },
+            orderBy: { price: 'asc' },
+            select: { id: true },
+          },
+        },
       })
     : [];
   const sideMap = new Map(sideProducts.map((p) => [p.id, p]));
@@ -239,6 +250,11 @@ export async function resolveComboSides(lines: KioskOrderInput['lines']) {
         }
         return side.name;
       });
+      const sideProductItemIds = wanted.map((sid) => {
+        const itemId = sideMap.get(sid)?.items[0]?.id;
+        if (!itemId) throw ApiError.badRequest('One of the chosen sides is no longer available.');
+        return itemId;
+      });
 
       // Duplicate premium sides: each pick of the same side beyond the first
       // adds that side's upcharge to the combo's per-unit price.
@@ -262,6 +278,7 @@ export async function resolveComboSides(lines: KioskOrderInput['lines']) {
         productItemId: l.productItemId,
         qty: l.qty,
         sidesText,
+        sideProductItemIds,
         ...(sideUpcharge > 0 ? { sideUpcharge } : {}),
       };
     }
@@ -293,25 +310,34 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
       );
     }
     let existingPayment = existingOrder.payments[0];
-    if (!existingPayment && input.paymentMethod === 'card' && input.squareNonce) {
+    // A pending row with no provider ID means the local transaction committed
+    // but the provider response was lost. Replay only this durable attempt,
+    // using its order-derived idempotency key; never create another payment
+    // row or a new order for the same client request ID.
+    if (
+      existingPayment?.status === 'pending'
+      && !existingPayment.providerTxnId
+      && input.paymentMethod === 'card'
+      && input.squareNonce
+    ) {
       let resumed = await paymentGateway.createPayment({
         amountCents: Math.round(Number(existingOrder.grandTotal) * 100),
         currency: existingOrder.currency,
         sourceId: input.squareNonce,
         metadata: { orderId: existingOrder.id, userId: existingOrder.userId },
         idempotencyKey: `kiosk-${existingOrder.id}`,
+        gatewayOverride: existingPayment.provider as paymentGateway.GatewayName,
       });
-      existingPayment = await prisma.payment.create({
+      existingPayment = await prisma.payment.update({
+        where: { id: existingPayment.id },
         data: {
-          orderId: existingOrder.id,
-          provider: resumed.gateway,
-          amount: Number(existingOrder.grandTotal),
           status: resumed.status,
           providerTxnId: resumed.paymentId,
           authorizedAt:
             resumed.status === 'authorized' || resumed.status === 'captured'
               ? new Date()
               : undefined,
+          capturedAt: resumed.status === 'captured' ? new Date() : undefined,
         },
       });
       if (resumed.status === 'authorized') {
@@ -328,6 +354,9 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
     if (existingPayment?.status === 'captured') {
       void enqueueStaffOrderPush(existingOrder.id, 'kiosk_order_captured').catch((error) =>
         logger.warn(`Failed to repair captured kiosk push for order ${existingOrder.id}: ${error}`),
+      );
+      void enqueueCapturedOrderKitchenTickets(existingOrder.id).catch((error) =>
+        logger.warn(`Failed to repair captured kitchen ticket for order ${existingOrder.id}: ${error}`),
       );
     }
     return {
@@ -418,31 +447,62 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
   }
 
   const user = await getKioskSystemUser();
+  // The pending payment is written in the same transaction as the order and
+  // inventory reservation, before any call can reach a card network.
+  const pendingPaymentProvider = input.paymentMethod === 'terminal'
+    ? 'square_terminal'
+    : await paymentGateway.getActiveGateway();
 
   // Pickup orders have no shipping — the "billing" address slot carries the
   // customer's name/phone for the order ticket. Placeholder locality values
   // satisfy the shared order schema; they are never used for fulfillment.
-  const order = await checkout(user.id, {
-    lines: linesWithSides,
-    addresses: [
-      {
-        addressType: 'billing',
-        fullName: input.customerName,
-        phone: input.customerPhone,
-        addressLine1: 'In-Store Kiosk Order',
-        city: process.env.STORE_SHIP_CITY ?? 'In-Store',
-        postalCode: process.env.STORE_SHIP_ZIP ?? '00000',
-        countryName: 'United States',
-        countryIso2: 'US',
-      },
-    ],
-    currency: 'USD',
-    orderType: 'kiosk',
-    specialInstructions: input.specialInstructions,
-    squareNonce: input.paymentMethod === 'card' ? input.squareNonce : undefined,
-    kioskDeviceId: deviceId,
-    kioskRequestId: input.clientRequestId,
-  });
+  let order: Awaited<ReturnType<typeof checkout>>;
+  try {
+    order = await checkout(user.id, {
+      lines: linesWithSides,
+      addresses: [
+        {
+          addressType: 'billing',
+          fullName: input.customerName,
+          phone: input.customerPhone,
+          addressLine1: 'In-Store Kiosk Order',
+          city: process.env.STORE_SHIP_CITY ?? 'In-Store',
+          postalCode: process.env.STORE_SHIP_ZIP ?? '00000',
+          countryName: 'United States',
+          countryIso2: 'US',
+        },
+      ],
+      currency: 'USD',
+      orderType: 'kiosk',
+      specialInstructions: input.specialInstructions,
+      squareNonce: input.paymentMethod === 'card' ? input.squareNonce : undefined,
+      kioskDeviceId: deviceId,
+      kioskRequestId: input.clientRequestId,
+      pendingPaymentProvider,
+    });
+  } catch (error: any) {
+    // The unique device/request key is the concurrency boundary. If another
+    // request won the insert, load that one rather than ever charging again.
+    if (error?.code === 'P2002') return createKioskOrder(deviceId, input);
+    throw error;
+  }
+
+  // The gateway returned an authoritative decline/cancellation, not a network
+  // error. Terminally close this reservation now; polling must not keep side
+  // SKU stock held after Square has definitively rejected the card.
+  if (
+    input.paymentMethod === 'card'
+    && ['failed', 'canceled'].includes(order.checkoutPaymentStatus ?? '')
+  ) {
+    await voidUnpaidKioskOrder(order.id);
+    return {
+      orderId: order.id,
+      kioskOrderNumber: order.kioskOrderNumber,
+      grandTotal: Number(order.grandTotal),
+      paymentStatus: 'canceled' as const,
+      terminalCheckoutId: null,
+    };
+  }
 
   let terminalCheckoutId: string | null = null;
 
@@ -525,14 +585,11 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
         );
       }
 
-      const payment = await prisma.payment.create({
-        data: {
-          orderId: order.id,
-          provider: 'square_terminal',
-          amount: Number(order.grandTotal),
-          status: 'pending',
-          providerTxnId: `order:${squareOrderId}`,
-        },
+      const payment = order.payments.find((candidate) => candidate.provider === 'square_terminal');
+      if (!payment) throw new Error('Kiosk terminal payment reservation is missing');
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { providerTxnId: `order:${squareOrderId}` },
       });
 
       const createTerminalCheckout = () =>
@@ -615,6 +672,14 @@ async function voidUnpaidKioskOrder(orderId: string) {
       where: { status: { in: ['cancelled', 'canceled'], mode: 'insensitive' } },
     });
 
+    // Every caller of this helper has either received an authoritative terminal
+    // cancellation/failure or proved no terminal checkout was ever attempted.
+    // Mark any local reservation terminal before returning stock.
+    await tx.payment.updateMany({
+      where: { orderId, status: 'pending' },
+      data: { status: 'canceled' },
+    });
+
     // Always pass through the shared durable restock helper, even if a prior
     // crash already set the canceled status. This repairs incomplete legacy
     // state without ever incrementing inventory twice.
@@ -640,6 +705,40 @@ function parseTerminalCheckoutId(providerTxnId: string | null): string | null {
   return providerTxnId.startsWith('checkout:')
     ? providerTxnId.slice('checkout:'.length)
     : providerTxnId; // Backward compatibility for existing checkout IDs.
+}
+
+/**
+ * Recovery lookup for a browser that persisted its request ID before sending
+ * but reloaded before it received the order response. The request ID is an
+ * unguessable UUID scoped to the authenticated kiosk device; this endpoint
+ * only observes an existing attempt and never starts or replays a charge.
+ */
+export async function recoverKioskPaymentAttempt(deviceId: string, clientRequestId: string) {
+  const order = await prisma.shopOrder.findFirst({
+    where: { kioskDeviceId: deviceId, kioskRequestId: clientRequestId },
+    select: { id: true },
+  });
+  if (!order) return { found: false as const };
+
+  const status = await getKioskPaymentStatus(deviceId, order.id);
+  const current = await prisma.shopOrder.findUnique({
+    where: { id: order.id },
+    include: { payments: { orderBy: { createdAt: 'desc' }, take: 1 } },
+  });
+  if (!current) return { found: false as const };
+  const payment = current.payments[0];
+  return {
+    found: true as const,
+    orderId: current.id,
+    kioskOrderNumber: current.kioskOrderNumber,
+    grandTotal: Number(current.grandTotal),
+    paymentStatus: status.status === 'paid'
+      ? 'paid' as const
+      : status.status === 'canceled'
+        ? 'canceled' as const
+        : 'pending' as const,
+    terminalCheckoutId: parseTerminalCheckoutId(payment?.providerTxnId ?? null),
+  };
 }
 
 async function recoverTerminalCheckoutId(
@@ -700,20 +799,27 @@ export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
         payment.provider as paymentGateway.GatewayName,
       );
     }
-    if (live.status !== payment.status) {
-      await prisma.payment.update({
-        where: { id: payment.id },
-        data: { status: live.status },
-      });
-    }
     if (live.status === 'captured') {
+      // A delayed provider result must never overwrite a locally finalized
+      // cancellation. Only the still-pending reservation may advance.
+      await prisma.payment.updateMany({
+        where: { id: payment.id, status: 'pending' },
+        data: { status: 'captured', capturedAt: new Date() },
+      });
       void enqueueStaffOrderPush(orderId, 'kiosk_order_captured').catch((error) =>
         logger.warn(`Failed to enqueue captured kiosk push for order ${orderId}: ${error}`),
+      );
+      void enqueueCapturedOrderKitchenTickets(orderId).catch((error) =>
+        logger.warn(`Failed to enqueue captured kitchen ticket for order ${orderId}: ${error}`),
       );
       return { status: 'paid' as const };
     }
     if (live.status === 'failed' || live.status === 'canceled') {
-      await voidUnpaidKioskOrder(orderId);
+      const transitioned = await prisma.payment.updateMany({
+        where: { id: payment.id, status: 'pending' },
+        data: { status: live.status },
+      });
+      if (transitioned.count === 1) await voidUnpaidKioskOrder(orderId);
       return { status: 'canceled' as const };
     }
     return { status: 'pending' as const };
@@ -744,6 +850,9 @@ export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
   if (checkoutStatus === 'COMPLETED') {
     const squarePaymentId = resp.checkout?.paymentIds?.[0];
     await reconcileCompletedKioskTerminalPayment(payment.id, orderId, squarePaymentId);
+    void enqueueCapturedOrderKitchenTickets(orderId).catch((error) =>
+      logger.warn(`Failed to enqueue captured kitchen ticket for order ${orderId}: ${error}`),
+    );
     logger.info(`Kiosk terminal payment captured for order ${orderId}`);
     return { status: 'paid' as const };
   }

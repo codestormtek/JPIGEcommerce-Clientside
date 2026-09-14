@@ -89,6 +89,9 @@ kioskRouter.post('/orders', ...kioskLimiters, authenticateKiosk, kioskOrderLimit
 // GET    /api/v1/kiosk/orders/:id/status
 kioskRouter.get('/orders/:id/status', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.getOrderStatus));
 
+// GET /api/v1/kiosk/orders/attempt/:clientRequestId — reload-safe lookup only.
+kioskRouter.get('/orders/attempt/:clientRequestId', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.recoverPaymentAttempt));
+
 // POST   /api/v1/kiosk/heartbeat
 kioskRouter.post('/heartbeat', ...kioskLimiters, authenticateKiosk, asyncHandler(ctrl.heartbeat));
 

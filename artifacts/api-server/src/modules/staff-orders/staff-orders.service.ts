@@ -11,6 +11,7 @@ import {
 
 const paidStatuses = ['captured', 'partially_refunded'];
 const activeDatabaseStatuses = ['pending', 'confirmed', 'processing', 'ready_to_ship'];
+const pickupChannels = ['kiosk', 'event_qr', 'remote_pickup'];
 
 const staffOrderInclude = {
   user: { select: { firstName: true, lastName: true, emailAddress: true } },
@@ -55,7 +56,12 @@ function orderDto(order: any) {
     ?? ([order.user.firstName, order.user.lastName].filter(Boolean).join(' ') || null);
   return {
     id: order.id,
-    orderNumber: order.kioskOrderNumber,
+    orderNumber: order.kioskOrderNumber ?? `ORD-${order.id.slice(0, 8).toUpperCase()}`,
+    channel: order.orderType,
+    channelLabel: order.orderType === 'event_qr' ? 'Event QR'
+      : order.orderType === 'remote_pickup' ? 'Remote pickup' : 'Kiosk',
+    pickupAt: order.requestedFulfillmentAt,
+    locationLabel: order.eventName,
     customerName,
     customerPhone: billing?.phone ?? null,
     customerEmail: billing?.email ?? order.user.emailAddress ?? null,
@@ -97,7 +103,7 @@ function orderDto(order: any) {
 }
 
 const actionableWhere = {
-  orderType: 'kiosk',
+  orderType: { in: pickupChannels },
   payments: { some: { status: { in: paidStatuses } } },
 };
 
@@ -136,7 +142,7 @@ export async function getStaffOrder(orderId: string) {
     where: { id: orderId, ...actionableWhere },
     include: staffOrderInclude,
   });
-  if (!order) throw ApiError.notFound('Paid kiosk order');
+  if (!order) throw ApiError.notFound('Paid pickup order');
   return orderDto(order);
 }
 
@@ -162,7 +168,7 @@ export async function getStaffOrderDashboard() {
 
 const transitions = {
   processing: { allowed: ['pending', 'confirmed'], eventType: null },
-  ready_to_ship: { allowed: ['processing'], eventType: 'kiosk_order_ready' as const },
+  ready_to_ship: { allowed: ['processing'], eventType: 'ready' as const },
   delivered: { allowed: ['ready_to_ship'], eventType: null },
 };
 
@@ -178,7 +184,7 @@ export async function transitionStaffOrder(
       where: { id: orderId },
       include: { orderStatus: true },
     });
-    if (!order || order.orderType !== 'kiosk') throw ApiError.notFound('Kiosk order');
+    if (!order || !pickupChannels.includes(order.orderType)) throw ApiError.notFound('Pickup order');
     const paid = await tx.payment.findFirst({
       where: { orderId, status: { in: paidStatuses } },
       select: { id: true },
@@ -219,7 +225,9 @@ export async function transitionStaffOrder(
   }
   const eventType = transitions[target].eventType;
   if (eventType) {
-    enqueueStaffOrderPush(orderId, eventType).catch((error) =>
+    const channelEvent = `${(await prisma.shopOrder.findUniqueOrThrow({ where: { id: orderId }, select: { orderType: true } })).orderType}_order_ready` as
+      | 'kiosk_order_ready' | 'event_qr_order_ready' | 'remote_pickup_order_ready';
+    enqueueStaffOrderPush(orderId, channelEvent).catch((error) =>
       logger.warn('Failed to enqueue staff order push', { orderId, eventType, error }),
     );
   }

@@ -507,6 +507,11 @@ model ShopOrder {
   kioskOrderNumber       String?         // short callable number for kiosk pickup orders, e.g. K-047
   kioskDeviceId          String?
   kioskRequestId         String?         // client-generated idempotency key for a kiosk payment attempt
+  remotePickupRequestId  String?         @unique // durable public pickup checkout idempotency key
+  // Exact SKU quantities decremented when this order was reserved. This is
+  // intentionally independent of visible order lines because combo sides can
+  // consume SKUs that are not represented as standalone lines.
+  inventoryReservationJson Json?
   kioskDevice            KioskDevice?    @relation(fields: [kioskDeviceId], references: [id])
   fulfillmentType        String?
   requestedFulfillmentAt DateTime?
@@ -527,9 +532,62 @@ model ShopOrder {
   convertedCateringQuote  CateringQuote?
   inventoryRestoration    InventoryRestoration?
   pushNotificationEvents  PushNotificationEvent[]
+  cloudPrntJobs          CloudPrntJob[]
 
   @@unique([kioskDeviceId, kioskRequestId])
   @@map("shop_orders")
+}
+
+/// Star CloudPRNT printers poll the public API over HTTPS. Only a SHA-256
+/// credential hash is retained; the generated printer secret is reveal-once.
+model CloudPrntPrinter {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  tokenHash   String   @unique
+  isActive    Boolean  @default(true)
+  lastSeenAt  DateTime?
+  printerMac  String?
+  printerModel String?
+  firmwareVersion String?
+  status      String   @default("offline") // offline|online|error
+  lastError   String?
+
+  jobs        CloudPrntJob[]
+
+  @@index([isActive, lastSeenAt])
+  @@map("cloudprnt_printers")
+}
+
+/// Durable kitchen ticket delivery state. A ticket is never automatically
+/// replayed after it has been fetched without an acknowledgement: doing so
+/// could duplicate a physical ticket. Staff must choose an explicit reprint.
+model CloudPrntJob {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  printerId   String
+  printer     CloudPrntPrinter @relation(fields: [printerId], references: [id], onDelete: Restrict)
+  orderId     String?
+  order       ShopOrder? @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  originalJobId String?
+  originalJob CloudPrntJob? @relation("CloudPrntReprints", fields: [originalJobId], references: [id], onDelete: Restrict)
+  reprints    CloudPrntJob[] @relation("CloudPrntReprints")
+  dedupeKey   String?  @unique
+  ticketKind  String   @default("order") // order|test|reprint
+  contentType String   @default("text/plain")
+  payloadText String
+  status      String   @default("queued") // queued|delivering|printed|error|cancelled
+  attemptCount Int     @default(0)
+  fetchedAt   DateTime?
+  acknowledgedAt DateTime?
+  printedAt   DateTime?
+  lastError   String?
+
+  @@index([printerId, status, createdAt])
+  @@index([orderId])
+  @@map("cloudprnt_jobs")
 }
 
 model ExpoPushToken {
@@ -2373,4 +2431,31 @@ model KioskCampaignProduct {
 
   @@id([campaignId, productId])
   @@map("kiosk_campaign_products")
+}
+model SmartLink {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  title       String
+  slug        String   @unique
+  targetUrl   String
+  fallbackUrl String?
+  isArchived  Boolean  @default(false)
+  archivedAt  DateTime?
+  visits      SmartLinkVisit[]
+
+  @@index([isArchived, createdAt])
+  @@map("smart_links")
+}
+
+model SmartLinkVisit {
+  id          String    @id @default(uuid())
+  smartLinkId String
+  smartLink   SmartLink @relation(fields: [smartLinkId], references: [id], onDelete: Restrict)
+  occurredAt  DateTime  @default(now())
+  sourceHost  String?
+
+  @@index([smartLinkId, occurredAt])
+  @@map("smart_link_visits")
 }

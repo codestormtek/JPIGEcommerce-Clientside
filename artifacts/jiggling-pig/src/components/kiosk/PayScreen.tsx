@@ -2,7 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { KioskCartLine, KioskConfig, KioskOrderResult } from "@/lib/kiosk";
-import { cancelKioskPayment, cartSubtotal, fetchKioskPaymentStatus, formatMoney } from "@/lib/kiosk";
+import {
+  beginKioskPaymentAttempt,
+  cancelKioskPayment,
+  cartSubtotal,
+  clearKioskPaymentAttempt,
+  fetchKioskPaymentStatus,
+  formatMoney,
+  readKioskPaymentAttempt,
+  recoverKioskPaymentAttempt,
+  saveKioskPaymentAttemptOrder,
+} from "@/lib/kiosk";
 
 interface Props {
   cart: KioskCartLine[];
@@ -11,9 +21,9 @@ interface Props {
   terminalOnly?: boolean;
   onBack: () => void;
   onPlaceOrder: (paymentMethod: "terminal" | "card", squareNonce: string | undefined, clientRequestId: string) => Promise<KioskOrderResult>;
-  onPaid: (result: KioskOrderResult) => void;
+  onPaid: (result: KioskOrderResult) => boolean | void;
   onCheckoutStarted: (paymentMethod: "terminal" | "card") => boolean;
-  onPaymentSafeToLeave?: () => void;
+  onPaymentSafeToLeave?: () => boolean;
   onCheckoutFailed: (
     paymentMethod: "terminal" | "card",
     failureCategory: "declined" | "cancelled" | "reader_unavailable" | "network" | "timeout" | "validation" | "unknown",
@@ -71,7 +81,11 @@ export default function PayScreen({
   onPaymentSafeToLeave,
   onCheckoutFailed,
 }: Props) {
-  const [mode, setMode] = useState<Mode>("choose");
+  // Start fail-closed so there is no one-render window in which a reloaded
+  // kiosk can tap a new payment button before recovery useEffect runs.
+  const [mode, setMode] = useState<Mode>(() =>
+    typeof window !== "undefined" && readKioskPaymentAttempt() ? "uncertain" : "choose",
+  );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cardReady, setCardReady] = useState(false);
@@ -81,14 +95,94 @@ export default function PayScreen({
   const cardRef = useRef<SquareCard | null>(null);
   const cardTokenRef = useRef<string | null>(null);
   const cancelledRef = useRef(false);
+  const restoredAttemptRef = useRef(false);
 
   const subtotal = cartSubtotal(cart);
+
+  const clearAttemptAfterAuthoritativeOutcome = useCallback(() => {
+    if (onPaymentSafeToLeave?.() === false) {
+      setMode("uncertain");
+      setError("The payment is resolved, but this kiosk could not safely clear its recovery lock. Please ask a staff member for help.");
+      return false;
+    }
+    clearKioskPaymentAttempt();
+    requestIdRef.current = null;
+    return true;
+  }, [onPaymentSafeToLeave]);
+
+  const completePaidAttempt = useCallback((order: KioskOrderResult) => {
+    if (onPaid(order) === false) {
+      setMode("uncertain");
+      setError("Payment is confirmed, but this kiosk could not clear its recovery lock. Please ask a staff member for help.");
+      return false;
+    }
+    return true;
+  }, [onPaid]);
+
+  // A reload must continue the existing attempt, not expose a fresh payment
+  // button. If the POST response was lost before its order ID arrived, use the
+  // device-authenticated, lookup-only recovery endpoint.
+  useEffect(() => {
+    if (restoredAttemptRef.current) return;
+    restoredAttemptRef.current = true;
+    const attempt = readKioskPaymentAttempt();
+    if (!attempt) return;
+    requestIdRef.current = attempt.clientRequestId;
+    cancelledRef.current = false;
+
+    const resume = async () => {
+      let order: KioskOrderResult | null = attempt.orderId
+        ? {
+            orderId: attempt.orderId,
+            kioskOrderNumber: null,
+            grandTotal: attempt.grandTotal ?? subtotal,
+            paymentStatus: "pending",
+            terminalCheckoutId: null,
+          }
+        : null;
+      if (!order) {
+        try {
+          const recovered = await recoverKioskPaymentAttempt(attempt.clientRequestId);
+          if (recovered.found) {
+            order = recovered;
+            saveKioskPaymentAttemptOrder(recovered);
+          }
+        } catch {
+          // Fail closed: an unavailable recovery API cannot prove no payment
+          // exists, so the lock remains and no new payment is offered.
+        }
+      }
+      if (!order) {
+        setMode("uncertain");
+        setError("The previous payment request is still being confirmed. Do not take another payment; please ask staff for help.");
+        return;
+      }
+      orderRef.current = order;
+      if (order.paymentStatus === "paid") {
+        completePaidAttempt(order);
+        return;
+      }
+      if (order.paymentStatus === "canceled") {
+        if (clearAttemptAfterAuthoritativeOutcome()) {
+          setMode("choose");
+          setError("Payment was canceled. Please try again.");
+        }
+        return;
+      }
+      setMode(attempt.paymentMethod === "terminal" ? "terminal-waiting" : "payment-waiting");
+    };
+    void resume();
+  // Recovery runs only once for this mounted checkout screen.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const startTerminal = async () => {
     setBusy(true);
     setError(null);
     try {
-      requestIdRef.current ??= crypto.randomUUID();
+      if (!requestIdRef.current) {
+        requestIdRef.current = beginKioskPaymentAttempt("terminal").clientRequestId;
+      }
       if (!onCheckoutStarted("terminal")) {
         onCheckoutFailed("terminal", "unknown");
         setMode("uncertain");
@@ -98,6 +192,7 @@ export default function PayScreen({
         return;
       }
       const result = await onPlaceOrder("terminal", undefined, requestIdRef.current);
+      saveKioskPaymentAttemptOrder(result);
       orderRef.current = result;
       cancelledRef.current = false;
       setMode("terminal-waiting");
@@ -125,15 +220,15 @@ export default function PayScreen({
         const st = await fetchKioskPaymentStatus(orderId);
         if (stopped) return;
         if (st.status === "paid") {
-          onPaid(orderRef.current!);
+          completePaidAttempt(orderRef.current!);
           return;
         }
         if (st.status === "canceled") {
           onCheckoutFailed(mode === "terminal-waiting" ? "terminal" : "card", "cancelled");
-          requestIdRef.current = null;
-          onPaymentSafeToLeave?.();
-          setMode("choose");
-          setError("Payment was canceled on the reader. Please try again.");
+          if (clearAttemptAfterAuthoritativeOutcome()) {
+            setMode("choose");
+            setError("Payment was canceled on the reader. Please try again.");
+          }
           return;
         }
       } catch {
@@ -147,17 +242,17 @@ export default function PayScreen({
             if (!result.canceled) {
               const status = await fetchKioskPaymentStatus(orderId);
               if (status.status === "paid") {
-                onPaid(orderRef.current!);
+                completePaidAttempt(orderRef.current!);
                 return;
               }
               if (status.status !== "canceled") throw new Error("Cancellation was not confirmed");
             }
             cancelledRef.current = true;
             orderRef.current = null;
-            requestIdRef.current = null;
-            onPaymentSafeToLeave?.();
-            setMode("choose");
-            setError("The card reader timed out. Please try again.");
+            if (clearAttemptAfterAuthoritativeOutcome()) {
+              setMode("choose");
+              setError("The card reader timed out. Please try again.");
+            }
           } catch {
             setError("The payment result could not be confirmed. Please ask a staff member for help before trying again.");
           }
@@ -175,7 +270,7 @@ export default function PayScreen({
       stopped = true;
       clearTimeout(timer);
     };
-  }, [mode, onPaid, onCheckoutFailed, onPaymentSafeToLeave]);
+  }, [mode, onCheckoutFailed, clearAttemptAfterAuthoritativeOutcome, completePaidAttempt]);
 
   const cancelTerminal = async () => {
     const orderId = orderRef.current?.orderId;
@@ -191,17 +286,17 @@ export default function PayScreen({
       if (!result.canceled) {
         const status = await fetchKioskPaymentStatus(orderId);
         if (status.status === "paid") {
-          onPaid(orderRef.current!);
+          completePaidAttempt(orderRef.current!);
           return;
         }
         if (status.status !== "canceled") throw new Error("Cancellation was not confirmed");
       }
       cancelledRef.current = true;
       orderRef.current = null;
-      requestIdRef.current = null;
-      onPaymentSafeToLeave?.();
-      setMode("choose");
-      setError(null);
+      if (clearAttemptAfterAuthoritativeOutcome()) {
+        setMode("choose");
+        setError(null);
+      }
     } catch {
       cancelledRef.current = false;
       setError("The payment could not be canceled safely. Please ask a staff member for help.");
@@ -265,13 +360,16 @@ export default function PayScreen({
         }
         cardTokenRef.current = result.token;
       }
-      requestIdRef.current ??= crypto.randomUUID();
+      if (!requestIdRef.current) {
+        requestIdRef.current = beginKioskPaymentAttempt("card").clientRequestId;
+      }
       if (!onCheckoutStarted("card")) {
         throw new Error("Payment recovery could not be initialized");
       }
       const order = await onPlaceOrder("card", cardTokenRef.current, requestIdRef.current);
+      saveKioskPaymentAttemptOrder(order);
       if (order.paymentStatus === "paid") {
-        onPaid(order);
+        completePaidAttempt(order);
       } else {
         orderRef.current = order;
         setMode("payment-waiting");

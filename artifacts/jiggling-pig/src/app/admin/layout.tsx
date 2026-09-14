@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupContent, SidebarGroupLabel } from "@/components/ui/sidebar";
-import { BadgePercent, LogOut } from "lucide-react";
+import { BadgePercent, Link2, LogOut, MapPin, Printer } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -51,6 +51,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Kitchen Printers">
+                      <Link href="/admin/kitchen-printers">
+                        <Printer className="w-4 h-4 mr-2" />
+                        <span>Kitchen Printers</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild tooltip="Smart Links">
+                        <Link href="/admin/smart-links">
+                          <Link2 className="w-4 h-4 mr-2" />
+                          <span>Smart Links</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild tooltip="Phone Pickup">
+                        <Link href="/admin/pickup">
+                          <MapPin className="w-4 h-4 mr-2" />
+                          <span>Phone Pickup</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

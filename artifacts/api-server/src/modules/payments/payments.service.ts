@@ -595,6 +595,11 @@ export async function createStaffPaymentRefund(id: string, input: CreateStaffRef
   if (!providerPaymentId || !['captured', 'partially_refunded', 'refunded'].includes(payment.status)) {
     throw ApiError.unprocessable('The Square payment is not captured and cannot be refunded');
   }
+  // A reservation ledger represents the complete order, not a fractional
+  // allocation. Never return every main/side SKU for a partial money refund.
+  if (input.restoreInventory && input.amountCents !== Math.round(Number(payment.amount) * 100)) {
+    throw ApiError.unprocessable('Inventory can only be restored with one full-order refund.');
+  }
 
   let record = await prisma.paymentRefund.findUnique({ where: { idempotencyRequestId: input.requestId } });
   if (record && (record.paymentId !== id || record.amountCents !== input.amountCents || record.reason !== input.reason || record.restoreInventory !== input.restoreInventory)) {

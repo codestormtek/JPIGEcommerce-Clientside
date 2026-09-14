@@ -3,6 +3,15 @@ import { ListOrdersInput, PlaceOrderInput, CheckoutInput } from './orders.schema
 
 type TxClient = Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
+export type PendingPayment = {
+  /**
+   * The provider is selected before the transaction begins.  Creating this
+   * row with the order is the durable boundary before any provider request.
+   */
+  provider: string;
+  paymentMethodTokenId?: string;
+};
+
 // ─── Shared include ───────────────────────────────────────────────────────────
 
 const orderInclude = {
@@ -82,17 +91,34 @@ export async function findProductItemPrices(ids: string[]) {
 
 export async function placeOrder(
   userId: string,
-  input: CheckoutInput & { kioskDeviceId?: string; kioskRequestId?: string },
+  input: Omit<CheckoutInput, 'orderType'> & {
+    orderType: string;
+    kioskDeviceId?: string;
+    kioskRequestId?: string;
+    remotePickupRequestId?: string;
+    fulfillmentType?: string;
+    eventName?: string;
+  },
   taxTotal = 0,
   discountTotal = 0,
+  pendingPayment?: PendingPayment,
+  taxRatePercent?: number,
 ) {
   return prisma.$transaction(async (tx: TxClient) => {
     // Resolve "pending" status
     const pendingStatus = await tx.orderStatus.findFirst({ where: { status: 'pending' } });
     if (!pendingStatus) throw new Error('Order status "pending" not seeded in database');
 
-    // Fetch product items and validate stock
-    const itemIds = input.lines.map((l) => l.productItemId);
+    // Fetch the items used for price snapshots. Stock is reserved below with
+    // conditional decrements; a read/check followed by an unconditional
+    // decrement can oversell under concurrent checkout requests.
+    const itemIds = [
+      ...new Set(input.lines.flatMap((line) => [
+        line.productItemId,
+        ...((line as CheckoutInput['lines'][number] & { sideProductItemIds?: string[] })
+          .sideProductItemIds ?? []),
+      ])),
+    ];
     const productItems = await tx.productItem.findMany({
       where: { id: { in: itemIds } },
       include: { product: { select: { name: true } } },
@@ -103,14 +129,25 @@ export async function placeOrder(
         line.productItemId,
         (requestedQtyByItem.get(line.productItemId) ?? 0) + line.qty,
       );
+      // Combo sides consume inventory too. resolveComboSides supplies the
+      // selected SKU internally; never trust this field from a public client.
+      for (const sideItemId of (line as CheckoutInput['lines'][number] & {
+        sideProductItemIds?: string[];
+      }).sideProductItemIds ?? []) {
+        requestedQtyByItem.set(
+          sideItemId,
+          (requestedQtyByItem.get(sideItemId) ?? 0) + line.qty,
+        );
+      }
     }
     for (const [itemId, requestedQty] of requestedQtyByItem) {
       const item = productItems.find((candidate) => candidate.id === itemId);
       if (!item) throw new Error(`Product item ${itemId} not found`);
-      if (item.qtyInStock < requestedQty) {
-        throw new Error(`Insufficient stock for SKU ${item.sku}`);
-      }
     }
+    const inventoryReservationJson = [...requestedQtyByItem.entries()].map(([productItemId, qty]) => ({
+      productItemId,
+      qty,
+    }));
 
     let subtotal = 0;
     const lineData = input.lines.map((l) => {
@@ -132,20 +169,39 @@ export async function placeOrder(
       if (sm) shippingTotal = Number(sm.price);
     }
 
-    const grandTotal = subtotal + shippingTotal + taxTotal - discountTotal;
+    // Pickup's configured tax is calculated from these exact transaction
+    // price snapshots, not a pre-transaction menu read.
+    const orderTaxTotal = taxRatePercent === undefined
+      ? taxTotal
+      : Math.round(subtotal * taxRatePercent * 100) / 100;
+    const grandTotal = subtotal + shippingTotal + orderTaxTotal - discountTotal;
 
-    // Kiosk orders get a short daily sequential number (K-001, K-002...) assigned
+    // Reserve every required main and side SKU atomically. PostgreSQL rolls
+    // back earlier reservations if any later SKU is unavailable or creation
+    // fails, so inventory, order, and pending payment move together.
+    for (const [itemId, requestedQty] of requestedQtyByItem) {
+      const reserved = await tx.productItem.updateMany({
+        where: { id: itemId, qtyInStock: { gte: requestedQty } },
+        data: { qtyInStock: { decrement: requestedQty } },
+      });
+      if (reserved.count !== 1) {
+        const item = productItems.find((candidate) => candidate.id === itemId);
+        throw new Error(`Insufficient stock for SKU ${item?.sku ?? itemId}`);
+      }
+    }
+
+    // Pickup orders get a short daily sequential number assigned
     // atomically with order creation. An advisory lock serializes concurrent
     // kiosk checkouts so numbers never duplicate.
     let kioskOrderNumber: string | undefined;
-    if (input.orderType === 'kiosk') {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('kiosk_order_number'))`;
+    if (input.orderType === 'kiosk' || input.orderType === 'remote_pickup' || input.orderType === 'event_qr') {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('pickup_order_number'))`;
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
       const countToday = await tx.shopOrder.count({
-        where: { orderType: 'kiosk', orderDate: { gte: startOfDay } },
+        where: { orderType: { in: ['kiosk', 'remote_pickup', 'event_qr'] }, orderDate: { gte: startOfDay } },
       });
-      kioskOrderNumber = `K-${String(countToday + 1).padStart(3, '0')}`;
+      kioskOrderNumber = `${input.orderType === 'kiosk' ? 'K' : 'P'}-${String(countToday + 1).padStart(3, '0')}`;
     }
 
     // Create order
@@ -160,10 +216,14 @@ export async function placeOrder(
         kioskOrderNumber,
         kioskDeviceId: input.kioskDeviceId,
         kioskRequestId: input.kioskRequestId,
+        remotePickupRequestId: input.remotePickupRequestId,
+        inventoryReservationJson,
+        fulfillmentType: input.fulfillmentType,
+        eventName: input.eventName,
         specialInstructions: input.specialInstructions,
         subtotal,
         discountTotal,
-        taxTotal,
+        taxTotal: orderTaxTotal,
         shippingTotal,
         grandTotal,
         shippoRateId: input.shippoRateId,
@@ -184,17 +244,21 @@ export async function placeOrder(
         statusHistory: {
           create: { newStatusId: pendingStatus.id, changedAt: new Date() },
         },
-      },
+        ...(pendingPayment
+          ? {
+              payments: {
+                create: {
+                  provider: pendingPayment.provider,
+                  amount: grandTotal,
+                  status: 'pending',
+                  paymentMethodTokenId: pendingPayment.paymentMethodTokenId ?? null,
+                },
+              },
+            }
+          : {}),
+      } as any,
       include: orderInclude,
     });
-
-    // Decrement stock
-    for (const { item, l } of lineData) {
-      await tx.productItem.update({
-        where: { id: item.id },
-        data: { qtyInStock: { decrement: l.qty } },
-      });
-    }
 
     return order;
   });

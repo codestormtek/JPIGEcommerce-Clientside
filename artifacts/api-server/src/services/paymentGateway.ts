@@ -113,10 +113,12 @@ export interface CreateGatewayPaymentOptions {
   taxCalculationId?: string;
   /** Stable key for retry-safe payment creation. */
   idempotencyKey?: string;
+  /** Keep a durable pending attempt on its original provider during retries. */
+  gatewayOverride?: GatewayName;
 }
 
 export async function createPayment(options: CreateGatewayPaymentOptions): Promise<GatewayPaymentResult> {
-  const gateway = await getActiveGateway();
+  const gateway = options.gatewayOverride ?? await getActiveGateway();
   logger.debug('paymentGateway.createPayment dispatch', { gateway, orderId: options.metadata.orderId });
 
   if (gateway === 'square') {

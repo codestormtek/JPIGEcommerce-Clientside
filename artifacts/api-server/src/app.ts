@@ -49,6 +49,9 @@ import { reviewsRouter } from './modules/reviews/reviews.routes';
 import { paymentGatewayRouter } from './modules/payment-gateway/payment-gateway.routes';
 import { telnyxVoiceRouter } from './modules/telnyx-voice/telnyx-voice.routes';
 import { staffOrdersRouter } from './modules/staff-orders/staff-orders.routes';
+import { cloudPrntRouter } from './modules/cloudprnt/cloudprnt.routes';
+import { smartLinksPublicRouter, smartLinksRouter } from './modules/smart-links/smart-links.routes';
+import { pickupRouter } from './modules/pickup/pickup.routes';
 
 const app = express();
 
@@ -93,6 +96,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // ─── Static file serving for uploaded assets ──────────────────────────────────
 app.use('/uploads', express.static(path.resolve(config.uploads.dir)));
+// Short URLs are outside /api so QR codes can be printed, shared, and scanned
+// without exposing an API-shaped destination.
+app.use('/go', smartLinksPublicRouter);
 
 // ─── Request logging (dev) ────────────────────────────────────────────────────
 if (config.env !== 'production') {
@@ -153,6 +159,10 @@ app.use(`${API}/social-links`, socialLinksRouter);
 app.use(`${API}/reviews`, reviewsRouter);
 app.use(`${API}/admin/payment-gateway`, paymentGatewayRouter);
 app.use(`${API}/telnyx`, telnyxVoiceRouter);
+app.use(`${API}/cloudprnt`, cloudPrntRouter);
+app.use(`${API}/smart-links`, smartLinksPublicRouter);
+app.use(`${API}/admin/smart-links`, smartLinksRouter);
+app.use(`${API}/pickup`, pickupRouter);
 
 // ─── 404 + Global error handler ───────────────────────────────────────────────
 app.use(notFoundHandler);
