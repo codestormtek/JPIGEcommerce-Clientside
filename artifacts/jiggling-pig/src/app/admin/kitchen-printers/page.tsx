@@ -20,6 +20,15 @@ type PrinterInfo = {
   lastError: string | null; jobCount: number; latestJob: Job | null;
 };
 
+type PrinterCredential = {
+  id: string; name: string; token: string; retiredPreviousCredential?: boolean;
+};
+
+type ReprintResponse = {
+  job: Job;
+  replacementCredential: PrinterCredential | null;
+};
+
 export default function KitchenPrintersPage() {
   const [printers, setPrinters] = useState<PrinterInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +36,7 @@ export default function KitchenPrintersPage() {
   const [canonicalUrl, setCanonicalUrl] = useState("");
   const [savingUrl, setSavingUrl] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [credential, setCredential] = useState<{ id: string; name: string; token: string } | null>(null);
+  const [credential, setCredential] = useState<PrinterCredential | null>(null);
   const [openJobs, setOpenJobs] = useState<string | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -105,6 +114,22 @@ export default function KitchenPrintersPage() {
     }
   };
 
+  const reprint = async (printer: PrinterInfo, job: Job) => {
+    const ambiguousDelivery = job.status === "error"
+      && job.acknowledgedAt === null
+      && job.lastError?.includes("CloudPRNT is quarantined");
+    if (ambiguousDelivery && !window.confirm(
+      "The printer never confirmed this ticket, so its outcome is unknown. Check the kitchen first. Continuing retires the current CloudPRNT password and queues one labelled reprint. You must clear any pending printer request and configure the replacement password before printing can resume. Continue?",
+    )) return;
+
+    await action(`reprint-${job.id}`, async () => {
+      const result = await apiAuthPost<{ data: ReprintResponse }>(`/cloudprnt/printers/${printer.id}/jobs/${job.id}/reprint`, {});
+      if (result.data.replacementCredential) {
+        setCredential({ ...result.data.replacementCredential, retiredPreviousCredential: true });
+      }
+    });
+  };
+
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -131,7 +156,7 @@ export default function KitchenPrintersPage() {
       {credential && (
         <Card className="border-primary">
           <CardContent className="p-6 space-y-3">
-            <div className="flex gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 text-primary" /><div><h2 className="font-bold">Save this printer credential now</h2><p className="text-sm text-muted-foreground">It is shown once and is not stored in the browser. Configure HTTP Basic authentication with this printer ID as username and the secret as password.</p></div></div>
+            <div className="flex gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 text-primary" /><div><h2 className="font-bold">{credential.retiredPreviousCredential ? "Replace this printer credential before printing resumes" : "Save this printer credential now"}</h2><p className="text-sm text-muted-foreground">{credential.retiredPreviousCredential ? "The prior password was retired to prevent a delayed DELETE from confirming a different ticket. On the printer, clear or cancel any pending CloudPRNT request, configure this replacement password, then restart polling. Do not merely change the password while an old request remains pending." : "It is shown once and is not stored in the browser. Configure HTTP Basic authentication with this printer ID as username and the secret as password."}</p></div></div>
             <div className="rounded bg-muted p-3 font-mono text-xs break-all">CloudPRNT URL: {canonicalUrl ? `${canonicalUrl.replace(/\/$/, "")}/api/v1/cloudprnt` : "Save the production URL above first"}<br />Username (printer ID): {credential.id}<br />Password (secret): {credential.token}</div>
             <div className="flex gap-2"><Button onClick={() => navigator.clipboard.writeText(`CloudPRNT URL: ${canonicalUrl ? `${canonicalUrl.replace(/\/$/, "")}/api/v1/cloudprnt` : ""}\nUsername: ${credential.id}\nPassword: ${credential.token}`)}><Clipboard className="w-4 h-4 mr-2" />Copy configuration</Button><Button variant="outline" onClick={() => setCredential(null)}>I saved it</Button></div>
           </CardContent>
@@ -167,7 +192,7 @@ export default function KitchenPrintersPage() {
                     <Button variant="outline" size="sm" onClick={() => void showJobs(printer.id)}>Ticket history</Button>
                   </div>
                 </div>
-                {openJobs === printer.id && <TicketHistory jobs={jobs} busy={busy} onReprint={(job) => void action(`reprint-${job.id}`, () => apiAuthPost(`/cloudprnt/printers/${printer.id}/jobs/${job.id}/reprint`, {}))} />}
+                {openJobs === printer.id && <TicketHistory jobs={jobs} busy={busy} onReprint={(job) => void reprint(printer, job)} />}
               </CardContent>
             </Card>
           ))}
@@ -179,5 +204,20 @@ export default function KitchenPrintersPage() {
 
 function TicketHistory({ jobs, busy, onReprint }: { jobs: Job[]; busy: string | null; onReprint: (job: Job) => void }) {
   if (!jobs.length) return <p className="border-t pt-4 text-sm text-muted-foreground">No tickets sent to this printer yet.</p>;
-  return <div className="border-t pt-4 space-y-2">{jobs.map((job) => <div key={job.id} className="flex flex-wrap items-center justify-between gap-3 rounded border p-3 text-sm"><div><strong>{job.ticketKind === "test" ? "Test ticket" : job.orderId ? `Order ${job.orderId.slice(0, 8)}` : "Kitchen ticket"}</strong><span className="ml-2 text-muted-foreground">{new Date(job.createdAt).toLocaleString()} · {job.status}</span>{job.lastError && <p className="mt-1 text-destructive">{job.lastError}</p>}</div><Button variant="outline" size="sm" disabled={busy === `reprint-${job.id}`} onClick={() => onReprint(job)}>{busy === `reprint-${job.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4 mr-1" />Reprint</>}</Button></div>)}</div>;
+  return <div className="border-t pt-4 space-y-2">{jobs.map((job) => {
+    const ambiguousDelivery = job.status === "error"
+      && job.acknowledgedAt === null
+      && job.lastError?.includes("CloudPRNT is quarantined");
+    return <div key={job.id} className="flex flex-wrap items-center justify-between gap-3 rounded border p-3 text-sm">
+      <div>
+        <strong>{job.ticketKind === "test" ? "Test ticket" : job.orderId ? `Order ${job.orderId.slice(0, 8)}` : "Kitchen ticket"}</strong>
+        <span className="ml-2 text-muted-foreground">{new Date(job.createdAt).toLocaleString()} · {job.status}</span>
+        {job.lastError && <p className="mt-1 text-destructive">{job.lastError}</p>}
+        {ambiguousDelivery && <p className="mt-2 font-medium text-amber-700">Check the kitchen before resolving. Resolving retires the current printer password; clear its pending CloudPRNT request and install the replacement password before ticket delivery resumes.</p>}
+      </div>
+      <Button variant="outline" size="sm" disabled={busy === `reprint-${job.id}`} onClick={() => onReprint(job)}>
+        {busy === `reprint-${job.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4 mr-1" />{ambiguousDelivery ? "Resolve & reprint" : "Reprint"}</>}
+      </Button>
+    </div>;
+  })}</div>;
 }

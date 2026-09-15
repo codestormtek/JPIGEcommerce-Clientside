@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useGetStaffPayment, useCancelStaffPayment, getGetStaffPaymentQueryKey } from '@workspace/api-client-react';
+import { useGetStaffPayment, useCancelStaffPayment, getGetStaffPaymentQueryKey, customFetch } from '@workspace/api-client-react';
 import { useColors } from '../../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
@@ -69,6 +69,10 @@ export default function PaymentDetailScreen() {
   }
 
   const payment = paymentRes.data;
+  const inventoryReconciliation = (payment as any).inventoryReconciliation as
+    | { required: boolean; trigger: string; reason: string; financialActionAt: string; resolvedAt: string | null }
+    | null
+    | undefined;
 
   const formatMoney = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
@@ -105,6 +109,31 @@ export default function PaymentDetailScreen() {
           }
         }
       ]
+    );
+  };
+
+  const completeInventoryReconciliation = () => {
+    Alert.alert(
+      'Complete Manual Inventory Reconciliation',
+      'Square already confirmed the financial action. Confirm only after you counted and corrected the affected combo-side inventory manually. This never changes SKU quantities automatically.',
+      [
+        { text: 'Not Yet', style: 'cancel' },
+        {
+          text: 'I Completed the Count',
+          onPress: async () => {
+            try {
+              await customFetch(`/api/v1/payments/mobile/${id}/inventory-reconciliation/complete`, { method: 'POST' });
+              queryClient.invalidateQueries({ queryKey: ['staff-payments'] });
+              queryClient.invalidateQueries({ queryKey: [`/api/v1/payments/mobile/${id}`] });
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert('Recorded', 'Manual inventory reconciliation was recorded. No automatic stock adjustment was made.');
+            } catch (error: any) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('Could Not Record', error?.message || 'Please try again.');
+            }
+          },
+        },
+      ],
     );
   };
 
@@ -150,6 +179,25 @@ export default function PaymentDetailScreen() {
           {payment.customerPhone && (
             <Text style={[styles.customerText, { color: colors.body }]}>{payment.customerPhone}</Text>
           )}
+        </View>
+      )}
+
+      {inventoryReconciliation?.required && (
+        <View style={[styles.reconciliationAlert, { backgroundColor: colors.danger + '12', borderColor: colors.danger }]}>
+          <View style={styles.reconciliationHeading}>
+            <Ionicons name="warning-outline" size={22} color={colors.danger} />
+            <Text style={[styles.sectionTitle, { color: colors.danger, marginBottom: 0 }]}>Manual Inventory Count Required</Text>
+          </View>
+          <Text style={[styles.reconciliationText, { color: colors.text }]}>{inventoryReconciliation.reason}</Text>
+          <Text style={[styles.reconciliationText, { color: colors.body }]}>The payment and order reflect Square&apos;s confirmed result. Do not guess side SKU quantities; reconcile stock physically, then record completion.</Text>
+          <Pressable
+            testID="complete-inventory-reconciliation-button"
+            style={({ pressed }) => [styles.actionButton, { backgroundColor: colors.danger, marginTop: 12 }, pressed && { opacity: 0.8 }]}
+            onPress={completeInventoryReconciliation}
+          >
+            <Ionicons name="checkbox-outline" size={20} color={colors.white} />
+            <Text style={[styles.actionText, { color: colors.white }]}>Record Manual Count Complete</Text>
+          </Pressable>
         </View>
       )}
 
@@ -251,6 +299,23 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  reconciliationAlert: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  reconciliationHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  reconciliationText: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 6,
   },
   headerCard: {
     borderWidth: 1,

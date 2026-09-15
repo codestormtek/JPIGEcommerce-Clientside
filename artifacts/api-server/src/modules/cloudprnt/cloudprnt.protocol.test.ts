@@ -1,14 +1,18 @@
 import assert from 'node:assert/strict';
+import crypto from 'crypto';
 import test from 'node:test';
+import prisma from '../../lib/prisma';
 import {
   CLOUDPRNT_TEXT_MEDIA_TYPE,
   UNACKNOWLEDGED_DELIVERY_ERROR,
   cloudPrntPollIsQuarantined,
   cloudPrntPollResponse,
+  completeJob,
   hasPaymentCapturedSincePrinterCreation,
   isQuarantinedCloudPrntDelivery,
   isCloudPrntSuccessCode,
   reconciliationOrderWhere,
+  reprintJob,
   selectCloudPrntDeliverySlot,
 } from './cloudprnt.service';
 import {
@@ -100,4 +104,92 @@ test('a timed-out A quarantines the printer, so a late DELETE cannot acknowledge
     { ...b, status: 'delivering' },
   ]);
   assert.equal(slotForLateDelete?.id, 'A');
+});
+
+test('mocked credential retirement blocks a delayed A DELETE after its reprint starts delivering', async () => {
+  // An already-authenticated A request carries this generation while staff
+  // resolves it. The test mocks the persistence boundary; it makes no DB call.
+  const client = prisma as any;
+  const original = {
+    transaction: client.$transaction,
+    jobFindFirst: client.cloudPrntJob.findFirst,
+    jobFindMany: client.cloudPrntJob.findMany,
+    jobUpdateMany: client.cloudPrntJob.updateMany,
+    auditCreate: client.auditLog.create,
+  };
+  const oldTokenHash = 'old-credential-generation';
+  let currentTokenHash = oldTokenHash;
+  const a = {
+    id: 'A', printerId: 'printer-1', orderId: 'order-1', originalJobId: null,
+    ticketKind: 'order', contentType: 'text/plain', payloadText: 'A',
+    status: 'error', lastError: UNACKNOWLEDGED_DELIVERY_ERROR,
+    acknowledgedAt: null, printedAt: null, fetchedAt: new Date('2026-05-01T12:00:00.000Z'),
+  };
+  let reprint: any = null;
+
+  try {
+    client.auditLog.create = async () => ({});
+    client.cloudPrntJob.findFirst = async () => a;
+    client.$transaction = async (callback: any) => callback({
+      cloudPrntPrinter: {
+        findUnique: async () => ({ id: 'printer-1', name: 'Kitchen pass' }),
+        update: async ({ data }: any) => {
+          currentTokenHash = data.tokenHash;
+          return { id: 'printer-1' };
+        },
+      },
+      cloudPrntJob: {
+        updateMany: async () => {
+          a.status = 'cancelled';
+          a.lastError = 'Delivery outcome was unknown. Staff checked the kitchen and explicitly chose this audited reprint.';
+          return { count: 1 };
+        },
+        create: async ({ data }: any) => {
+          reprint = {
+            id: 'R', ...data, status: 'queued', lastError: null, acknowledgedAt: null,
+            printedAt: null, fetchedAt: null,
+          };
+          return reprint;
+        },
+      },
+    });
+
+    const resolved = await reprintJob('printer-1', 'A', 'staff-1');
+    assert.equal(a.status, 'cancelled');
+    assert.equal(resolved.job.id, 'R');
+    assert.ok(resolved.replacementCredential);
+    assert.equal(
+      currentTokenHash,
+      crypto.createHash('sha256').update(resolved.replacementCredential!.token).digest('hex'),
+    );
+    assert.notEqual(currentTokenHash, oldTokenHash);
+
+    // The reprint is now the next job after the printer is explicitly reset and
+    // configured with the replacement credential. A delayed DELETE assembled
+    // under the retired credential must not be allowed to complete R.
+    reprint.status = 'delivering';
+    reprint.fetchedAt = new Date('2026-05-01T12:10:00.000Z');
+    client.cloudPrntJob.findMany = async ({ where }: any) =>
+      where.printer.is.tokenHash === currentTokenHash ? [reprint] : [];
+    client.cloudPrntJob.updateMany = async ({ where, data }: any) => {
+      if (where.id === reprint.id && where.printer.is.tokenHash === currentTokenHash) {
+        Object.assign(reprint, data);
+        return { count: 1 };
+      }
+      return { count: 0 };
+    };
+
+    await completeJob(
+      { id: 'printer-1', tokenHash: oldTokenHash, printerMac: '00:11:22:33:44:55' },
+      { mac: '00:11:22:33:44:55', code: '200%20OK' },
+    );
+    assert.equal(reprint.status, 'delivering');
+    assert.equal(reprint.acknowledgedAt, null);
+  } finally {
+    client.$transaction = original.transaction;
+    client.cloudPrntJob.findFirst = original.jobFindFirst;
+    client.cloudPrntJob.findMany = original.jobFindMany;
+    client.cloudPrntJob.updateMany = original.jobUpdateMany;
+    client.auditLog.create = original.auditCreate;
+  }
 });

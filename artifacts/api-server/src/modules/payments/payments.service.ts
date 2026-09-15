@@ -114,6 +114,7 @@ const staffPaymentInclude = {
           menuOptions: { include: { menuOption: { select: { name: true } } } },
         },
       },
+      inventoryReconciliation: true,
     },
   },
   refunds: { include: { inventoryRestoration: true }, orderBy: { createdAt: 'desc' as const } },
@@ -165,6 +166,10 @@ function staffPaymentDto(
         options: Array<{ variationOption: { value: string } }>;
         menuOptions: Array<{ menuOption: { name: string } }>;
       }>;
+      inventoryReconciliation: {
+        id: string; trigger: string; reason: string; financialActionAt: Date;
+        resolvedAt: Date | null; resolvedByUserId: string | null;
+      } | null;
     };
     refunds: Array<Parameters<typeof refundDto>[0]>;
   },
@@ -203,23 +208,35 @@ function staffPaymentDto(
     canCancel: payment.status === 'pending' && payment.provider === 'square_terminal' && Boolean(checkoutId(payment)),
     canRefund: ['captured', 'partially_refunded'].includes(payment.status) && completedRefundCents < amountCents,
     refunds: payment.refunds.map(refundDto),
+    inventoryReconciliation: payment.order.inventoryReconciliation
+      ? {
+          required: payment.order.inventoryReconciliation.resolvedAt === null,
+          trigger: payment.order.inventoryReconciliation.trigger,
+          reason: payment.order.inventoryReconciliation.reason,
+          financialActionAt: payment.order.inventoryReconciliation.financialActionAt,
+          resolvedAt: payment.order.inventoryReconciliation.resolvedAt,
+        }
+      : null,
   };
 }
 
 export async function getStaffPaymentDashboard() {
   // Keep dashboard totals self-healing even if Square's webhook was missed.
   // The cap and worker limit bound both latency and Square API pressure.
-  const pendingRefunds = await prisma.paymentRefund.findMany({
+  const refundsNeedingFinalization = await prisma.paymentRefund.findMany({
     where: {
       provider: 'square',
-      providerStatus: 'PENDING',
+      OR: [
+        { providerStatus: 'PENDING' },
+        { providerStatus: 'COMPLETED', localFinalizedAt: null },
+      ],
       payment: { order: { orderType: 'kiosk' } },
     },
     select: { id: true },
     orderBy: { updatedAt: 'asc' },
     take: 20,
   });
-  await reconcilePendingRefundIdsBounded(pendingRefunds.map((refund) => refund.id));
+  await reconcilePendingRefundIdsBounded(refundsNeedingFinalization.map((refund) => refund.id));
 
   const where = { order: { orderType: 'kiosk' } };
   const [pendingCount, capturedCount, failedCount, refundedCount, captured, refunds] = await Promise.all([
@@ -261,7 +278,10 @@ export async function listStaffPayments(input: StaffPaymentsListInput) {
   });
   await reconcilePendingRefundIdsBounded(pagePayments.flatMap((payment) =>
     payment.refunds
-      .filter((refund) => refund.provider === 'square' && refund.providerStatus === 'PENDING')
+      .filter((refund) => refund.provider === 'square' && (
+        refund.providerStatus === 'PENDING'
+        || (refund.providerStatus === 'COMPLETED' && refund.localFinalizedAt === null)
+      ))
       .map((refund) => refund.id),
   ));
   // Re-run both queries because a completed full refund can change the payment
@@ -288,7 +308,10 @@ export async function getStaffPayment(id: string) {
   // Square accepted a refund. It is intentionally run before calculating the
   // staff response so rejected/failed refunds stop reserving refund capacity.
   for (const refund of payment.refunds) {
-    if (refund.provider === 'square' && refund.providerStatus === 'PENDING') {
+    if (refund.provider === 'square' && (
+      refund.providerStatus === 'PENDING'
+      || (refund.providerStatus === 'COMPLETED' && refund.localFinalizedAt === null)
+    )) {
       await reconcilePendingSquareRefund(refund.id);
     }
   }
@@ -336,10 +359,12 @@ export async function getStaffPayment(id: string) {
 }
 
 /**
- * Active recovery boundary for a local pending Square refund. The transaction
- * intentionally holds the per-payment/refund advisory locks while asking
- * Square, so staff polling and webhook finalization cannot race a reissue.
- * Square receives the original persisted idempotency key on every reissue.
+ * Active recovery boundary for a local pending Square refund, as well as a
+ * provider-completed refund whose prior process died before local finalization.
+ * The transaction intentionally holds the per-payment/refund advisory locks
+ * while asking Square, so staff polling and webhook finalization cannot race a
+ * reissue. Square receives the original persisted idempotency key on every
+ * reissue.
  */
 export async function reconcilePendingSquareRefund(refundId: string): Promise<void> {
   const outcome = await prisma.$transaction(async (tx) => {
@@ -347,7 +372,10 @@ export async function reconcilePendingSquareRefund(refundId: string): Promise<vo
       where: { id: refundId },
       include: { payment: true },
     });
-    if (!refund || refund.provider !== 'square' || refund.providerStatus !== 'PENDING') {
+    if (!refund || refund.provider !== 'square' || (
+      refund.providerStatus !== 'PENDING'
+      && !(refund.providerStatus === 'COMPLETED' && refund.localFinalizedAt === null)
+    )) {
       return { completed: false, refundId: null as string | null };
     }
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`payment_refund:${refund.paymentId}`}))`;
@@ -356,8 +384,17 @@ export async function reconcilePendingSquareRefund(refundId: string): Promise<vo
       where: { id: refundId },
       include: { payment: true },
     });
-    if (!refund || refund.provider !== 'square' || refund.providerStatus !== 'PENDING') {
+    if (!refund || refund.provider !== 'square' || (
+      refund.providerStatus !== 'PENDING'
+      && !(refund.providerStatus === 'COMPLETED' && refund.localFinalizedAt === null)
+    )) {
       return { completed: false, refundId: null as string | null };
+    }
+    // A prior process may have persisted Square's completion but died before
+    // applying local payment/order/inventory effects. Do not call Square again;
+    // finalize the durable confirmation below.
+    if (refund.providerStatus === 'COMPLETED') {
+      return { completed: true, refundId: refund.id };
     }
 
     let result;
@@ -433,6 +470,50 @@ export async function cancelStaffPayment(id: string, ctx: AuditContext) {
 }
 
 /**
+ * Financial cancellation/refund has already been confirmed by Square. This
+ * action never guesses or mutates SKU quantity; it records the staff member's
+ * completion of the required physical/manual inventory reconciliation.
+ */
+export async function completeInventoryReconciliation(id: string, ctx: AuditContext) {
+  return prisma.$transaction(async (tx) => {
+    const payment = await tx.payment.findUnique({
+      where: { id },
+      include: { order: { include: { inventoryReconciliation: true } } },
+    });
+    if (!payment) throw ApiError.notFound('Payment');
+    const reconciliation = payment.order.inventoryReconciliation;
+    if (!reconciliation) throw ApiError.unprocessable('This order does not require inventory reconciliation.');
+
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`payment_inventory:${payment.orderId}`}))`;
+    if (reconciliation.resolvedAt) {
+      return { resolved: true, resolvedAt: reconciliation.resolvedAt };
+    }
+    const resolvedAt = new Date();
+    await (tx as any).inventoryReconciliation.update({
+      where: { orderId: payment.orderId },
+      data: { resolvedAt, resolvedByUserId: ctx.actorId ?? null },
+    });
+    await tx.auditLog.create({
+      data: {
+        userId: ctx.actorId ?? null,
+        action: AuditAction.INVENTORY_RECONCILIATION_COMPLETED,
+        entityType: 'InventoryReconciliation',
+        entityId: reconciliation.id,
+        beforeJson: JSON.stringify({ required: true, trigger: reconciliation.trigger, reason: reconciliation.reason }),
+        afterJson: JSON.stringify({
+          required: false,
+          resolvedAt,
+          inventoryBehavior: 'Staff confirmed manual count; no automatic SKU adjustment was made.',
+        }),
+        ip: ctx.ip ?? null,
+        userAgent: ctx.userAgent ?? null,
+      },
+    });
+    return { resolved: true, resolvedAt };
+  });
+}
+
+/**
  * Applies every local effect of a Square Terminal cancellation atomically.
  * Exported as a narrow, deterministic transaction boundary for focused tests:
  * callers may invoke it repeatedly and the unique restoration invariant makes
@@ -469,6 +550,9 @@ export async function finalizeCanceledTerminalPayment(id: string, ctx: AuditCont
       trigger: 'terminal_cancel',
       actorAdminId: ctx.actorId,
     });
+    const inventoryReconciliation = await (tx as any).inventoryReconciliation.findUnique({
+      where: { orderId: current.orderId },
+    });
     const orderChanged = current.order.orderStatusId !== canceledStatus.id;
     if (orderChanged) {
       await tx.shopOrder.update({
@@ -501,7 +585,9 @@ export async function finalizeCanceledTerminalPayment(id: string, ctx: AuditCont
             orderStatus: canceledStatus.status,
             squareStatus: 'CANCELED',
             inventoryRestored,
-            inventoryBehavior: 'complete order inventory restored once per order',
+            inventoryBehavior: inventoryReconciliation
+              ? 'automatic inventory restoration was skipped; manual reconciliation is required'
+              : 'complete order inventory restored once per order',
           }),
           ip: ctx.ip ?? null,
           userAgent: ctx.userAgent ?? null,
@@ -514,22 +600,31 @@ export async function finalizeCanceledTerminalPayment(id: string, ctx: AuditCont
 
 async function finalizeConfirmedSquareRefund(refundId: string, ctx?: AuditContext) {
   return prisma.$transaction(async (tx) => {
-    const refund = await tx.paymentRefund.findUnique({
+    let refund = await tx.paymentRefund.findUnique({
       where: { id: refundId },
       include: { payment: { include: { order: true } } },
     });
     if (!refund) throw ApiError.notFound('Payment refund');
-
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`payment_refund:${refund.paymentId}`}))`;
-    await tx.paymentRefund.update({
-      where: { id: refund.id },
-      data: { providerStatus: 'COMPLETED' },
+    refund = await tx.paymentRefund.findUnique({
+      where: { id: refundId },
+      include: { payment: { include: { order: true } } },
     });
+    if (!refund) throw ApiError.notFound('Payment refund');
+    if (refund.providerStatus !== 'COMPLETED') {
+      throw ApiError.unprocessable('Only a Square-confirmed refund can be finalized');
+    }
+    if (refund.localFinalizedAt) {
+      return { fullyRefunded: refund.payment.status === 'refunded', paymentId: refund.paymentId };
+    }
     if (refund.restoreInventory) {
       await restoreOrderInventoryOnceTx(tx, refund.payment.orderId, {
         trigger: 'refund', refundId: refund.id, actorAdminId: refund.actorAdminId,
       });
     }
+    const inventoryReconciliation = refund.restoreInventory
+      ? await (tx as any).inventoryReconciliation.findUnique({ where: { orderId: refund.payment.orderId } })
+      : null;
 
     const totals = await tx.paymentRefund.aggregate({
       where: { paymentId: refund.paymentId, providerStatus: 'COMPLETED' },
@@ -575,12 +670,18 @@ async function finalizeConfirmedSquareRefund(refundId: string, ctx?: AuditContex
           paymentStatus: nextPaymentStatus,
           orderStatus: fullyRefunded ? 'refunded' : refund.payment.order.orderStatusId,
           inventoryBehavior: refund.restoreInventory
-            ? 'complete order inventory restored once per order'
+            ? inventoryReconciliation
+              ? 'automatic inventory restoration was skipped; manual reconciliation is required'
+              : 'complete order inventory restored once per order'
             : 'inventory restoration not requested',
         }),
         ip: ctx?.ip ?? null,
         userAgent: ctx?.userAgent ?? null,
       },
+    });
+    await tx.paymentRefund.update({
+      where: { id: refund.id },
+      data: { localFinalizedAt: new Date() },
     });
     return { fullyRefunded, paymentId: refund.paymentId };
   });

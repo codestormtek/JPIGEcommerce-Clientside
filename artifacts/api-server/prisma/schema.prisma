@@ -531,6 +531,7 @@ model ShopOrder {
   promotionUsages         PromotionUsage[]
   convertedCateringQuote  CateringQuote?
   inventoryRestoration    InventoryRestoration?
+  inventoryReconciliation InventoryReconciliation?
   pushNotificationEvents  PushNotificationEvent[]
   cloudPrntJobs          CloudPrntJob[]
 
@@ -785,10 +786,14 @@ model PaymentRefund {
   idempotencyRequestId String   @unique
   restoreInventory    Boolean
   inventoryRestoration InventoryRestoration?
+  // Set in the same transaction as the local payment/order/inventory effects.
+  // A completed Square refund lacking this value is a crash-recoverable action.
+  localFinalizedAt    DateTime?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
   @@index([paymentId, createdAt])
+  @@index([providerStatus, localFinalizedAt])
   @@map("payment_refunds")
 }
 
@@ -804,6 +809,23 @@ model InventoryRestoration {
   restoredAt   DateTime       @default(now())
 
   @@map("inventory_restorations")
+}
+
+/// A provider-confirmed cancellation/refund on a pre-ledger combo order cannot
+/// safely infer its side SKU quantities. Financial finalization continues, and
+/// staff explicitly records completion of the manual stock count here.
+model InventoryReconciliation {
+  id               String    @id @default(uuid())
+  orderId          String    @unique
+  order            ShopOrder @relation(fields: [orderId], references: [id])
+  trigger          String
+  reason           String
+  financialActionAt DateTime @default(now())
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+
+  @@index([resolvedAt, financialActionAt])
+  @@map("inventory_reconciliations")
 }
 
 model PaymentMethodToken {

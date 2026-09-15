@@ -20,13 +20,42 @@ const PICKUP_SETTING_KEY = 'pickup_event_config';
 const PICKUP_SYSTEM_EMAIL = 'pickup-orders@jigglingpig.local';
 const DEFINITIVE_SQUARE_DECLINE_CODES = new Set([
   'CARD_DECLINED',
+  'CARD_DECLINED_CALL_ISSUER',
+  'CARD_DECLINED_VERIFICATION_REQUIRED',
+  'GENERIC_DECLINE',
   'CARD_EXPIRED',
+  'CARD_TOKEN_EXPIRED',
+  'CARD_TOKEN_USED',
   'CVV_FAILURE',
   'VERIFY_CVV_FAILURE',
+  'VERIFY_AVS_FAILURE',
   'ADDRESS_VERIFICATION_FAILURE',
   'INSUFFICIENT_FUNDS',
+  'TRANSACTION_LIMIT',
   'PAYMENT_LIMIT_EXCEEDED',
   'CARD_NOT_SUPPORTED',
+  'UNSUPPORTED_CARD_BRAND',
+  'UNSUPPORTED_INSTRUMENT_TYPE',
+  'INVALID_CARD',
+  'INVALID_CARD_DATA',
+  'INVALID_ENCRYPTED_CARD',
+  'INVALID_ACCOUNT',
+  'INVALID_EXPIRATION',
+  'INVALID_EXPIRATION_DATE',
+  'INVALID_EXPIRATION_YEAR',
+  'BAD_EXPIRATION',
+  'VOICE_FAILURE',
+  'PAN_FAILURE',
+  'EXPIRATION_FAILURE',
+  'READER_DECLINED',
+  'INVALID_POSTAL_CODE',
+  'MANUALLY_ENTERED_PAYMENT_NOT_SUPPORTED',
+  'BUYER_REFUSED_PAYMENT',
+  'ACCOUNT_UNUSABLE',
+  'CARDHOLDER_INSUFFICIENT_PERMISSIONS',
+  'DELAYED_TRANSACTION_EXPIRED',
+  'DELAYED_TRANSACTION_CANCELED',
+  'DELAYED_TRANSACTION_FAILED',
   'SOURCE_USED',
   'SOURCE_EXPIRED',
 ]);
@@ -187,8 +216,21 @@ function orderNumber(order: { kioskOrderNumber: string | null; id: string }): st
 /** Transport/provider-availability errors are intentionally not included. */
 function isDefinitiveSquareDecline(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
-  const candidate = error as { code?: unknown; errors?: Array<{ code?: unknown }> };
-  const codes = [candidate.code, ...(candidate.errors ?? []).map((entry) => entry.code)];
+  const candidate = error as {
+    code?: unknown; statusCode?: unknown; errors?: Array<{ code?: unknown }>;
+    body?: { errors?: Array<{ code?: unknown }> };
+  };
+  // Square's SDK uses statusCode + errors from the response body. Do not infer
+  // a card rejection from a 408/429/5xx error even if an intermediary happens
+  // to attach a code: such responses are outcome-uncertain and must retain
+  // their durable lock.
+  const statusCode = typeof candidate.statusCode === 'number' ? candidate.statusCode : undefined;
+  if (statusCode === 408 || statusCode === 429 || (statusCode !== undefined && statusCode >= 500)) return false;
+  const codes = [
+    candidate.code,
+    ...(candidate.errors ?? []).map((entry) => entry.code),
+    ...(candidate.body?.errors ?? []).map((entry) => entry.code),
+  ];
   return codes.some((code) => typeof code === 'string' && DEFINITIVE_SQUARE_DECLINE_CODES.has(code));
 }
 

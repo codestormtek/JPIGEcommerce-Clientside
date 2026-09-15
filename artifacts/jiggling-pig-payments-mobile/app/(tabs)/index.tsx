@@ -155,6 +155,11 @@ export default function DashboardScreen() {
             {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             {item.customerName ? ` • ${item.customerName}` : ''}
           </Text>
+          {item.inventoryReconciliation?.required && (
+            <Text style={[styles.paymentTime, { color: colors.danger, marginTop: 4 }]}>
+              Manual inventory count required
+            </Text>
+          )}
         </View>
         <View style={styles.paymentRight}>
           <Text style={[styles.paymentAmount, { color: colors.text }]}>

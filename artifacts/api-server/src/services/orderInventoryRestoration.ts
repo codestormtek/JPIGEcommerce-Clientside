@@ -45,8 +45,9 @@ export async function restoreOrderInventoryOnceTx(
 
   // New orders carry the exact reservation ledger, including internal combo
   // side SKUs. A pre-ledger combo cannot be reconstructed safely from display
-  // text, so it is deliberately surfaced for staff reconciliation rather than
-  // restoring only its main SKU and silently losing side inventory.
+  // text. Financial finalization must still commit after Square confirms it,
+  // so persist a staff-actionable reconciliation record instead of throwing
+  // and rolling back the payment/order state.
   const order = await (tx.shopOrder as any).findUnique({
     where: { id: orderId },
     select: { inventoryReservationJson: true },
@@ -58,7 +59,16 @@ export async function restoreOrderInventoryOnceTx(
     select: { productItemId: true, qty: true, sideSelectionsText: true },
   });
   if (legacyLines?.some((line) => line.sideSelectionsText)) {
-    throw new Error(`Order ${orderId} has combo side selections but no durable SKU reservation ledger; staff reconciliation is required.`);
+    await (tx as any).inventoryReconciliation.upsert({
+      where: { orderId },
+      create: {
+        orderId,
+        trigger: trigger.trigger,
+        reason: 'Combo side SKU reservation ledger is absent; inventory was not automatically restored.',
+      },
+      update: {},
+    });
+    return false;
   }
   const reservations = ledger ?? legacyLines ?? [];
   for (const line of reservations) {

@@ -12,6 +12,7 @@
     "test:cloudprnt": "tsc && node --test dist/modules/cloudprnt/cloudprnt.protocol.test.js",
     "test:kiosk-payment": "tsc && node --test test/kiosk-payment.test.js",
     "test:pickup-payment": "tsc && node --test test/pickup-payment.test.js",
+    "test:refund-recovery": "tsc && node --test test/payment-refund-recovery.test.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",

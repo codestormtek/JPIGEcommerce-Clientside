@@ -51,6 +51,13 @@ paymentsRouter.post(
   asyncHandler(ctrl.cancelStaffPayment),
 );
 paymentsRouter.post(
+  '/mobile/:paymentId/inventory-reconciliation/complete',
+  authenticate,
+  authorize('admin'),
+  validate(paymentIdSchema, 'params'),
+  asyncHandler(ctrl.completeInventoryReconciliation),
+);
+paymentsRouter.post(
   '/mobile/:paymentId/refunds',
   authenticate,
   authorize('admin'),

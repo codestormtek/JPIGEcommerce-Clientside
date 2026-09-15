@@ -84,6 +84,17 @@ export async function cancelStaffPayment(req: AuthRequest, res: Response): Promi
   );
 }
 
+export async function completeInventoryReconciliation(req: AuthRequest, res: Response): Promise<void> {
+  sendSuccess(
+    res,
+    await service.completeInventoryReconciliation(
+      req.params['paymentId'] as string,
+      ctxFromRequest(req, req.user!.sub),
+    ),
+    'Inventory reconciliation recorded',
+  );
+}
+
 export async function createStaffPaymentRefund(req: AuthRequest, res: Response): Promise<void> {
   sendSuccess(
     res,

@@ -10,6 +10,29 @@ ALTER TABLE "shop_orders"
 ALTER TABLE "shop_orders"
   ADD COLUMN "inventoryReservationJson" JSONB;
 
+CREATE TABLE "inventory_reconciliations" (
+    "id" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "trigger" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "financialActionAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "resolvedAt" TIMESTAMP(3),
+    "resolvedByUserId" TEXT,
+    CONSTRAINT "inventory_reconciliations_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX "inventory_reconciliations_orderId_key" ON "inventory_reconciliations"("orderId");
+CREATE INDEX "inventory_reconciliations_resolvedAt_financialActionAt_idx"
+  ON "inventory_reconciliations"("resolvedAt", "financialActionAt");
+ALTER TABLE "inventory_reconciliations" ADD CONSTRAINT "inventory_reconciliations_orderId_fkey"
+  FOREIGN KEY ("orderId") REFERENCES "shop_orders"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- Square confirmation and local finalization are separate failure domains.
+-- Null marks legacy/interrupted provider-completed refunds for retry-safe repair.
+ALTER TABLE "payment_refunds"
+  ADD COLUMN "localFinalizedAt" TIMESTAMP(3);
+CREATE INDEX "payment_refunds_providerStatus_localFinalizedAt_idx"
+  ON "payment_refunds"("providerStatus", "localFinalizedAt");
+
 CREATE UNIQUE INDEX "shop_orders_remotePickupRequestId_key"
   ON "shop_orders"("remotePickupRequestId");
 

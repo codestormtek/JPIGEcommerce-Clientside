@@ -19,6 +19,9 @@ export const CLOUDPRNT_TEXT_MEDIA_TYPE = 'text/plain';
 
 type PrinterIdentity = {
   id: string;
+  // This is an authenticated HTTP credential generation, not a CloudPRNT job
+  // token. It lets a credential rotation retire requests already in flight.
+  tokenHash: string;
   printerMac: string | null;
 };
 
@@ -37,6 +40,23 @@ type DeliverySlotJob = {
 
 function hashToken(token: string) {
   return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+function printerSessionWhere(printer: PrinterIdentity) {
+  return { id: printer.id, tokenHash: printer.tokenHash, isActive: true };
+}
+
+function printerSessionJobWhere(printer: PrinterIdentity) {
+  return { is: printerSessionWhere(printer) };
+}
+
+async function assertCurrentPrinterSession(printer: PrinterIdentity) {
+  const current = await prisma.cloudPrntPrinter.findFirst({
+    where: printerSessionWhere(printer),
+    select: { id: true, createdAt: true },
+  });
+  if (!current) throw ApiError.unauthorized('CloudPRNT credential has been retired; configure the replacement credential before polling.');
+  return current;
 }
 
 export function isCloudPrntSuccessCode(statusCode: string | number) {
@@ -371,12 +391,19 @@ export async function reprintJob(printerId: string, jobId: string, actorId: stri
   if (job.status === 'queued' || job.status === 'delivering') {
     throw ApiError.conflict('This ticket is still awaiting delivery. Do not reprint it unless delivery becomes acknowledged or an error is recorded.');
   }
-  // Do not silently retry an ambiguous network delivery. Reprint is a deliberate,
-  // auditable staff resolution after checking the kitchen. It releases the
-  // quarantine atomically with the labelled reprint, so an old DELETE cannot
-  // acknowledge another order in the meantime.
-  const reprint = await prisma.$transaction(async (tx) => {
-    if (isQuarantinedCloudPrntDelivery(job)) {
+  // CloudPRNT DELETE has no job identifier. Resolving an ambiguous delivery
+  // must therefore retire the HTTP credential generation before another ticket
+  // can be exposed. The staff member must clear the printer's pending request,
+  // install the replacement password, then resume polling.
+  const ambiguousDelivery = isQuarantinedCloudPrntDelivery(job);
+  const replacementToken = ambiguousDelivery ? `cpt_${crypto.randomBytes(32).toString('base64url')}` : null;
+  const result = await prisma.$transaction(async (tx) => {
+    const printer = await tx.cloudPrntPrinter.findUnique({
+      where: { id: printerId },
+      select: { id: true, name: true },
+    });
+    if (!printer) throw ApiError.notFound('CloudPRNT printer');
+    if (ambiguousDelivery) {
       const resolved = await tx.cloudPrntJob.updateMany({
         where: {
           id: job.id,
@@ -392,24 +419,37 @@ export async function reprintJob(printerId: string, jobId: string, actorId: stri
       if (!resolved.count) {
         throw ApiError.conflict('This ambiguous delivery was resolved concurrently. Refresh before creating another reprint.');
       }
+      await tx.cloudPrntPrinter.update({
+        where: { id: printerId },
+        data: {
+          tokenHash: hashToken(replacementToken!),
+          status: 'offline',
+          lastError: 'CloudPRNT credential retired after an unknown delivery. Clear pending printer requests, configure the replacement password, then resume polling.',
+        },
+      });
     }
-    return tx.cloudPrntJob.create({
+    const reprint = await tx.cloudPrntJob.create({
       data: {
         printerId, orderId: job.orderId, originalJobId: job.id, ticketKind: 'reprint',
         contentType: job.contentType,
         payloadText: `*** REPRINT — VERIFY WITH KITCHEN ***\n${job.payloadText}`,
       },
     });
+    return {
+      job: reprint,
+      replacementCredential: replacementToken ? { id: printer.id, name: printer.name, token: replacementToken } : null,
+    };
   });
   logAudit({
-    action: 'CLOUDPRNT_JOB_REPRINTED', entityType: 'CloudPrntJob', entityId: reprint.id,
+    action: 'CLOUDPRNT_JOB_REPRINTED', entityType: 'CloudPrntJob', entityId: result.job.id,
     beforeJson: {
       originalJobId: job.id, status: job.status,
-      ambiguousDelivery: isQuarantinedCloudPrntDelivery(job),
+      ambiguousDelivery,
+      credentialRetired: ambiguousDelivery,
     },
     ctx: { ...ctx, actorId },
   });
-  return reprint;
+  return result;
 }
 
 async function assertPrinterExists(printerId: string) {
@@ -461,33 +501,32 @@ function assertRequestIdentity(printer: PrinterIdentity, query: CloudPrntJobQuer
   }
 }
 
-export async function pollPrinter(printerId: string, metadata: {
+export async function pollPrinter(printer: PrinterIdentity, metadata: {
   printerMAC?: string | null;
   statusCode: string | number;
   printingInProgress?: boolean;
 }) {
-  await flagUnacknowledgedDelivery(printerId);
-  const authenticatedPrinter = await prisma.cloudPrntPrinter.findUniqueOrThrow({
-    where: { id: printerId },
-    select: { id: true, createdAt: true },
-  });
+  const authenticatedPrinter = await assertCurrentPrinterSession(printer);
+  await flagUnacknowledgedDelivery(printer.id);
   await reconcileCapturedTicketsForPrinter(authenticatedPrinter);
   const online = isCloudPrntSuccessCode(metadata.statusCode);
-  await prisma.cloudPrntPrinter.update({
-    where: { id: printerId },
+  const seen = await prisma.cloudPrntPrinter.updateMany({
+    where: printerSessionWhere(printer),
     data: {
       lastSeenAt: new Date(), status: online ? 'online' : 'error',
       lastError: online ? null : `Printer status: ${String(metadata.statusCode).slice(0, 160)}`,
       ...(metadata.printerMAC ? { printerMac: metadata.printerMAC } : {}),
     },
   });
+  if (!seen.count) throw ApiError.unauthorized('CloudPRNT credential has been retired; configure the replacement credential before polling.');
   // A job is reserved during the poll, not the GET. This makes GET repeatable,
   // as CloudPRNT requires, while keeping one durable active job per printer.
   // Only the documented DELETE confirmation can mark it printed; a later POST
   // is not proof that a physical ticket was printed.
   const deliverySlots = await prisma.cloudPrntJob.findMany({
     where: {
-      printerId,
+      printerId: printer.id,
+      printer: printerSessionJobWhere(printer),
       OR: [
         { status: 'delivering' },
         { status: 'error', acknowledgedAt: null, lastError: UNACKNOWLEDGED_DELIVERY_ERROR },
@@ -504,13 +543,13 @@ export async function pollPrinter(printerId: string, metadata: {
   let active: { id: string } | undefined = deliverySlot;
   if (!active && online && !metadata.printingInProgress) {
     const queued = await prisma.cloudPrntJob.findFirst({
-      where: { printerId, status: 'queued' },
+      where: { printerId: printer.id, printer: printerSessionJobWhere(printer), status: 'queued' },
       orderBy: { createdAt: 'asc' },
       select: { id: true },
     });
     if (queued) {
       const claimed = await prisma.cloudPrntJob.updateMany({
-        where: { id: queued.id, status: 'queued' },
+        where: { id: queued.id, status: 'queued', printer: printerSessionJobWhere(printer) },
         data: { status: 'delivering', fetchedAt: new Date(), attemptCount: { increment: 1 } },
       });
       if (claimed.count) active = queued;
@@ -530,7 +569,11 @@ export async function fetchJob(printer: PrinterIdentity, query: CloudPrntJobQuer
     throw new ApiError(415, `Unsupported CloudPRNT media type: ${query.type}`);
   }
   const job = await prisma.cloudPrntJob.findFirst({
-    where: { printerId: printer.id, status: 'delivering' },
+    where: {
+      printerId: printer.id,
+      printer: printerSessionJobWhere(printer),
+      status: 'delivering',
+    },
     orderBy: { fetchedAt: 'asc' },
     select: { id: true, contentType: true, payloadText: true },
   });
@@ -545,6 +588,7 @@ export async function completeJob(printer: PrinterIdentity, query: CloudPrntJobQ
   const deliverySlots = await prisma.cloudPrntJob.findMany({
     where: {
       printerId: printer.id,
+      printer: printerSessionJobWhere(printer),
       OR: [
         { status: 'delivering' },
         { status: 'error', acknowledgedAt: null, lastError: UNACKNOWLEDGED_DELIVERY_ERROR },
@@ -567,6 +611,7 @@ export async function completeJob(printer: PrinterIdentity, query: CloudPrntJobQ
     where: {
       id: current.id,
       status: current.status,
+      printer: printerSessionJobWhere(printer),
       ...(isQuarantinedCloudPrntDelivery(current)
         ? { acknowledgedAt: null, lastError: UNACKNOWLEDGED_DELIVERY_ERROR }
         : {}),
@@ -578,8 +623,8 @@ export async function completeJob(printer: PrinterIdentity, query: CloudPrntJobQ
     },
   });
   if (completed.count && !printed) {
-    await prisma.cloudPrntPrinter.update({
-      where: { id: printer.id },
+    await prisma.cloudPrntPrinter.updateMany({
+      where: printerSessionWhere(printer),
       data: { status: 'error', lastError: `Printer completion status: ${(query.code ?? 'unknown').slice(0, 160)}` },
     });
   }

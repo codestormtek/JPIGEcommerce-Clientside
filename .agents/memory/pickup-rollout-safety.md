@@ -12,3 +12,7 @@ Do not assume the external PostgreSQL connection in this workspace is isolated f
 Keep a printer's ambiguous delivery slot quarantined rather than advancing to the next ticket automatically.
 
 **Why:** A late completion acknowledgement without a per-job identity can otherwise acknowledge a different ticket. Likewise, do not backfill historical paid orders when registering a new kitchen printer.
+
+**How to apply:** Staff resolution of ambiguous printing must retire the old authentication generation and require clearing pending hardware requests before configuring the replacement credential. Do not simplify this into an ordinary reprint.
+
+**Why:** Credential retirement rejects already-authenticated stale requests, but cannot distinguish an old completion that firmware resends using new credentials. Hardware clearing is part of the safety contract.

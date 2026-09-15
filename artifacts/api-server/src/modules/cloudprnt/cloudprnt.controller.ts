@@ -34,7 +34,14 @@ export async function jobs(req: AuthRequest, res: Response) {
 }
 
 export async function reprint(req: AuthRequest, res: Response) {
-  sendCreated(res, await service.reprintJob(req.params.printerId, req.params.jobId, req.user!.sub, ctxFromRequest(req, req.user!.sub)), 'Reprint queued');
+  const result = await service.reprintJob(req.params.printerId, req.params.jobId, req.user!.sub, ctxFromRequest(req, req.user!.sub));
+  sendCreated(
+    res,
+    result,
+    result.replacementCredential
+      ? 'Reprint queued. Clear pending printer requests and configure the replacement credential before printing resumes.'
+      : 'Reprint queued',
+  );
 }
 
 async function printerForRequest(req: Request, res: Response) {
@@ -50,7 +57,7 @@ async function printerForRequest(req: Request, res: Response) {
 
 export async function poll(req: Request, res: Response) {
   const printer = await printerForRequest(req, res);
-  const response = await service.pollPrinter(printer.id, req.body);
+  const response = await service.pollPrinter(printer, req.body);
   res.set('Cache-Control', 'no-store');
   res.json(response);
 }

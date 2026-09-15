@@ -118,6 +118,51 @@ test('a thrown definitive Square decline is failed/restocked, unlike a transport
   assert.equal(restoreCalls, 1);
 });
 
+test('documented Square Payments terminal card/request failures are definitive', async () => {
+  // These names are the installed Square SDK ErrorCode values. They represent
+  // rejected payment instruments/entry attempts, not transport uncertainty.
+  const terminalCodes = [
+    'INVALID_ACCOUNT',
+    'VOICE_FAILURE',
+    'PAN_FAILURE',
+    'EXPIRATION_FAILURE',
+    'INVALID_POSTAL_CODE',
+    'MANUALLY_ENTERED_PAYMENT_NOT_SUPPORTED',
+  ];
+  for (const code of terminalCodes) {
+    restoreCalls = 0;
+    order.payments[0] = { id: 'pickup-payment-1', status: 'pending', providerTxnId: null, createdAt: new Date(), capturedAt: null };
+    squareCreate = async () => {
+      const error = new Error(code);
+      error.statusCode = 400;
+      error.body = { errors: [{ code }] };
+      throw error;
+    };
+
+    const result = await createPickupOrder(input);
+    assert.equal(result.paymentStatus, 'canceled', code);
+    assert.equal(order.payments[0].status, 'failed', code);
+    assert.equal(restoreCalls, 1, code);
+  }
+});
+
+test('408, 429, and 5xx override even card-coded Square errors as outcome-uncertain', async () => {
+  for (const statusCode of [408, 429, 500, 503]) {
+    restoreCalls = 0;
+    order.payments[0] = { id: 'pickup-payment-1', status: 'pending', providerTxnId: null, createdAt: new Date(), capturedAt: null };
+    squareCreate = async () => {
+      const error = new Error('response outcome uncertain');
+      error.statusCode = statusCode;
+      error.errors = [{ code: 'CARD_DECLINED' }];
+      throw error;
+    };
+
+    await assert.rejects(() => createPickupOrder(input), /Payment is being confirmed/, String(statusCode));
+    assert.equal(order.payments[0].status, 'pending', String(statusCode));
+    assert.equal(restoreCalls, 0, String(statusCode));
+  }
+});
+
 test('public lost response remains recoverable and only enables same-ID fresh-nonce replay after definitive empty lookup', async () => {
   order.payments[0] = { id: 'pickup-payment-1', status: 'pending', providerTxnId: null, createdAt: new Date(), capturedAt: null };
   prisma.shopOrder.findUnique = async () => order;
@@ -153,4 +198,26 @@ test('durable reservation ledger restores main and combo-side SKU quantities exa
 
   assert.equal(restored, true);
   assert.deepEqual(increments, [['main-sku', 1], ['combo-side-sku', 2]]);
+});
+
+test('legacy combo without a ledger finalizes safely with a staff reconciliation record and no guessed stock', async () => {
+  const reconciliationRecords = [];
+  const tx = {
+    $executeRaw: async () => {},
+    inventoryRestoration: { findUnique: async () => null, create: async () => assert.fail('must not record a false restoration') },
+    inventoryReconciliation: {
+      upsert: async ({ create }) => { reconciliationRecords.push(create); return create; },
+    },
+    shopOrder: { findUnique: async () => ({ inventoryReservationJson: null }) },
+    orderLine: {
+      findMany: async () => [{ productItemId: 'main-sku', qty: 1, sideSelectionsText: 'Mac & Cheese' }],
+    },
+    productItem: { update: async () => assert.fail('must not guess a combo-side SKU') },
+  };
+
+  const restored = await restoreOrderInventoryOnceTx(tx, 'legacy-combo-order', { trigger: 'refund', refundId: 'refund-1' });
+
+  assert.equal(restored, false);
+  assert.equal(reconciliationRecords.length, 1);
+  assert.match(reconciliationRecords[0].reason, /ledger is absent/i);
 });
