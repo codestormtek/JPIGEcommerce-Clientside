@@ -15,6 +15,7 @@ const menu = [
     text: "Kiosk",
     subMenu: [
       { text: "Kitchen Queue", link: "/kitchen-queue" },
+      { text: "Kitchen Printers", link: "/kitchen-printers" },
       { text: "Kiosk Devices", link: "/kiosk-devices" },
       { text: "Kiosk Marketing", link: "/kiosk-marketing" },
     ],
@@ -84,6 +85,11 @@ const menu = [
   },
 
   { heading: "Catering & Menus" },
+  {
+    icon: "call",
+    text: "Phone Pickup",
+    link: "/pickup",
+  },
   {
     icon: "opt-dot-alt",
     text: "Catering",
@@ -281,6 +287,11 @@ const menu = [
     icon: "share-alt",
     text: "Social Links",
     link: "/social-links",
+  },
+  {
+    icon: "link",
+    text: "Smart Links",
+    link: "/smart-links",
   },
   {
     icon: "cc-alt2",

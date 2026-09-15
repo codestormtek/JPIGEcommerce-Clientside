@@ -62,6 +62,25 @@ After deployment:
 
 ## Storefront and kiosk
 
+### Smart Links, phone pickup, and kitchen printers
+
+The existing Cloudflare admin portal now owns these management routes:
+
+- `/smart-links`: destinations, QR/sign exports, NFC URLs, configuration, and visit history.
+- `/pickup`: event, menu, wait estimate, tax, and ordering availability.
+- `/kitchen-printers`: CloudPRNT setup, ticket history, and controlled reprints.
+
+The customer website retains `/go/[slug]` and `/pickup` for scanning,
+menu browsing, ordering, and payment. Its former management URLs
+`/admin/smart-links`, `/admin/pickup`, and `/admin/kitchen-printers`
+redirect to the matching portal routes. Release the updated admin before
+releasing those storefront redirects. Do not substitute the customer
+website's login for the portal's existing authentication.
+
+The portal port has been checked using isolated browser fixtures, not live
+payments or printer operations. Validate authenticated live reads separately;
+physical printing and payment tests need a controlled, approved test window.
+
 The updated kiosk client is in `artifacts/jiggling-pig`. Release it only after
 the Render API campaign endpoint is live. Its production environment must route
 `/api/v1` requests to `https://api.thejigglingpig.com`.

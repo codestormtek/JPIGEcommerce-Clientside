@@ -53,26 +53,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild tooltip="Kitchen Printers">
-                      <Link href="/admin/kitchen-printers">
+                      <a href="https://admin.thejigglingpig.com/kitchen-printers">
                         <Printer className="w-4 h-4 mr-2" />
                         <span>Kitchen Printers</span>
-                      </Link>
+                      </a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild tooltip="Smart Links">
-                        <Link href="/admin/smart-links">
+                        <a href="https://admin.thejigglingpig.com/smart-links">
                           <Link2 className="w-4 h-4 mr-2" />
                           <span>Smart Links</span>
-                        </Link>
+                        </a>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild tooltip="Phone Pickup">
-                        <Link href="/admin/pickup">
+                        <a href="https://admin.thejigglingpig.com/pickup">
                           <MapPin className="w-4 h-4 mr-2" />
                           <span>Phone Pickup</span>
-                        </Link>
+                        </a>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
