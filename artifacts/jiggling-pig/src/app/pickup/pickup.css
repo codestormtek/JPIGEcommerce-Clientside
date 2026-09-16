@@ -19,6 +19,10 @@
   background: var(--jp-bg);
   color: var(--jp-cream);
   font-family: var(--font-outfit), sans-serif;
+  /* The legacy storefront sets html to 10px. Keep pickup copy at a
+     predictable, readable baseline without changing the storefront. */
+  font-size: 16px;
+  line-height: 1.45;
 }
 
 .jp-shell *,
@@ -1043,5 +1047,373 @@
   .jp-shell *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/*
+ * Responsive interaction guardrails
+ *
+ * These values intentionally use px rather than rem. The shared storefront
+ * CSS uses a 10px root, which otherwise makes the pickup route's copy and
+ * controls too small on phones. Keep this block scoped to pickup so the
+ * storefront and kiosk themes remain unchanged.
+ */
+.jp-shell button {
+  min-height: 48px;
+}
+
+.jp-shell .jp-kicker {
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.jp-pickup-root .jp-center {
+  overflow-y: auto;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom));
+}
+
+.jp-pickup-root .jp-center > h1 {
+  font-size: clamp(58px, 13vw, 112px);
+}
+
+.jp-shell .jp-closed-card strong {
+  font-size: 13px;
+}
+
+.jp-shell .jp-receipt > p {
+  font-size: 12px;
+}
+
+.jp-shell .jp-receipt > strong {
+  font-size: 56px;
+}
+
+.jp-shell .jp-receipt div {
+  font-size: 16px;
+}
+
+.jp-shell .jp-product-img > span:not(.jp-product-fallback) {
+  font-size: 12px;
+}
+
+.jp-shell .jp-primary,
+.jp-shell .jp-ghost {
+  min-height: 53px;
+  font-size: 16px;
+}
+
+.jp-shell .jp-top {
+  min-height: 108px;
+}
+
+.jp-shell .jp-menu {
+  padding: 40px 32px;
+}
+
+.jp-shell .jp-menu h1 {
+  font-size: clamp(52px, 7vw, 96px);
+}
+
+.jp-shell .jp-category-nav {
+  overscroll-behavior-inline: contain;
+}
+
+.jp-shell .jp-category-nav button {
+  min-height: 48px;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.jp-shell .jp-category-title h2 {
+  font-size: clamp(30px, 3vw, 42px);
+}
+
+.jp-shell .jp-category-title span {
+  font-size: 12px;
+}
+
+.jp-shell .jp-product {
+  min-height: 48px;
+}
+
+.jp-shell .jp-product h2 {
+  font-size: 22px;
+}
+
+.jp-shell .jp-product p {
+  height: auto;
+  min-height: 44px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.jp-shell .jp-product footer {
+  font-size: 22px;
+}
+
+.jp-shell .jp-product footer i {
+  width: 44px;
+  height: 44px;
+  line-height: 42px;
+}
+
+.jp-shell .jp-cart {
+  padding: 32px 20px;
+}
+
+.jp-shell .jp-cart h2 {
+  font-size: 32px;
+}
+
+.jp-shell .jp-line {
+  font-size: 16px;
+}
+
+.jp-shell .jp-qty button {
+  width: 48px;
+  height: 48px;
+  min-height: 48px;
+  font-size: 22px;
+}
+
+.jp-shell .jp-cost {
+  font-size: 14px;
+}
+
+.jp-shell .jp-cost strong {
+  font-size: 24px;
+}
+
+.jp-shell .jp-back {
+  min-height: 48px;
+  padding: 8px 12px;
+  font-size: 16px;
+}
+
+.jp-shell .jp-back span {
+  font-size: 32px;
+}
+
+.jp-pickup-root .jp-checkout {
+  overflow-y: auto;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+.jp-shell .jp-order-summary b {
+  font-size: 22px;
+}
+
+.jp-shell .jp-order-summary small {
+  font-size: 14px;
+}
+
+.jp-shell .jp-check-panel h1 {
+  font-size: clamp(48px, 13vw, 80px);
+}
+
+.jp-shell .jp-check-panel label {
+  font-size: 14px;
+}
+
+.jp-shell .jp-check-panel input {
+  min-height: 48px;
+  padding: 12px 14px;
+  /* Prevent iOS Safari from zooming when a field receives focus. */
+  font-size: 16px;
+}
+
+.jp-shell .jp-safe {
+  font-size: 14px;
+}
+
+.jp-shell .jp-alert {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.jp-pickup-root .jp-modal {
+  overflow-y: auto;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.jp-pickup-root .jp-modal > section {
+  max-height: min(88dvh, 720px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+.jp-pickup-root .jp-close {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0;
+  line-height: 1;
+}
+
+.jp-pickup-root .jp-selected {
+  font-size: 16px;
+}
+
+.jp-pickup-root .jp-sides button {
+  min-height: 64px;
+  font-size: 16px;
+}
+
+.jp-pickup-root .jp-sides small {
+  font-size: 14px;
+}
+
+.jp-shell .jp-link {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+}
+
+@media (min-width: 801px) and (max-width: 1100px) {
+  .jp-shell .jp-order-body {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  .jp-shell .jp-menu {
+    padding: 32px 24px;
+  }
+
+  .jp-shell .jp-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .jp-shell .jp-cart {
+    padding: 28px 20px;
+  }
+}
+
+@media (max-width: 800px) {
+  .jp-pickup-root .jp-order {
+    padding-bottom: 0;
+  }
+
+  .jp-shell .jp-top {
+    min-height: 90px;
+  }
+
+  .jp-shell .jp-menu {
+    padding: 28px 16px calc(152px + env(safe-area-inset-bottom));
+  }
+
+  .jp-shell .jp-menu h1 {
+    font-size: clamp(48px, 18vw, 72px);
+  }
+
+  .jp-shell .jp-category-nav {
+    position: sticky;
+    top: 0;
+    margin-right: -16px;
+    margin-left: -16px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .jp-shell .jp-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .jp-shell .jp-product p {
+    min-height: 44px;
+  }
+
+  .jp-shell .jp-cart {
+    position: fixed;
+    z-index: 10;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border: 1px solid var(--jp-line);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 24px rgb(9 6 4 / 35%);
+    max-height: calc(100dvh - env(safe-area-inset-top) - 16px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .jp-shell .jp-cart h2 {
+    font-size: 24px;
+  }
+
+  .jp-shell .jp-cart-filled > .jp-primary {
+    margin-top: 0;
+  }
+
+  .jp-pickup-root .jp-checkout {
+    padding: calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .jp-shell .jp-check-panel {
+    margin: 16px auto 24px;
+    padding: 0;
+  }
+
+  .jp-shell .jp-check-panel > .jp-brand-logo {
+    width: 96px;
+    margin-bottom: 16px;
+  }
+
+  .jp-shell .jp-check-panel h1 {
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 520px) {
+  .jp-shell .jp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* A compact horizontal card keeps descriptions readable instead of
+     squeezing two cards into a 320–390px phone viewport. */
+  .jp-shell .jp-product {
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr);
+    min-height: 132px;
+  }
+
+  .jp-shell .jp-product-img {
+    height: auto;
+    min-height: 132px;
+  }
+
+  .jp-shell .jp-product > div:last-child {
+    min-width: 0;
+    padding: 14px;
+  }
+
+  .jp-shell .jp-product h2 {
+    font-size: 20px;
+  }
+
+  .jp-shell .jp-product p {
+    min-height: 0;
+    margin: 8px 0;
+  }
+
+  .jp-shell .jp-product footer {
+    font-size: 20px;
+  }
+
+  .jp-pickup-root .jp-sides {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 700px) {
+  .jp-pickup-root .jp-center {
+    justify-content: flex-start;
+    padding-top: 32px;
   }
 }
