@@ -1,0 +1,90 @@
+2026-09-16T02:26:08.480559044Z ==> Downloading cache...
+2026-09-16T02:26:08.507303093Z ==> Cloning from https://github.com/codestormtek/JPIGEcommerce-Clientside
+2026-09-16T02:26:17.058909865Z ==> Checking out commit 5a8661937296895d8f6aa8e17db0bc48b8480649 in branch main
+2026-09-16T02:26:27.975444994Z ==> Downloaded 409MB in 13s. Extraction took 6s.
+2026-09-16T02:26:29.732531409Z ==> Using Node.js version 22.22.0 (default)
+2026-09-16T02:26:29.732541802Z ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+2026-09-16T02:26:29.732662261Z ==> Installing Node.js version 22.22.0...
+2026-09-16T02:26:30.341121882Z ==> Running build command 'npx --yes pnpm@10.26.1 install --frozen-lockfile --prod=false && npx --yes pnpm@10.26.1 --filter @workspace/jiggling-pig run build'...
+2026-09-16T02:26:53.663752701Z 
+2026-09-16T02:26:53.663768496Z > @workspace/jiggling-pig@0.0.0 build /opt/render/project/src/artifacts/jiggling-pig
+2026-09-16T02:26:53.663771152Z > next build
+2026-09-16T02:26:53.663772506Z 
+2026-09-16T02:26:53.984346941Z ▲ Next.js 16.3.4 (Turbopack)
+2026-09-16T02:26:54.008274226Z ✓ Running next.config.ts took 23ms
+2026-09-16T02:26:54.008463411Z ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+2026-09-16T02:26:54.017043336Z 
+2026-09-16T02:26:54.045663471Z   Creating an optimized production build ...
+2026-09-16T02:27:05.750649892Z ✓ Compiled successfully in 11.5s
+2026-09-16T02:27:05.752157074Z   Running TypeScript ...
+2026-09-16T02:27:20.704497458Z   Finished TypeScript in 15.0s ...
+2026-09-16T02:27:20.706275618Z   Collecting page data using 47 workers ...
+2026-09-16T02:27:35.082613302Z   Generating static pages using 47 workers (0/3) ...
+2026-09-16T02:27:35.211224193Z ✓ Generating static pages using 47 workers (3/3) in 129ms
+2026-09-16T02:27:35.217740787Z   Finalizing page optimization ...
+2026-09-16T02:27:36.148946741Z 
+2026-09-16T02:27:36.152024637Z Route (app)
+2026-09-16T02:27:36.152034094Z ┌ ƒ /
+2026-09-16T02:27:36.152036332Z ├ ƒ /_not-found
+2026-09-16T02:27:36.152037948Z ├ ƒ /404
+2026-09-16T02:27:36.152039311Z ├ ƒ /about
+2026-09-16T02:27:36.152040723Z ├ ƒ /account
+2026-09-16T02:27:36.152042504Z ├ ƒ /admin/kiosk-marketing
+2026-09-16T02:27:36.152044628Z ├ ƒ /admin/kitchen-printers
+2026-09-16T02:27:36.152045984Z ├ ƒ /admin/pickup
+2026-09-16T02:27:36.152047299Z ├ ƒ /admin/smart-links
+2026-09-16T02:27:36.152048721Z ├ ƒ /bbq-live
+2026-09-16T02:27:36.152049995Z ├ ƒ /blog
+2026-09-16T02:27:36.152051348Z ├ ƒ /blog-list-left-sidebar
+2026-09-16T02:27:36.152052701Z ├ ƒ /blog-list-right-sidebar
+2026-09-16T02:27:36.152053988Z ├ ƒ /blog/[slug]
+2026-09-16T02:27:36.152055321Z ├ ƒ /cancellation-returns
+2026-09-16T02:27:36.152056568Z ├ ƒ /cart
+2026-09-16T02:27:36.152057926Z ├ ƒ /catering
+2026-09-16T02:27:36.152059278Z ├ ƒ /checkout
+2026-09-16T02:27:36.152060563Z ├ ƒ /contact
+2026-09-16T02:27:36.152061882Z ├ ƒ /cookies-policy
+2026-09-16T02:27:36.152063189Z ├ ƒ /faq
+2026-09-16T02:27:36.152064521Z ├ ƒ /forgot-password
+2026-09-16T02:27:36.152065779Z ├ ƒ /gallery
+2026-09-16T02:27:36.152067165Z ├ ƒ /go/[slug]
+2026-09-16T02:27:36.152075909Z ├ ○ /icon.png
+2026-09-16T02:27:36.152077482Z ├ ƒ /invoice
+2026-09-16T02:27:36.15208142Z ├ ƒ /kiosk
+2026-09-16T02:27:36.152082771Z ├ ƒ /login
+2026-09-16T02:27:36.152084099Z ├ ƒ /payments
+2026-09-16T02:27:36.152085388Z ├ ƒ /pickup
+2026-09-16T02:27:36.152086684Z ├ ƒ /privacy-policy
+2026-09-16T02:27:36.152088133Z ├ ƒ /register
+2026-09-16T02:27:36.152089472Z ├ ƒ /reset-password
+2026-09-16T02:27:36.152090786Z ├ ƒ /shipping
+2026-09-16T02:27:36.152092032Z ├ ƒ /shop
+2026-09-16T02:27:36.15209333Z ├ ƒ /shop-compare
+2026-09-16T02:27:36.152096384Z ├ ƒ /shop-details-2
+2026-09-16T02:27:36.152097688Z ├ ƒ /shop-details-4
+2026-09-16T02:27:36.152098974Z ├ ƒ /shop-details-affiliats
+2026-09-16T02:27:36.152100848Z ├ ƒ /shop-details-right-sidebar
+2026-09-16T02:27:36.152102299Z ├ ƒ /shop-details-variable
+2026-09-16T02:27:36.152103568Z ├ ƒ /shop-grid-top-filter
+2026-09-16T02:27:36.152104866Z ├ ƒ /shop-list-sidebar
+2026-09-16T02:27:36.15210615Z ├ ƒ /shop-list-top-filter
+2026-09-16T02:27:36.152107542Z ├ ƒ /shop/[slug]
+2026-09-16T02:27:36.152108812Z ├ ƒ /store
+2026-09-16T02:27:36.152110246Z ├ ƒ /terms-condition
+2026-09-16T02:27:36.152111522Z ├ ƒ /trackorder
+2026-09-16T02:27:36.152112843Z ├ ƒ /vendor-details
+2026-09-16T02:27:36.152114187Z ├ ƒ /vendor-grid
+2026-09-16T02:27:36.152115537Z ├ ƒ /vendor-list
+2026-09-16T02:27:36.152116865Z └ ƒ /wishlist
+2026-09-16T02:27:36.152118026Z 
+2026-09-16T02:27:36.152119312Z Route (pages)
+2026-09-16T02:27:36.152120725Z ─ ○ /not-found
+2026-09-16T02:27:36.152121873Z 
+2026-09-16T02:27:36.152130103Z ○  (Static)   prerendered as static content
+2026-09-16T02:27:36.152131567Z ƒ  (Dynamic)  server-rendered on demand
+2026-09-16T02:27:36.152132735Z 
+2026-09-16T02:27:38.279117341Z ==> Uploading build...
+2026-09-16T02:28:15.336721729Z ==> Deploying...
+2026-09-16T02:28:15.451745488Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-09-16T02:28:14.004122014Z ==> Uploaded in 24.2s. Compression took 11.5s
+2026-09-16T02:28:14.018103032Z ==> Build successful 🎉
