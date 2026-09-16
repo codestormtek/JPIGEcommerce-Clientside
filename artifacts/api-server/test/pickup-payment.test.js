@@ -12,6 +12,14 @@ const order = {
 };
 let restoreCalls = 0;
 let squareCreate;
+let placedInput;
+const kioskMenu = {
+  categories: [],
+  products: [
+    { id: 'plate', items: [{ id: 'item-1' }], categoryIds: [] },
+    { id: 'new-kiosk-product', items: [{ id: 'new-kiosk-item' }], categoryIds: [] },
+  ],
+};
 const prisma = {
   siteUser: { findFirst: async () => ({ id: 'pickup-user' }) },
   shopOrder: {
@@ -66,9 +74,17 @@ mock('../dist/services/orderInventoryRestoration', {
 mock('../dist/services/expoPushNotifications', { enqueueStaffOrderPush: async () => {} });
 mock('../dist/modules/cloudprnt/cloudprnt.service', { enqueueCapturedOrderKitchenTickets: async () => {} });
 mock('../dist/modules/kiosk/kiosk.service', {
-  getKioskMenu: async () => ({
-    categories: [], products: [{ id: 'plate', items: [{ id: 'item-1' }], categoryIds: [] }],
-  }),
+  getKioskMenu: async () => kioskMenu,
+  assertKioskMenuLineEligibility: (menu, lines) => {
+    const itemIds = new Set(menu.products.flatMap(product => product.items.map(item => item.id)));
+    const productIds = new Set(menu.products.map(product => product.id));
+    if (
+      lines.some(line => !itemIds.has(line.productItemId))
+      || lines.flatMap(line => line.sideProductIds || []).some(id => !productIds.has(id))
+    ) {
+      throw new Error('MENU_CHANGED');
+    }
+  },
   resolveComboSides: async lines => lines,
 });
 mock('../dist/modules/site-settings/site-settings.repository', {
@@ -78,10 +94,13 @@ mock('../dist/modules/site-settings/site-settings.repository', {
   }) }),
 });
 mock('../dist/modules/orders/orders.repository', {
-  placeOrder: async () => order,
+  placeOrder: async (_userId, input) => {
+    placedInput = input;
+    return order;
+  },
 });
 
-const { createPickupOrder, recoverPickupOrderAttempt } = require('../dist/modules/pickup/pickup.service');
+const { createPickupOrder, getPublicPickupConfig, recoverPickupOrderAttempt } = require('../dist/modules/pickup/pickup.service');
 delete require.cache[require.resolve('../dist/services/orderInventoryRestoration')];
 const { restoreOrderInventoryOnceTx } = require('../dist/services/orderInventoryRestoration');
 const input = {
@@ -89,6 +108,40 @@ const input = {
   customerName: 'Customer', customerPhone: '5555550100', squareNonce: 'fresh-nonce',
   source: 'remote', lines: [{ productItemId: 'item-1', qty: 1 }],
 };
+
+test('pickup public menu mirrors the full kiosk menu despite a legacy stored allowlist', async () => {
+  const result = await getPublicPickupConfig();
+
+  assert.deepEqual(
+    result.menu.products.map(product => product.id),
+    kioskMenu.products.map(product => product.id),
+  );
+});
+
+test('pickup order eligibility follows the kiosk menu, not a legacy stored allowlist', async () => {
+  restoreCalls = 0;
+  placedInput = null;
+  order.payments[0] = { id: 'pickup-payment-1', status: 'pending', providerTxnId: null, createdAt: new Date(), capturedAt: null };
+  squareCreate = async () => ({ paymentId: 'square-declined-new-product', status: 'FAILED' });
+
+  const accepted = await createPickupOrder({
+    ...input,
+    clientRequestId: '8083c231-4181-4f4b-8b23-1e92fa6d4811',
+    expectedTotalCents: 1200,
+    lines: [{ productItemId: 'new-kiosk-item', qty: 1 }],
+  });
+  assert.equal(accepted.paymentStatus, 'canceled', 'the kiosk-visible product reached payment validation');
+  assert.equal(placedInput.expectedTotalCents, 1200);
+
+  await assert.rejects(
+    () => createPickupOrder({
+      ...input,
+      clientRequestId: '8083c231-4181-4f4b-8b23-1e92fa6d4812',
+      lines: [{ productItemId: 'not-in-kiosk-menu', qty: 1 }],
+    }),
+    /MENU_CHANGED/,
+  );
+});
 
 test('public Square definitive decline terminally restores the durable reservation once', async () => {
   restoreCalls = 0;

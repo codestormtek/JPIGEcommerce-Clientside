@@ -1,9 +1,17 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiPost, isMenuChangedError } from "@/lib/api";
 import { cartLineKey, formatMoney, sidesUpcharge, type KioskCartLine, type KioskMenu, type KioskProduct, type KioskSideChoice } from "@/lib/kiosk";
+import {
+  getKioskMenuAllSections,
+  getKioskMenuSections,
+  getKioskMenuTabLabel,
+  getKioskMenuTabs,
+  reconcileKioskCart,
+  reconcileKioskSidePicker,
+} from "@/lib/menu";
 import { useSquarePayments } from "@/lib/useSquarePayments";
 
 type PickupConfig = {
@@ -83,10 +91,30 @@ export default function PickupPage() {
   const [chosenSides, setChosenSides] = useState<KioskSideChoice[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [menuRefreshError, setMenuRefreshError] = useState("");
+  const [menuRefreshing, setMenuRefreshing] = useState(false);
+  const [cartReviewRequired, setCartReviewRequired] = useState(false);
+  const [invalidCartLineKeys, setInvalidCartLineKeys] = useState<string[]>([]);
   const [result, setResult] = useState<PickupResult | null>(null);
   const [canReplay, setCanReplay] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
   const requestId = useRef<string | null>(null);
+  const stageRef = useRef<Stage>(stage);
+  const cartRef = useRef<KioskCartLine[]>(cart);
+  const configRef = useRef<PickupConfig | null>(config);
+  const configRequestRef = useRef<Promise<PickupConfig> | null>(null);
+  const forceConfigApplyRef = useRef(false);
+  stageRef.current = stage;
+  cartRef.current = cart;
+  configRef.current = config;
+
+  useEffect(() => {
+    setInvalidCartLineKeys((previous) =>
+      previous.filter((lineKey) =>
+        cart.some((line) => cartLineKey(line.item.id, line.sides) === lineKey),
+      ),
+    );
+  }, [cart]);
 
   const square = useSquarePayments({
     enabled: stage === "payment" && Boolean(config?.cardEnabled),
@@ -96,10 +124,47 @@ export default function PickupPage() {
     containerSelector: "#pickup-square-card",
   });
 
+  const loadPickupConfig = useCallback(async (
+    isRefresh = false,
+    forceApply = false,
+  ): Promise<PickupConfig> => {
+    if (forceApply) forceConfigApplyRef.current = true;
+    if (
+      isRefresh &&
+      !forceApply &&
+      (typeof document !== "undefined" &&
+        (document.visibilityState !== "visible" || stageRef.current !== "menu"))
+    ) {
+      return configRef.current as PickupConfig;
+    }
+    if (configRequestRef.current) return configRequestRef.current;
+    const request = apiGet<PickupConfig | { data: PickupConfig }>("/pickup").then(responseData);
+    configRequestRef.current = request;
+    setMenuRefreshing(true);
+    try {
+      const next = await request;
+      if (!isRefresh || forceConfigApplyRef.current || stageRef.current === "menu") {
+        const reconciliation = reconcileKioskCart(cartRef.current, next.menu);
+        if (reconciliation.changed) {
+          setCart(reconciliation.cart);
+          setCartReviewRequired(true);
+          setInvalidCartLineKeys(reconciliation.invalidCartLineKeys);
+        }
+        configRef.current = next;
+        setConfig(next);
+      }
+      return next;
+    } finally {
+      if (configRequestRef.current === request) configRequestRef.current = null;
+      forceConfigApplyRef.current = false;
+      setMenuRefreshing(false);
+    }
+  }, []);
+
   useEffect(() => {
     void (async () => {
       try {
-        setConfig(responseData(await apiGet<PickupConfig | { data: PickupConfig }>("/pickup")));
+        await loadPickupConfig();
         const pending = readPendingAttempt();
         if (pending) {
           if (pending.requestId) requestId.current = pending.requestId;
@@ -121,6 +186,36 @@ export default function PickupPage() {
   // The first load deliberately owns recovery; poll is stable enough for this initial call.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const refreshPickupMenu = useCallback(async () => {
+    if (!configRef.current || stageRef.current !== "menu" || document.visibilityState !== "visible") {
+      return;
+    }
+    try {
+      await loadPickupConfig(true);
+      setMenuRefreshError("");
+    } catch (cause) {
+      // Keep the last known-good menu, cart, modal, and checkout state.
+      setMenuRefreshError(
+        cause instanceof Error
+          ? cause.message
+          : "Menu refresh failed. We are showing the last known menu.",
+      );
+    }
+  }, [loadPickupConfig]);
+
+  useEffect(() => {
+    if (stage !== "menu" || !config) return;
+    const timer = window.setInterval(() => void refreshPickupMenu(), 30_000);
+    const refreshWhenVisible = () => void refreshPickupMenu();
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [stage, config, refreshPickupMenu]);
 
   const subtotal = useMemo(
     () => cart.reduce((sum, line) => sum + (line.item.price + sidesUpcharge(line.sides)) * line.qty, 0),
@@ -146,6 +241,14 @@ export default function PickupPage() {
       ? previous.filter(entry => cartLineKey(entry.item.id, entry.sides) !== key)
       : previous.map(entry => cartLineKey(entry.item.id, entry.sides) === key ? { ...entry, qty: Math.min(50, quantity) } : entry));
   };
+  const removeInvalidCartLines = () => {
+    setCart(previous =>
+      previous.filter(
+        line => !invalidCartLineKeys.includes(cartLineKey(line.item.id, line.sides)),
+      ),
+    );
+    setInvalidCartLineKeys([]);
+  };
   const openProduct = (product: KioskProduct) => {
     if (product.comboSideCount && product.comboSideCategoryId) {
       setSideProduct(product);
@@ -156,6 +259,24 @@ export default function PickupPage() {
     ? []
     : config.menu.products.filter(product => product.id !== sideProduct.id && product.categoryIds.includes(sideProduct.comboSideCategoryId!)),
   [config, sideProduct]);
+
+  // Rebase only when the catalog snapshot changes; picker/selection updates
+  // themselves should not retrigger this reconciliation.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!config?.menu) return;
+    const rebased = reconcileKioskSidePicker(sideProduct, chosenSides, config.menu);
+    if (rebased.shouldClose) {
+      setSideProduct(null);
+      setChosenSides([]);
+      setError("This combo changed while you were choosing sides. Please select it again.");
+      return;
+    }
+    if (rebased.changed && rebased.product) {
+      setSideProduct(rebased.product);
+      setChosenSides(rebased.chosenSides);
+    }
+  }, [config?.menu]);
 
   async function poll(capability: string): Promise<void> {
     try {
@@ -230,6 +351,12 @@ export default function PickupPage() {
   const continueToPayment = (event: FormEvent) => {
     event.preventDefault();
     if (!cart.length) return;
+    if (menuRefreshing) return;
+    if (invalidCartLineKeys.length) {
+      setError("A menu item or side choice changed. Remove that line before checkout.");
+      return;
+    }
+    if (cartReviewRequired) setCartReviewRequired(false);
     setError("");
     setStage("review");
   };
@@ -249,6 +376,7 @@ export default function PickupPage() {
       }
       const placed = responseData(await apiPost<PickupResult | { data: PickupResult }>("/pickup/orders", {
         clientRequestId: requestId.current,
+        expectedTotalCents: Math.round(displayTotal * 100),
         lines: cart.map(line => ({
           productItemId: line.item.id,
           qty: line.qty,
@@ -274,6 +402,27 @@ export default function PickupPage() {
         setStage("confirming");
       }
     } catch (cause) {
+      if (isMenuChangedError(cause)) {
+        // MENU_CHANGED is explicitly pre-payment: discard only this
+        // unsubmitted attempt, then rehydrate the catalog before showing the
+        // order again. Never enter payment recovery for this response.
+        clearPendingAttempt();
+        requestId.current = null;
+        setBusy(false);
+        setCartReviewRequired(true);
+        setMenuRefreshError("The menu changed while checking out. Review your updated order.");
+        setStage("menu");
+        void loadPickupConfig(true, true)
+          .then(() => setMenuRefreshError(""))
+          .catch((refreshCause) => {
+            setMenuRefreshError(
+              refreshCause instanceof Error
+                ? refreshCause.message
+                : "Menu refresh failed. We are showing the last known menu.",
+            );
+          });
+        return;
+      }
       // Keep exactly the same request ID and preserve the durable recovery
       // lock. It must not be replaced by a fresh card attempt.
       setError(cause instanceof Error ? cause.message : "Payment is being confirmed. Do not start a new order.");
@@ -355,96 +504,23 @@ export default function PickupPage() {
   }
 
   const cartCount = cart.reduce((count, line) => count + line.qty, 0);
-  const categoryGroups = (() => {
-    const categoryById = new Map(config.menu.categories.map(category => [category.id, category]));
-    const categoryName = (categoryId: string) => categoryById.get(categoryId)?.name.trim().toLowerCase() ?? "";
-    const productCategoryIds = (product: KioskProduct) => [...new Set([
-      ...product.categoryIds,
-      ...(product.primaryCategoryId ? [product.primaryCategoryId] : []),
-    ])].filter(categoryId => categoryById.has(categoryId));
-    const hasCategory = (product: KioskProduct, name: string) =>
-      productCategoryIds(product).some(categoryId => categoryName(categoryId) === name);
-    const sideCategoryIds = new Set(
-      config.menu.products
-        .map(product => product.comboSideCategoryId)
-        .filter((categoryId): categoryId is string => Boolean(categoryId)),
-    );
-    const hasSideCategory = (product: KioskProduct) =>
-      productCategoryIds(product).some(categoryId => sideCategoryIds.has(categoryId));
-    const isCombo = (product: KioskProduct) =>
-      product.comboSideCount > 0 || hasCategory(product, "combo dinners");
-    const isSide = (product: KioskProduct) => hasCategory(product, "sides") || hasSideCategory(product);
-    const isDrink = (product: KioskProduct) => hasCategory(product, "drinks");
-    const isFoodMenuItem = (product: KioskProduct) => hasCategory(product, "jiggling food menu");
-    const groups: { id: string; name: string; products: KioskProduct[] }[] = [];
-    const groupedProductIds = new Set<string>();
-    const addGroup = (id: string, name: string, products: KioskProduct[]) => {
-      if (!products.length) return;
-      products.forEach(product => groupedProductIds.add(product.id));
-      groups.push({ id, name, products });
-    };
-
-    const combos = config.menu.products.filter(isCombo);
-    addGroup("combo-meals", "Combo meals", combos);
-    const comboIds = new Set(combos.map(product => product.id));
-
-    const sides = config.menu.products.filter(product =>
-      !comboIds.has(product.id) && isSide(product),
-    );
-    addGroup("sides", "Sides", sides);
-    const sideIds = new Set(sides.map(product => product.id));
-
-    const drinks = config.menu.products.filter(product =>
-      !comboIds.has(product.id) && !sideIds.has(product.id) && isDrink(product),
-    );
-    addGroup("drinks", "Drinks", drinks);
-    const drinkIds = new Set(drinks.map(product => product.id));
-
-    const otherMains = config.menu.products.filter(product =>
-      !comboIds.has(product.id)
-      && !sideIds.has(product.id)
-      && !drinkIds.has(product.id)
-      && isFoodMenuItem(product),
-    );
-    addGroup("other-mains", "Other mains", otherMains);
-
-    const remaining = config.menu.products.filter(product => !groupedProductIds.has(product.id));
-    const remainingByCategory = new Map<string, KioskProduct[]>();
-    const containerCategoryNames = new Set(["jiggling food menu", "jiggling pig products"]);
-    const uncategorized: KioskProduct[] = [];
-    for (const product of remaining) {
-      const ids = productCategoryIds(product);
-      const nonContainerIds = ids.filter(categoryId => !containerCategoryNames.has(categoryName(categoryId)));
-      const preferredId = (
-        product.primaryCategoryId
-        && categoryById.has(product.primaryCategoryId)
-        && (nonContainerIds.includes(product.primaryCategoryId) || nonContainerIds.length === 0)
-          ? product.primaryCategoryId
-          : undefined
-      ) ?? nonContainerIds[0] ?? ids[0];
-      if (!preferredId) {
-        uncategorized.push(product);
-        continue;
-      }
-      const products = remainingByCategory.get(preferredId) ?? [];
-      products.push(product);
-      remainingByCategory.set(preferredId, products);
-    }
-    config.menu.categories.forEach(category => {
-      const products = remainingByCategory.get(category.id);
-      if (products?.length) addGroup(`category-${category.id}`, category.name, products);
-    });
-
-    if (uncategorized.length) addGroup("uncategorized", "Other items", uncategorized);
-    return { groups };
-  })();
-  const menuCategories = categoryGroups.groups;
-  const selectedCategory = activeCategory === "all" || menuCategories.some(group => group.id === activeCategory)
-    ? activeCategory
-    : "all";
+  const menuTabs = getKioskMenuTabs(config.menu);
+  const selectedCategory =
+    activeCategory === "all" || menuTabs.some((tab) => tab.id === activeCategory)
+      ? activeCategory
+      : "all";
   const visibleGroups = selectedCategory === "all"
-    ? categoryGroups.groups
-    : categoryGroups.groups.filter(group => group.id === selectedCategory);
+    ? getKioskMenuAllSections(config.menu).map((section, index) => ({
+        id: `all-${index}`,
+        name: section.title ?? "Other Items",
+        products: section.products,
+      }))
+    : getKioskMenuSections(config.menu, selectedCategory).map((section, index) => ({
+        id: `${selectedCategory}-${index}`,
+        name: section.title ??
+          getKioskMenuTabLabel(menuTabs.find((tab) => tab.id === selectedCategory) ?? { name: "Menu" }),
+        products: section.products,
+      }));
 
   const productCard = (product: KioskProduct) => {
     const price = product.items[0]?.price ?? 0;
@@ -481,15 +557,15 @@ export default function PickupPage() {
         >
           All
         </button>
-        {menuCategories.map(group => (
+        {menuTabs.map(tab => (
           <button
-            key={group.id}
+            key={tab.id}
             type="button"
-            className={selectedCategory === group.id ? "active" : ""}
-            aria-pressed={selectedCategory === group.id}
-            onClick={() => setActiveCategory(group.id)}
+            className={selectedCategory === tab.id ? "active" : ""}
+            aria-pressed={selectedCategory === tab.id}
+            onClick={() => setActiveCategory(tab.id)}
           >
-            {group.name}
+            {getKioskMenuTabLabel(tab)}
           </button>
         ))}
       </nav>
@@ -550,7 +626,31 @@ export default function PickupPage() {
             <span>Estimated tax <b>{formatMoney(tax)}</b></span>
             <strong>Total <b>{formatMoney(displayTotal)}</b></strong>
           </div>
-          <button className="jp-primary">Review order <span>{formatMoney(displayTotal)}</span></button>
+          {(menuRefreshing || cartReviewRequired || invalidCartLineKeys.length > 0) && (
+            <p role="status" className="jp-cart-notice">
+              {menuRefreshing
+                ? "Checking for menu updates before checkout."
+                : invalidCartLineKeys.length > 0
+                ? "A menu item or side choice changed. Remove that line before checkout."
+                : "The menu changed. Review your updated order before checkout."}
+            </p>
+          )}
+          {invalidCartLineKeys.length > 0 && (
+            <button type="button" className="jp-ghost jp-remove-invalid" onClick={removeInvalidCartLines}>
+              Remove changed items
+            </button>
+          )}
+          <button
+            className="jp-primary"
+            disabled={menuRefreshing || invalidCartLineKeys.length > 0}
+          >
+            {menuRefreshing
+              ? "Updating menu…"
+              : invalidCartLineKeys.length > 0
+                ? "Remove changed item"
+                : "Review order"}{" "}
+            {!menuRefreshing && invalidCartLineKeys.length === 0 && <span>{formatMoney(displayTotal)}</span>}
+          </button>
         </form>
       ) : (
         <div className="jp-empty"><span>01</span><p>Tap a plate to start your order.</p></div>
@@ -564,6 +664,7 @@ export default function PickupPage() {
         <div><PigMark /><span>THE JIGGLING PIG</span></div>
         <span>BBQ / ROADSIDE</span>
       </header>
+      {menuRefreshError && <p role="alert" className="jp-alert jp-refresh-alert">{menuRefreshError}</p>}
       {error && <p role="alert" className="jp-alert">{error}</p>}
       <div className="jp-order-body">{menu}{cartPanel}</div>
     </main>

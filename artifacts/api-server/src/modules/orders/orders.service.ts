@@ -141,6 +141,8 @@ export async function checkout(
     kioskRequestId?: string;
     /** Kiosk/pickup callers create this durable attempt atomically with stock. */
     pendingPaymentProvider?: string;
+    /** Reviewed checkout total in cents; stale totals are rejected before reservation/payment. */
+    expectedTotalCents?: number;
   },
   ctx?: AuditContext,
 ) {

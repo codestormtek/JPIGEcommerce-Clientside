@@ -37,7 +37,7 @@ mock('../dist/modules/orders/orders.service', {
   checkout: async () => { throw new Error('checkout must not run for an existing request'); },
 });
 
-const { createKioskOrder } = require('../dist/modules/kiosk/kiosk.service');
+const { assertKioskMenuLineEligibility, createKioskOrder } = require('../dist/modules/kiosk/kiosk.service');
 
 test('lost card response retries the same durable attempt without another charge', async () => {
   const payment = { id: 'payment-1', provider: 'square', status: 'pending', providerTxnId: null };
@@ -79,4 +79,62 @@ test('lost card response retries the same durable attempt without another charge
   assert.equal(second.paymentStatus, 'paid');
   assert.equal(charges, 1, 'provider idempotency permits exactly one charge');
   assert.equal(providerRequests, 2, 'both lost-response retries used the same provider attempt');
+});
+
+test('new kiosk orders reject main and side selections outside the canonical sellable menu', async () => {
+  prisma.shopOrder.findFirst = async () => null;
+
+  const menu = {
+    categories: [],
+    products: [
+      {
+        id: 'combo',
+        comboSideCount: 2,
+        comboSideCategoryId: 'sides',
+        items: [{ id: 'combo-sku' }],
+        categoryIds: [],
+      },
+      { id: 'beans', comboSideCount: 0, comboSideCategoryId: null, items: [{ id: 'beans-sku' }], categoryIds: ['sides'] },
+      { id: 'slaw', comboSideCount: 0, comboSideCategoryId: null, items: [{ id: 'slaw-sku' }], categoryIds: ['sides'] },
+      { id: 'pie', comboSideCount: 0, comboSideCategoryId: null, items: [{ id: 'pie-sku' }], categoryIds: ['desserts'] },
+    ],
+  };
+  assert.doesNotThrow(() => assertKioskMenuLineEligibility(menu, [{
+    productItemId: 'combo-sku',
+    sideProductIds: ['beans', 'slaw'],
+  }]));
+  assert.throws(
+    () => assertKioskMenuLineEligibility(menu, [
+      { productItemId: 'missing-sku', sideProductIds: [] },
+    ]),
+    error => error.statusCode === 409 && error.message === 'MENU_CHANGED',
+  );
+  for (const staleLine of [
+    { productItemId: 'combo-sku', sideProductIds: ['beans'] },
+    { productItemId: 'combo-sku', sideProductIds: ['beans', 'slaw', 'beans'] },
+    { productItemId: 'combo-sku', sideProductIds: ['beans', 'pie'] },
+    { productItemId: 'beans-sku', sideProductIds: ['beans'] },
+  ]) {
+    assert.throws(
+      () => assertKioskMenuLineEligibility(menu, [staleLine]),
+      error => error.statusCode === 409 && error.message === 'MENU_CHANGED',
+    );
+  }
+  assert.throws(
+    () => assertKioskMenuLineEligibility(menu, [
+      { productItemId: 'combo-sku', sideProductIds: ['missing-side'] },
+    ]),
+    error => error.statusCode === 409 && error.message === 'MENU_CHANGED',
+  );
+
+  await assert.rejects(
+    () => createKioskOrder('kiosk-1', {
+      paymentMethod: 'card',
+      squareNonce: 'single-use-card-token',
+      clientRequestId: 'ec9b5a30-0e7d-4e94-a35d-1a63f246bfc0',
+      customerName: 'Customer',
+      lines: [{ productItemId: 'missing-sku', qty: 1 }],
+    }),
+    error => error.statusCode === 409 && error.message === 'MENU_CHANGED',
+  );
 });

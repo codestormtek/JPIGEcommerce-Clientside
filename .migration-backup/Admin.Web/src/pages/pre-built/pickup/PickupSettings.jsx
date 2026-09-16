@@ -27,12 +27,6 @@ const PickupSettings = () => {
   useEffect(() => { load(); }, [load]);
 
   const update = (key, value) => setSettings((current) => current ? { ...current, [key]: value } : current);
-  const toggleProduct = (id) => {
-    if (!settings) return;
-    update("menuProductIds", settings.menuProductIds.includes(id)
-      ? settings.menuProductIds.filter((value) => value !== id)
-      : [...settings.menuProductIds, id]);
-  };
 
   const save = async (event) => {
     event.preventDefault();
@@ -47,7 +41,6 @@ const PickupSettings = () => {
         streetAddress: settings.streetAddress,
         asapWaitMinutes: Number(settings.asapWaitMinutes),
         taxRatePercent: Number(settings.taxRatePercent),
-        menuProductIds: settings.menuProductIds,
       });
       setSettings(response?.data ?? settings);
       setSuccess("Pickup settings saved.");
@@ -116,24 +109,23 @@ const PickupSettings = () => {
               </div>
               <div className="card card-bordered">
                 <div className="card-inner">
-                  <h5 className="mb-1">Available menu</h5>
-                  <p className="text-soft">Only selected in-stock food items appear on /pickup. Combo meals include their configured side selections.</p>
+                  <h5 className="mb-1">Kiosk-synced menu</h5>
+                  <p className="text-soft">Pickup automatically mirrors the current in-stock kiosk menu. Manage products, visibility, and inventory in the kiosk menu; there is no separate pickup selection.</p>
+                  <Alert color="info" className="mb-0 mt-3">
+                    New kiosk menu products become available for pickup automatically. Pickup hours, ordering status, wait time, and tax remain managed here.
+                  </Alert>
                   <Row className="g-3 mt-1">
-                    {(settings.menu?.products || []).map((product) => {
-                      const selected = settings.menuProductIds.includes(product.id);
-                      return (
-                        <Col sm="6" lg="4" key={product.id}>
-                          <label className={`border rounded p-3 d-flex h-100 ${selected ? "border-primary bg-light" : ""}`} style={{ cursor: "pointer" }}>
-                            <input className="form-check-input mt-1 me-3 flex-shrink-0" type="checkbox" checked={selected} onChange={() => toggleProduct(product.id)} />
-                            <span style={{ minWidth: 0 }}>
-                              <span className="fw-bold d-block text-break">{product.name}</span>
-                              <small className="text-soft d-block">${Number(product.items?.[0]?.price || 0).toFixed(2)}{product.comboSideCount ? ` · includes ${product.comboSideCount} sides` : ""}</small>
-                              {product.description && <small className="text-soft d-block mt-1">{product.description}</small>}
-                            </span>
-                          </label>
+                    {(settings.menu?.products || []).map((product) => (
+                      <Col sm="6" lg="4" key={product.id}>
+                        <div className="border rounded p-3 d-flex h-100 bg-light">
+                          <span style={{ minWidth: 0 }}>
+                            <span className="fw-bold d-block text-break">{product.name}</span>
+                            <small className="text-soft d-block">${Number(product.items?.[0]?.price || 0).toFixed(2)}{product.comboSideCount ? ` · includes ${product.comboSideCount} sides` : ""}</small>
+                            {product.description && <small className="text-soft d-block mt-1">{product.description}</small>}
+                          </span>
+                        </div>
                         </Col>
-                      );
-                    })}
+                    ))}
                   </Row>
                   {!settings.menu?.products?.length && <p className="text-soft mt-4 mb-0">No in-stock kiosk menu items are currently available.</p>}
                 </div>

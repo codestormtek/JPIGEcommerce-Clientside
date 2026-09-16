@@ -836,6 +836,27 @@
   font-size: 0.8rem;
 }
 
+.jp-refresh-alert {
+  max-width: 1320px;
+  margin: 1rem auto 0;
+}
+
+.jp-cart-notice {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem;
+  border: 1px solid var(--jp-orange);
+  border-radius: 9px;
+  background: rgb(242 85 34 / 12%);
+  color: var(--jp-cream);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.jp-remove-invalid {
+  width: 100%;
+  margin-top: 0.65rem;
+}
+
 .jp-check-panel .jp-alert {
   margin-top: 0.8rem;
 }

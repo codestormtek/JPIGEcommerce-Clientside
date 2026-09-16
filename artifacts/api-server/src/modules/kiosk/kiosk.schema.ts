@@ -35,6 +35,10 @@ export const kioskOrderSchema = z.object({
     )
     .min(1, 'At least one item is required')
     .max(50),
+  // Optional while older kiosk builds roll out. New clients send the cents
+  // total shown on the reviewed checkout screen so price/menu changes fail
+  // before a local reservation or provider call can begin.
+  expectedTotalCents: z.number().int().nonnegative().max(100_000_000).optional(),
   customerName: z.string().min(1, 'Customer name is required').max(100),
   customerPhone: z
     .string()

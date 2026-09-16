@@ -97,10 +97,10 @@ export async function getKioskMenu() {
     where: {
       isDeleted: false,
       visibility: { in: ['kiosk', 'both'] },
-      items: { some: { qtyInStock: { gt: 0 } } },
+      items: { some: { isPublished: true, qtyInStock: { gt: 0 } } },
     },
     include: {
-      items: { where: { qtyInStock: { gt: 0 } }, orderBy: { price: 'asc' } },
+      items: { where: { isPublished: true, qtyInStock: { gt: 0 } }, orderBy: { price: 'asc' } },
       media: {
         include: { mediaAsset: true },
         orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }],
@@ -154,6 +154,54 @@ export async function getKioskMenu() {
   };
 }
 
+type KioskMenu = Awaited<ReturnType<typeof getKioskMenu>>;
+type KioskMenuLine = { productItemId: string; sideProductIds?: string[] };
+
+/**
+ * The menu response is the kiosk's sellability contract. Keep the order
+ * boundary on that same product/SKU set so a stale or hand-crafted request
+ * cannot reach pricing, inventory, or payment for something the kiosk cannot
+ * currently sell.
+ */
+export function assertKioskMenuLineEligibility(menu: KioskMenu, lines: KioskMenuLine[]): void {
+  const productByItemId = new Map(
+    menu.products.flatMap((product) =>
+      product.items.map((item) => [item.id, product] as const),
+    ),
+  );
+  const productById = new Map(menu.products.map((product) => [product.id, product] as const));
+
+  for (const line of lines) {
+    const mainProduct = productByItemId.get(line.productItemId);
+    const sideIds = line.sideProductIds ?? [];
+    const comboSideCount = mainProduct?.comboSideCount ?? 0;
+    const sideCategoryId = mainProduct?.comboSideCategoryId;
+
+    if (
+      !mainProduct
+      || sideIds.length !== comboSideCount
+      || (comboSideCount === 0 && sideIds.length > 0)
+      || sideIds.some((sideId) => {
+        const sideProduct = productById.get(sideId);
+        return !sideProduct
+          || (sideCategoryId !== null
+            && sideCategoryId !== undefined
+            && !sideProduct.categoryIds.includes(sideCategoryId));
+      })
+    ) {
+      throw ApiError.conflict('MENU_CHANGED', {
+        reason: 'One or more selected kiosk products or combo sides are no longer available.',
+      });
+    }
+  }
+
+  if (lines.length === 0) {
+    throw ApiError.conflict('MENU_CHANGED', {
+      reason: 'The kiosk order no longer contains available menu items.',
+    });
+  }
+}
+
 // ─── Kiosk order ──────────────────────────────────────────────────────────────
 
 const KIOSK_USER_EMAIL = 'kiosk-orders@jigglingpig.local';
@@ -191,7 +239,15 @@ async function getKioskSystemUser() {
 export async function resolveComboSides(lines: KioskOrderInput['lines']) {
   const itemIds = lines.map((l) => l.productItemId);
   const items = await prisma.productItem.findMany({
-    where: { id: { in: itemIds } },
+    where: {
+      id: { in: itemIds },
+      isPublished: true,
+      qtyInStock: { gt: 0 },
+      product: {
+        isDeleted: false,
+        visibility: { in: ['kiosk', 'both'] },
+      },
+    },
     include: {
       product: { include: { categoryMaps: { include: { category: true } } } },
     },
@@ -224,7 +280,9 @@ export async function resolveComboSides(lines: KioskOrderInput['lines']) {
 
   return lines.map((l) => {
     const item = itemMap.get(l.productItemId);
-    if (!item) throw ApiError.badRequest('One of the items in your order is no longer available.');
+    if (!item) throw ApiError.conflict('MENU_CHANGED', {
+      reason: 'One of the selected kiosk items is no longer available.',
+    });
     const combo = item.product;
     const wanted = l.sideProductIds ?? [];
     const { sideCount, sideCategoryId } = effectiveComboConfig(
@@ -241,18 +299,24 @@ export async function resolveComboSides(lines: KioskOrderInput['lines']) {
       }
       const names = wanted.map((sid) => {
         const side = sideMap.get(sid);
-        if (!side) throw ApiError.badRequest('One of the chosen sides is no longer available.');
+        if (!side) throw ApiError.conflict('MENU_CHANGED', {
+          reason: 'One of the chosen combo sides is no longer available.',
+        });
         if (
           sideCategoryId &&
           !side.categoryMaps.some((m) => m.categoryId === sideCategoryId)
         ) {
-          throw ApiError.badRequest(`"${side.name}" is not an available side for "${combo.name}".`);
+          throw ApiError.conflict('MENU_CHANGED', {
+            reason: `"${side.name}" is no longer an available side for "${combo.name}".`,
+          });
         }
         return side.name;
       });
       const sideProductItemIds = wanted.map((sid) => {
         const itemId = sideMap.get(sid)?.items[0]?.id;
-        if (!itemId) throw ApiError.badRequest('One of the chosen sides is no longer available.');
+        if (!itemId) throw ApiError.conflict('MENU_CHANGED', {
+          reason: 'One of the chosen combo sides is no longer available.',
+        });
         return itemId;
       });
 
@@ -368,6 +432,12 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
     };
   }
 
+  // Do not run this check on the existing-attempt path above: a browser retry
+  // must be able to recover an already-reserved/payment-backed order after the
+  // menu changes.
+  const kioskMenu = await getKioskMenu();
+  assertKioskMenuLineEligibility(kioskMenu, input.lines);
+
   const requestedUpsells = input.lines.filter((line) => line.upsellQty);
   const trustedUpsellAmountByCampaign = new Map<string, number>();
   if (requestedUpsells.length > 0) {
@@ -478,6 +548,7 @@ export async function createKioskOrder(deviceId: string, input: KioskOrderInput)
       squareNonce: input.paymentMethod === 'card' ? input.squareNonce : undefined,
       kioskDeviceId: deviceId,
       kioskRequestId: input.clientRequestId,
+      expectedTotalCents: input.expectedTotalCents,
       pendingPaymentProvider,
     });
   } catch (error: any) {

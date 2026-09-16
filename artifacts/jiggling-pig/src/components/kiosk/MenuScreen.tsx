@@ -1,8 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { KioskMenu, KioskCartLine, KioskProduct, KioskSideChoice } from "@/lib/kiosk";
 import { cartLineKey, cartSubtotal, formatMoney, sidesUpcharge } from "@/lib/kiosk";
+import {
+  getKioskMenuSections,
+  getKioskMenuTabLabel,
+  getKioskMenuTabs,
+  reconcileKioskSidePicker,
+} from "@/lib/menu";
 
 interface Props {
   menu: KioskMenu;
@@ -14,21 +20,25 @@ interface Props {
   onStartOver: () => void;
   onSideSelected: (productId: string, sideProductId: string, selectionPosition: "first" | "additional") => void;
   onSideEdit: (productId: string | undefined, sideProductId: string, action: "add" | "remove" | "replace") => void;
+  checkoutDisabled?: boolean;
+  checkoutNotice?: string | null;
+  menuRefreshing?: boolean;
 }
 
-const TAB_FOOD = "jiggling food menu";
-const TAB_SIDES = "sides";
-const TAB_PRODUCTS = "jiggling pig products";
-const PRODUCT_TABS = ["drinks", "sauces", "rubs", "fry mixes", "teas"] as const;
-
-const norm = (s: string) => s.trim().toLowerCase();
-
-interface MenuSection {
-  title: string | null;
-  products: KioskProduct[];
-}
-
-export default function MenuScreen({ menu, cart, onAdd, onSetQty, onUpdateSides, onCheckout, onStartOver, onSideSelected, onSideEdit }: Props) {
+export default function MenuScreen({
+  menu,
+  cart,
+  onAdd,
+  onSetQty,
+  onUpdateSides,
+  onCheckout,
+  onStartOver,
+  onSideSelected,
+  onSideEdit,
+  checkoutDisabled = false,
+  checkoutNotice = null,
+  menuRefreshing = false,
+}: Props) {
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [sidePicker, setSidePicker] = useState<KioskProduct | null>(null);
   const [chosenSides, setChosenSides] = useState<KioskSideChoice[]>([]);
@@ -36,98 +46,37 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onUpdateSides,
   const [editingLineKey, setEditingLineKey] = useState<string | null>(null);
   const [sideEditError, setSideEditError] = useState<string | null>(null);
 
-  const catById = useMemo(
-    () => new Map(menu.categories.map((c) => [c.id, c])),
-    [menu.categories],
-  );
-
-  const tabs = useMemo(() => {
-    const byName = (name: string) => menu.categories.find((c) => norm(c.name) === name);
-    const found = [
-      byName(TAB_FOOD),
-      byName(TAB_SIDES),
-      ...PRODUCT_TABS.map(byName),
-    ].filter(
-      (c): c is NonNullable<typeof c> => Boolean(c),
-    );
-    return found.length > 0 ? found : menu.categories;
-  }, [menu.categories]);
+  const tabs = useMemo(() => getKioskMenuTabs(menu), [menu]);
 
   const activeCat =
     selectedCat && tabs.some((t) => t.id === selectedCat)
       ? selectedCat
       : tabs[0]?.id ?? null;
 
-  const sections = useMemo<MenuSection[]>(() => {
-    const all = menu.products;
-    const hasCat = (p: KioskProduct, name: string) =>
-      p.categoryIds.some((id) => {
-        const c = catById.get(id);
-        return c ? norm(c.name) === name : false;
-      });
+  const sections = useMemo(
+    () => getKioskMenuSections(menu, activeCat),
+    [menu, activeCat],
+  );
 
-    const tab = tabs.find((t) => t.id === activeCat);
-    if (!tab) return [{ title: null, products: all }];
-    const tabName = norm(tab.name);
-
-    if (tabName === TAB_FOOD) {
-      const combo = all.filter((p) => hasCat(p, "combo dinners"));
-      const comboIds = new Set(combo.map((p) => p.id));
-      const sides = all.filter((p) => !comboIds.has(p.id) && hasCat(p, TAB_SIDES));
-      const sideIds = new Set(sides.map((p) => p.id));
-      const drinks = all.filter(
-        (p) => !comboIds.has(p.id) && !sideIds.has(p.id) && hasCat(p, "drinks"),
-      );
-      const drinkIds = new Set(drinks.map((p) => p.id));
-      const other = all.filter(
-        (p) =>
-          hasCat(p, TAB_FOOD) &&
-          !comboIds.has(p.id) &&
-          !sideIds.has(p.id) &&
-          !drinkIds.has(p.id),
-      );
-      return [
-        { title: "Plates", products: combo },
-        { title: "Sides", products: sides },
-        { title: "Other Items", products: other },
-      ].filter((s) => s.products.length > 0);
+  // Rebase only when the catalog snapshot changes; picker/selection updates
+  // themselves should not retrigger this reconciliation.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const rebased = reconcileKioskSidePicker(sidePicker, chosenSides, menu);
+    if (rebased.shouldClose) {
+      setSidePicker(null);
+      setChosenSides([]);
+      setUpchargeConfirm(null);
+      setEditingLineKey(null);
+      setSideEditError("This combo changed while you were choosing sides. Please select it again.");
+      return;
     }
-
-    if (tabName === TAB_SIDES) {
-      return [{ title: null, products: all.filter((p) => hasCat(p, TAB_SIDES)) }];
+    if (rebased.changed && rebased.product) {
+      setSidePicker(rebased.product);
+      setChosenSides(rebased.chosenSides);
+      setUpchargeConfirm(null);
     }
-
-    if (tabName === TAB_PRODUCTS) {
-      const inFoodTab = (p: KioskProduct) =>
-        hasCat(p, TAB_FOOD) ||
-        hasCat(p, "combo dinners") ||
-        hasCat(p, TAB_SIDES) ||
-        hasCat(p, "drinks");
-      const members = all.filter((p) => hasCat(p, TAB_PRODUCTS) || !inFoodTab(p));
-
-      const groups = new Map<string, KioskProduct[]>();
-      members.forEach((p) => {
-        const subId = p.categoryIds.find((id) => {
-          const c = catById.get(id);
-          if (!c) return false;
-          const n = norm(c.name);
-          return n !== TAB_PRODUCTS && n !== TAB_FOOD;
-        });
-        const title = subId ? catById.get(subId)!.name : "Other Items";
-        const list = groups.get(title) ?? [];
-        list.push(p);
-        groups.set(title, list);
-      });
-      const titles = [...groups.keys()].sort((a, b) => {
-        if (a === "Other Items") return 1;
-        if (b === "Other Items") return -1;
-        return a.localeCompare(b);
-      });
-      return titles.map((t) => ({ title: t, products: groups.get(t)! }));
-    }
-
-    return [{ title: null, products: all.filter((p) => p.categoryIds.includes(tab.id)) }];
-  }, [menu.products, tabs, activeCat, catById]);
+  }, [menu]);
 
   const qtyByItem = useMemo(() => {
     const m = new Map<string, number>();
@@ -211,8 +160,13 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onUpdateSides,
   };
 
   const editSides = (line: KioskCartLine, lineKey: string) => {
-    setSidePicker(line.product);
-    setChosenSides([...(line.sides ?? [])]);
+    const rebased = reconcileKioskSidePicker(line.product, line.sides ?? [], menu);
+    if (rebased.shouldClose || !rebased.product) {
+      setSideEditError("These side choices are no longer available. Remove this line and add it again.");
+      return;
+    }
+    setSidePicker(rebased.product);
+    setChosenSides(rebased.chosenSides);
     setUpchargeConfirm(null);
     setEditingLineKey(lineKey);
     setSideEditError(null);
@@ -254,7 +208,7 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onUpdateSides,
               className={`k-cat ${activeCat === c.id ? "active" : ""}`}
               onClick={() => setSelectedCat(c.id)}
             >
-              {norm(c.name) === TAB_FOOD ? "BBQ Combos" : c.name}
+               {getKioskMenuTabLabel(c)}
             </button>
           ))}
         </div>
@@ -389,12 +343,23 @@ export default function MenuScreen({ menu, cart, onAdd, onSetQty, onUpdateSides,
             <span>Total</span>
             <span className="k-total-amount">{formatMoney(subtotal)}</span>
           </div>
-          <button
+           {checkoutNotice && (
+             <div className="k-cart-notice" role="status">
+               {checkoutNotice}
+             </div>
+           )}
+           <button
             className="k-btn k-btn-primary k-checkout-btn"
-            disabled={cart.length === 0}
+             disabled={cart.length === 0 || checkoutDisabled || menuRefreshing}
             onClick={onCheckout}
           >
-            Pay at Terminal
+             {menuRefreshing
+               ? "Updating menu…"
+               : checkoutDisabled
+                 ? "Remove unavailable item"
+                 : checkoutNotice
+                   ? "Review updated order"
+                   : "Pay at Terminal"}
           </button>
         </div>
       </div>

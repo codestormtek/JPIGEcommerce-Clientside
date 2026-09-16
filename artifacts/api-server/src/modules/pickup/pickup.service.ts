@@ -10,7 +10,7 @@ import * as squareService from '../../services/squareService';
 import { restoreOrderInventoryOnceTx } from '../../services/orderInventoryRestoration';
 import { enqueueStaffOrderPush } from '../../services/expoPushNotifications';
 import { enqueueCapturedOrderKitchenTickets } from '../cloudprnt/cloudprnt.service';
-import { getKioskMenu, resolveComboSides } from '../kiosk/kiosk.service';
+import { assertKioskMenuLineEligibility, getKioskMenu, resolveComboSides } from '../kiosk/kiosk.service';
 import * as orderRepo from '../orders/orders.repository';
 import type { CheckoutInput } from '../orders/orders.schema';
 import * as settingsRepo from '../site-settings/site-settings.repository';
@@ -65,7 +65,6 @@ const defaultConfig: PickupConfigInput = {
   eventName: '',
   streetAddress: '',
   asapWaitMinutes: 20,
-  menuProductIds: [],
   taxRatePercent: 0,
 };
 
@@ -78,9 +77,6 @@ function parseConfig(raw?: string): PickupConfigInput {
       eventName: typeof candidate.eventName === 'string' ? candidate.eventName.trim() : '',
       streetAddress: typeof candidate.streetAddress === 'string' ? candidate.streetAddress.trim() : '',
       asapWaitMinutes: Number.isInteger(candidate.asapWaitMinutes) ? Math.min(240, Math.max(1, candidate.asapWaitMinutes!)) : 20,
-      menuProductIds: Array.isArray(candidate.menuProductIds)
-        ? [...new Set(candidate.menuProductIds.filter((id): id is string => typeof id === 'string'))]
-        : [],
       taxRatePercent: typeof candidate.taxRatePercent === 'number' && Number.isFinite(candidate.taxRatePercent)
         ? Math.min(25, Math.max(0, candidate.taxRatePercent))
         : 0,
@@ -97,7 +93,6 @@ async function loadConfig(): Promise<PickupConfigInput> {
 }
 
 function publicConfig(configured: PickupConfigInput, menu: Awaited<ReturnType<typeof getKioskMenu>>) {
-  const enabledIds = new Set(configured.menuProductIds);
   return {
     isOrderingOpen: configured.isOrderingOpen,
     eventName: configured.eventName,
@@ -110,7 +105,7 @@ function publicConfig(configured: PickupConfigInput, menu: Awaited<ReturnType<ty
     environment: config.square.environment,
     menu: {
       categories: menu.categories,
-      products: menu.products.filter((product) => enabledIds.has(product.id)),
+      products: menu.products,
     },
   };
 }
@@ -126,17 +121,16 @@ export async function getAdminPickupConfig() {
 }
 
 export async function updatePickupConfig(input: PickupConfigInput) {
-  const selected = new Set(input.menuProductIds);
-  if (input.isOrderingOpen && selected.size === 0) {
-    throw ApiError.badRequest('Select at least one available menu item before opening pickup ordering.');
-  }
-  // Only live kiosk/food menu products can be exposed through public pickup.
-  const menu = await getKioskMenu();
-  const available = new Set(menu.products.map((product) => product.id));
-  if ([...selected].some((id) => !available.has(id))) {
-    throw ApiError.badRequest('One or more selected menu items are unavailable.');
-  }
-  const settingValue = JSON.stringify({ ...input, menuProductIds: [...selected] });
+  // Pickup intentionally has no menu selection of its own. The stored event
+  // settings remain limited to hours/availability and financial controls;
+  // legacy menuProductIds values are ignored by parseConfig for compatibility.
+  const settingValue = JSON.stringify({
+    isOrderingOpen: input.isOrderingOpen,
+    eventName: input.eventName,
+    streetAddress: input.streetAddress,
+    asapWaitMinutes: input.asapWaitMinutes,
+    taxRatePercent: input.taxRatePercent,
+  });
   const existing = await settingsRepo.findByKey(PICKUP_SETTING_KEY);
   if (existing) {
     await settingsRepo.update(PICKUP_SETTING_KEY, {
@@ -483,19 +477,7 @@ export async function createPickupOrder(input: PickupCheckoutInput) {
   if (!config.square.accessToken || !config.square.applicationId || !config.square.locationId) {
     throw ApiError.unprocessable('Card payments are not configured for pickup ordering.');
   }
-  const enabledIds = new Set(configured.menuProductIds);
-  const productByItemId = new Map(
-    menu.products.flatMap((product) => product.items.map((item) => [item.id, product.id] as const)),
-  );
-  const mainItemUnavailable = input.lines.some((line) => {
-    const productId = productByItemId.get(line.productItemId);
-    return !productId || !enabledIds.has(productId);
-  });
-  const sideUnavailable = input.lines.flatMap((line) => line.sideProductIds ?? [])
-    .some((productId) => !enabledIds.has(productId));
-  if (mainItemUnavailable || sideUnavailable) {
-    throw ApiError.unprocessable('One or more selected items are no longer available for this pickup event.');
-  }
+  assertKioskMenuLineEligibility(menu, input.lines);
 
   const lines = await resolveComboSides(input.lines);
   const orderType = validatedPickupChannel(input);
@@ -515,11 +497,12 @@ export async function createPickupOrder(input: PickupCheckoutInput) {
         countryIso2: 'US',
       }],
       currency: 'USD',
-       orderType,
+      orderType,
       fulfillmentType: 'pickup',
       eventName: configured.eventName,
       remotePickupRequestId: input.clientRequestId,
       specialInstructions: input.specialInstructions,
+      expectedTotalCents: input.expectedTotalCents,
     } as unknown as CheckoutInput & { orderType: string; fulfillmentType: string; eventName: string; remotePickupRequestId: string }, 0, 0, {
       provider: 'square',
     }, configured.taxRatePercent) as unknown as PickupOrder;

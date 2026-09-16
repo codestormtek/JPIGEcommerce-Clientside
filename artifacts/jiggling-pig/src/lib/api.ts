@@ -11,6 +11,48 @@ interface ApiOptions {
   next?: { revalidate?: number; tags?: string[] };
 }
 
+export class ApiRequestError extends Error {
+  status: number;
+  code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+export function isMenuChangedError(error: unknown): boolean {
+  return (
+    error instanceof ApiRequestError &&
+    error.status === 409 &&
+    (error.code === "MENU_CHANGED" || error.message.includes("MENU_CHANGED"))
+  );
+}
+
+function formatErrorDetailValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.map((entry) => formatErrorDetailValue(entry)).join(", ");
+  }
+  if (value !== null && typeof value === "object") {
+    try {
+      return JSON.stringify(value) ?? "[unserializable object]";
+    } catch {
+      return "[unserializable object]";
+    }
+  }
+  return String(value);
+}
+
+function formatErrorDetails(details: unknown): string {
+  if (!details || typeof details !== "object" || Array.isArray(details)) {
+    return formatErrorDetailValue(details);
+  }
+  return Object.entries(details)
+    .map(([field, value]) => `${field}: ${formatErrorDetailValue(value)}`)
+    .join("; ");
+}
+
 export async function apiFetch<T = unknown>(
   path: string,
   opts: ApiOptions = {}
@@ -35,14 +77,35 @@ export async function apiFetch<T = unknown>(
 
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
-    const baseMsg = errBody.message || errBody.error || `Request failed (${res.status})`;
-    if (errBody.details && typeof errBody.details === 'object') {
-      const fieldErrors = Object.entries(errBody.details as Record<string, string[]>)
-        .map(([field, msgs]) => `${field}: ${(msgs as string[]).join(', ')}`)
-        .join('; ');
-      throw new Error(fieldErrors ? `${baseMsg} — ${fieldErrors}` : baseMsg);
+    const body = errBody && typeof errBody === "object" ? errBody : {};
+    const errorValue = typeof body.error === "object" ? body.error : undefined;
+    const baseMsg =
+      typeof body.message === "string"
+        ? body.message
+        : typeof body.error === "string"
+          ? body.error
+          : typeof errorValue?.message === "string"
+            ? errorValue.message
+            : `Request failed (${res.status})`;
+    const code =
+      typeof body.code === "string"
+        ? body.code
+        : typeof body.errorCode === "string"
+          ? body.errorCode
+          : typeof errorValue?.code === "string"
+            ? errorValue.code
+            : body.error === "MENU_CHANGED"
+              ? body.error
+              : undefined;
+    if (body.details && typeof body.details === 'object') {
+      const fieldErrors = formatErrorDetails(body.details);
+      throw new ApiRequestError(
+        fieldErrors ? `${baseMsg} — ${fieldErrors}` : baseMsg,
+        res.status,
+        code,
+      );
     }
-    throw new Error(baseMsg);
+    throw new ApiRequestError(baseMsg, res.status, code);
   }
 
   if (res.status === 204) return undefined as T;

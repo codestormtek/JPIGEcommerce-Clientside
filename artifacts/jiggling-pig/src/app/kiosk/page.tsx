@@ -11,6 +11,7 @@ import {
   KioskProduct,
   KioskSideChoice,
   cartLineKey,
+  cartSubtotal,
   clearKioskToken,
   fetchKioskCampaigns,
   fetchKioskConfig,
@@ -24,6 +25,7 @@ import {
   sendHeartbeat,
   setKioskToken,
 } from "@/lib/kiosk";
+import { reconcileKioskCart } from "@/lib/menu";
 import SetupScreen from "@/components/kiosk/SetupScreen";
 import AttractScreen from "@/components/kiosk/AttractScreen";
 import MenuScreen from "@/components/kiosk/MenuScreen";
@@ -47,7 +49,7 @@ declare global {
 
 const DEFAULT_IDLE_TIMEOUT_SECONDS = 120;
 const DEFAULT_IDLE_PROMPT_SECONDS = 30;
-const MENU_REFRESH_MS = 5 * 60_000;
+const MENU_REFRESH_MS = 30_000;
 const HEARTBEAT_MS = 60_000;
 
 export default function KioskPage() {
@@ -69,6 +71,10 @@ export default function KioskPage() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [menuRefreshError, setMenuRefreshError] = useState<string | null>(null);
+  const [menuRefreshing, setMenuRefreshing] = useState(false);
+  const [cartReviewRequired, setCartReviewRequired] = useState(false);
+  const [invalidCartLineKeys, setInvalidCartLineKeys] = useState<string[]>([]);
 
   const idleWarningTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const idleResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -84,8 +90,18 @@ export default function KioskPage() {
   const cartStartedRef = useRef(false);
   const checkoutStartedAtRef = useRef(0);
   const checkoutPaymentMethodRef = useRef<"terminal" | "card" | null>(null);
+  const menuRequestRef = useRef<Promise<KioskMenu> | null>(null);
+  const forceMenuApplyRef = useRef(false);
   screenRef.current = screen;
   cartRef.current = cart;
+
+  useEffect(() => {
+    setInvalidCartLineKeys((previous) =>
+      previous.filter((lineKey) =>
+        cart.some((line) => cartLineKey(line.item.id, line.sides) === lineKey),
+      ),
+    );
+  }, [cart]);
 
   useEffect(() => {
     setIsAndroidKiosk(
@@ -172,6 +188,8 @@ export default function KioskPage() {
     setCustomerName("");
     setCustomerPhone("");
     setOrderNumber(null);
+    setCartReviewRequired(false);
+    setInvalidCartLineKeys([]);
     setScreen("attract");
     sessionIdRef.current = null;
     cartStartedRef.current = false;
@@ -180,11 +198,54 @@ export default function KioskPage() {
     clearAndroidPaymentMarker();
   }, [trackEvent, clearAndroidPaymentMarker]);
 
-  const loadMenu = useCallback(async () => {
-    const data = await fetchKioskMenu();
-    setMenu(data);
-    return data;
+  const loadMenu = useCallback(async (forceApply = false) => {
+    if (forceApply) forceMenuApplyRef.current = true;
+    if (menuRequestRef.current) return menuRequestRef.current;
+    const request = fetchKioskMenu();
+    menuRequestRef.current = request;
+    setMenuRefreshing(true);
+    try {
+      const data = await request;
+      // A refresh that started on the menu must not replace checkout state if
+      // the guest moved forward before the GET completed.
+      const mayApply =
+        forceMenuApplyRef.current ||
+        ["loading", "setup", "attract", "menu", "confirm", "post_sale_ad"].includes(screenRef.current);
+      if (mayApply) {
+        const reconciliation = reconcileKioskCart(cartRef.current, data);
+        if (reconciliation.changed) {
+          setCart(reconciliation.cart);
+          setCartReviewRequired(true);
+          setInvalidCartLineKeys(reconciliation.invalidCartLineKeys);
+        }
+        setMenu(data);
+      }
+      return data;
+    } finally {
+      if (menuRequestRef.current === request) menuRequestRef.current = null;
+      forceMenuApplyRef.current = false;
+      setMenuRefreshing(false);
+    }
   }, []);
+
+  const refreshMenu = useCallback(async () => {
+    if (
+      typeof document !== "undefined" &&
+      (document.visibilityState !== "visible" ||
+        !["attract", "menu"].includes(screenRef.current))
+    ) {
+      return;
+    }
+    try {
+      await loadMenu();
+      setMenuRefreshError(null);
+    } catch (cause) {
+      // Keep the last known-good menu/cart/checkout state on screen.
+      setMenuRefreshError(
+        cause instanceof Error ? cause.message : "Menu refresh failed. We are showing the last known menu.",
+      );
+    }
+  }, [loadMenu]);
 
   const loadCampaigns = useCallback(async () => {
     try {
@@ -254,18 +315,18 @@ export default function KioskPage() {
       sendHeartbeat().catch(() => {});
     }, HEARTBEAT_MS);
     const mr = setInterval(() => {
-      // Don't swap the menu mid-checkout
-      if (screenRef.current === "attract" || screenRef.current === "menu") {
-        loadMenu().catch(() => {});
-        loadCampaigns().catch(() => {});
-        loadConfig().catch(() => {});
-      }
+      void refreshMenu();
     }, MENU_REFRESH_MS);
+    const refreshWhenVisible = () => void refreshMenu();
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
       clearInterval(hb);
       clearInterval(mr);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
-  }, [screen === "setup" || screen === "loading", loadMenu, loadCampaigns, loadConfig]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [screen === "setup" || screen === "loading", refreshMenu]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const flushAnalytics = () => {
@@ -386,7 +447,9 @@ export default function KioskPage() {
     checkoutPaymentMethodRef.current = null;
     trackEvent("session_started", { metadata: { entryPoint: "idle" } });
     setScreen("menu");
-    loadMenu().catch(() => {});
+    loadMenu().catch((cause) => {
+      setMenuRefreshError(cause instanceof Error ? cause.message : "Menu refresh failed.");
+    });
     loadCampaigns().catch(() => {});
   };
 
@@ -530,8 +593,25 @@ export default function KioskPage() {
       customerPhone: customerPhone || undefined,
       paymentMethod,
       squareNonce,
+      expectedTotalCents: Math.round(cartSubtotal(cart) * 100),
     });
   };
+
+  const handleMenuChanged = useCallback(() => {
+    setCartReviewRequired(true);
+    checkoutStartedAtRef.current = 0;
+    checkoutPaymentMethodRef.current = null;
+    setScreen("menu");
+    void loadMenu(true)
+      .then(() => setMenuRefreshError(null))
+      .catch((cause) => {
+        setMenuRefreshError(
+          cause instanceof Error
+            ? cause.message
+            : "Menu refresh failed. We are showing the last known menu.",
+        );
+      });
+  }, [loadMenu]);
 
   const handlePaid = (result: KioskOrderResult) => {
     const paymentMethod = checkoutPaymentMethodRef.current;
@@ -605,11 +685,24 @@ export default function KioskPage() {
             })
           }
           onCheckout={() => {
+             if (invalidCartLineKeys.length > 0 || menuRefreshing) return;
+             if (cartReviewRequired) setCartReviewRequired(false);
             checkoutStartedAtRef.current ||= Date.now();
             const hasUpsells = campaigns.some(c => c.campaignType === 'upsell' && c.isActive);
             setScreen(hasUpsells ? "upsell" : "details");
           }}
           onStartOver={() => resetToAttract("start_over")}
+           checkoutDisabled={invalidCartLineKeys.length > 0}
+           checkoutNotice={
+             menuRefreshing
+               ? "Checking for menu updates before checkout."
+               : invalidCartLineKeys.length > 0
+               ? "A menu item or side choice changed. Remove that line before checkout."
+               : cartReviewRequired
+                 ? "The menu changed. Review your updated order before checkout."
+                 : null
+           }
+           menuRefreshing={menuRefreshing}
         />
       );
       break;
@@ -666,6 +759,7 @@ export default function KioskPage() {
             return true;
           }}
           onPaymentSafeToLeave={clearAndroidPaymentLockIfSafe}
+           onMenuChanged={handleMenuChanged}
           onCheckoutFailed={(paymentMethod, failureCategory) =>
             trackEvent("checkout_failed", {
               durationMs: checkoutStartedAtRef.current
@@ -690,6 +784,11 @@ export default function KioskPage() {
   return (
     <>
       <div ref={kioskContentRef} aria-hidden={showTimeoutWarning || undefined}>
+        {menuRefreshError && (screen === "attract" || screen === "menu") && (
+          <div className="k-refresh-status" role="alert">
+            {menuRefreshError}
+          </div>
+        )}
         {screenContent}
       </div>
       {showTimeoutWarning && (

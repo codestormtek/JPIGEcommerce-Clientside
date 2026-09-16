@@ -214,9 +214,11 @@ let analyticsFlushPromise: Promise<void> | null = null;
 
 export class KioskApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  code?: string;
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -235,7 +237,31 @@ async function kioskFetch<T>(path: string, opts: { method?: string; body?: unkno
 
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new KioskApiError(json.message || json.error || `Request failed (${res.status})`, res.status);
+    const body = json && typeof json === "object" ? json : {};
+    const errorValue = typeof body.error === "object" ? body.error : undefined;
+    const message =
+      typeof body.message === "string"
+        ? body.message
+        : typeof body.error === "string"
+          ? body.error
+          : typeof errorValue?.message === "string"
+            ? errorValue.message
+            : `Request failed (${res.status})`;
+    const code =
+      typeof body.code === "string"
+        ? body.code
+        : typeof body.errorCode === "string"
+          ? body.errorCode
+          : typeof errorValue?.code === "string"
+            ? errorValue.code
+            : body.error === "MENU_CHANGED"
+              ? body.error
+              : undefined;
+    throw new KioskApiError(
+      message,
+      res.status,
+      code,
+    );
   }
   return (json.data ?? json) as T;
 }
@@ -432,6 +458,7 @@ export function placeKioskOrder(input: {
   specialInstructions?: string;
   paymentMethod: "terminal" | "card";
   squareNonce?: string;
+  expectedTotalCents?: number;
 }): Promise<KioskOrderResult> {
   return kioskFetch<KioskOrderResult>("/orders", { method: "POST", body: input });
 }

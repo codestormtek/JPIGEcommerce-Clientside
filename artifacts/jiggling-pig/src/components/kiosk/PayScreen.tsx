@@ -12,6 +12,7 @@ import {
   readKioskPaymentAttempt,
   recoverKioskPaymentAttempt,
   saveKioskPaymentAttemptOrder,
+  KioskApiError,
 } from "@/lib/kiosk";
 
 interface Props {
@@ -24,6 +25,7 @@ interface Props {
   onPaid: (result: KioskOrderResult) => boolean | void;
   onCheckoutStarted: (paymentMethod: "terminal" | "card") => boolean;
   onPaymentSafeToLeave?: () => boolean;
+  onMenuChanged?: () => void;
   onCheckoutFailed: (
     paymentMethod: "terminal" | "card",
     failureCategory: "declined" | "cancelled" | "reader_unavailable" | "network" | "timeout" | "validation" | "unknown",
@@ -34,6 +36,14 @@ type Mode = "choose" | "terminal-waiting" | "payment-waiting" | "card-entry" | "
 
 const POLL_INTERVAL_MS = 2000;
 const TERMINAL_TIMEOUT_MS = 3 * 60_000;
+
+function isMenuChangedError(error: unknown): boolean {
+  return (
+    error instanceof KioskApiError &&
+    error.status === 409 &&
+    (error.code === "MENU_CHANGED" || error.message.includes("MENU_CHANGED"))
+  );
+}
 
 interface SquareCard {
   attach: (selector: string) => Promise<void>;
@@ -79,6 +89,7 @@ export default function PayScreen({
   onPaid,
   onCheckoutStarted,
   onPaymentSafeToLeave,
+  onMenuChanged,
   onCheckoutFailed,
 }: Props) {
   // Start fail-closed so there is no one-render window in which a reloaded
@@ -118,6 +129,17 @@ export default function PayScreen({
     }
     return true;
   }, [onPaid]);
+
+  const returnToMenuAfterMenuChange = useCallback(() => {
+    if (!clearAttemptAfterAuthoritativeOutcome()) return false;
+    cardTokenRef.current = null;
+    orderRef.current = null;
+    cancelledRef.current = true;
+    setError(null);
+    setMode("choose");
+    onMenuChanged?.();
+    return true;
+  }, [clearAttemptAfterAuthoritativeOutcome, onMenuChanged]);
 
   // A reload must continue the existing attempt, not expose a fresh payment
   // button. If the POST response was lost before its order ID arrived, use the
@@ -197,6 +219,10 @@ export default function PayScreen({
       cancelledRef.current = false;
       setMode("terminal-waiting");
     } catch (e) {
+      if (isMenuChangedError(e)) {
+        onCheckoutFailed("terminal", "validation");
+        if (returnToMenuAfterMenuChange()) return;
+      }
       // The POST may have reached the order controller even when the browser
       // observed an HTTP error (including 422) or a network failure. Preserve
       // the idempotency key and fail closed until staff reconcile the outcome.
@@ -375,6 +401,10 @@ export default function PayScreen({
         setMode("payment-waiting");
       }
     } catch (e) {
+      if (isMenuChangedError(e)) {
+        onCheckoutFailed("card", "validation");
+        if (returnToMenuAfterMenuChange()) return;
+      }
       onCheckoutFailed("card", "declined");
       setError(e instanceof Error ? e.message : "Payment failed — please try again");
     } finally {

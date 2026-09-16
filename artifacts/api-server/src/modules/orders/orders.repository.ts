@@ -1,5 +1,6 @@
 import prisma from '../../lib/prisma';
 import { ListOrdersInput, PlaceOrderInput, CheckoutInput } from './orders.schema';
+import { ApiError } from '../../utils/apiError';
 
 type TxClient = Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -98,6 +99,7 @@ export async function placeOrder(
     remotePickupRequestId?: string;
     fulfillmentType?: string;
     eventName?: string;
+    expectedTotalCents?: number;
   },
   taxTotal = 0,
   discountTotal = 0,
@@ -119,8 +121,19 @@ export async function placeOrder(
           .sideProductItemIds ?? []),
       ])),
     ];
+    const menuOrder = ['kiosk', 'remote_pickup', 'event_qr'].includes(input.orderType);
+    const menuSellabilityFilter = menuOrder
+      ? {
+          isPublished: true,
+          qtyInStock: { gt: 0 },
+          product: {
+            isDeleted: false,
+            visibility: { in: ['kiosk', 'both'] },
+          },
+        }
+      : {};
     const productItems = await tx.productItem.findMany({
-      where: { id: { in: itemIds } },
+      where: { id: { in: itemIds }, ...menuSellabilityFilter },
       include: { product: { select: { name: true } } },
     });
     const requestedQtyByItem = new Map<string, number>();
@@ -142,7 +155,14 @@ export async function placeOrder(
     }
     for (const [itemId, requestedQty] of requestedQtyByItem) {
       const item = productItems.find((candidate) => candidate.id === itemId);
-      if (!item) throw new Error(`Product item ${itemId} not found`);
+      if (!item) {
+        if (menuOrder) {
+          throw ApiError.conflict('MENU_CHANGED', {
+            reason: 'One of the selected menu items is no longer available.',
+          });
+        }
+        throw new Error(`Product item ${itemId} not found`);
+      }
     }
     const inventoryReservationJson = [...requestedQtyByItem.entries()].map(([productItemId, qty]) => ({
       productItemId,
@@ -175,17 +195,40 @@ export async function placeOrder(
       ? taxTotal
       : Math.round(subtotal * taxRatePercent * 100) / 100;
     const grandTotal = subtotal + shippingTotal + orderTaxTotal - discountTotal;
+    const authoritativeTotalCents = Math.round(grandTotal * 100);
+
+    // Compare inside the same transaction that snapshots prices and reserves
+    // inventory. A stale reviewed total must roll back before any order,
+    // payment reservation, or external provider operation can exist.
+    if (
+      input.expectedTotalCents !== undefined
+      && input.expectedTotalCents !== authoritativeTotalCents
+    ) {
+      throw ApiError.conflict('MENU_CHANGED', {
+        expectedTotalCents: input.expectedTotalCents,
+        actualTotalCents: authoritativeTotalCents,
+      });
+    }
 
     // Reserve every required main and side SKU atomically. PostgreSQL rolls
     // back earlier reservations if any later SKU is unavailable or creation
     // fails, so inventory, order, and pending payment move together.
     for (const [itemId, requestedQty] of requestedQtyByItem) {
       const reserved = await tx.productItem.updateMany({
-        where: { id: itemId, qtyInStock: { gte: requestedQty } },
+        where: {
+          id: itemId,
+          qtyInStock: { gte: requestedQty },
+          ...menuSellabilityFilter,
+        },
         data: { qtyInStock: { decrement: requestedQty } },
       });
       if (reserved.count !== 1) {
         const item = productItems.find((candidate) => candidate.id === itemId);
+        if (menuOrder) {
+          throw ApiError.conflict('MENU_CHANGED', {
+            reason: 'One of the selected menu items changed before checkout completed.',
+          });
+        }
         throw new Error(`Insufficient stock for SKU ${item?.sku ?? itemId}`);
       }
     }

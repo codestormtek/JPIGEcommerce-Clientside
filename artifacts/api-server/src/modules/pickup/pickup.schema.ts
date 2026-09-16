@@ -12,6 +12,9 @@ export const pickupCheckoutSchema = z.object({
   // a card token. Repeating it can only resume the same Square payment attempt.
   clientRequestId: z.string().uuid(),
   lines: z.array(lineSchema).min(1).max(50),
+  // Optional while older pickup clients roll out. New clients send the cents
+  // total shown on the reviewed checkout screen.
+  expectedTotalCents: z.number().int().nonnegative().max(100_000_000).optional(),
   customerName: z.string().trim().min(1, 'Your name is required').max(100),
   customerPhone: z.string().trim().max(30)
     .refine((value) => normalizePhone(value) !== null, 'Enter a valid US phone number'),
@@ -33,7 +36,6 @@ export const pickupConfigSchema = z.object({
   eventName: z.string().trim().max(120),
   streetAddress: z.string().trim().max(300),
   asapWaitMinutes: z.number().int().min(1).max(240),
-  menuProductIds: z.array(z.string().uuid()).max(500),
   // Store this explicitly with the event, rather than trusting a browser total.
   taxRatePercent: z.number().min(0).max(25),
 }).superRefine((value, ctx) => {

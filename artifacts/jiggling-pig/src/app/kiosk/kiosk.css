@@ -579,6 +579,16 @@
   background: var(--k-bg);
 }
 
+.k-cart-notice {
+  padding: 12px 14px;
+  border: 1px solid var(--k-accent);
+  border-radius: 10px;
+  background: rgb(242 85 34 / 12%);
+  color: var(--k-text);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
 .k-total-row {
   display: flex;
   justify-content: space-between;
@@ -962,6 +972,22 @@
   justify-content: center;
   gap: 12px;
   margin-top: 28px;
+}
+
+.k-refresh-status {
+  position: fixed;
+  z-index: 13000;
+  top: 12px;
+  right: 16px;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border: 1px solid #c84a35;
+  border-radius: 10px;
+  background: rgb(71 35 29 / 96%);
+  color: #ffb5a8;
+  font-size: 15px;
+  line-height: 1.35;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
 }
 
 .k-modal-error {

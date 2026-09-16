@@ -28,8 +28,8 @@ export class ApiError extends Error {
     return new ApiError(404, `${resource} not found`);
   }
 
-  static conflict(message: string): ApiError {
-    return new ApiError(409, message);
+  static conflict(message: string, details?: unknown): ApiError {
+    return new ApiError(409, message, details);
   }
 
   static unprocessable(message: string, details?: unknown): ApiError {
