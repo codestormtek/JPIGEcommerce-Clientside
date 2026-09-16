@@ -8,3 +8,4 @@
 - [Standalone CI dependencies](standalone-ci-dependencies.md) — validate nested standalone packages from isolated installs because monorepo dependencies can hide missing declarations.
 - [Android release signing](android-release-signing.md) — production APK workflows must pin identity, source, version history, and signing-job dependencies before publication.
 - [Pickup rollout safety](pickup-rollout-safety.md) — external database isolation needs confirmation; schema additions must precede updated order queries.
+- [Render package-manager bootstrap](render-package-manager.md) — a missing Corepack pnpm executable fails before app compilation; cover build and start when bypassing it.
