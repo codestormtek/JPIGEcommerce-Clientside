@@ -48,6 +48,50 @@ function responseData<T>(response: T | { data: T }): T {
   return (response && typeof response === "object" && "data" in response ? response.data : response) as T;
 }
 
+function PigMark() {
+  return <span className="jp-mark" aria-hidden="true"><i /><i /><b /></span>;
+}
+
+function BackIcon() {
+  return <span aria-hidden="true">‹</span>;
+}
+
+function ProductArt({ product }: { product: KioskProduct }) {
+  const key = product.name.toLowerCase();
+  const isDrink = /tea|drink|lemonade|soda|water/.test(key);
+  const isSide = /mac|bean|slaw|potato|side|fry/.test(key);
+
+  if (product.imageUrl) {
+    return <img src={product.imageUrl} alt={product.name} />;
+  }
+
+  return (
+    <span className="jp-product-fallback" aria-hidden="true">
+      <svg viewBox="0 0 160 100">
+        {isDrink ? (
+          <>
+            <path d="M62 19h40l-5 63H67Z" />
+            <path d="m80 11 18 22" />
+            <path d="M68 55h28" />
+          </>
+        ) : isSide ? (
+          <>
+            <path d="M40 52h80l-9 27H49Z" />
+            <path d="M48 52c4-24 60-24 64 0" />
+            <path d="M64 38c4-9 10 8 15-3s12 6 18-5" />
+          </>
+        ) : (
+          <>
+            <path d="M39 68c5-35 30-48 55-41 20 6 29 22 27 41H39Z" />
+            <path d="M50 68c8-16 17-18 29-10s19-1 29-13" />
+            <path d="M33 76h95" />
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
+
 export default function PickupPage() {
   const searchParams = useSearchParams();
   const [config, setConfig] = useState<PickupConfig | null>(null);
@@ -206,7 +250,7 @@ export default function PickupPage() {
     event.preventDefault();
     if (!cart.length) return;
     setError("");
-    setStage("payment");
+    setStage("review");
   };
 
   const submit = async () => {
@@ -260,29 +304,222 @@ export default function PickupPage() {
     }
   };
 
-  if (!config) return <main className="mx-auto max-w-xl p-6 text-center">{error || "Loading pickup ordering…"}</main>;
-
-  if (stage === "complete" && result) {
-    return <main className="mx-auto max-w-xl p-6"><section className="rounded-xl border bg-card p-6 shadow-sm">
-      <p className="font-semibold text-green-700">Payment confirmed</p><h1 className="mt-2 text-3xl font-bold">Order {result.orderNumber}</h1>
-      <p className="mt-3">We&apos;ll have your order ready in about <strong>{config.asapWaitMinutes} minutes</strong>.</p>
-      <p className="mt-2 text-sm text-muted-foreground">Pick up at {config.eventName}, {config.streetAddress}.</p>
-      <div className="my-5 border-y py-3">{result.items.map((item, index) => <div key={index} className="flex justify-between py-1"><span>{item.qty}× {item.name}{item.sides ? <small className="block text-muted-foreground">{item.sides}</small> : null}</span><span>{formatMoney(item.lineTotal)}</span></div>)}</div>
-      <div className="flex justify-between text-lg font-bold"><span>Total paid</span><span>{formatMoney(result.grandTotal)}</span></div>
-      {result.receiptUrl && <a className="mt-5 inline-block text-primary underline" href={result.receiptUrl} target="_blank" rel="noreferrer">View Square receipt</a>}
-    </section></main>;
+  if (!config) {
+    return (
+      <main className="jp-shell jp-center">
+        <PigMark />
+        <p className="jp-kicker">Jiggling Pig / Roadside pickup</p>
+        <div className="jp-loading" aria-hidden="true"><span /><span /><span /></div>
+        <p role={error ? "alert" : undefined}>{error || "Warming up the pit…"}</p>
+      </main>
+    );
   }
 
-  if (stage === "confirming") return <main className="mx-auto max-w-xl p-6"><section className="rounded-xl border bg-card p-6 text-center"><h1 className="text-2xl font-bold">Confirming your payment</h1><p className="mt-3 text-muted-foreground">Please do not submit another order. We are checking Square for the existing payment.</p>{result && <p className="mt-3 font-medium">Order {result.orderNumber}</p>}{error && <p role="alert" className="mt-4 text-destructive">{error}</p>}<button className="mt-5 rounded-md border px-4 py-2 font-medium" onClick={() => void recoverPersistedAttempt()}>Check payment now</button>{canReplay && <button className="mt-3 w-full rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground" onClick={() => { setError(""); setStage("payment"); }}>Retry this same checkout</button>}</section></main>;
-  if (!config.isOrderingOpen) return <main className="mx-auto max-w-xl p-6"><h1 className="text-3xl font-bold">ASAP pickup is closed</h1><p className="mt-3 text-muted-foreground">Please check back when this event is accepting orders.</p></main>;
+  if (stage === "complete" && result) {
+    return (
+      <main className="jp-shell jp-center">
+        <PigMark />
+        <p className="jp-kicker">Payment received</p>
+        <h1>See you<br /><em>soon.</em></h1>
+        <section className="jp-receipt">
+          <p>ORDER NUMBER</p>
+          <strong>{result.orderNumber}</strong>
+          <hr />
+          {result.items.map((item, index) => (
+            <div key={index}>
+              <span>{item.qty} × {item.name}{item.sides ? <small>{item.sides}</small> : null}</span>
+              <b>{formatMoney(item.lineTotal)}</b>
+            </div>
+          ))}
+          <hr />
+          <div className="jp-total"><span>TOTAL PAID</span><b>{formatMoney(result.grandTotal)}</b></div>
+        </section>
+        <p className="jp-note">Ready in about {config.asapWaitMinutes} minutes at {config.eventName}.</p>
+        {result.receiptUrl && <a className="jp-link" href={result.receiptUrl} target="_blank" rel="noreferrer">View Square receipt</a>}
+      </main>
+    );
+  }
 
-  return <main className="mx-auto max-w-5xl p-4 pb-28 sm:p-6">
-    <header className="mb-6"><p className="font-semibold text-primary">ASAP PICKUP</p><h1 className="text-3xl font-bold">{config.eventName}</h1><p className="mt-1 text-muted-foreground">{config.streetAddress} · Ready in about {config.asapWaitMinutes} minutes</p></header>
-    {error && <p role="alert" className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
-    {stage === "payment" ? <section className="mx-auto max-w-lg rounded-xl border bg-card p-5"><button className="mb-4 text-sm underline" disabled={busy} onClick={() => setStage("review")}>← Back to review</button><h2 className="text-2xl font-bold">Secure card payment</h2><p className="mt-1 text-sm text-muted-foreground">Your final total is calculated by our server.</p><div className="my-5 flex justify-between border-y py-3 text-lg font-bold"><span>Total</span><span>{formatMoney(displayTotal)}</span></div><div id="pickup-square-card" className="min-h-24" />{square.error && <p role="alert" className="mt-3 text-sm text-destructive">{square.error}</p>}<button className="mt-5 w-full rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground disabled:opacity-50" disabled={!square.ready || busy} onClick={() => void submit()}>{busy ? "Processing securely…" : `Pay ${formatMoney(displayTotal)}`}</button>{error && requestId.current && <button className="mt-3 w-full rounded-md border px-4 py-3 font-medium" disabled={busy} onClick={() => void submit()}>Safely check this payment again</button>}</section> :
-      <><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{config.menu.products.map(product => <button key={product.id} onClick={() => openProduct(product)} className="overflow-hidden rounded-xl border bg-card text-left shadow-sm transition hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary"><div className="aspect-[16/8] bg-muted">{product.imageUrl && <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />}</div><div className="p-4"><div className="font-bold">{product.name}</div>{product.description && <p className="mt-1 text-sm text-muted-foreground">{product.description}</p>}<div className="mt-3 flex justify-between font-semibold"><span>{product.comboSideCount ? `Includes ${product.comboSideCount} sides` : "Add to order"}</span><span>{formatMoney(product.items[0]?.price ?? 0)}</span></div></div></button>)}</div>
-      <form onSubmit={continueToPayment} className="mt-7 rounded-xl border bg-card p-5"><h2 className="text-xl font-bold">Your order</h2>{cart.length === 0 ? <p className="mt-3 text-muted-foreground">Choose items from the menu to begin.</p> : <div className="mt-3 space-y-3">{cart.map(line => <div key={cartLineKey(line.item.id, line.sides)} className="flex items-start justify-between gap-3 border-b pb-3"><div><strong>{line.product.name}</strong>{line.sides?.length ? <small className="block text-muted-foreground">{line.sides.map(side => side.name).join(", ")}</small> : null}<div className="mt-2 flex items-center gap-2"><button type="button" className="rounded border px-2" onClick={() => setQty(line, line.qty - 1)} aria-label={`Decrease ${line.product.name}`}>−</button><span>{line.qty}</span><button type="button" className="rounded border px-2" onClick={() => setQty(line, line.qty + 1)} aria-label={`Increase ${line.product.name}`}>+</button></div></div><strong>{formatMoney((line.item.price + sidesUpcharge(line.sides)) * line.qty)}</strong></div>)}</div>}
-        {cart.length > 0 && <><div className="mt-4 space-y-1 text-sm"><div className="flex justify-between"><span>Subtotal</span><span>{formatMoney(subtotal)}</span></div><div className="flex justify-between"><span>Estimated tax</span><span>{formatMoney(tax)}</span></div><div className="flex justify-between text-lg font-bold"><span>Estimated total</span><span>{formatMoney(displayTotal)}</span></div></div><div className="mt-5 grid gap-3 sm:grid-cols-2"><label className="text-sm font-medium">Name<input required maxLength={100} value={name} onChange={e => setName(e.target.value)} className="mt-1 w-full rounded-md border bg-background p-3" autoComplete="name" /></label><label className="text-sm font-medium">Mobile phone<input required maxLength={30} value={phone} onChange={e => setPhone(e.target.value)} className="mt-1 w-full rounded-md border bg-background p-3" inputMode="tel" autoComplete="tel" /></label></div><button className="mt-5 w-full rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground">Review & pay</button></>}</form></>}
-    {sideProduct && <div className="fixed inset-0 z-50 flex items-end bg-black/50 p-3 sm:items-center sm:justify-center" role="dialog" aria-modal="true" aria-labelledby="side-title"><section className="w-full max-w-lg rounded-xl bg-background p-5"><h2 id="side-title" className="text-xl font-bold">Choose {sideProduct.comboSideCount} sides</h2><p className="mt-1 text-sm text-muted-foreground">{chosenSides.length} of {sideProduct.comboSideCount} selected</p><div className="mt-4 grid grid-cols-2 gap-2">{sideOptions.map(side => <button key={side.id} className={`rounded-md border p-3 text-left ${chosenSides.some(s => s.id === side.id) ? "border-primary bg-primary/10" : ""}`} disabled={chosenSides.length >= sideProduct.comboSideCount} onClick={() => setChosenSides(value => [...value, { id: side.id, name: side.name, upcharge: side.duplicateSideUpcharge }])}>{side.name}{side.duplicateSideUpcharge > 0 && <small className="block text-muted-foreground">Extra duplicate: {formatMoney(side.duplicateSideUpcharge)}</small>}</button>)}</div><div className="mt-5 flex gap-3"><button className="flex-1 rounded-md border py-3" onClick={() => setSideProduct(null)}>Cancel</button><button className="flex-1 rounded-md border py-3" onClick={() => setChosenSides([])}>Clear</button><button className="flex-1 rounded-md bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-50" disabled={chosenSides.length !== sideProduct.comboSideCount} onClick={() => { add(sideProduct, chosenSides); setSideProduct(null); }}>Add</button></div></section></div>}
-  </main>;
+  if (stage === "confirming") {
+    return (
+      <main className="jp-shell jp-center">
+        <PigMark />
+        <p className="jp-kicker">One moment</p>
+        <h1>Checking<br /><em>the coals.</em></h1>
+        <div className="jp-wait">
+          <div className="jp-loading" aria-hidden="true"><span /><span /><span /></div>
+          <p>We&apos;re confirming your existing payment with Square. Please don&apos;t place another order.</p>
+          {result && <p>Order {result.orderNumber}</p>}
+          {error && <p role="alert" className="jp-alert">{error}</p>}
+          <button className="jp-ghost" onClick={() => void recoverPersistedAttempt()}>Check payment now</button>
+          {canReplay && <button className="jp-primary" onClick={() => { setError(""); setStage("payment"); }}>Retry this checkout</button>}
+        </div>
+      </main>
+    );
+  }
+
+  if (!config.isOrderingOpen) {
+    return (
+      <main className="jp-shell jp-center jp-closed">
+        <PigMark />
+        <p className="jp-kicker">The Jiggling Pig</p>
+        <h1>The pit is<br /><em>resting.</em></h1>
+        <div className="jp-closed-card">
+          <strong>ASAP PICKUP IS CLOSED</strong>
+          <p>We&apos;re not taking roadside orders right now. Check back when smoke is in the air.</p>
+        </div>
+        <small>{config.eventName} · {config.streetAddress}</small>
+      </main>
+    );
+  }
+
+  const cartCount = cart.reduce((count, line) => count + line.qty, 0);
+  const menu = (
+    <section className="jp-menu">
+      <div className="jp-menu-heading">
+        <div>
+          <p className="jp-kicker">Roadside pickup</p>
+          <h1>What&apos;s<br /><em>smoking?</em></h1>
+        </div>
+        <p>{config.eventName} <span>·</span> about {config.asapWaitMinutes} min</p>
+      </div>
+      <div className="jp-grid">
+        {config.menu.products.map(product => {
+          const price = product.items[0]?.price ?? 0;
+          return (
+            <button key={product.id} className="jp-product" onClick={() => openProduct(product)}>
+              <div className="jp-product-img">
+                <ProductArt product={product} />
+                {product.comboSideCount ? <span>{product.comboSideCount} sides</span> : null}
+              </div>
+              <div>
+                <h2>{product.name}</h2>
+                <p>{product.description || (product.comboSideCount ? "Pick your favorite sides" : "Straight from the Jiggling Pig pit")}</p>
+                <footer><b>{formatMoney(price)}</b><i aria-hidden="true">+</i></footer>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+
+  const cartPanel = (
+    <aside className="jp-cart">
+      <header>
+        <div>
+          <p className="jp-kicker">Your order</p>
+          <h2>{cartCount ? `${cartCount} item${cartCount === 1 ? "" : "s"}` : "Hungry yet?"}</h2>
+        </div>
+        <PigMark />
+      </header>
+      {cart.length ? (
+        <form onSubmit={continueToPayment} className="jp-cart-filled">
+          <div className="jp-lines">
+            {cart.map(line => (
+              <div className="jp-line" key={cartLineKey(line.item.id, line.sides)}>
+                <div>
+                  <b>{line.product.name}</b>
+                  {line.sides?.length ? <small>{line.sides.map(side => side.name).join(" · ")}</small> : null}
+                  <div className="jp-qty">
+                    <button type="button" aria-label={`Decrease ${line.product.name}`} onClick={() => setQty(line, line.qty - 1)}>−</button>
+                    <span>{line.qty}</span>
+                    <button type="button" aria-label={`Increase ${line.product.name}`} onClick={() => setQty(line, line.qty + 1)}>+</button>
+                  </div>
+                </div>
+                <strong>{formatMoney((line.item.price + sidesUpcharge(line.sides)) * line.qty)}</strong>
+              </div>
+            ))}
+          </div>
+          <div className="jp-cost">
+            <span>Subtotal <b>{formatMoney(subtotal)}</b></span>
+            <span>Estimated tax <b>{formatMoney(tax)}</b></span>
+            <strong>Total <b>{formatMoney(displayTotal)}</b></strong>
+          </div>
+          <button className="jp-primary">Review order <span>{formatMoney(displayTotal)}</span></button>
+        </form>
+      ) : (
+        <div className="jp-empty"><span>01</span><p>Tap a plate to start your order.</p></div>
+      )}
+    </aside>
+  );
+
+  const checkout = stage === "menu" ? (
+    <main className="jp-shell jp-order">
+      <header className="jp-top">
+        <div><PigMark /><span>THE JIGGLING PIG</span></div>
+        <span>BBQ / ROADSIDE</span>
+      </header>
+      {error && <p role="alert" className="jp-alert">{error}</p>}
+      <div className="jp-order-body">{menu}{cartPanel}</div>
+    </main>
+  ) : (
+    <main className="jp-shell jp-checkout">
+      <button className="jp-back" disabled={busy} onClick={() => setStage(stage === "payment" ? "review" : "menu")}><BackIcon /> Back to {stage === "payment" ? "review" : "menu"}</button>
+      <section className="jp-check-panel">
+        <PigMark />
+        <p className="jp-kicker">{stage === "review" ? "Almost there" : "Secure payment"}</p>
+        <h1>{stage === "review" ? <>Make it<br /><em>yours.</em></> : <>Pay for<br /><em>the good stuff.</em></>}</h1>
+        {error && <p className="jp-alert" role="alert">{error}</p>}
+        {stage === "review" ? (
+          <form onSubmit={event => { event.preventDefault(); setStage("payment"); }}>
+            <div className="jp-order-summary">
+              <span>{cartCount} item{cartCount === 1 ? "" : "s"} <b>{formatMoney(displayTotal)}</b></span>
+              <small>Final total is confirmed securely at payment.</small>
+            </div>
+            <label>Name<input required maxLength={100} value={name} onChange={event => setName(event.target.value)} autoComplete="name" placeholder="Your name" /></label>
+            <label>Mobile phone<input required maxLength={30} value={phone} onChange={event => setPhone(event.target.value)} inputMode="tel" autoComplete="tel" placeholder="For pickup updates" /></label>
+            <button className="jp-primary">Continue to payment</button>
+          </form>
+        ) : (
+          <>
+            <div className="jp-order-summary"><span>Order total <b>{formatMoney(displayTotal)}</b></span></div>
+            <div id="pickup-square-card" className="jp-square" />
+            {square.error && <p className="jp-alert" role="alert">{square.error}</p>}
+            <button disabled={!square.ready || busy} className="jp-primary" onClick={() => void submit()}>{busy ? "Confirming securely…" : `Pay ${formatMoney(displayTotal)}`}</button>
+            {error && requestId.current && <button disabled={busy} className="jp-ghost" onClick={() => void submit()}>Safely check this payment again</button>}
+            <p className="jp-safe">Payments are processed by Square. Card details never touch our grill.</p>
+          </>
+        )}
+      </section>
+    </main>
+  );
+
+  return (
+    <>
+      {checkout}
+      {sideProduct && (
+        <div className="jp-modal" role="dialog" aria-modal="true" aria-labelledby="side-title">
+          <section>
+            <button className="jp-close" aria-label="Close sides" onClick={() => setSideProduct(null)}>×</button>
+            <p className="jp-kicker">Build your plate</p>
+            <h2 id="side-title">Pick {sideProduct.comboSideCount} side{sideProduct.comboSideCount === 1 ? "" : "s"}</h2>
+            <p className="jp-selected">{chosenSides.length} of {sideProduct.comboSideCount} selected</p>
+            <div className="jp-sides">
+              {sideOptions.map(side => {
+                const selected = chosenSides.some(choice => choice.id === side.id);
+                return (
+                  <button
+                    key={side.id}
+                    className={selected ? "selected" : ""}
+                    disabled={!selected && chosenSides.length >= sideProduct.comboSideCount}
+                    onClick={() => setChosenSides(old => selected
+                      ? old.filter(choice => choice.id !== side.id)
+                      : [...old, { id: side.id, name: side.name, upcharge: side.duplicateSideUpcharge }])}
+                  >
+                    <b>{side.name}</b>
+                    {side.duplicateSideUpcharge > 0 && <small>Extra serving {formatMoney(side.duplicateSideUpcharge)}</small>}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="jp-modal-actions">
+              <button className="jp-ghost" onClick={() => setChosenSides([])}>Clear</button>
+              <button className="jp-primary" disabled={chosenSides.length !== sideProduct.comboSideCount} onClick={() => { add(sideProduct, chosenSides); setSideProduct(null); }}>Add to order</button>
+            </div>
+          </section>
+        </div>
+      )}
+    </>
+  );
 }
