@@ -365,7 +365,91 @@
 }
 
 .jp-menu {
+  min-width: 0;
   padding: 2.5rem 2rem;
+}
+
+.jp-category-nav {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.75rem 0 1rem;
+  margin: 0 0 1.15rem;
+  scrollbar-width: none;
+  background: linear-gradient(var(--jp-bg) 78%, transparent);
+}
+
+.jp-category-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.jp-category-nav button {
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: 0;
+  max-width: none;
+  padding: 0.62rem 0.95rem;
+  border: 1px solid var(--jp-line);
+  border-radius: 999px;
+  background: var(--jp-surface);
+  color: var(--jp-muted);
+  cursor: pointer;
+  font: 800 0.7rem/1 var(--font-outfit), sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.jp-category-nav button.active {
+  border-color: var(--jp-orange);
+  background: var(--jp-orange);
+  color: #1b100b;
+}
+
+.jp-category-nav button:not(.active):hover {
+  border-color: var(--jp-gold);
+  color: var(--jp-cream);
+}
+
+.jp-category-section {
+  scroll-margin-top: 4.5rem;
+  margin-bottom: 2.4rem;
+}
+
+.jp-category-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 0.85rem;
+}
+
+.jp-category-title h2 {
+  margin: 0;
+  color: var(--jp-cream);
+  font: 400 clamp(1.8rem, 3vw, 2.6rem)/0.95 var(--font-anton), sans-serif;
+  text-transform: uppercase;
+}
+
+.jp-category-title span {
+  color: var(--jp-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.jp-menu-empty {
+  min-height: 160px;
+  border: 1px dashed var(--jp-line);
+  border-radius: 14px;
 }
 
 .jp-menu-heading {
@@ -848,6 +932,21 @@
 
   .jp-menu {
     padding: 1.8rem 1rem;
+  }
+
+  .jp-category-nav {
+    padding-right: 1rem;
+    padding-left: 1rem;
+    margin-right: -1rem;
+    margin-left: -1rem;
+  }
+
+  .jp-category-section {
+    margin-bottom: 1.75rem;
+  }
+
+  .jp-category-title h2 {
+    font-size: 1.7rem;
   }
 
   .jp-menu-heading {

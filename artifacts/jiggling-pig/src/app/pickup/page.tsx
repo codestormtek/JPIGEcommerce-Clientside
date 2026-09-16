@@ -57,10 +57,6 @@ function BackIcon() {
 }
 
 function ProductArt({ product }: { product: KioskProduct }) {
-  const key = product.name.toLowerCase();
-  const isDrink = /tea|drink|lemonade|soda|water/.test(key);
-  const isSide = /mac|bean|slaw|potato|side|fry/.test(key);
-
   if (product.imageUrl) {
     return <img src={product.imageUrl} alt={product.name} />;
   }
@@ -68,25 +64,9 @@ function ProductArt({ product }: { product: KioskProduct }) {
   return (
     <span className="jp-product-fallback" aria-hidden="true">
       <svg viewBox="0 0 160 100">
-        {isDrink ? (
-          <>
-            <path d="M62 19h40l-5 63H67Z" />
-            <path d="m80 11 18 22" />
-            <path d="M68 55h28" />
-          </>
-        ) : isSide ? (
-          <>
-            <path d="M40 52h80l-9 27H49Z" />
-            <path d="M48 52c4-24 60-24 64 0" />
-            <path d="M64 38c4-9 10 8 15-3s12 6 18-5" />
-          </>
-        ) : (
-          <>
-            <path d="M39 68c5-35 30-48 55-41 20 6 29 22 27 41H39Z" />
-            <path d="M50 68c8-16 17-18 29-10s19-1 29-13" />
-            <path d="M33 76h95" />
-          </>
-        )}
+        <path d="M39 68c5-35 30-48 55-41 20 6 29 22 27 41H39Z" />
+        <path d="M50 68c8-16 17-18 29-10s19-1 29-13" />
+        <path d="M33 76h95" />
       </svg>
     </span>
   );
@@ -105,6 +85,7 @@ export default function PickupPage() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<PickupResult | null>(null);
   const [canReplay, setCanReplay] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("all");
   const requestId = useRef<string | null>(null);
 
   const square = useSquarePayments({
@@ -374,6 +355,114 @@ export default function PickupPage() {
   }
 
   const cartCount = cart.reduce((count, line) => count + line.qty, 0);
+  const categoryGroups = (() => {
+    const categoryById = new Map(config.menu.categories.map(category => [category.id, category]));
+    const categoryName = (categoryId: string) => categoryById.get(categoryId)?.name.trim().toLowerCase() ?? "";
+    const productCategoryIds = (product: KioskProduct) => [...new Set([
+      ...product.categoryIds,
+      ...(product.primaryCategoryId ? [product.primaryCategoryId] : []),
+    ])].filter(categoryId => categoryById.has(categoryId));
+    const hasCategory = (product: KioskProduct, name: string) =>
+      productCategoryIds(product).some(categoryId => categoryName(categoryId) === name);
+    const sideCategoryIds = new Set(
+      config.menu.products
+        .map(product => product.comboSideCategoryId)
+        .filter((categoryId): categoryId is string => Boolean(categoryId)),
+    );
+    const hasSideCategory = (product: KioskProduct) =>
+      productCategoryIds(product).some(categoryId => sideCategoryIds.has(categoryId));
+    const isCombo = (product: KioskProduct) =>
+      product.comboSideCount > 0 || hasCategory(product, "combo dinners");
+    const isSide = (product: KioskProduct) => hasCategory(product, "sides") || hasSideCategory(product);
+    const isDrink = (product: KioskProduct) => hasCategory(product, "drinks");
+    const isFoodMenuItem = (product: KioskProduct) => hasCategory(product, "jiggling food menu");
+    const groups: { id: string; name: string; products: KioskProduct[] }[] = [];
+    const groupedProductIds = new Set<string>();
+    const addGroup = (id: string, name: string, products: KioskProduct[]) => {
+      if (!products.length) return;
+      products.forEach(product => groupedProductIds.add(product.id));
+      groups.push({ id, name, products });
+    };
+
+    const combos = config.menu.products.filter(isCombo);
+    addGroup("combo-meals", "Combo meals", combos);
+    const comboIds = new Set(combos.map(product => product.id));
+
+    const sides = config.menu.products.filter(product =>
+      !comboIds.has(product.id) && isSide(product),
+    );
+    addGroup("sides", "Sides", sides);
+    const sideIds = new Set(sides.map(product => product.id));
+
+    const drinks = config.menu.products.filter(product =>
+      !comboIds.has(product.id) && !sideIds.has(product.id) && isDrink(product),
+    );
+    addGroup("drinks", "Drinks", drinks);
+    const drinkIds = new Set(drinks.map(product => product.id));
+
+    const otherMains = config.menu.products.filter(product =>
+      !comboIds.has(product.id)
+      && !sideIds.has(product.id)
+      && !drinkIds.has(product.id)
+      && isFoodMenuItem(product),
+    );
+    addGroup("other-mains", "Other mains", otherMains);
+
+    const remaining = config.menu.products.filter(product => !groupedProductIds.has(product.id));
+    const remainingByCategory = new Map<string, KioskProduct[]>();
+    const containerCategoryNames = new Set(["jiggling food menu", "jiggling pig products"]);
+    const uncategorized: KioskProduct[] = [];
+    for (const product of remaining) {
+      const ids = productCategoryIds(product);
+      const nonContainerIds = ids.filter(categoryId => !containerCategoryNames.has(categoryName(categoryId)));
+      const preferredId = (
+        product.primaryCategoryId
+        && categoryById.has(product.primaryCategoryId)
+        && (nonContainerIds.includes(product.primaryCategoryId) || nonContainerIds.length === 0)
+          ? product.primaryCategoryId
+          : undefined
+      ) ?? nonContainerIds[0] ?? ids[0];
+      if (!preferredId) {
+        uncategorized.push(product);
+        continue;
+      }
+      const products = remainingByCategory.get(preferredId) ?? [];
+      products.push(product);
+      remainingByCategory.set(preferredId, products);
+    }
+    config.menu.categories.forEach(category => {
+      const products = remainingByCategory.get(category.id);
+      if (products?.length) addGroup(`category-${category.id}`, category.name, products);
+    });
+
+    if (uncategorized.length) addGroup("uncategorized", "Other items", uncategorized);
+    return { groups };
+  })();
+  const menuCategories = categoryGroups.groups;
+  const selectedCategory = activeCategory === "all" || menuCategories.some(group => group.id === activeCategory)
+    ? activeCategory
+    : "all";
+  const visibleGroups = selectedCategory === "all"
+    ? categoryGroups.groups
+    : categoryGroups.groups.filter(group => group.id === selectedCategory);
+
+  const productCard = (product: KioskProduct) => {
+    const price = product.items[0]?.price ?? 0;
+    return (
+      <button key={product.id} type="button" className="jp-product" onClick={() => openProduct(product)}>
+        <div className="jp-product-img">
+          <ProductArt product={product} />
+          {product.comboSideCount ? <span>{product.comboSideCount} sides</span> : null}
+        </div>
+        <div>
+          <h2>{product.name}</h2>
+          <p>{product.description || (product.comboSideCount ? "Pick your favorite sides" : "Straight from the Jiggling Pig pit")}</p>
+          <footer><b>{formatMoney(price)}</b><i aria-hidden="true">+</i></footer>
+        </div>
+      </button>
+    );
+  };
+
   const menu = (
     <section className="jp-menu">
       <div className="jp-menu-heading">
@@ -383,23 +472,48 @@ export default function PickupPage() {
         </div>
         <p>{config.eventName} <span>·</span> about {config.asapWaitMinutes} min</p>
       </div>
-      <div className="jp-grid">
-        {config.menu.products.map(product => {
-          const price = product.items[0]?.price ?? 0;
-          return (
-            <button key={product.id} className="jp-product" onClick={() => openProduct(product)}>
-              <div className="jp-product-img">
-                <ProductArt product={product} />
-                {product.comboSideCount ? <span>{product.comboSideCount} sides</span> : null}
-              </div>
-              <div>
-                <h2>{product.name}</h2>
-                <p>{product.description || (product.comboSideCount ? "Pick your favorite sides" : "Straight from the Jiggling Pig pit")}</p>
-                <footer><b>{formatMoney(price)}</b><i aria-hidden="true">+</i></footer>
-              </div>
-            </button>
-          );
-        })}
+      <nav className="jp-category-nav" aria-label="Menu sections">
+        <button
+          type="button"
+          className={selectedCategory === "all" ? "active" : ""}
+          aria-pressed={selectedCategory === "all"}
+          onClick={() => setActiveCategory("all")}
+        >
+          All
+        </button>
+        {menuCategories.map(group => (
+          <button
+            key={group.id}
+            type="button"
+            className={selectedCategory === group.id ? "active" : ""}
+            aria-pressed={selectedCategory === group.id}
+            onClick={() => setActiveCategory(group.id)}
+          >
+            {group.name}
+          </button>
+        ))}
+      </nav>
+      <div className="jp-category-groups">
+        {visibleGroups.map(({ id, name, products }) => (
+          <section
+            className="jp-category-section"
+            id={`pickup-category-${id}`}
+            key={id}
+            aria-labelledby={`pickup-category-title-${id}`}
+          >
+            <div className="jp-category-title">
+              <h2 id={`pickup-category-title-${id}`}>{name}</h2>
+              <span>{products.length} item{products.length === 1 ? "" : "s"}</span>
+            </div>
+            <div className="jp-grid">{products.map(productCard)}</div>
+          </section>
+        ))}
+        {!visibleGroups.length && (
+          <div className="jp-empty jp-menu-empty">
+            <span>00</span>
+            <p>Nothing is listed in this section yet.</p>
+          </div>
+        )}
       </div>
     </section>
   );
