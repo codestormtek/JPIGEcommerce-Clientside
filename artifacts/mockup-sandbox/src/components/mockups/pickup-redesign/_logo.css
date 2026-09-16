@@ -1,0 +1,12 @@
+.jp-shell .jp-brand-logo { display: block; width: 104px; height: auto; object-fit: contain; flex-shrink: 0; }
+.jp-top { height: auto; min-height: 108px; padding-top: 10px; padding-bottom: 10px; }
+.jp-top > div > span { display: none; }
+.jp-cart header > .jp-brand-logo { width: 88px; }
+.jp-center > .jp-brand-logo { width: 144px; margin-bottom: 8px; }
+.jp-check-panel > .jp-brand-logo { width: 112px; margin-bottom: 24px; }
+@media (max-width: 800px) {
+  .jp-top { min-height: 90px; }
+  .jp-top .jp-brand-logo { width: 84px; }
+  .jp-cart header > .jp-brand-logo { width: 52px; }
+  .jp-center > .jp-brand-logo { width: 120px; }
+}

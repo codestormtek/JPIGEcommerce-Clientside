@@ -49,7 +49,7 @@ function responseData<T>(response: T | { data: T }): T {
 }
 
 function PigMark() {
-  return <span className="jp-mark" aria-hidden="true"><i /><i /><b /></span>;
+  return <img className="jp-brand-logo" src="/kiosk-logo.png" alt="The Jiggling Pig" width={519} height={500} />;
 }
 
 function BackIcon() {

@@ -1,6 +1,7 @@
 "use client";
 
 import "./_group.css";
+import "./_logo.css";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { apiGet, apiPost, cartLineKey, formatMoney, sidesUpcharge, type KioskCartLine, type KioskMenu, type KioskProduct, type KioskSideChoice, useSearchParams, useSquarePayments } from "./_demo";
 
@@ -12,7 +13,7 @@ type Pending = { requestId?: string; capability?: string };
 const readPending = (): Pending | null => { try { return JSON.parse(localStorage.getItem(PENDING_KEY) ?? "null"); } catch { return null; } };
 const responseData = <T,>(response: T | { data: T }) => (response && typeof response === "object" && "data" in response ? response.data : response) as T;
 
-function PigMark() { return <span className="jp-mark" aria-hidden="true"><i /><i /><b /></span>; }
+function PigMark() { return <img className="jp-brand-logo" src="/__mockup/images/pickup/kiosk-logo.png" alt="The Jiggling Pig" width={519} height={500} />; }
 function BackIcon() { return <span aria-hidden="true">‹</span>; }
 function ProductArt({ name }: { name: string }) {
   const key = name.toLowerCase();
