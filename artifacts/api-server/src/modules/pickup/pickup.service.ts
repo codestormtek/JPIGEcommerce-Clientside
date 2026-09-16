@@ -64,6 +64,7 @@ const defaultConfig: PickupConfigInput = {
   isOrderingOpen: false,
   eventName: '',
   streetAddress: '',
+  pickupInstructions: '',
   asapWaitMinutes: 20,
   taxRatePercent: 0,
 };
@@ -76,6 +77,9 @@ function parseConfig(raw?: string): PickupConfigInput {
       isOrderingOpen: candidate.isOrderingOpen === true,
       eventName: typeof candidate.eventName === 'string' ? candidate.eventName.trim() : '',
       streetAddress: typeof candidate.streetAddress === 'string' ? candidate.streetAddress.trim() : '',
+      pickupInstructions: typeof candidate.pickupInstructions === 'string'
+        ? candidate.pickupInstructions.trim().slice(0, 1000)
+        : '',
       asapWaitMinutes: Number.isInteger(candidate.asapWaitMinutes) ? Math.min(240, Math.max(1, candidate.asapWaitMinutes!)) : 20,
       taxRatePercent: typeof candidate.taxRatePercent === 'number' && Number.isFinite(candidate.taxRatePercent)
         ? Math.min(25, Math.max(0, candidate.taxRatePercent))
@@ -97,6 +101,7 @@ function publicConfig(configured: PickupConfigInput, menu: Awaited<ReturnType<ty
     isOrderingOpen: configured.isOrderingOpen,
     eventName: configured.eventName,
     streetAddress: configured.streetAddress,
+    pickupInstructions: configured.pickupInstructions,
     asapWaitMinutes: configured.asapWaitMinutes,
     taxRatePercent: configured.taxRatePercent,
     cardEnabled: Boolean(config.square.accessToken && config.square.applicationId && config.square.locationId),
@@ -128,6 +133,7 @@ export async function updatePickupConfig(input: PickupConfigInput) {
     isOrderingOpen: input.isOrderingOpen,
     eventName: input.eventName,
     streetAddress: input.streetAddress,
+    pickupInstructions: input.pickupInstructions?.trim() || '',
     asapWaitMinutes: input.asapWaitMinutes,
     taxRatePercent: input.taxRatePercent,
   });

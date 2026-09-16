@@ -35,6 +35,7 @@ export const pickupConfigSchema = z.object({
   isOrderingOpen: z.boolean(),
   eventName: z.string().trim().max(120),
   streetAddress: z.string().trim().max(300),
+  pickupInstructions: z.string().trim().max(1000).optional(),
   asapWaitMinutes: z.number().int().min(1).max(240),
   // Store this explicitly with the event, rather than trusting a browser total.
   taxRatePercent: z.number().min(0).max(25),

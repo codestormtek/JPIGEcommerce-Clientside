@@ -13,6 +13,14 @@ const order = {
 let restoreCalls = 0;
 let squareCreate;
 let placedInput;
+let storedPickupConfig = {
+  isOrderingOpen: true,
+  eventName: 'Event',
+  streetAddress: '1 Main',
+  pickupInstructions: 'Collect orders at the counter.',
+  asapWaitMinutes: 20,
+  taxRatePercent: 0,
+};
 const kioskMenu = {
   categories: [],
   products: [
@@ -88,10 +96,15 @@ mock('../dist/modules/kiosk/kiosk.service', {
   resolveComboSides: async lines => lines,
 });
 mock('../dist/modules/site-settings/site-settings.repository', {
-  findByKey: async () => ({ settingValue: JSON.stringify({
-    isOrderingOpen: true, eventName: 'Event', streetAddress: '1 Main',
-    asapWaitMinutes: 20, menuProductIds: ['plate'], taxRatePercent: 0,
-  }) }),
+  findByKey: async () => ({ settingValue: JSON.stringify(storedPickupConfig) }),
+  update: async (_key, data) => {
+    storedPickupConfig = JSON.parse(data.settingValue);
+    return { settingValue: data.settingValue };
+  },
+  create: async data => {
+    storedPickupConfig = JSON.parse(data.settingValue);
+    return { settingValue: data.settingValue };
+  },
 });
 mock('../dist/modules/orders/orders.repository', {
   placeOrder: async (_userId, input) => {
@@ -100,7 +113,13 @@ mock('../dist/modules/orders/orders.repository', {
   },
 });
 
-const { createPickupOrder, getPublicPickupConfig, recoverPickupOrderAttempt } = require('../dist/modules/pickup/pickup.service');
+const {
+  createPickupOrder,
+  getAdminPickupConfig,
+  getPublicPickupConfig,
+  recoverPickupOrderAttempt,
+  updatePickupConfig,
+} = require('../dist/modules/pickup/pickup.service');
 delete require.cache[require.resolve('../dist/services/orderInventoryRestoration')];
 const { restoreOrderInventoryOnceTx } = require('../dist/services/orderInventoryRestoration');
 const input = {
@@ -112,10 +131,24 @@ const input = {
 test('pickup public menu mirrors the full kiosk menu despite a legacy stored allowlist', async () => {
   const result = await getPublicPickupConfig();
 
+  assert.equal(result.pickupInstructions, 'Collect orders at the counter.');
   assert.deepEqual(
     result.menu.products.map(product => product.id),
     kioskMenu.products.map(product => product.id),
   );
+});
+
+test('pickup instructions persist through the existing site setting and return to admin/public config', async () => {
+  const updated = await updatePickupConfig({
+    ...storedPickupConfig,
+    pickupInstructions: '  Collect orders at the marked pickup table.  ',
+  });
+
+  assert.equal(storedPickupConfig.pickupInstructions, 'Collect orders at the marked pickup table.');
+  assert.equal(updated.pickupInstructions, 'Collect orders at the marked pickup table.');
+  const publicConfig = await getPublicPickupConfig();
+  assert.equal(publicConfig.pickupInstructions, 'Collect orders at the marked pickup table.');
+  assert.equal((await getAdminPickupConfig()).pickupInstructions, 'Collect orders at the marked pickup table.');
 });
 
 test('pickup order eligibility follows the kiosk menu, not a legacy stored allowlist', async () => {

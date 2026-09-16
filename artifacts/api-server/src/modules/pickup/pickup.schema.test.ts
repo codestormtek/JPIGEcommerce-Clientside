@@ -51,6 +51,32 @@ test('an open pickup event must have an address, name, and bounded wait', () => 
   }
 });
 
+test('pickup instructions remain optional for legacy admin config payloads', () => {
+  const legacyConfig = {
+    isOrderingOpen: false,
+    eventName: '',
+    streetAddress: '',
+    asapWaitMinutes: 20,
+    taxRatePercent: 0,
+  };
+  assert.equal(pickupConfigSchema.safeParse(legacyConfig).success, true);
+});
+
+test('pickup instructions are trimmed and capped at 1000 characters', () => {
+  const config = {
+    isOrderingOpen: false,
+    eventName: '',
+    streetAddress: '',
+    asapWaitMinutes: 20,
+    taxRatePercent: 0,
+  };
+  const parsed = pickupConfigSchema.safeParse({ ...config, pickupInstructions: '  Collect orders at the counter.  ' });
+  assert.equal(parsed.success, true);
+  if (parsed.success) assert.equal(parsed.data.pickupInstructions, 'Collect orders at the counter.');
+  assert.equal(pickupConfigSchema.safeParse({ ...config, pickupInstructions: 'x'.repeat(1000) }).success, true);
+  assert.equal(pickupConfigSchema.safeParse({ ...config, pickupInstructions: 'x'.repeat(1001) }).success, false);
+});
+
 test('pickup checkout accepts an optional reviewed total in cents', () => {
   const checkout = {
     clientRequestId: '53f6aa79-cc73-4852-997d-93d9c1181b11',

@@ -282,6 +282,124 @@
   color: var(--jp-muted);
 }
 
+/* The legacy storefront root is 10px; explicit sizes keep these additions readable. */
+.jp-shell .jp-pickup-details dd,
+.jp-shell .jp-pickup-instructions,
+.jp-shell .jp-suggestions,
+.jp-shell .jp-suggestion {
+  font-size: 16px;
+}
+
+.jp-shell .jp-pickup-details dt,
+.jp-shell .jp-pickup-details-heading > span,
+.jp-shell .jp-suggestions-heading > span,
+.jp-shell .jp-pickup-instructions strong {
+  font-size: 12px;
+}
+
+.jp-shell .jp-pickup-details-address .jp-link,
+.jp-shell .jp-pickup-details-note,
+.jp-shell .jp-suggestions-heading {
+  font-size: 14px;
+}
+
+.jp-pickup-details {
+  width: 100%;
+  margin: 1rem 0 1.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--jp-line);
+  border-left: 3px solid var(--jp-gold);
+  border-radius: 12px;
+  background: var(--jp-surface);
+  text-align: left;
+}
+
+.jp-menu > .jp-pickup-details {
+  max-width: 680px;
+}
+
+.jp-pickup-details-heading,
+.jp-suggestions-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.jp-pickup-details-heading .jp-kicker {
+  color: var(--jp-cream);
+}
+
+.jp-pickup-details-heading > span,
+.jp-suggestions-heading > span {
+  color: var(--jp-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.jp-pickup-details dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem 1rem;
+  margin: 0.8rem 0 0;
+}
+
+.jp-pickup-details dl > div {
+  min-width: 0;
+}
+
+.jp-pickup-details dt {
+  color: var(--jp-muted);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.jp-pickup-details dd {
+  margin: 0.15rem 0 0;
+  color: var(--jp-cream);
+  font-size: 0.88rem;
+}
+
+.jp-pickup-details-address dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.jp-pickup-details-address .jp-link {
+  min-height: 48px;
+  font-size: 0.8rem;
+}
+
+.jp-pickup-instructions {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.8rem 0 0;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--jp-line);
+  color: var(--jp-muted);
+  font-size: 0.82rem;
+}
+
+.jp-pickup-instructions strong {
+  color: var(--jp-cream);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.jp-pickup-details-note {
+  margin: 0.8rem 0 0;
+  color: var(--jp-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 .jp-link {
   color: var(--jp-gold);
   font-weight: 800;
@@ -634,6 +752,56 @@
 
 .jp-lines {
   margin: 1.3rem 0;
+}
+
+.jp-suggestions {
+  margin: 0.5rem 0 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--jp-line);
+}
+
+.jp-suggestions-heading {
+  margin-bottom: 0.55rem;
+  color: var(--jp-cream);
+  font-size: 0.85rem;
+}
+
+.jp-suggestion-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.45rem;
+}
+
+.jp-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  min-height: 48px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--jp-line);
+  border-radius: 9px;
+  background: var(--jp-surface);
+  color: var(--jp-cream);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.jp-suggestion:hover {
+  border-color: var(--jp-orange);
+}
+
+.jp-suggestion span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jp-suggestion strong {
+  flex: 0 0 auto;
+  color: var(--jp-gold);
 }
 
 .jp-line {
@@ -1393,6 +1561,10 @@
 
 @media (max-width: 520px) {
   .jp-shell .jp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .jp-shell .jp-pickup-details dl {
     grid-template-columns: 1fr;
   }
 

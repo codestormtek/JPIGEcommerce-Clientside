@@ -13,9 +13,12 @@ import {
   reconcileKioskSidePicker,
 } from "@/lib/menu";
 import { useSquarePayments } from "@/lib/useSquarePayments";
+import PickupDetails from "@/components/pickup/PickupDetails";
+import PickupSuggestions from "@/components/pickup/PickupSuggestions";
 
 type PickupConfig = {
   isOrderingOpen: boolean; eventName: string; streetAddress: string; asapWaitMinutes: number;
+  pickupInstructions?: string | null;
   cardEnabled: boolean; applicationId: string | null; locationId: string | null; environment: string;
   menu: KioskMenu; taxRatePercent?: number;
 };
@@ -464,7 +467,12 @@ export default function PickupPage() {
           <hr />
           <div className="jp-total"><span>TOTAL PAID</span><b>{formatMoney(result.grandTotal)}</b></div>
         </section>
-        <p className="jp-note">Ready in about {config.asapWaitMinutes} minutes at {config.eventName}.</p>
+        <PickupDetails
+          eventName={config.eventName}
+          streetAddress={config.streetAddress}
+          asapWaitMinutes={config.asapWaitMinutes}
+          pickupInstructions={config.pickupInstructions}
+        />
         {result.receiptUrl && <a className="jp-link" href={result.receiptUrl} target="_blank" rel="noreferrer">View Square receipt</a>}
       </main>
     );
@@ -546,8 +554,13 @@ export default function PickupPage() {
           <p className="jp-kicker">Roadside pickup</p>
           <h1>What&apos;s<br /><em>smoking?</em></h1>
         </div>
-        <p>{config.eventName} <span>·</span> about {config.asapWaitMinutes} min</p>
       </div>
+      <PickupDetails
+        eventName={config.eventName}
+        streetAddress={config.streetAddress}
+        asapWaitMinutes={config.asapWaitMinutes}
+        pickupInstructions={config.pickupInstructions}
+      />
       <nav className="jp-category-nav" aria-label="Menu sections">
         <button
           type="button"
@@ -621,6 +634,11 @@ export default function PickupPage() {
               </div>
             ))}
           </div>
+          <PickupSuggestions
+            menu={config.menu}
+            cart={cart}
+            onSelect={openProduct}
+          />
           <div className="jp-cost">
             <span>Subtotal <b>{formatMoney(subtotal)}</b></span>
             <span>Estimated tax <b>{formatMoney(tax)}</b></span>
@@ -678,6 +696,12 @@ export default function PickupPage() {
         {error && <p className="jp-alert" role="alert">{error}</p>}
         {stage === "review" ? (
           <form onSubmit={event => { event.preventDefault(); setStage("payment"); }}>
+            <PickupDetails
+              eventName={config.eventName}
+              streetAddress={config.streetAddress}
+              asapWaitMinutes={config.asapWaitMinutes}
+              pickupInstructions={config.pickupInstructions}
+            />
             <div className="jp-order-summary">
               <span>{cartCount} item{cartCount === 1 ? "" : "s"} <b>{formatMoney(displayTotal)}</b></span>
               <small>Final total is confirmed securely at payment.</small>

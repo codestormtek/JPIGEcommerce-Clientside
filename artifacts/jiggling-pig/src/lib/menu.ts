@@ -9,9 +9,10 @@ import {
 
 export const KIOSK_FOOD_CATEGORY = "jiggling food menu";
 export const KIOSK_SIDES_CATEGORY = "sides";
+export const KIOSK_DRINKS_CATEGORY = "drinks";
 export const KIOSK_PRODUCTS_CATEGORY = "jiggling pig products";
 
-const PRODUCT_TAB_NAMES = ["drinks", "sauces", "rubs", "fry mixes", "teas"] as const;
+const PRODUCT_TAB_NAMES = [KIOSK_DRINKS_CATEGORY, "sauces", "rubs", "fry mixes", "teas"] as const;
 const norm = (value: string) => value.trim().toLowerCase();
 
 export interface KioskMenuTab {
@@ -72,7 +73,7 @@ function menuProductGroups(
     hasCategory(product, categories, KIOSK_FOOD_CATEGORY) ||
     hasCategory(product, categories, "combo dinners") ||
     hasCategory(product, categories, KIOSK_SIDES_CATEGORY) ||
-    hasCategory(product, categories, "drinks");
+    hasCategory(product, categories, KIOSK_DRINKS_CATEGORY);
   const members = all.filter(
     (product) =>
       hasCategory(product, categories, KIOSK_PRODUCTS_CATEGORY) || !inFoodTab(product),
@@ -130,7 +131,7 @@ export function getKioskMenuSections(
       (product) =>
         !comboIds.has(product.id) &&
         !sideIds.has(product.id) &&
-        hasCat(product, "drinks"),
+        hasCat(product, KIOSK_DRINKS_CATEGORY),
     );
     const drinkIds = new Set(drinks.map((product) => product.id));
     const other = menu.products.filter(
@@ -200,7 +201,7 @@ export function getKioskMenuAllSections(menu: KioskMenu): KioskMenuSection[] {
         (product) =>
           !comboIds.has(product.id) &&
           !sideIds.has(product.id) &&
-          hasCat(product, "drinks"),
+          hasCat(product, KIOSK_DRINKS_CATEGORY),
       )
       .map((product) => product.id),
   );

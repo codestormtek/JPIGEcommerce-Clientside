@@ -39,6 +39,7 @@ const PickupSettings = () => {
         isOrderingOpen: settings.isOrderingOpen,
         eventName: settings.eventName,
         streetAddress: settings.streetAddress,
+        pickupInstructions: settings.pickupInstructions || "",
         asapWaitMinutes: Number(settings.asapWaitMinutes),
         taxRatePercent: Number(settings.taxRatePercent),
       });
@@ -99,6 +100,18 @@ const PickupSettings = () => {
                     <Col md="12">
                       <label className="form-label" htmlFor="pickup-address">Street address</label>
                       <input id="pickup-address" className="form-control" required maxLength="300" value={settings.streetAddress || ""} onChange={(event) => update("streetAddress", event.target.value)} />
+                    </Col>
+                    <Col md="12">
+                      <label className="form-label" htmlFor="pickup-instructions">Pickup instructions (optional)</label>
+                      <textarea
+                        id="pickup-instructions"
+                        className="form-control"
+                        rows="4"
+                        maxLength="1000"
+                        placeholder="Where customers should collect orders"
+                        value={settings.pickupInstructions || ""}
+                        onChange={(event) => update("pickupInstructions", event.target.value)}
+                      />
                     </Col>
                     <Col md="4">
                       <label className="form-label" htmlFor="pickup-tax">Sales tax rate (%)</label>
