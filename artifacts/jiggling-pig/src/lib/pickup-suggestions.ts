@@ -1,4 +1,11 @@
-import type { KioskCartLine, KioskMenu, KioskProduct } from "@/lib/kiosk";
+import {
+  isMenuItemAvailable,
+  isMenuProductAvailable,
+  preferredMenuItem,
+  type KioskCartLine,
+  type KioskMenu,
+  type KioskProduct,
+} from "@/lib/kiosk";
 import { KIOSK_DRINKS_CATEGORY, KIOSK_SIDES_CATEGORY } from "@/lib/menu";
 
 const SUGGESTION_CATEGORY_NAMES = new Set([
@@ -49,7 +56,8 @@ export function selectPickupSuggestions(
   for (const product of menu.products) {
     // A product without an item has no current published price and is not
     // selectable elsewhere in the pickup menu.
-    if (product.items.length === 0) continue;
+    const item = preferredMenuItem(product);
+    if (!isMenuProductAvailable(product) || !isMenuItemAvailable(item)) continue;
     if (cartProductIds.has(product.id) || includedSideIds.has(product.id)) continue;
 
     const isSuggestionCategory = product.categoryIds.some((categoryId) =>

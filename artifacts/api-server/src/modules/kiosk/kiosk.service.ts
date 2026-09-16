@@ -97,10 +97,13 @@ export async function getKioskMenu() {
     where: {
       isDeleted: false,
       visibility: { in: ['kiosk', 'both'] },
-      items: { some: { isPublished: true, qtyInStock: { gt: 0 } } },
+      // The menu is a display catalog, not a sellability query. Keep a
+      // published product visible when its published SKUs are sold out so
+      // guests see the same catalog on kiosk and pickup.
+      items: { some: { isPublished: true } },
     },
     include: {
-      items: { where: { isPublished: true, qtyInStock: { gt: 0 } }, orderBy: { price: 'asc' } },
+      items: { where: { isPublished: true }, orderBy: { price: 'asc' } },
       media: {
         include: { mediaAsset: true },
         orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }],
@@ -130,6 +133,15 @@ export async function getKioskMenu() {
         });
       }
     });
+    // Preserve price ordering within each availability group while ensuring a
+    // product's normal in-stock SKU remains the selected display/checkout SKU.
+    // If every published SKU is sold out, the cheapest published SKU is still
+    // retained as a display-only fallback.
+    const items = [...p.items].sort((a, b) => {
+      const availabilityOrder = Number(b.qtyInStock > 0) - Number(a.qtyInStock > 0);
+      return availabilityOrder || Number(a.price) - Number(b.price);
+    });
+    const available = items.some((item) => item.qtyInStock > 0);
     return {
       id: p.id,
       name: p.name,
@@ -137,13 +149,15 @@ export async function getKioskMenu() {
       imageUrl: p.media[0]?.mediaAsset?.url ?? null,
       categoryIds: p.categoryMaps.map((m) => m.categoryId),
       primaryCategoryId: primaryCategory?.categoryId ?? null,
+      available,
       comboSideCount: comboConfig.sideCount,
       comboSideCategoryId: comboConfig.sideCategoryId,
       duplicateSideUpcharge: Number(p.duplicateSideUpcharge),
-      items: p.items.map((i) => ({
+      items: items.map((i) => ({
         id: i.id,
         sku: i.sku,
         price: Number(i.price),
+        available: i.qtyInStock > 0,
       })),
     };
   });
@@ -164,26 +178,31 @@ type KioskMenuLine = { productItemId: string; sideProductIds?: string[] };
  * currently sell.
  */
 export function assertKioskMenuLineEligibility(menu: KioskMenu, lines: KioskMenuLine[]): void {
-  const productByItemId = new Map(
+  const productAndItemByItemId = new Map(
     menu.products.flatMap((product) =>
-      product.items.map((item) => [item.id, product] as const),
+      product.items.map((item) => [item.id, { product, item }] as const),
     ),
   );
   const productById = new Map(menu.products.map((product) => [product.id, product] as const));
 
   for (const line of lines) {
-    const mainProduct = productByItemId.get(line.productItemId);
+    const mainSelection = productAndItemByItemId.get(line.productItemId);
+    const mainProduct = mainSelection?.product;
     const sideIds = line.sideProductIds ?? [];
     const comboSideCount = mainProduct?.comboSideCount ?? 0;
     const sideCategoryId = mainProduct?.comboSideCategoryId;
 
     if (
-      !mainProduct
+      !mainSelection
+      || !mainSelection.item.available
+      || !mainProduct
+      || !mainProduct.available
       || sideIds.length !== comboSideCount
       || (comboSideCount === 0 && sideIds.length > 0)
       || sideIds.some((sideId) => {
         const sideProduct = productById.get(sideId);
         return !sideProduct
+          || !sideProduct.available
           || (sideCategoryId !== null
             && sideCategoryId !== undefined
             && !sideProduct.categoryIds.includes(sideCategoryId));
@@ -1221,12 +1240,18 @@ function presentCampaign(campaign: any) {
       name: product.name,
       description: product.description,
       imageUrl: product.media[0]?.mediaAsset?.url ?? null,
-      items: product.items.map((item: any) => ({
-        id: item.id,
-        sku: item.sku,
-        price: Number(item.price),
-        qtyInStock: item.qtyInStock,
-      })),
+      available: product.items.some((item: any) => item.qtyInStock > 0),
+      items: [...product.items]
+        .sort((a: any, b: any) => {
+          const availabilityOrder = Number(b.qtyInStock > 0) - Number(a.qtyInStock > 0);
+          return availabilityOrder || Number(a.price) - Number(b.price);
+        })
+        .map((item: any) => ({
+          id: item.id,
+          sku: item.sku,
+          price: Number(item.price),
+          available: item.qtyInStock > 0,
+        })),
     })),
   };
 }

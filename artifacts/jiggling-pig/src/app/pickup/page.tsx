@@ -2,8 +2,19 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { apiGet, apiPost, isMenuChangedError } from "@/lib/api";
-import { cartLineKey, formatMoney, sidesUpcharge, type KioskCartLine, type KioskMenu, type KioskProduct, type KioskSideChoice } from "@/lib/kiosk";
+import { ApiRequestError, apiGet, apiPost, isMenuChangedError } from "@/lib/api";
+import {
+  cartLineKey,
+  formatMoney,
+  isMenuItemAvailable,
+  isMenuProductAvailable,
+  preferredMenuItem,
+  sidesUpcharge,
+  type KioskCartLine,
+  type KioskMenu,
+  type KioskProduct,
+  type KioskSideChoice,
+} from "@/lib/kiosk";
 import {
   getKioskMenuAllSections,
   getKioskMenuSections,
@@ -15,6 +26,12 @@ import {
 import { useSquarePayments } from "@/lib/useSquarePayments";
 import PickupDetails from "@/components/pickup/PickupDetails";
 import PickupSuggestions from "@/components/pickup/PickupSuggestions";
+import PickupStatus from "@/components/pickup/PickupStatus";
+import {
+  classifyPickupCapabilityError,
+  isPickupStatusTerminal,
+  type PickupStatusMode,
+} from "@/lib/pickup-status";
 
 type PickupConfig = {
   isOrderingOpen: boolean; eventName: string; streetAddress: string; asapWaitMinutes: number;
@@ -31,7 +48,10 @@ type PickupResult = {
 type Stage = "menu" | "review" | "payment" | "confirming" | "complete";
 
 const PENDING_KEY = "jpig_pickup_pending_v1";
+const CONFIRMATION_KEY = "jpig_pickup_confirmation_v1";
 type PendingPickupAttempt = { requestId?: string; capability?: string };
+type PickupConfirmation = { capability: string };
+type RecoveryKind = "payment" | "fulfillment" | null;
 
 function readPendingAttempt(): PendingPickupAttempt | null {
   if (typeof window === "undefined") return null;
@@ -53,6 +73,24 @@ function savePendingAttempt(attempt: PendingPickupAttempt): void {
 
 function clearPendingAttempt(): void {
   localStorage.removeItem(PENDING_KEY);
+}
+
+function readPickupConfirmation(): PickupConfirmation | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = JSON.parse(localStorage.getItem(CONFIRMATION_KEY) ?? "null") as PickupConfirmation | null;
+    return value && typeof value.capability === "string" && value.capability.length > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function savePickupConfirmation(capability: string): void {
+  localStorage.setItem(CONFIRMATION_KEY, JSON.stringify({ capability }));
+}
+
+function clearPickupConfirmation(): void {
+  localStorage.removeItem(CONFIRMATION_KEY);
 }
 
 function responseData<T>(response: T | { data: T }): T {
@@ -87,7 +125,10 @@ export default function PickupPage() {
   const searchParams = useSearchParams();
   const [config, setConfig] = useState<PickupConfig | null>(null);
   const [cart, setCart] = useState<KioskCartLine[]>([]);
-  const [stage, setStage] = useState<Stage>(() => readPendingAttempt() ? "confirming" : "menu");
+  const [stage, setStage] = useState<Stage>(() => readPendingAttempt() || readPickupConfirmation() ? "confirming" : "menu");
+  const [recoveryKind, setRecoveryKind] = useState<RecoveryKind>(() =>
+    readPendingAttempt() ? "payment" : readPickupConfirmation() ? "fulfillment" : null,
+  );
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [sideProduct, setSideProduct] = useState<KioskProduct | null>(null);
@@ -100,7 +141,15 @@ export default function PickupPage() {
   const [invalidCartLineKeys, setInvalidCartLineKeys] = useState<string[]>([]);
   const [result, setResult] = useState<PickupResult | null>(null);
   const [canReplay, setCanReplay] = useState(false);
+  const [confirmationCapability, setConfirmationCapability] = useState<string | null>(
+    () => readPickupConfirmation()?.capability ?? null,
+  );
+  const [statusMode, setStatusMode] = useState<PickupStatusMode>("current");
+  const [trackingUnavailable, setTrackingUnavailable] = useState(false);
+  const [fulfillmentError, setFulfillmentError] = useState("");
+  const [fulfillmentRefreshing, setFulfillmentRefreshing] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
+  const fulfillmentPollInFlight = useRef(false);
   const requestId = useRef<string | null>(null);
   const stageRef = useRef<Stage>(stage);
   const cartRef = useRef<KioskCartLine[]>(cart);
@@ -151,8 +200,8 @@ export default function PickupPage() {
         if (reconciliation.changed) {
           setCart(reconciliation.cart);
           setCartReviewRequired(true);
-          setInvalidCartLineKeys(reconciliation.invalidCartLineKeys);
         }
+        setInvalidCartLineKeys(reconciliation.invalidCartLineKeys);
         configRef.current = next;
         setConfig(next);
       }
@@ -171,6 +220,7 @@ export default function PickupPage() {
         const pending = readPendingAttempt();
         if (pending) {
           if (pending.requestId) requestId.current = pending.requestId;
+          setRecoveryKind("payment");
           if (pending.requestId) {
             // The browser may have reloaded after the POST reached the server
             // but before it received the response/capability. Observe only
@@ -180,6 +230,14 @@ export default function PickupPage() {
           } else if (pending.capability) {
             setStage("confirming");
             await poll(pending.capability);
+          }
+        } else {
+          const confirmation = readPickupConfirmation();
+          if (confirmation) {
+            setConfirmationCapability(confirmation.capability);
+            setRecoveryKind("fulfillment");
+            setStage("confirming");
+            await poll(confirmation.capability, "fulfillment");
           }
         }
       } catch (cause) {
@@ -228,8 +286,8 @@ export default function PickupPage() {
   const displayTotal = subtotal + tax;
 
   const add = (product: KioskProduct, sides?: KioskSideChoice[]) => {
-    const item = product.items[0];
-    if (!item) return;
+    const item = preferredMenuItem(product);
+    if (!item || !isMenuProductAvailable(product) || !isMenuItemAvailable(item)) return;
     const key = cartLineKey(item.id, sides);
     setCart(previous => {
       const existing = previous.find(line => cartLineKey(line.item.id, line.sides) === key);
@@ -253,6 +311,7 @@ export default function PickupPage() {
     setInvalidCartLineKeys([]);
   };
   const openProduct = (product: KioskProduct) => {
+    if (!isMenuProductAvailable(product) || !isMenuItemAvailable(preferredMenuItem(product))) return;
     if (product.comboSideCount && product.comboSideCategoryId) {
       setSideProduct(product);
       setChosenSides([]);
@@ -281,23 +340,64 @@ export default function PickupPage() {
     }
   }, [config?.menu]);
 
-  async function poll(capability: string): Promise<void> {
+  function handlePermanentFulfillmentFailure(cause: unknown): boolean {
+    const statusCode = cause instanceof ApiRequestError ? cause.status : undefined;
+    if (classifyPickupCapabilityError(statusCode) !== "permanent") return false;
+    clearPickupConfirmation();
+    setConfirmationCapability(null);
+    setStatusMode("unavailable");
+    setTrackingUnavailable(true);
+    setFulfillmentError("Pickup tracking has expired or is unavailable. We won’t show this order as ready.");
+    setFulfillmentRefreshing(false);
+    setRecoveryKind(null);
+    setError("");
+    // Keep the loader on screen until the unavailable state renders, rather
+    // than falling through to payment recovery or another order attempt.
+    setStage("confirming");
+    return true;
+  }
+
+  async function poll(capability: string, purpose: "payment" | "fulfillment" = "payment"): Promise<void> {
     try {
       const next = responseData(await apiGet<PickupResult | { data: PickupResult }>(`/pickup/orders/${encodeURIComponent(capability)}`));
       setResult(next);
       if (next.paymentStatus === "paid") {
+        savePickupConfirmation(next.capability || capability);
+        setConfirmationCapability(next.capability || capability);
         clearPendingAttempt();
+        setStatusMode("current");
+        setTrackingUnavailable(false);
+        setFulfillmentError("");
+        setRecoveryKind(null);
+        setError("");
         setStage("complete");
       } else if (next.paymentStatus === "canceled") {
+        if (purpose === "fulfillment") {
+          setStatusMode("unavailable");
+          setFulfillmentError("We could not verify the payment for this order. Try again or contact us for help.");
+          setStage("confirming");
+          return;
+        }
         clearPendingAttempt();
         requestId.current = null;
+        setRecoveryKind(null);
         setStage("payment");
         setError("Square did not approve this payment. Please use another card.");
       } else {
+        if (purpose === "fulfillment") {
+          setStatusMode("unavailable");
+          setFulfillmentError("We’re still confirming this order. We’ll keep checking and will not show it as ready yet.");
+        }
         setStage("confirming");
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "We could not confirm payment yet.");
+      if (purpose === "fulfillment") {
+        if (handlePermanentFulfillmentFailure(cause)) return;
+        setFulfillmentError(cause instanceof Error ? cause.message : "We could not load your pickup status.");
+        setStatusMode((previous) => previous === "unavailable" ? previous : "stale");
+      } else {
+        setError(cause instanceof Error ? cause.message : "We could not confirm payment yet.");
+      }
       setStage("confirming");
     }
   }
@@ -327,13 +427,20 @@ export default function PickupPage() {
       setCanReplay(recoveredOrder.canReplay === true);
       savePendingAttempt({ requestId: persistedRequestId, capability: recoveredOrder.capability });
       if (recoveredOrder.paymentStatus === "paid") {
+        savePickupConfirmation(recoveredOrder.capability);
+        setConfirmationCapability(recoveredOrder.capability);
         clearPendingAttempt();
+        setStatusMode("current");
+        setTrackingUnavailable(false);
         setCanReplay(false);
+        setRecoveryKind(null);
+        setError("");
         setStage("complete");
       } else if (recoveredOrder.paymentStatus === "canceled") {
         clearPendingAttempt();
         requestId.current = null;
         setCanReplay(false);
+        setRecoveryKind(null);
         setStage("payment");
       }
     } catch (cause) {
@@ -341,15 +448,76 @@ export default function PickupPage() {
     }
   }
 
+  async function pollFulfillmentStatus(capability: string): Promise<void> {
+    if (fulfillmentPollInFlight.current) return;
+    fulfillmentPollInFlight.current = true;
+    setFulfillmentRefreshing(true);
+    try {
+      const next = responseData(await apiGet<PickupResult | { data: PickupResult }>(`/pickup/orders/${encodeURIComponent(capability)}`));
+      if (next.paymentStatus !== "paid") {
+        setStatusMode("unavailable");
+        setFulfillmentError(
+          next.paymentStatus === "canceled"
+            ? "We could not verify the payment for this order. Try again or contact us for help."
+            : "We’re still confirming this order. We’ll keep checking and will not show it as ready yet.",
+        );
+        return;
+      }
+      const nextCapability = next.capability || capability;
+      savePickupConfirmation(nextCapability);
+      setConfirmationCapability(nextCapability);
+      setResult(next);
+      setStatusMode("current");
+      setTrackingUnavailable(false);
+      setFulfillmentError("");
+    } catch (cause) {
+      if (handlePermanentFulfillmentFailure(cause)) return;
+      setStatusMode((previous) => previous === "unavailable" ? previous : "stale");
+      setFulfillmentError(cause instanceof Error ? cause.message : "We could not load your pickup status.");
+    } finally {
+      fulfillmentPollInFlight.current = false;
+      setFulfillmentRefreshing(false);
+    }
+  }
+
   useEffect(() => {
-    if (stage !== "confirming") return;
+    if (stage !== "confirming" || recoveryKind !== "payment") return;
     // Keep observing the durable request ID even when the original POST lost
     // its response and no capability has yet reached this browser.
     void recoverPersistedAttempt();
     const timer = window.setInterval(() => void recoverPersistedAttempt(), 2500);
     return () => window.clearInterval(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage]);
+  }, [stage, recoveryKind]);
+
+  useEffect(() => {
+    if (
+      stage !== "complete" ||
+      trackingUnavailable ||
+      !result ||
+      result.paymentStatus !== "paid" ||
+      isPickupStatusTerminal(result.status)
+    ) {
+      return;
+    }
+    const capability = confirmationCapability || result.capability;
+    if (!capability) return;
+
+    const pollWhenVisible = () => {
+      if (document.visibilityState === "visible") void pollFulfillmentStatus(capability);
+    };
+    pollWhenVisible();
+    const timer = window.setInterval(pollWhenVisible, 15_000);
+    window.addEventListener("focus", pollWhenVisible);
+    document.addEventListener("visibilitychange", pollWhenVisible);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", pollWhenVisible);
+      document.removeEventListener("visibilitychange", pollWhenVisible);
+    };
+  // The capability and status are the only values that should restart polling.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, trackingUnavailable, result?.paymentStatus, result?.capability, result?.status, confirmationCapability]);
 
   const continueToPayment = (event: FormEvent) => {
     event.preventDefault();
@@ -395,13 +563,21 @@ export default function PickupPage() {
       setResult(placed);
       savePendingAttempt({ requestId: requestId.current, capability: placed.capability });
       if (placed.paymentStatus === "paid") {
+        savePickupConfirmation(placed.capability);
+        setConfirmationCapability(placed.capability);
         clearPendingAttempt();
+        setStatusMode("current");
+        setTrackingUnavailable(false);
+        setRecoveryKind(null);
+        setFulfillmentError("");
         setStage("complete");
       } else if (placed.paymentStatus === "canceled") {
         clearPendingAttempt();
         requestId.current = null;
+        setRecoveryKind(null);
         setError("Square did not approve this payment. Please use another card.");
       } else {
+        setRecoveryKind("payment");
         setStage("confirming");
       }
     } catch (cause) {
@@ -431,10 +607,34 @@ export default function PickupPage() {
       setError(cause instanceof Error ? cause.message : "Payment is being confirmed. Do not start a new order.");
       // Once the request ID was durably recorded, fail closed. A lost POST
       // response cannot be distinguished from an accepted charge in-browser.
-      if (requestId.current) setStage("confirming");
+      if (requestId.current) {
+        setRecoveryKind("payment");
+        setStage("confirming");
+      }
     } finally {
       setBusy(false);
     }
+  };
+
+  const startNewOrder = () => {
+    clearPendingAttempt();
+    clearPickupConfirmation();
+    requestId.current = null;
+    setConfirmationCapability(null);
+    setStatusMode("current");
+    setTrackingUnavailable(false);
+    setRecoveryKind(null);
+    setResult(null);
+    setCanReplay(false);
+    setFulfillmentError("");
+    setFulfillmentRefreshing(false);
+    setError("");
+    setName("");
+    setPhone("");
+    setCart([]);
+    setSideProduct(null);
+    setChosenSides([]);
+    setStage("menu");
   };
 
   if (!config) {
@@ -444,6 +644,24 @@ export default function PickupPage() {
         <p className="jp-kicker">Jiggling Pig / Roadside pickup</p>
         <div className="jp-loading" aria-hidden="true"><span /><span /><span /></div>
         <p role={error ? "alert" : undefined}>{error || "Warming up the pit…"}</p>
+      </main>
+    );
+  }
+
+  if (trackingUnavailable) {
+    return (
+      <main className="jp-shell jp-center">
+        <PigMark />
+        <p className="jp-kicker">Pickup status</p>
+        <h1>Tracking<br /><em>unavailable.</em></h1>
+        <PickupStatus
+          status={result?.status}
+          mode="unavailable"
+          error={fulfillmentError}
+        />
+        <button type="button" className="jp-primary jp-new-order" onClick={startNewOrder} data-testid="button-new-pickup-order">
+          Start a new order
+        </button>
       </main>
     );
   }
@@ -473,24 +691,62 @@ export default function PickupPage() {
           asapWaitMinutes={config.asapWaitMinutes}
           pickupInstructions={config.pickupInstructions}
         />
+        <PickupStatus
+          status={result.status}
+          mode={statusMode}
+          error={fulfillmentError}
+          refreshing={fulfillmentRefreshing}
+          onRetry={
+            isPickupStatusTerminal(result.status)
+              ? undefined
+              : () => void pollFulfillmentStatus(confirmationCapability || result.capability)
+          }
+        />
         {result.receiptUrl && <a className="jp-link" href={result.receiptUrl} target="_blank" rel="noreferrer">View Square receipt</a>}
+        <button type="button" className="jp-primary jp-new-order" onClick={startNewOrder} data-testid="button-new-pickup-order">
+          Start a new order
+        </button>
       </main>
     );
   }
 
   if (stage === "confirming") {
+    const isFulfillmentRecovery = recoveryKind === "fulfillment";
+    const savedCapability = confirmationCapability || result?.capability || readPickupConfirmation()?.capability;
     return (
       <main className="jp-shell jp-center">
         <PigMark />
-        <p className="jp-kicker">One moment</p>
-        <h1>Checking<br /><em>the coals.</em></h1>
+        <p className="jp-kicker">{isFulfillmentRecovery ? "Pickup status" : "One moment"}</p>
+        <h1>{isFulfillmentRecovery ? <>Checking<br /><em>your order.</em></> : <>Checking<br /><em>the coals.</em></>}</h1>
         <div className="jp-wait">
           <div className="jp-loading" aria-hidden="true"><span /><span /><span /></div>
-          <p>We&apos;re confirming your existing payment with Square. Please don&apos;t place another order.</p>
+          <p>
+            {isFulfillmentRecovery
+              ? "We’re loading your pickup status. We won’t show your order as ready until the kitchen confirms it."
+              : "We're confirming your existing payment with Square. Please don't place another order."}
+          </p>
           {result && <p>Order {result.orderNumber}</p>}
-          {error && <p role="alert" className="jp-alert">{error}</p>}
-          <button className="jp-ghost" onClick={() => void recoverPersistedAttempt()}>Check payment now</button>
-          {canReplay && <button className="jp-primary" onClick={() => { setError(""); setStage("payment"); }}>Retry this checkout</button>}
+          {(isFulfillmentRecovery ? fulfillmentError : error) && (
+            <p role="alert" className="jp-alert">{isFulfillmentRecovery ? fulfillmentError : error}</p>
+          )}
+          <button
+            className="jp-ghost"
+            onClick={() => isFulfillmentRecovery && savedCapability
+              ? void poll(savedCapability, "fulfillment")
+              : void recoverPersistedAttempt()}
+          >
+            {isFulfillmentRecovery ? "Check status now" : "Check payment now"}
+          </button>
+          {!isFulfillmentRecovery && canReplay && (
+            <button className="jp-primary" onClick={() => { setError(""); setStage("payment"); }}>
+              Retry this checkout
+            </button>
+          )}
+          {isFulfillmentRecovery && (
+            <button type="button" className="jp-primary" onClick={startNewOrder} data-testid="button-new-pickup-order">
+              Start a new order
+            </button>
+          )}
         </div>
       </main>
     );
@@ -531,9 +787,18 @@ export default function PickupPage() {
       }));
 
   const productCard = (product: KioskProduct) => {
-    const price = product.items[0]?.price ?? 0;
+    const item = preferredMenuItem(product);
+    const available = isMenuProductAvailable(product) && isMenuItemAvailable(item);
+    const price = item?.price ?? 0;
     return (
-      <button key={product.id} type="button" className="jp-product" onClick={() => openProduct(product)}>
+      <button
+        key={product.id}
+        type="button"
+        className={`jp-product ${!available ? "sold-out" : ""}`}
+        disabled={!available}
+        onClick={() => openProduct(product)}
+        aria-label={`${product.name}${available ? "" : " — Sold out"}`}
+      >
         <div className="jp-product-img">
           <ProductArt product={product} />
           {product.comboSideCount ? <span>{product.comboSideCount} sides</span> : null}
@@ -541,7 +806,10 @@ export default function PickupPage() {
         <div>
           <h2>{product.name}</h2>
           <p>{product.description || (product.comboSideCount ? "Pick your favorite sides" : "Straight from the Jiggling Pig pit")}</p>
-          <footer><b>{formatMoney(price)}</b><i aria-hidden="true">+</i></footer>
+          <footer>
+            <b>{available ? formatMoney(price) : "Sold out"}</b>
+            <i aria-hidden="true">{available ? "+" : "Sold out"}</i>
+          </footer>
         </div>
       </button>
     );
@@ -737,17 +1005,21 @@ export default function PickupPage() {
             <div className="jp-sides">
               {sideOptions.map(side => {
                 const selected = chosenSides.some(choice => choice.id === side.id);
+                const available = isMenuProductAvailable(side)
+                  && isMenuItemAvailable(preferredMenuItem(side));
                 return (
                   <button
                     key={side.id}
-                    className={selected ? "selected" : ""}
-                    disabled={!selected && chosenSides.length >= sideProduct.comboSideCount}
+                    className={`${selected ? "selected" : ""}${!available ? " sold-out" : ""}`}
+                    disabled={(!available && !selected) || (!selected && chosenSides.length >= sideProduct.comboSideCount)}
                     onClick={() => setChosenSides(old => selected
                       ? old.filter(choice => choice.id !== side.id)
                       : [...old, { id: side.id, name: side.name, upcharge: side.duplicateSideUpcharge }])}
                   >
                     <b>{side.name}</b>
-                    {side.duplicateSideUpcharge > 0 && <small>Extra serving {formatMoney(side.duplicateSideUpcharge)}</small>}
+                    {!available
+                      ? <small>Sold out</small>
+                      : side.duplicateSideUpcharge > 0 && <small>Extra serving {formatMoney(side.duplicateSideUpcharge)}</small>}
                   </button>
                 );
               })}

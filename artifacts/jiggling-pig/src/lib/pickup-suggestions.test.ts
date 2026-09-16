@@ -21,7 +21,8 @@ function product(
     comboSideCount: options.comboSideCount ?? 0,
     comboSideCategoryId: options.comboSideCategoryId ?? null,
     duplicateSideUpcharge: 0,
-    items: [{ id: `${id}-item`, sku: id, price: 4.5 }],
+    available: true,
+    items: [{ id: `${id}-item`, sku: id, price: 4.5, available: true }],
   };
 }
 
@@ -86,6 +87,21 @@ test("products without a published menu item are not suggested", () => {
   assert.deepEqual(
     selectPickupSuggestions(
       menu([category("drinks", "Drinks")], [unavailable, available]),
+      [line(product("plate", "Plate", ["food"]))],
+    ).map((item) => item.id),
+    ["available"],
+  );
+});
+
+test("sold-out products stay visible to the catalog but are not suggested", () => {
+  const soldOut = product("sold-out", "Sold out tea", ["drinks"]);
+  soldOut.available = false;
+  soldOut.items[0].available = false;
+  const available = product("available", "Soda", ["drinks"]);
+
+  assert.deepEqual(
+    selectPickupSuggestions(
+      menu([category("drinks", "Drinks")], [soldOut, available]),
       [line(product("plate", "Plate", ["food"]))],
     ).map((item) => item.id),
     ["available"],

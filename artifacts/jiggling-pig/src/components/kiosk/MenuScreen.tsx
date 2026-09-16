@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { KioskMenu, KioskCartLine, KioskProduct, KioskSideChoice } from "@/lib/kiosk";
-import { cartLineKey, cartSubtotal, formatMoney, sidesUpcharge } from "@/lib/kiosk";
+import {
+  cartLineKey,
+  cartSubtotal,
+  formatMoney,
+  isMenuItemAvailable,
+  isMenuProductAvailable,
+  preferredMenuItem,
+  sidesUpcharge,
+} from "@/lib/kiosk";
 import {
   getKioskMenuSections,
   getKioskMenuTabLabel,
@@ -92,6 +100,8 @@ export default function MenuScreen({
   }, [menu.products, sidePicker]);
 
   const handleCardTap = (p: KioskProduct) => {
+    const item = preferredMenuItem(p);
+    if (!isMenuProductAvailable(p) || !isMenuItemAvailable(item)) return;
     const needsSides = p.comboSideCount > 0 && p.comboSideCategoryId;
     if (needsSides) {
       setChosenSides([]);
@@ -110,7 +120,12 @@ export default function MenuScreen({
   };
 
   const handleSideTap = (s: KioskProduct) => {
-    if (!sidePicker || chosenSides.length >= sidePicker.comboSideCount) return;
+    if (
+      !sidePicker
+      || !isMenuProductAvailable(s)
+      || !isMenuItemAvailable(preferredMenuItem(s))
+      || chosenSides.length >= sidePicker.comboSideCount
+    ) return;
     const alreadyChosen = chosenSides.some((c) => c.id === s.id);
     if (alreadyChosen && s.duplicateSideUpcharge > 0) {
       setUpchargeConfirm(s);
@@ -219,12 +234,18 @@ export default function MenuScreen({
               {sec.title && <div className="k-section-title">{sec.title}</div>}
               <div className="k-grid">
                 {sec.products.map((p) => {
-                  const item = p.items[0];
+                  const item = preferredMenuItem(p);
                   if (!item) return null;
+                  const available = isMenuProductAvailable(p) && isMenuItemAvailable(item);
                   const inCart = qtyByItem.get(item.id) ?? 0;
                   return (
                     <div className="k-card-wrap" key={p.id}>
-                      <button className="k-card" onClick={() => handleCardTap(p)}>
+                      <button
+                        className={`k-card ${!available ? "sold-out" : ""}`}
+                        disabled={!available}
+                        onClick={() => handleCardTap(p)}
+                        aria-label={`${p.name}${available ? "" : " — Sold out"}`}
+                      >
                         {p.imageUrl && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -244,8 +265,10 @@ export default function MenuScreen({
                           )}
                         </div>
                         <div className="k-card-bottom">
-                          <div className="k-card-price">{formatMoney(item.price)}</div>
-                          <div className="k-card-add-btn">+</div>
+                          <div className="k-card-price">
+                            {available ? formatMoney(item.price) : "Sold out"}
+                          </div>
+                          <div className="k-card-add-btn">{available ? "+" : "Sold out"}</div>
                         </div>
                       </button>
                       {inCart > 0 && (
@@ -389,10 +412,12 @@ export default function MenuScreen({
               <div className="k-side-grid">
                 {sideOptions.map((s) => {
                   const count = chosenSides.filter((c) => c.id === s.id).length;
+                  const available = isMenuProductAvailable(s) && isMenuItemAvailable(preferredMenuItem(s));
                   return (
                     <button
                       key={s.id}
-                      className={`k-side-card ${count > 0 ? "active" : ""}`}
+                      className={`k-side-card ${count > 0 ? "active" : ""} ${!available ? "sold-out" : ""}`}
+                      disabled={!available}
                       onClick={() => handleSideTap(s)}
                     >
                       {s.imageUrl ? (
@@ -401,7 +426,10 @@ export default function MenuScreen({
                       ) : (
                         <div className="k-side-img-fallback">🥗</div>
                       )}
-                      <div className="k-side-name">{s.name}</div>
+                      <div className="k-side-name">
+                        {s.name}
+                        {!available && <span className="k-sold-out-label">Sold out</span>}
+                      </div>
                       {count > 0 && <div className="k-side-count">×{count}</div>}
                     </button>
                   );

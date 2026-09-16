@@ -1,7 +1,7 @@
 "use client";
 
 import type { KioskCartLine, KioskMenu, KioskProduct } from "@/lib/kiosk";
-import { formatMoney } from "@/lib/kiosk";
+import { formatMoney, preferredMenuItem } from "@/lib/kiosk";
 import { selectPickupSuggestions } from "@/lib/pickup-suggestions";
 
 interface PickupSuggestionsProps {
@@ -26,7 +26,7 @@ export default function PickupSuggestions({
       </div>
       <div className="jp-suggestion-list">
         {suggestions.map((product) => {
-          const item = product.items[0];
+          const item = preferredMenuItem(product);
           if (!item) return null;
           return (
             <button

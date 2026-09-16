@@ -6,7 +6,9 @@ import type {
   KioskProduct,
   KioskSideChoice,
 } from "@/lib/kiosk";
+import { preferredMenuItem } from "@/lib/kiosk";
 import {
+  getKioskMenuSections,
   reconcileKioskCart,
   reconcileKioskSidePicker,
 } from "@/lib/menu";
@@ -29,7 +31,8 @@ function product(
     comboSideCount: options.comboSideCount ?? 0,
     comboSideCategoryId: options.comboSideCategoryId ?? null,
     duplicateSideUpcharge: options.duplicateSideUpcharge ?? 0,
-    items: [{ id: `${id}-item`, sku: id, price: 10 }],
+    available: true,
+    items: [{ id: `${id}-item`, sku: id, price: 10, available: true }],
   };
 }
 
@@ -79,6 +82,89 @@ test("cart reconciliation blocks a side that disappeared", () => {
   assert.deepEqual(result.invalidCartLineKeys, ["combo-item|side-a,side-b"]);
 });
 
+test("cart reconciliation blocks a product or side that is displayed but sold out", () => {
+  const soldOutCombo = product("combo", "Plate", ["food"], {
+    comboSideCount: 2,
+    comboSideCategoryId: "sides",
+  });
+  soldOutCombo.available = false;
+  soldOutCombo.items[0].available = false;
+  const blockedProduct = reconcileKioskCart(
+    [comboLine(soldOutCombo, chosenSides)],
+    comboMenu(soldOutCombo, [sideA, sideB]),
+  );
+  assert.deepEqual(blockedProduct.invalidCartLineKeys, ["combo-item|side-a,side-b"]);
+
+  const soldOutSide = product("side-b", "Slaw", ["sides"]);
+  soldOutSide.available = false;
+  soldOutSide.items[0].available = false;
+  const blockedSide = reconcileKioskCart(
+    [comboLine(combo, [{ id: sideA.id, name: sideA.name }, { id: soldOutSide.id, name: soldOutSide.name }])],
+    comboMenu(combo, [sideA, soldOutSide]),
+  );
+  assert.deepEqual(blockedSide.invalidCartLineKeys, ["combo-item|side-a,side-b"]);
+});
+
+test("canonical menu sections retain sold-out products for display", () => {
+  const soldOut = product("sold-out", "Plate", ["food"]);
+  soldOut.available = false;
+  soldOut.items[0].available = false;
+  const sections = getKioskMenuSections(
+    comboMenu(soldOut, []),
+    "food",
+  );
+
+  assert.equal(sections.flatMap((section) => section.products).some((item) => item.id === "sold-out"), true);
+});
+
+test("preferred SKU keeps an in-stock price even when a cheaper SKU is sold out", () => {
+  const multiSku = product("multi", "Multi SKU", ["food"]);
+  multiSku.items = [
+    { id: "cheap", sku: "CHEAP", price: 5, available: false },
+    { id: "available", sku: "AVAILABLE", price: 7, available: true },
+  ];
+  assert.equal(preferredMenuItem(multiSku)?.id, "available");
+
+  multiSku.available = false;
+  multiSku.items[1].available = false;
+  assert.equal(preferredMenuItem(multiSku)?.id, "cheap");
+});
+
+test("cart reconciliation allows a sold-out line again after restock", () => {
+  const soldOutCombo = product("combo", "Plate", ["food"]);
+  soldOutCombo.available = false;
+  soldOutCombo.items[0].available = false;
+  const cart = [comboLine(soldOutCombo, [])];
+  const unavailable = reconcileKioskCart(cart, comboMenu(soldOutCombo, []));
+  assert.deepEqual(unavailable.invalidCartLineKeys, ["combo-item"]);
+
+  const restockedCombo = product("combo", "Plate", ["food"]);
+  const restocked = reconcileKioskCart(unavailable.cart, comboMenu(restockedCombo, []));
+  assert.deepEqual(restocked.invalidCartLineKeys, []);
+  assert.equal(restocked.cart[0].item.available, true);
+});
+
+test("callers clear invalid markers when an exact SKU restocks without snapshot changes", () => {
+  const soldOut = product("plate", "Plate", ["food"]);
+  soldOut.available = false;
+  soldOut.items[0].available = false;
+  const cart = [comboLine(soldOut, [])];
+  const unavailable = reconcileKioskCart(cart, comboMenu(soldOut, []));
+  let invalidMarkers = unavailable.invalidCartLineKeys;
+
+  const restocked = product("plate", "Plate", ["food"]);
+  const reconciliation = reconcileKioskCart(unavailable.cart, comboMenu(restocked, []));
+  assert.equal(reconciliation.changed, false);
+
+  // Loaders only require review when the cart snapshot changes, but every
+  // successful reconciliation replaces the invalid-line marker set.
+  if (reconciliation.changed) {
+    invalidMarkers = reconciliation.invalidCartLineKeys;
+  }
+  invalidMarkers = reconciliation.invalidCartLineKeys;
+  assert.deepEqual(invalidMarkers, []);
+});
+
 test("cart reconciliation blocks changed side category and side count", () => {
   const line = comboLine(combo, chosenSides);
   const changedCategorySide = product("side-b", "Slaw", ["different-category"]);
@@ -111,6 +197,20 @@ test("open side picker closes when a selected side is unavailable", () => {
 
   assert.equal(result.shouldClose, true);
   assert.equal(result.product, null);
+  assert.deepEqual(result.chosenSides, []);
+});
+
+test("open side picker closes when a selected side is sold out", () => {
+  const soldOutSide = product("side-a", "Beans", ["sides"]);
+  soldOutSide.available = false;
+  soldOutSide.items[0].available = false;
+  const result = reconcileKioskSidePicker(
+    combo,
+    chosenSides,
+    comboMenu(combo, [soldOutSide, sideB]),
+  );
+
+  assert.equal(result.shouldClose, true);
   assert.deepEqual(result.chosenSides, []);
 });
 

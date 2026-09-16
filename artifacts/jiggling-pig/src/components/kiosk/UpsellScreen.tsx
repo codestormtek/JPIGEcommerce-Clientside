@@ -2,7 +2,13 @@
 
 import { useMemo } from "react";
 import type { KioskCartLine, KioskCampaign, KioskProduct } from "@/lib/kiosk";
-import { cartSubtotal, formatMoney } from "@/lib/kiosk";
+import {
+  cartSubtotal,
+  formatMoney,
+  isMenuItemAvailable,
+  isMenuProductAvailable,
+  preferredMenuItem,
+} from "@/lib/kiosk";
 
 interface Props {
   campaigns: KioskCampaign[];
@@ -38,21 +44,36 @@ export default function UpsellScreen({ campaigns, cart, onAdd, onBack, onContinu
 
         <div className="k-upsell-grid">
           {products.map((product) => {
-            const item = product.items[0];
+            const item = preferredMenuItem(product);
             if (!item) return null;
+            const available = isMenuProductAvailable(product) && isMenuItemAvailable(item);
             const discountedPrice = Math.max(0, item.price - (amountOff || 0));
             const added = cart
               .filter((line) => line.item.id === item.id && line.campaignId === activeCampaign.id)
               .reduce((sum, line) => sum + (line.upsellQty ?? 0), 0);
 
             return (
-              <button className="k-upsell-card" key={product.id} onClick={() => onAdd(product, activeCampaign)}>
+              <button
+                className={`k-upsell-card ${!available ? "sold-out" : ""}`}
+                key={product.id}
+                disabled={!available}
+                onClick={() => onAdd(product, activeCampaign)}
+                aria-label={`${product.name}${available ? "" : " — Sold out"}`}
+              >
                 <span className="k-upsell-name">{product.name}</span>
                 <span className="k-upsell-prices">
-                  <del>{formatMoney(item.price)}</del>
-                  <strong>{formatMoney(discountedPrice)}</strong>
+                  {available ? (
+                    <>
+                      <del>{formatMoney(item.price)}</del>
+                      <strong>{formatMoney(discountedPrice)}</strong>
+                    </>
+                  ) : (
+                    <strong>Sold out</strong>
+                  )}
                 </span>
-                <span className="k-upsell-add">{added ? `${added} added · Add another` : "Add to order"}</span>
+                <span className="k-upsell-add">
+                  {available ? (added ? `${added} added · Add another` : "Add to order") : "Sold out"}
+                </span>
               </button>
             );
           })}

@@ -83,6 +83,8 @@ export interface KioskMenuItem {
   id: string;
   sku: string;
   price: number;
+  /** Display availability; checkout still revalidates stock on the server. */
+  available: boolean;
 }
 
 export interface KioskProduct {
@@ -98,7 +100,29 @@ export interface KioskProduct {
   comboSideCategoryId: string | null;
   /** When picked as a side more than once, each extra pick adds this amount */
   duplicateSideUpcharge: number;
+  /** True when at least one published SKU currently has stock. */
+  available: boolean;
   items: KioskMenuItem[];
+}
+
+/**
+ * Select the SKU used by menu cards and cart additions. The API orders
+ * available SKUs first, but keeping this guard in the shared client also
+ * protects the kiosk/pickup clients from an unexpected catalog ordering.
+ * A sold-out published SKU remains a display fallback for sold-out products.
+ */
+export function preferredMenuItem(product: KioskProduct): KioskMenuItem | undefined {
+  return product.items.find((item) => item.available) ?? product.items[0];
+}
+
+export function isMenuItemAvailable(item: KioskMenuItem | undefined): boolean {
+  // Older cached catalogs predate the explicit flag; only an explicit false
+  // blocks the client. Current API responses always include the boolean.
+  return item !== undefined && item.available !== false;
+}
+
+export function isMenuProductAvailable(product: KioskProduct): boolean {
+  return product.available !== false && product.items.some((item) => item.available !== false);
 }
 
 export interface KioskSideChoice {

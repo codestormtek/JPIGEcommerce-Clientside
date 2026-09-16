@@ -18,6 +18,9 @@ import {
   fetchKioskMenu,
   flushKioskAnalyticsEvents,
   getKioskToken,
+  isMenuItemAvailable,
+  isMenuProductAvailable,
+  preferredMenuItem,
   placeKioskOrder,
   clearKioskPaymentAttempt,
   readKioskPaymentAttempt,
@@ -216,8 +219,8 @@ export default function KioskPage() {
         if (reconciliation.changed) {
           setCart(reconciliation.cart);
           setCartReviewRequired(true);
-          setInvalidCartLineKeys(reconciliation.invalidCartLineKeys);
         }
+        setInvalidCartLineKeys(reconciliation.invalidCartLineKeys);
         setMenu(data);
       }
       return data;
@@ -454,8 +457,8 @@ export default function KioskPage() {
   };
 
   const handleAdd = (product: KioskProduct, sides?: KioskSideChoice[]) => {
-    const item = product.items[0];
-    if (!item) return;
+    const item = preferredMenuItem(product);
+    if (!item || !isMenuProductAvailable(product) || !isMenuItemAvailable(item)) return;
     if (!cartStartedRef.current) {
       cartStartedRef.current = true;
       trackEvent("cart_started", { metadata: { source: "menu" } });
@@ -540,8 +543,8 @@ export default function KioskPage() {
   };
 
   const handleUpsellAdd = (product: KioskProduct, campaign: KioskCampaign) => {
-    const item = product.items[0];
-    if (!item) return;
+    const item = preferredMenuItem(product);
+    if (!item || !isMenuProductAvailable(product) || !isMenuItemAvailable(item)) return;
     const discount = campaign.amountOff || 0;
     setCart((prev) => {
       const existing = prev.find((line) => line.item.id === item.id && !line.sides?.length && line.campaignId === campaign.id);

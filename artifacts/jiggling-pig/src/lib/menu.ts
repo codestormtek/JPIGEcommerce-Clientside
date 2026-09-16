@@ -5,6 +5,8 @@ import {
   type KioskMenu,
   type KioskProduct,
   type KioskSideChoice,
+  isMenuItemAvailable,
+  isMenuProductAvailable,
 } from "@/lib/kiosk";
 
 export const KIOSK_FOOD_CATEGORY = "jiggling food menu";
@@ -288,21 +290,22 @@ export function reconcileKioskCart(
         product.id === line.product.id &&
         product.items.some((item) => item.id === line.item.id),
     );
-    if (!freshProduct) {
+    const freshItem = freshProduct?.items.find((item) => item.id === line.item.id);
+    if (!freshProduct || !freshItem || !isMenuProductAvailable(freshProduct) || !isMenuItemAvailable(freshItem)) {
       unavailableProductIds.push(line.product.id);
       invalidCartLineKeys.push(lineKey);
       changed = true;
       return line;
     }
 
-    const freshItem = freshProduct.items.find((item) => item.id === line.item.id)!;
     const freshSideChoices: KioskSideChoice[] = [];
     let sidesAreValid = true;
     const freshSides = line.sides?.map((side) => {
       const freshSide = menu.products.find((product) => product.id === side.id);
       if (
         !freshSide ||
-        freshSide.items.length === 0 ||
+        !isMenuProductAvailable(freshSide) ||
+        !freshSide.items.some((item) => isMenuItemAvailable(item)) ||
         !freshProduct.comboSideCategoryId ||
         !freshSide.categoryIds.includes(freshProduct.comboSideCategoryId)
       ) {
@@ -384,7 +387,8 @@ export function reconcileKioskSidePicker(
   const freshProduct = menu.products.find((candidate) => candidate.id === product.id);
   if (
     !freshProduct ||
-    freshProduct.items.length === 0 ||
+    !isMenuProductAvailable(freshProduct) ||
+    !freshProduct.items.some((item) => isMenuItemAvailable(item)) ||
     freshProduct.comboSideCount <= 0 ||
     !freshProduct.comboSideCategoryId ||
     freshProduct.comboSideCount !== product.comboSideCount ||
@@ -398,7 +402,8 @@ export function reconcileKioskSidePicker(
     const freshSide = menu.products.find((candidate) => candidate.id === side.id);
     if (
       !freshSide ||
-      freshSide.items.length === 0 ||
+      !isMenuProductAvailable(freshSide) ||
+      !freshSide.items.some((item) => isMenuItemAvailable(item)) ||
       !freshSide.categoryIds.includes(freshProduct.comboSideCategoryId)
     ) {
       return { product: null, chosenSides: [], shouldClose: true, changed: true };
