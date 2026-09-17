@@ -1032,24 +1032,50 @@ export default function PickupPage() {
             <p className="jp-selected">{chosenSides.length} of {sideProduct.comboSideCount} selected</p>
             <div className="jp-sides">
               {sideOptions.map(side => {
-                const selected = chosenSides.some(choice => choice.id === side.id);
+                const count = chosenSides.filter(choice => choice.id === side.id).length;
                 const available = isMenuProductAvailable(side)
                   && isMenuItemAvailable(preferredMenuItem(side));
                 return (
+                  <div className="jp-side-option" key={side.id}>
                   <button
-                    key={side.id}
-                    className={`${selected ? "selected" : ""}${!available ? " sold-out" : ""}`}
-                    disabled={(!available && !selected) || (!selected && chosenSides.length >= sideProduct.comboSideCount)}
-                    onClick={() => setChosenSides(old => selected
-                      ? old.filter(choice => choice.id !== side.id)
+                    type="button"
+                    className={`jp-side-add${count ? " selected" : ""}${!available ? " sold-out" : ""}`}
+                    aria-label={`Add ${side.name}${count ? ` — ${count} selected` : ""}`}
+                    disabled={!available || chosenSides.length >= sideProduct.comboSideCount}
+                    onClick={() => setChosenSides(old => old.length >= sideProduct.comboSideCount
+                      ? old
                       : [...old, { id: side.id, name: side.name, upcharge: side.duplicateSideUpcharge }])}
                   >
-                    <b>{side.name}</b>
-                    {!available
-                      ? <small>Sold out</small>
-                      : side.duplicateSideUpcharge > 0 && <small>Extra serving {formatMoney(side.duplicateSideUpcharge)}</small>}
+                    <span className="jp-side-art"><ProductArt product={side} /></span>
+                    <span className="jp-side-copy">
+                      <b>{side.name}</b>
+                      <small>{!available ? "Sold out" : count ? `${count} selected` : "Tap to add"}</small>
+                    </span>
                   </button>
+                  {count > 0 && (
+                    <button
+                      type="button"
+                      className="jp-side-remove"
+                      aria-label={`Remove one ${side.name}`}
+                      onClick={() => setChosenSides(old => {
+                        const index = old.findIndex(choice => choice.id === side.id);
+                        return old.filter((_, choiceIndex) => choiceIndex !== index);
+                      })}
+                    >− Remove one</button>
+                  )}
+                  </div>
                 );
+              })}
+            </div>
+            <div className="jp-side-charge" role="status" aria-live="polite">
+              {sideOptions.map(side => {
+                const choices = chosenSides.filter(choice => choice.id === side.id);
+                const charge = sidesUpcharge(choices);
+                return charge > 0 ? (
+                  <p key={side.id}>
+                    {formatMoney(charge)} extra for selecting {side.name} {choices.length === 2 ? "twice" : `${choices.length} times`}.
+                  </p>
+                ) : null;
               })}
             </div>
             <div className="jp-modal-actions">

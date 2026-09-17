@@ -1681,6 +1681,61 @@
   font-size: 14px;
 }
 
+.jp-side-option {
+  min-width: 0;
+}
+
+.jp-pickup-root .jp-sides .jp-side-add {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px;
+}
+
+.jp-side-art {
+  display: flex;
+  flex: 0 0 76px;
+  width: 76px;
+  height: 76px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--jp-surface-2);
+}
+
+.jp-side-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.jp-side-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.jp-pickup-root .jp-sides .jp-side-add.selected:disabled {
+  opacity: 1;
+}
+
+.jp-pickup-root .jp-sides .jp-side-remove {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 6px;
+  padding: 8px;
+  text-align: center;
+  background: transparent;
+}
+
+.jp-side-charge {
+  color: var(--jp-gold);
+  font-size: 16px;
+}
+
+.jp-side-charge p {
+  margin: 0 0 16px;
+}
+
 .jp-shell .jp-link {
   display: inline-flex;
   min-height: 48px;
