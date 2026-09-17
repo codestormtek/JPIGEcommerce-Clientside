@@ -1024,7 +1024,7 @@ export default function PickupPage() {
     <>
       {checkout}
       {sideProduct && (
-        <div className="jp-modal" role="dialog" aria-modal="true" aria-labelledby="side-title">
+        <div className="jp-shell jp-modal" role="dialog" aria-modal="true" aria-labelledby="side-title">
           <section>
             <button className="jp-close" aria-label="Close sides" onClick={() => setSideProduct(null)}>×</button>
             <p className="jp-kicker">Build your plate</p>
