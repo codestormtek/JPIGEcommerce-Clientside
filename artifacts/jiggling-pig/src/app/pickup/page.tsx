@@ -895,6 +895,7 @@ export default function PickupPage() {
       </header>
       {cart.length ? (
         <form onSubmit={continueToPayment} className="jp-cart-filled">
+          <div className="jp-cart-content" tabIndex={0} role="region" aria-label="Items in your order">
           <div className="jp-lines">
             {cart.map(line => (
               <div className="jp-line" key={cartLineKey(line.item.id, line.sides)}>
@@ -916,6 +917,7 @@ export default function PickupPage() {
             cart={cart}
             onSelect={openProduct}
           />
+          </div>
           <div className="jp-cost">
             <span>Subtotal <b>{formatMoney(subtotal)}</b></span>
             <span>Estimated tax <b>{formatMoney(tax)}</b></span>
@@ -953,6 +955,20 @@ export default function PickupPage() {
     </aside>
   );
 
+  const orderItems = (
+    <ul className="jp-summary-items" aria-label="Ordered items">
+      {cart.map(line => (
+        <li key={cartLineKey(line.item.id, line.sides)}>
+          <div>
+            <strong>{line.qty} × {line.product.name}</strong>
+            {line.sides?.length ? <small>{line.sides.map(side => side.name).join(" · ")}</small> : null}
+          </div>
+          <strong>{formatMoney((line.item.price + sidesUpcharge(line.sides)) * line.qty)}</strong>
+        </li>
+      ))}
+    </ul>
+  );
+
   const checkout = stage === "menu" ? (
     <main className="jp-shell jp-order">
       <header className="jp-top">
@@ -980,6 +996,7 @@ export default function PickupPage() {
               pickupInstructions={config.pickupInstructions}
             />
             <div className="jp-order-summary">
+              {orderItems}
               <span>{cartCount} item{cartCount === 1 ? "" : "s"} <b>{formatMoney(displayTotal)}</b></span>
               <small>Final total is confirmed securely at payment.</small>
             </div>
@@ -1008,7 +1025,7 @@ export default function PickupPage() {
           </form>
         ) : (
           <>
-            <div className="jp-order-summary"><span>Order total <b>{formatMoney(displayTotal)}</b></span></div>
+            <div className="jp-order-summary">{orderItems}<span>Order total <b>{formatMoney(displayTotal)}</b></span></div>
             <div id="pickup-square-card" className="jp-square" />
             {square.error && <p className="jp-alert" role="alert">{square.error}</p>}
             <button disabled={!square.ready || busy} className="jp-primary" onClick={() => void submit()}>{busy ? "Confirming securely…" : `Pay ${formatMoney(displayTotal)}`}</button>

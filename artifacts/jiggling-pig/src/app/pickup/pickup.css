@@ -4,6 +4,13 @@
  * storefront and kiosk themes remain unchanged.
  */
 
+/* Legacy body overflow creates a non-scrolling ancestor for sticky content.
+   Keep the document as the scroll container on the pickup route only. */
+body:has(.jp-pickup-root) {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
 .jp-shell {
   --jp-bg: #15110e;
   --jp-surface: #1e1713;
@@ -869,15 +876,20 @@
 }
 
 .jp-cart {
+  position: sticky;
+  top: 0;
+  align-self: start;
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - 70px);
+  min-height: 0;
+  max-height: 100dvh;
   padding: 2rem 1.35rem;
   border-left: 1px solid var(--jp-line);
   background: #18120f;
 }
 
 .jp-cart header {
+  flex-shrink: 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -909,6 +921,28 @@
   display: flex;
   flex: 1;
   flex-direction: column;
+  min-height: 0;
+}
+
+/* Keep the item list and totals together instead of stretching the cart
+   to the full menu height. Clip does not create a sticky scroll ancestor. */
+.jp-shell.jp-order {
+  overflow-x: clip;
+}
+
+.jp-cart-content {
+  min-height: 80px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.jp-cart-content:focus-visible {
+  outline: 3px solid var(--jp-gold);
+  outline-offset: -3px;
+}
+
+.jp-cart-filled > :not(.jp-cart-content) {
+  flex-shrink: 0;
 }
 
 .jp-lines {
@@ -976,6 +1010,12 @@
 
 .jp-line b {
   display: block;
+  color: var(--jp-cream);
+}
+
+.jp-line > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .jp-line small {
@@ -1010,7 +1050,7 @@
 }
 
 .jp-cost {
-  margin-top: auto;
+  margin-top: 0;
   padding-top: 1rem;
   border-top: 1px solid var(--jp-line);
   color: var(--jp-muted);
@@ -1111,6 +1151,35 @@
   display: block;
   margin-top: 0.5rem;
   color: var(--jp-muted);
+}
+
+.jp-shell .jp-summary-items {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  font-size: 16px;
+}
+
+.jp-summary-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--jp-line);
+}
+
+.jp-summary-items li > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.jp-summary-items li > strong {
+  flex-shrink: 0;
+  color: var(--jp-gold);
+}
+
+.jp-summary-items li > div > strong {
+  color: var(--jp-cream);
 }
 
 .jp-check-panel label {
@@ -1401,9 +1470,7 @@
   }
 
   .jp-cart header > .jp-mark,
-  .jp-empty,
-  .jp-lines,
-  .jp-cost {
+  .jp-empty {
     display: none;
   }
 
@@ -1412,7 +1479,7 @@
   }
 
   .jp-cart-filled {
-    display: block;
+    display: flex;
   }
 
   .jp-cart-filled > .jp-primary {
@@ -1770,7 +1837,7 @@
   }
 
   .jp-shell .jp-menu {
-    padding: 28px 16px calc(152px + env(safe-area-inset-bottom));
+    padding: 28px 16px calc(60dvh + 24px + env(safe-area-inset-bottom));
   }
 
   .jp-shell .jp-menu h1 {
@@ -1801,6 +1868,7 @@
     right: 0;
     bottom: 0;
     left: 0;
+    top: auto;
     width: auto;
     min-height: 0;
     margin: 0;
@@ -1808,8 +1876,7 @@
     border: 1px solid var(--jp-line);
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -8px 24px rgb(9 6 4 / 35%);
-    max-height: calc(100dvh - env(safe-area-inset-top) - 16px);
-    overflow-y: auto;
+    max-height: min(60dvh, calc(100dvh - env(safe-area-inset-top) - 16px));
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
@@ -1819,7 +1886,7 @@
   }
 
   .jp-shell .jp-cart-filled > .jp-primary {
-    margin-top: 0;
+    margin-top: 12px;
   }
 
   .jp-pickup-root .jp-checkout {
