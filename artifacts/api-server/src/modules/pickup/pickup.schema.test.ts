@@ -11,6 +11,7 @@ test('pickup checkout requires a durable request key and a valid phone number', 
     lines: [{ productItemId: 'item-1', qty: 1, sideProductIds: ['side-1', 'side-2'] }],
   });
   assert.equal(parsed.success, true);
+  if (parsed.success) assert.equal(parsed.data.smsOptIn, false);
   assert.equal(pickupCheckoutSchema.safeParse({ ...parsed.data, clientRequestId: 'not-a-uuid' }).success, false);
   assert.equal(pickupCheckoutSchema.safeParse({ ...parsed.data, customerPhone: 'not a phone' }).success, false);
 });

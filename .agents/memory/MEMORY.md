@@ -10,3 +10,4 @@
 - [Pickup rollout safety](pickup-rollout-safety.md) — external database isolation needs confirmation; schema additions must precede updated order queries.
 - [Render package-manager bootstrap](render-package-manager.md) — a missing Corepack pnpm executable fails before app compilation; cover build and start when bypassing it.
 - [Shared kiosk and pickup menu](shared-kiosk-pickup-menu.md) — pickup mirrors the kiosk catalog; keep hours independent, not product selections.
+- [Pickup SMS safety](pickup-sms-safety.md) — isolate guest consent per order; verify provider readiness and opt-outs before activation; quarantine ambiguous sends.

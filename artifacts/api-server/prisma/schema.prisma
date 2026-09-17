@@ -534,9 +534,90 @@ model ShopOrder {
   inventoryReconciliation InventoryReconciliation?
   pushNotificationEvents  PushNotificationEvent[]
   cloudPrntJobs          CloudPrntJob[]
+  pickupSmsConsent       PickupSmsConsent?
+  pickupSmsOutbox        PickupSmsOutbox[]
 
   @@unique([kioskDeviceId, kioskRequestId])
   @@map("shop_orders")
+}
+
+/// Guest pickup SMS consent is an order-time snapshot. It deliberately does
+/// not use UserContactPreference: pickup checkouts use a shared shell account
+/// and the account preference may be changed after this order was paid.
+model PickupSmsConsent {
+  id                String    @id @default(uuid())
+  orderId           String    @unique
+  order             ShopOrder @relation(fields: [orderId], references: [id])
+  phoneNumber       String
+  optedIn           Boolean   @default(false)
+  consentCapturedAt DateTime  @default(now())
+  consentedAt       DateTime?
+  consentVersion    String
+  createdAt         DateTime  @default(now())
+
+  @@index([phoneNumber])
+  @@map("pickup_sms_consents")
+}
+
+/// A number-level STOP suppression. This is intentionally independent from a
+/// user record so guest STOP applies to every future guest order on the phone.
+model PickupSmsSuppression {
+  id           String   @id @default(uuid())
+  phoneNumber  String   @unique
+  suppressedAt DateTime @default(now())
+  source       String   @default("inbound_stop")
+  reason       String?
+  updatedAt    DateTime @updatedAt
+
+  @@map("pickup_sms_suppressions")
+}
+
+/// Transactional pickup lifecycle SMS outbox. A unique order/event key makes
+/// payment retries and repeated staff clicks harmless. `uncertain` is a
+/// quarantine state: a lost provider response must be resolved by the
+/// delivery webhook rather than blindly sent again.
+model PickupSmsOutbox {
+  id                String    @id @default(uuid())
+  orderId           String
+  order             ShopOrder @relation(fields: [orderId], references: [id])
+  eventType         String
+  phoneNumber       String
+  messageBody       String
+  consentVersion    String
+  consentCapturedAt DateTime
+  status            String    @default("queued") // queued|sending|sent|delivered|failed|uncertain|suppressed
+  providerMessageId String?
+  attemptCount      Int       @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  claimedAt         DateTime?
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  uncertainAt       DateTime?
+  lastError         String?
+  nextAttemptAt     DateTime?
+
+  @@unique([orderId, eventType])
+  @@index([status, nextAttemptAt, createdAt])
+  @@index([providerMessageId])
+  @@map("pickup_sms_outbox")
+}
+
+/// Every Telnyx webhook is retained by provider event id before handling.
+/// Unmatched early delivery events remain replayable once the send response
+/// supplies the message id; duplicate/out-of-order webhooks are harmless.
+model PickupSmsWebhookEvent {
+  id                String    @id @default(uuid())
+  providerEventId   String    @unique
+  eventType         String
+  providerMessageId String?
+  payloadJson       String
+  receivedAt        DateTime  @default(now())
+  processedAt       DateTime?
+  processingResult  String?
+
+  @@index([providerMessageId, processedAt])
+  @@map("pickup_sms_webhook_events")
 }
 
 /// Star CloudPRNT printers poll the public API over HTTPS. Only a SHA-256

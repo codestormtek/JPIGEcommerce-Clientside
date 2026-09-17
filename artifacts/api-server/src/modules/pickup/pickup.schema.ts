@@ -18,6 +18,9 @@ export const pickupCheckoutSchema = z.object({
   customerName: z.string().trim().min(1, 'Your name is required').max(100),
   customerPhone: z.string().trim().max(30)
     .refine((value) => normalizePhone(value) !== null, 'Enter a valid US phone number'),
+  // Transactional pickup updates only; this is order-scoped guest consent,
+  // not the signed-in user's global marketing/SMS preference.
+  smsOptIn: z.boolean().optional().default(false),
   specialInstructions: z.string().trim().max(500).optional(),
   squareNonce: z.string().min(1, 'A card payment is required'),
   source: z.enum(['remote', 'event_qr']).optional(),
@@ -29,7 +32,7 @@ export const pickupCheckoutSchema = z.object({
   }
 });
 
-export type PickupCheckoutInput = z.infer<typeof pickupCheckoutSchema>;
+export type PickupCheckoutInput = Omit<z.infer<typeof pickupCheckoutSchema>, 'smsOptIn'> & { smsOptIn?: boolean };
 
 export const pickupConfigSchema = z.object({
   isOrderingOpen: z.boolean(),

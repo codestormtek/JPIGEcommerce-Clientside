@@ -19,6 +19,7 @@ import { sendNewOrderStoreAlerts } from '../order-notifications/order-notificati
 import prisma from '../../lib/prisma';
 import { enqueueStaffOrderPush } from '../../services/expoPushNotifications';
 import { enqueueCapturedOrderKitchenTickets } from '../cloudprnt/cloudprnt.service';
+import { enqueuePickupSmsEventTx } from '../pickup/pickupSms';
 
 // ─── User-facing ──────────────────────────────────────────────────────────────
 
@@ -211,9 +212,17 @@ export async function checkout(
       ?? (input.squareNonce || input.paymentMethodTokenId
         ? await paymentGateway.getActiveGateway()
         : undefined);
+    const pickupOrderType = ['kiosk', 'event_qr', 'remote_pickup'].includes(input.orderType);
     const order = await repo.placeOrder(
       userId,
-      input,
+      {
+        ...input,
+        // A stale client cannot create consent while the feature is disabled.
+        smsOptIn: pickupOrderType
+          && input.smsOptIn === true
+          && config.env === 'production'
+          && config.pickupSms.enabled,
+      },
       taxTotal,
       discountTotal,
       pendingPaymentProvider
@@ -264,17 +273,22 @@ export async function checkout(
       if (payment.provider !== gatewayResult.gateway) {
         throw new Error('The checkout payment gateway changed during this attempt');
       }
-      await prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          paymentMethodTokenId: paymentMethodTokenId ?? null,
-          status: gatewayResult.status,
-          providerTxnId: gatewayResult.paymentId,
-          authorizedAt: gatewayResult.status === 'authorized' || gatewayResult.status === 'captured'
-            ? new Date()
-            : undefined,
-          capturedAt: gatewayResult.status === 'captured' ? new Date() : undefined,
-        },
+      await prisma.$transaction(async (tx) => {
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: {
+            paymentMethodTokenId: paymentMethodTokenId ?? null,
+            status: gatewayResult.status,
+            providerTxnId: gatewayResult.paymentId,
+            authorizedAt: gatewayResult.status === 'authorized' || gatewayResult.status === 'captured'
+              ? new Date()
+              : undefined,
+            capturedAt: gatewayResult.status === 'captured' ? new Date() : undefined,
+          },
+        });
+        if (gatewayResult.status === 'captured' && ['kiosk', 'event_qr', 'remote_pickup'].includes(order.orderType)) {
+          await enqueuePickupSmsEventTx(tx, order.id, 'confirmation');
+        }
       });
       if (order.orderType === 'kiosk' && gatewayResult.status === 'authorized') {
         const captured = await paymentGateway.capturePayment(
@@ -283,12 +297,17 @@ export async function checkout(
         );
         checkoutPaymentStatus = captured.status;
         if (captured.status !== payment.status) {
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: {
-              status: captured.status,
-              capturedAt: captured.status === 'captured' ? new Date() : undefined,
-            },
+          await prisma.$transaction(async (tx) => {
+            await tx.payment.update({
+              where: { id: payment.id },
+              data: {
+                status: captured.status,
+                capturedAt: captured.status === 'captured' ? new Date() : undefined,
+              },
+            });
+            if (captured.status === 'captured' && ['kiosk', 'event_qr', 'remote_pickup'].includes(order.orderType)) {
+              await enqueuePickupSmsEventTx(tx, order.id, 'confirmation');
+            }
           });
         }
       }

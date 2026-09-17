@@ -111,7 +111,7 @@ export default function Home() {
               <h2 className="title">Data Sharing</h2>
               <ul>
                 <li><p>Customer data is not shared with 3rd parties for promotional or marketing purposes.</p></li>
-                <li><p>Mobile opt-in and consent are never shared with anyone for any purpose. Any information sharing that may be mentioned elsewhere in this policy excludes mobile opt-in data.</p></li>
+                <li><p>Mobile opt-in and consent are not shared with third parties for promotional or marketing purposes. Service providers acting on our behalf may process this information only to provide requested messaging and order-status services.</p></li>
               </ul>
             </div>
 
@@ -125,6 +125,22 @@ export default function Home() {
                 <li><p>As always, message and data rates may apply for any messages sent to you from us and to us from you. Message frequency will vary based on communication needs. If you have any questions about your text plan or data plan, it is best to contact your wireless provider.</p></li>
                 <li><p>If you have any questions regarding privacy, please read our privacy policy contained in the rest of this document/page.</p></li>
               </ol>
+            </div>
+
+            <div className="section-list mt--40">
+              <h2 className="title">Pickup Order SMS Notifications</h2>
+              <p className="disc">
+                During pickup checkout, SMS is optional and is not required to make a purchase. If you
+                choose to opt in, we may use the mobile number and consent you provide to send up to 2
+                transactional text messages per order: an order confirmation and a notification when the
+                order is ready. Message and data rates may apply, and frequency varies by order.
+              </p>
+              <p className="disc">
+                Reply STOP to opt out or HELP for help. Mobile number and SMS consent information are not
+                sold or shared with third parties for their own marketing. We may use service providers
+                acting on our behalf to process order status and deliver these transactional notifications;
+                those providers may process the information only to provide that service.
+              </p>
             </div>
 
             <div className="section-list mt--40">

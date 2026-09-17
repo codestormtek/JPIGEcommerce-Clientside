@@ -87,6 +87,17 @@ export const config = {
     voicemailEmail: process.env.TELNYX_VOICEMAIL_EMAIL ?? process.env.ADMIN_EMAIL ?? 'info@thejigglingpig.com',
     // Optional dedicated secret for signing TeXML action callback URLs (falls back to apiKey)
     webhookToken: process.env.TELNYX_WEBHOOK_TOKEN ?? '',
+    // Telnyx's Ed25519 public key used for inbound SMS webhook verification.
+    publicKey: process.env.TELNYX_PUBLIC_KEY ?? '',
+  },
+
+  pickupSms: {
+    // Deliberately requires both switches. The worker also requires production,
+    // so a configured development environment can never send live SMS.
+    providerReady: process.env.PICKUP_SMS_PROVIDER_READY === 'true',
+    enabled: process.env.PICKUP_SMS_ENABLED === 'true'
+      && process.env.PICKUP_SMS_PROVIDER_READY === 'true'
+      && Boolean(process.env.TELNYX_PUBLIC_KEY),
   },
 
   store: {

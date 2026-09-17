@@ -91,12 +91,13 @@ test('new kiosk orders reject main and side selections outside the canonical sel
         id: 'combo',
         comboSideCount: 2,
         comboSideCategoryId: 'sides',
-        items: [{ id: 'combo-sku' }],
+        available: true,
+        items: [{ id: 'combo-sku', available: true }],
         categoryIds: [],
       },
-      { id: 'beans', comboSideCount: 0, comboSideCategoryId: null, items: [{ id: 'beans-sku' }], categoryIds: ['sides'] },
-      { id: 'slaw', comboSideCount: 0, comboSideCategoryId: null, items: [{ id: 'slaw-sku' }], categoryIds: ['sides'] },
-      { id: 'pie', comboSideCount: 0, comboSideCategoryId: null, items: [{ id: 'pie-sku' }], categoryIds: ['desserts'] },
+      { id: 'beans', comboSideCount: 0, comboSideCategoryId: null, available: true, items: [{ id: 'beans-sku', available: true }], categoryIds: ['sides'] },
+      { id: 'slaw', comboSideCount: 0, comboSideCategoryId: null, available: true, items: [{ id: 'slaw-sku', available: true }], categoryIds: ['sides'] },
+      { id: 'pie', comboSideCount: 0, comboSideCategoryId: null, available: true, items: [{ id: 'pie-sku', available: true }], categoryIds: ['desserts'] },
     ],
   };
   assert.doesNotThrow(() => assertKioskMenuLineEligibility(menu, [{

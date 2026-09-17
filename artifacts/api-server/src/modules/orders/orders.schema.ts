@@ -68,6 +68,8 @@ export const placeOrderSchema = z.object({
   squareNonce: z.string().optional(),
   /** Optional coupon code to apply a discount at checkout */
   couponCode: z.string().optional(),
+  /** Explicit, order-scoped consent for transactional pickup SMS. */
+  smsOptIn: z.boolean().optional().default(false),
   /** Shippo rate fields — set when customer selects a live carrier rate at checkout */
   shippoRateId: z.string().optional(),
   shippoRateAmount: z.number().nonnegative().optional(),
@@ -75,7 +77,7 @@ export const placeOrderSchema = z.object({
   shippoServiceLevel: z.string().optional(),
 });
 
-export type PlaceOrderInput = z.infer<typeof placeOrderSchema>;
+export type PlaceOrderInput = Omit<z.infer<typeof placeOrderSchema>, 'smsOptIn'> & { smsOptIn?: boolean };
 export type OrderLineInput = z.infer<typeof orderLineSchema>;
 export type OrderAddressInput = z.infer<typeof orderAddressSchema>;
 
@@ -95,7 +97,7 @@ export const guestCheckoutSchema = placeOrderSchema.extend({
   { message: 'A payment method is required for guest checkout.', path: ['stripePaymentMethodId'] },
 );
 
-export type GuestCheckoutInput = z.infer<typeof guestCheckoutSchema>;
+export type GuestCheckoutInput = Omit<z.infer<typeof guestCheckoutSchema>, 'smsOptIn'> & { smsOptIn?: boolean };
 
 // ─── Track order (public) ─────────────────────────────────────────────────────
 

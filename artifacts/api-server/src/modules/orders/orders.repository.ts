@@ -1,6 +1,8 @@
 import prisma from '../../lib/prisma';
 import { ListOrdersInput, PlaceOrderInput, CheckoutInput } from './orders.schema';
 import { ApiError } from '../../utils/apiError';
+import { normalizePhone } from '../../lib/phone';
+import { PICKUP_SMS_CONSENT_VERSION } from '../pickup/pickupSms';
 
 type TxClient = Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -248,6 +250,12 @@ export async function placeOrder(
     }
 
     // Create order
+    const pickupOrder = ['kiosk', 'remote_pickup', 'event_qr'].includes(input.orderType);
+    const billingAddress = input.addresses.find((address) => address.addressType === 'billing')
+      ?? input.addresses[0];
+    const consentPhone = normalizePhone(billingAddress?.phone ?? '') ?? (billingAddress?.phone ?? '').trim();
+    const consentOptedIn = pickupOrder && input.smsOptIn === true;
+    const consentCapturedAt = new Date();
     const order = await tx.shopOrder.create({
       data: {
         userId,
@@ -273,6 +281,19 @@ export async function placeOrder(
         shippoCarrier: input.shippoCarrier,
         shippoServiceLevel: input.shippoServiceLevel,
         addresses: { create: input.addresses },
+        ...(pickupOrder
+          ? {
+              pickupSmsConsent: {
+                create: {
+                  phoneNumber: consentPhone,
+                  optedIn: consentOptedIn,
+                  consentCapturedAt,
+                  consentedAt: consentOptedIn ? consentCapturedAt : null,
+                  consentVersion: PICKUP_SMS_CONSENT_VERSION,
+                },
+              },
+            }
+          : {}),
         lines: {
           create: lineData.map(({ item, l, unitPrice, lineTotal }) => ({
             productItemId: item.id,

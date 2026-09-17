@@ -13,6 +13,7 @@ import { enqueueStaffOrderPush } from '../../services/expoPushNotifications';
 import * as paymentGateway from '../../services/paymentGateway';
 import { checkout } from '../orders/orders.service';
 import { enqueueCapturedOrderKitchenTickets } from '../cloudprnt/cloudprnt.service';
+import { enqueuePickupSmsEvent } from '../pickup/pickupSms';
 import { hashKioskToken, invalidateKioskDeviceCache } from './kiosk.middleware';
 import {
   KioskOrderInput,
@@ -940,6 +941,7 @@ export async function getKioskPaymentStatus(deviceId: string, orderId: string) {
   if (checkoutStatus === 'COMPLETED') {
     const squarePaymentId = resp.checkout?.paymentIds?.[0];
     await reconcileCompletedKioskTerminalPayment(payment.id, orderId, squarePaymentId);
+    await enqueuePickupSmsEvent(orderId, 'confirmation');
     void enqueueCapturedOrderKitchenTickets(orderId).catch((error) =>
       logger.warn(`Failed to enqueue captured kitchen ticket for order ${orderId}: ${error}`),
     );

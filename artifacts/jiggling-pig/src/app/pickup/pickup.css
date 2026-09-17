@@ -1135,6 +1135,48 @@
   font-size: 1rem;
 }
 
+.jp-check-panel label.jp-sms-optin {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  min-height: 48px;
+  margin: 1.25rem 0 0.5rem;
+  color: var(--jp-muted);
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.45;
+  text-transform: none;
+}
+
+.jp-check-panel .jp-sms-optin input {
+  flex: 0 0 auto;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--jp-gold);
+}
+
+.jp-sms-optin-copy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.jp-sms-optin-copy strong {
+  color: var(--jp-cream);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.jp-sms-optin-copy a {
+  color: var(--jp-gold);
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
 .jp-check-panel form > .jp-primary,
 .jp-check-panel > .jp-primary,
 .jp-check-panel > .jp-ghost {
@@ -1575,11 +1617,25 @@
   font-size: 14px;
 }
 
+.jp-pickup-root .jp-shell .jp-check-panel label.jp-sms-optin {
+  min-height: 48px;
+  font-size: 16px;
+}
+
 .jp-shell .jp-check-panel input {
   min-height: 48px;
   padding: 12px 14px;
   /* Prevent iOS Safari from zooming when a field receives focus. */
   font-size: 16px;
+}
+
+.jp-pickup-root .jp-shell .jp-check-panel .jp-sms-optin input {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0;
 }
 
 .jp-shell .jp-safe {

@@ -84,3 +84,20 @@ physical printing and payment tests need a controlled, approved test window.
 The updated kiosk client is in `artifacts/jiggling-pig`. Release it only after
 the Render API campaign endpoint is live. Its production environment must route
 `/api/v1` requests to `https://api.thejigglingpig.com`.
+
+### Optional guest pickup SMS readiness
+
+Guest pickup confirmation/ready texts are disabled unless all of the following
+are true in the API production environment:
+
+- `PICKUP_SMS_ENABLED=true`
+- `PICKUP_SMS_PROVIDER_READY=true` after provider setup is explicitly approved
+- `TELNYX_PUBLIC_KEY` contains the current Telnyx Ed25519 webhook verification
+  key (the key from the Telnyx portal/API Keys, not a signing-secret guess)
+- Telnyx has an approved A2P/toll-free two-way sender and the messaging profile
+  has HELP/STOP handling reviewed. Do not assume either is configured.
+
+The profile callback remains `https://api.thejigglingpig.com/webhooks/telnyx/sms`.
+Do not enable the feature before the additive pickup-SMS migration is applied
+and a controlled signed-webhook test has passed. Development never sends live
+pickup SMS.

@@ -3,6 +3,7 @@ import { ApiError } from '../../utils/apiError';
 import { AuditAction, AuditContext, logAudit } from '../../utils/auditLogger';
 import { enqueueStaffOrderPush } from '../../services/expoPushNotifications';
 import { logger } from '../../utils/logger';
+import { enqueuePickupSmsEventTx } from '../pickup/pickupSms';
 import {
   RegisterPushTokenInput,
   StaffOrderListInput,
@@ -210,6 +211,12 @@ export async function transitionStaffOrder(
         changedByUserId: adminId,
       },
     });
+    if (target === 'ready_to_ship') {
+      // This is deliberately inside the same transaction as the real
+      // staff-order transition. A generic order status update must not send
+      // a ready text, and a crash cannot lose a successfully committed event.
+      await enqueuePickupSmsEventTx(tx, orderId, 'ready');
+    }
     return { changed: true, previous: order.orderStatus.status };
   });
 

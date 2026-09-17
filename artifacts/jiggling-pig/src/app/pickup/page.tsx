@@ -23,6 +23,7 @@ import {
   reconcileKioskCart,
   reconcileKioskSidePicker,
 } from "@/lib/menu";
+import { getPickupSmsOptIn } from "@/lib/pickup-order";
 import { useSquarePayments } from "@/lib/useSquarePayments";
 import PickupDetails from "@/components/pickup/PickupDetails";
 import PickupSuggestions from "@/components/pickup/PickupSuggestions";
@@ -36,6 +37,7 @@ import {
 type PickupConfig = {
   isOrderingOpen: boolean; eventName: string; streetAddress: string; asapWaitMinutes: number;
   pickupInstructions?: string | null;
+  smsEnabled?: boolean | null;
   cardEnabled: boolean; applicationId: string | null; locationId: string | null; environment: string;
   menu: KioskMenu; taxRatePercent?: number;
 };
@@ -131,6 +133,7 @@ export default function PickupPage() {
   );
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [sideProduct, setSideProduct] = useState<KioskProduct | null>(null);
   const [chosenSides, setChosenSides] = useState<KioskSideChoice[]>([]);
   const [error, setError] = useState("");
@@ -167,6 +170,10 @@ export default function PickupPage() {
       ),
     );
   }, [cart]);
+
+  useEffect(() => {
+    if (config?.smsEnabled !== true) setSmsOptIn(false);
+  }, [config?.smsEnabled]);
 
   const square = useSquarePayments({
     enabled: stage === "payment" && Boolean(config?.cardEnabled),
@@ -555,6 +562,7 @@ export default function PickupPage() {
         })),
         customerName: name,
         customerPhone: phone,
+        smsOptIn: getPickupSmsOptIn(config.smsEnabled, smsOptIn),
         squareNonce,
         source: searchParams.get("pickupSource") === "event_qr" ? "event_qr" : "remote",
         sourceLinkSlug: searchParams.get("pickupSourceLink") ?? undefined,
@@ -631,6 +639,7 @@ export default function PickupPage() {
     setError("");
     setName("");
     setPhone("");
+    setSmsOptIn(false);
     setCart([]);
     setSideProduct(null);
     setChosenSides([]);
@@ -975,7 +984,26 @@ export default function PickupPage() {
               <small>Final total is confirmed securely at payment.</small>
             </div>
             <label>Name<input required maxLength={100} value={name} onChange={event => setName(event.target.value)} autoComplete="name" placeholder="Your name" /></label>
-            <label>Mobile phone<input required maxLength={30} value={phone} onChange={event => setPhone(event.target.value)} inputMode="tel" autoComplete="tel" placeholder="For pickup updates" /></label>
+            <label>Mobile phone<input required maxLength={30} value={phone} onChange={event => setPhone(event.target.value)} inputMode="tel" autoComplete="tel" placeholder="Mobile number" /></label>
+            {config.smsEnabled === true && (
+              <label className="jp-sms-optin">
+                <input
+                  type="checkbox"
+                  checked={smsOptIn}
+                  onChange={event => setSmsOptIn(event.target.checked)}
+                  aria-describedby="pickup-sms-optin-details"
+                  data-testid="checkbox-sms-opt-in"
+                />
+                <span className="jp-sms-optin-copy">
+                  <strong>Optional SMS order updates</strong>
+                  <span id="pickup-sms-optin-details">
+                    Send only transactional SMS for your order confirmation and when it&apos;s ready. No purchase required to opt in.
+                    Up to 2 messages per order; message and data rates may apply, and frequency varies. Reply STOP to opt out or HELP for help.{" "}
+                    <a href="/privacy-policy">Privacy Policy</a> and <a href="/terms-condition">Terms &amp; Conditions</a>.
+                  </span>
+                </span>
+              </label>
+            )}
             <button className="jp-primary">Continue to payment</button>
           </form>
         ) : (

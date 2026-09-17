@@ -11,6 +11,31 @@ import { restoreOrderInventoryOnceTx } from '../../services/orderInventoryRestor
 import { reconcileCompletedKioskTerminalPayment } from '../../services/kioskTerminalReconciliation';
 import { CreateStaffRefundInput, StaffPaymentsListInput } from './payments.schema';
 import { enqueueStaffOrderPush } from '../../services/expoPushNotifications';
+import { enqueuePickupSmsEventTx } from '../pickup/pickupSms';
+
+/**
+ * Local capture and the customer confirmation outbox share one transaction.
+ * Replaying a provider webhook repairs a lost post-capture enqueue.
+ */
+async function finalizeCapturedPaymentWithPickupSms(paymentId: string, orderId: string): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.payment.findUnique({
+      where: { id: paymentId },
+      select: { status: true, orderId: true, order: { select: { orderType: true } } },
+    });
+    if (!current || current.orderId !== orderId) return false;
+    if (!['captured', 'partially_refunded'].includes(current.status)) {
+      if (['failed', 'refunded', 'canceled', 'cancelled'].includes(current.status)) return false;
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: { status: 'captured', capturedAt: new Date() },
+      });
+    }
+    if (!['kiosk', 'remote_pickup', 'event_qr'].includes(current.order.orderType)) return true;
+    await enqueuePickupSmsEventTx(tx, orderId, 'confirmation');
+    return true;
+  });
+}
 
 // ─── Payments (admin) ─────────────────────────────────────────────────────────
 
@@ -43,7 +68,9 @@ export async function capturePayment(id: string, ctx?: AuditContext) {
     }
   }
 
-  const updated = await repo.capturePayment(id);
+  await finalizeCapturedPaymentWithPickupSms(id, payment.orderId);
+  const updated = await repo.findPaymentById(id);
+  if (!updated) throw ApiError.notFound('Payment');
   const capturedOrder = await prisma.shopOrder.findUnique({
     where: { id: payment.orderId },
     select: { id: true, orderType: true },
@@ -317,6 +344,7 @@ export async function getStaffPayment(id: string) {
   }
   payment = await requireKioskPayment(id);
   if (['captured', 'partially_refunded'].includes(payment.status)) {
+    await finalizeCapturedPaymentWithPickupSms(payment.id, payment.orderId);
     void enqueueStaffOrderPush(payment.orderId, 'kiosk_order_captured').catch((error) =>
       logger.warn('Failed to repair captured kiosk push', { orderId: payment.orderId, error }),
     );
@@ -330,7 +358,7 @@ export async function getStaffPayment(id: string) {
       liveStatus = live.status;
       receiptUrl = live.receiptUrl ?? null;
       if (live.status === 'COMPLETED' && payment.status === 'pending') {
-        await prisma.payment.update({ where: { id }, data: { status: 'captured', capturedAt: new Date() } });
+        await finalizeCapturedPaymentWithPickupSms(id, payment.orderId);
         await enqueueStaffOrderPush(payment.orderId, 'kiosk_order_captured');
         payment = await requireKioskPayment(id);
       }
@@ -769,8 +797,9 @@ export async function handlePaymentIntentSucceeded(providerTxnId: string): Promi
     logger.warn('Webhook: payment_intent.succeeded — no matching payment record', { providerTxnId });
     return;
   }
-  if (payment.status !== 'captured') {
-    await repo.updatePaymentStatus(payment.id, 'captured', { capturedAt: new Date() });
+  const wasCaptured = payment.status === 'captured';
+  await finalizeCapturedPaymentWithPickupSms(payment.id, payment.orderId);
+  if (!wasCaptured) {
     logger.info('Webhook: payment captured via webhook', { paymentId: payment.id });
   }
   const order = await prisma.shopOrder.findUnique({
@@ -818,8 +847,9 @@ export async function handleSquarePaymentCompleted(squarePaymentId: string, _sta
     logger.warn('Square webhook: payment.completed — no matching payment record', { squarePaymentId });
     return;
   }
-  if (payment.status !== 'captured') {
-    await repo.updatePaymentStatus(payment.id, 'captured', { capturedAt: new Date() });
+  const wasCaptured = payment.status === 'captured';
+  await finalizeCapturedPaymentWithPickupSms(payment.id, payment.orderId);
+  if (!wasCaptured) {
     logger.info('Square webhook: payment marked captured', { paymentId: payment.id });
   }
   const order = await prisma.shopOrder.findUnique({

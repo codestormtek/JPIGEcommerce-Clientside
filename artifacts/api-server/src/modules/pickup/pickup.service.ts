@@ -15,6 +15,7 @@ import * as orderRepo from '../orders/orders.repository';
 import type { CheckoutInput } from '../orders/orders.schema';
 import * as settingsRepo from '../site-settings/site-settings.repository';
 import type { PickupCheckoutInput, PickupConfigInput } from './pickup.schema';
+import { enqueuePickupSmsEventTx } from './pickupSms';
 
 const PICKUP_SETTING_KEY = 'pickup_event_config';
 const PICKUP_SYSTEM_EMAIL = 'pickup-orders@jigglingpig.local';
@@ -108,6 +109,9 @@ function publicConfig(configured: PickupConfigInput, menu: Awaited<ReturnType<ty
     applicationId: config.square.applicationId || null,
     locationId: config.square.locationId || null,
     environment: config.square.environment,
+    // This is the actual dispatch gate, not merely provider configuration:
+    // development and unapproved provider setup are always false.
+    smsEnabled: config.env === 'production' && config.pickupSms.enabled,
     menu: {
       categories: menu.categories,
       products: menu.products,
@@ -326,7 +330,10 @@ async function finalizeCapturedPickupPayment(order: PickupOrder, paymentId: stri
       include: { order: { include: { orderStatus: true } } },
     });
     if (!current) throw new Error('Pickup payment record disappeared during reconciliation');
-    if (current.status === 'captured') return true;
+    if (current.status === 'captured') {
+      await enqueuePickupSmsEventTx(tx, order.id, 'confirmation');
+      return true;
+    }
     // Do not turn a locally cancelled/restocked order into a printable paid
     // order. New pickup orders are excluded from the generic sweeper; this is
     // a defensive guard for legacy/manual data and requires staff review.
@@ -335,6 +342,7 @@ async function finalizeCapturedPickupPayment(order: PickupOrder, paymentId: stri
       where: { id: payment.id },
       data: { status: 'captured', providerTxnId: paymentId, capturedAt: new Date() },
     });
+    await enqueuePickupSmsEventTx(tx, order.id, 'confirmation');
     return true;
   });
   if (!captured) {
@@ -508,6 +516,7 @@ export async function createPickupOrder(input: PickupCheckoutInput) {
       eventName: configured.eventName,
       remotePickupRequestId: input.clientRequestId,
       specialInstructions: input.specialInstructions,
+        smsOptIn: input.smsOptIn === true && config.env === 'production' && config.pickupSms.enabled,
       expectedTotalCents: input.expectedTotalCents,
     } as unknown as CheckoutInput & { orderType: string; fulfillmentType: string; eventName: string; remotePickupRequestId: string }, 0, 0, {
       provider: 'square',

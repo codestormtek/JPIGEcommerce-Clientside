@@ -52,6 +52,7 @@ import { staffOrdersRouter } from './modules/staff-orders/staff-orders.routes';
 import { cloudPrntRouter } from './modules/cloudprnt/cloudprnt.routes';
 import { smartLinksPublicRouter, smartLinksRouter } from './modules/smart-links/smart-links.routes';
 import { pickupRouter } from './modules/pickup/pickup.routes';
+import { pickupSmsWebhookRouter } from './modules/pickup/pickupSms.routes';
 
 const app = express();
 
@@ -84,13 +85,20 @@ app.use(
     // Kiosk routes have their own limiters (per-device throughput + failure-only
     // brute-force guard) — several iPads polling behind one restaurant Wi-Fi IP
     // must not be throttled by the generic per-IP cap.
-    skip: (req) => req.path.startsWith('/api/v1/telnyx/') || req.path.startsWith('/api/v1/kiosk/'),
+    skip: (req) => req.path.startsWith('/api/v1/telnyx/')
+      || req.path.startsWith('/api/v1/kiosk/')
+      || req.path.startsWith('/api/v1/pickup-sms/webhook')
+      || req.path.startsWith('/webhooks/telnyx/sms'),
   }),
 );
 // Raw body required for webhook signature verification — must come BEFORE express.json()
 app.use('/api/v1/payments/webhook', express.raw({ type: 'application/json' }));
 app.use('/api/v1/payments/square-webhook', express.raw({ type: 'application/json' }));
 app.use('/api/v1/notifications/resend-webhook', express.raw({ type: 'application/json' }));
+app.use('/api/v1/pickup-sms/webhook', pickupSmsWebhookRouter);
+// Existing Telnyx messaging profile callback. Keep the API-shaped route above
+// for future profiles while preserving this already-configured public alias.
+app.use('/webhooks/telnyx/sms', pickupSmsWebhookRouter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
