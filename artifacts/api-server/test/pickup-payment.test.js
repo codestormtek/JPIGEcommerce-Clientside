@@ -80,6 +80,7 @@ mock('../dist/services/orderInventoryRestoration', {
   restoreOrderInventoryOnceTx: async () => { restoreCalls += 1; return restoreCalls === 1; },
 });
 mock('../dist/services/expoPushNotifications', { enqueueStaffOrderPush: async () => {} });
+mock('../dist/services/staffOrderNotifications', { enqueuePaidStaffOrderNotificationsTx: async () => {} });
 mock('../dist/modules/cloudprnt/cloudprnt.service', { enqueueCapturedOrderKitchenTickets: async () => {} });
 mock('../dist/modules/kiosk/kiosk.service', {
   getKioskMenu: async () => kioskMenu,

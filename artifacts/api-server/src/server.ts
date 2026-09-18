@@ -7,6 +7,10 @@ import { seedDefaultSettings } from './modules/site-settings/site-settings.servi
 import { seedSystemFolders } from './modules/media/media.repository';
 import { startExpoPushOutboxWorker, stopExpoPushOutboxWorker } from './services/expoPushNotifications';
 import { startPickupSmsOutboxWorker, stopPickupSmsOutboxWorker } from './modules/pickup/pickupSms';
+import {
+  startStaffOrderNotificationWorker,
+  stopStaffOrderNotificationWorker,
+} from './services/staffOrderNotifications';
 
 async function main(): Promise<void> {
   // Verify DB connection before accepting traffic
@@ -16,6 +20,7 @@ async function main(): Promise<void> {
   startExpoPushOutboxWorker();
   // This is a no-op outside production or without both explicit SMS gates.
   startPickupSmsOutboxWorker();
+  startStaffOrderNotificationWorker();
   await seedDefaultSettings().catch((err) => logger.warn('Site settings seed skipped', { err }));
   await seedSystemFolders().catch((err) => logger.warn('Media folder seed skipped', { err }));
 
@@ -29,6 +34,7 @@ async function main(): Promise<void> {
     server.close(async () => {
       stopExpoPushOutboxWorker();
       stopPickupSmsOutboxWorker();
+      stopStaffOrderNotificationWorker();
       await prisma.$disconnect();
       logger.info('Database disconnected. Bye!');
       process.exit(0);

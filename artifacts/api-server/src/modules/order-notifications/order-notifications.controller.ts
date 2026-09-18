@@ -8,6 +8,14 @@ export async function list(_req: AuthRequest, res: Response): Promise<void> {
   sendSuccess(res, await service.listRecipients());
 }
 
+export async function status(_req: AuthRequest, res: Response): Promise<void> {
+  sendSuccess(res, await service.getStatus());
+}
+
+export async function deliveries(_req: AuthRequest, res: Response): Promise<void> {
+  sendSuccess(res, await service.listDeliveries());
+}
+
 export async function create(req: AuthRequest, res: Response): Promise<void> {
   const result = await service.createRecipient(req.body as CreateRecipientInput);
   sendCreated(res, result, 'Recipient added');

@@ -115,7 +115,7 @@ const menu = [
     text: "SMS Marketing",
     subMenu: [
       { text: "Broadcast",          link: "/sms-broadcasts" },
-      { text: "Order Alert Numbers", link: "/order-notifications" },
+      { text: "Order Alerts", link: "/order-alerts" },
     ],
   },
   {

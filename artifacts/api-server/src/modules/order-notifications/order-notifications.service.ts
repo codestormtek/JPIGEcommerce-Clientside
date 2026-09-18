@@ -4,19 +4,38 @@ import { logger } from '../../utils/logger';
 import { config } from '../../config';
 import * as repo from './order-notifications.repository';
 import { CreateRecipientInput, UpdateRecipientInput } from './order-notifications.schema';
+import { isSmsSuppressed } from '../../lib/smsSuppression';
+import {
+  recentStaffOrderDeliveries,
+  staffOrderNotificationStatus,
+} from '../../services/staffOrderNotifications';
+import { normalizePhone } from '../../lib/phone';
 
 export function listRecipients() {
   return repo.findAll();
 }
 
 export async function createRecipient(input: CreateRecipientInput) {
-  return repo.create(input);
+  const phoneNumber = normalizePhone(input.phoneNumber);
+  if (!phoneNumber) throw ApiError.badRequest('Enter a valid SMS phone number.');
+  const duplicate = (await repo.findAll()).some((recipient) =>
+    normalizePhone(recipient.phoneNumber) === phoneNumber);
+  if (duplicate) throw ApiError.badRequest('This phone number is already an order-alert recipient.');
+  return repo.create({ ...input, phoneNumber });
 }
 
 export async function updateRecipient(id: string, input: UpdateRecipientInput) {
   const existing = await repo.findById(id);
   if (!existing) throw ApiError.notFound('Recipient');
-  return repo.update(id, input);
+  let phoneNumber: string | undefined;
+  if (input.phoneNumber !== undefined) {
+    phoneNumber = normalizePhone(input.phoneNumber) ?? undefined;
+    if (!phoneNumber) throw ApiError.badRequest('Enter a valid SMS phone number.');
+    const duplicate = (await repo.findAll()).some((recipient) =>
+      recipient.id !== id && normalizePhone(recipient.phoneNumber) === phoneNumber);
+    if (duplicate) throw ApiError.badRequest('This phone number is already an order-alert recipient.');
+  }
+  return repo.update(id, { ...input, ...(phoneNumber ? { phoneNumber } : {}) });
 }
 
 export async function deleteRecipient(id: string) {
@@ -29,12 +48,41 @@ export async function deleteRecipient(id: string) {
 export async function sendTest(id: string) {
   const recipient = await repo.findById(id);
   if (!recipient) throw ApiError.notFound('Recipient');
+  if (!recipient.isActive) throw ApiError.badRequest('Recipient is inactive.');
+  if (config.env !== 'production') {
+    throw ApiError.badRequest('Live staff SMS tests are disabled outside production.');
+  }
+  if (!config.staffOrderNotifications.smsEnabled) {
+    throw ApiError.badRequest('STAFF_ORDER_SMS_ENABLED is not true.');
+  }
+  if (!config.staffOrderNotifications.smsProviderReady) {
+    throw ApiError.badRequest('STAFF_ORDER_SMS_PROVIDER_READY is not true.');
+  }
+  if (!config.telnyx.apiKey || !config.telnyx.fromNumber) {
+    throw ApiError.badRequest('Telnyx staff SMS is not configured.');
+  }
+  if (!config.telnyx.publicKey) {
+    throw ApiError.badRequest('Telnyx signed webhook verification is not configured.');
+  }
+  const testPhone = normalizePhone(recipient.phoneNumber);
+  if (!testPhone) throw ApiError.badRequest('Recipient has an invalid phone number.');
+  if (await isSmsSuppressed(testPhone)) {
+    throw ApiError.badRequest('This number is suppressed and cannot receive SMS.');
+  }
   const body = `[TEST] ${config.store.name} — new-order alerts are working. You'll get a text here when a customer places an order.`;
-  const result = await sendSms(recipient.phoneNumber, body);
+  const result = await sendSms(testPhone, body);
   if (!result.success) {
     throw ApiError.badRequest(result.error || 'Test SMS could not be sent.');
   }
   return { success: true, messageId: result.messageId };
+}
+
+export function getStatus() {
+  return staffOrderNotificationStatus();
+}
+
+export function listDeliveries() {
+  return recentStaffOrderDeliveries();
 }
 
 /**

@@ -536,9 +536,41 @@ model ShopOrder {
   cloudPrntJobs          CloudPrntJob[]
   pickupSmsConsent       PickupSmsConsent?
   pickupSmsOutbox        PickupSmsOutbox[]
+  staffOrderDeliveries   StaffOrderDelivery[]
 
   @@unique([kioskDeviceId, kioskRequestId])
   @@map("shop_orders")
+}
+
+/// Durable, narrowly-scoped delivery outbox for staff alerts emitted when a
+/// kiosk or remote-pickup payment first becomes captured.
+model StaffOrderDelivery {
+  id                String    @id @default(uuid())
+  orderId           String
+  order             ShopOrder @relation(fields: [orderId], references: [id])
+  orderNumber       String
+  eventType         String
+  source            String
+  channel           String
+  recipient         String
+  recipientId       String?
+  subject           String?
+  bodyHtml          String?
+  bodyText          String
+  status            String    @default("queued")
+  attempts          Int       @default(0)
+  providerMessageId String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  claimedAt         DateTime?
+  nextAttemptAt     DateTime?
+  sentAt            DateTime?
+  unknownAt         DateTime?
+  lastError         String?
+
+  @@unique([orderId, eventType, channel, recipient])
+  @@index([status, nextAttemptAt, createdAt])
+  @@map("staff_order_deliveries")
 }
 
 /// Guest pickup SMS consent is an order-time snapshot. It deliberately does

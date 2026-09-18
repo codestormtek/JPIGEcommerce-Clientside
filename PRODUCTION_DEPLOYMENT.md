@@ -102,6 +102,39 @@ Do not enable the feature before the additive pickup-SMS migration is applied
 and a controlled signed-webhook test has passed. Development never sends live
 pickup SMS.
 
+### Paid kiosk and remote-pickup staff alerts
+
+Apply `20260414120000_staff_order_delivery_outbox` **before** deploying the API
+that enables durable staff paid-order alerts. The migration is additive and
+does not backfill old paid orders. `/api/v1/admin/order-notifications/status`
+(admin authentication required) reports `storageReady: false` clearly if the
+migration is absent; payment capture, Expo push, printing, and existing order
+reads continue independently.
+Winning payment captures insert their configured delivery snapshot in the same
+database transaction. A notification savepoint isolates an absent outbox table
+or insert failure so it cannot roll back the authoritative payment capture.
+
+Staff email requires a production API environment,
+`STAFF_ORDER_EMAIL_ENABLED=true`, the existing `RESEND_API_KEY` and
+`RESEND_FROM`, and an explicitly configured `ADMIN_EMAIL`.
+
+Staff SMS requires a production API environment,
+`STAFF_ORDER_SMS_ENABLED=true`, `STAFF_ORDER_SMS_PROVIDER_READY=true`, the
+existing `TELNYX_API_KEY` and `TELNYX_FROM_NUMBER`, and at least one active
+number managed in the admin **Order Alerts** screen at `/order-alerts`, plus
+`TELNYX_PUBLIC_KEY` for signed opt-out webhook verification (the API
+remains `/api/v1/admin/order-notifications`). Set provider readiness only after
+sender approval, webhook, HELP/STOP, and operational behavior are confirmed.
+
+Rollout compatibility is deliberate: while `STAFF_ORDER_SMS_ENABLED` is false,
+the established first-capture kiosk direct SMS remains in use. Turning the flag
+on replaces that kiosk sender with the durable outbox and also enables remote
+pickup staff SMS; the two paths never send together. Do not enable the flag
+before the migration is ready. If durable enqueue is uncertain, the API does
+not fall back to direct SMS because that could duplicate an accepted message.
+Remote-pickup staff SMS has no legacy fallback. Nonproduction and recipients
+that are inactive or STOP-suppressed cannot use the admin test-send route.
+
 ### Square web-wallet production setup
 
 The storefront contains Square's current public Apple Pay domain-association

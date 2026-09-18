@@ -275,6 +275,7 @@ const Pages = () => {
               <Route path="live-sessions/history" element={<AdminAlertHistory />}></Route>
               <Route path="sms-broadcasts" element={<AdminSmsBroadcast />}></Route>
               <Route path="order-notifications" element={<AdminOrderNotifications />}></Route>
+              <Route path="order-alerts" element={<AdminOrderNotifications />}></Route>
 
               <Route path="kyc-list-regular" element={<KycListRegular />}></Route>
               <Route path="kyc-details-regular/:kycId" element={<KycDetailsRegular />}></Route>

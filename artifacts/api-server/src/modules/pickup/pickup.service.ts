@@ -16,6 +16,7 @@ import type { CheckoutInput } from '../orders/orders.schema';
 import * as settingsRepo from '../site-settings/site-settings.repository';
 import type { PickupCheckoutInput, PickupConfigInput } from './pickup.schema';
 import { enqueuePickupSmsEventTx } from './pickupSms';
+import { enqueuePaidStaffOrderNotificationsTx } from '../../services/staffOrderNotifications';
 
 const PICKUP_SETTING_KEY = 'pickup_event_config';
 const PICKUP_SYSTEM_EMAIL = 'pickup-orders@jigglingpig.local';
@@ -323,7 +324,7 @@ async function recoverSquarePaymentId(order: PickupOrder): Promise<SquareAttempt
 async function finalizeCapturedPickupPayment(order: PickupOrder, paymentId: string, receiptUrl?: string) {
   const payment = order.payments[0];
   if (!payment) throw new Error('Pickup order has no payment record');
-  const captured = await prisma.$transaction(async (tx) => {
+  const captureResult = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`pickup_payment:${order.id}`}))`;
     const current = await tx.payment.findUnique({
       where: { id: payment.id },
@@ -332,20 +333,21 @@ async function finalizeCapturedPickupPayment(order: PickupOrder, paymentId: stri
     if (!current) throw new Error('Pickup payment record disappeared during reconciliation');
     if (current.status === 'captured') {
       await enqueuePickupSmsEventTx(tx, order.id, 'confirmation');
-      return true;
+      return 'existing' as const;
     }
     // Do not turn a locally cancelled/restocked order into a printable paid
     // order. New pickup orders are excluded from the generic sweeper; this is
     // a defensive guard for legacy/manual data and requires staff review.
-    if (current.status !== 'pending' || current.order.orderStatus.status !== 'pending') return false;
+    if (current.status !== 'pending' || current.order.orderStatus.status !== 'pending') return 'closed' as const;
     await tx.payment.update({
       where: { id: payment.id },
       data: { status: 'captured', providerTxnId: paymentId, capturedAt: new Date() },
     });
     await enqueuePickupSmsEventTx(tx, order.id, 'confirmation');
-    return true;
+    await enqueuePaidStaffOrderNotificationsTx(tx, order.id, 'remote_pickup');
+    return 'captured_now' as const;
   });
-  if (!captured) {
+  if (captureResult === 'closed') {
     throw ApiError.unprocessable('The payment is confirmed by Square but the local order was already closed. Staff must reconcile it before preparation.');
   }
   void enqueueStaffOrderPush(order.id, 'remote_pickup_order_captured').catch((error) =>

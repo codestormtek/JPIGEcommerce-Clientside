@@ -100,6 +100,17 @@ export const config = {
       && Boolean(process.env.TELNYX_PUBLIC_KEY),
   },
 
+  staffOrderNotifications: {
+    emailEnabled: process.env.STAFF_ORDER_EMAIL_ENABLED === 'true',
+    smsEnabled: process.env.STAFF_ORDER_SMS_ENABLED === 'true',
+    smsProviderReady: process.env.STAFF_ORDER_SMS_PROVIDER_READY === 'true',
+    // Keep paid-order actions on the actual legacy admin host even when the
+    // broad ADMIN_URL setting is absent.
+    adminUrl: process.env.STAFF_ORDER_ADMIN_URL
+      ?? process.env.ADMIN_URL
+      ?? 'https://admin.thejigglingpig.com',
+  },
+
   store: {
     name: 'The Jiggling Pig, LLC',
     url: process.env.STORE_URL ?? 'https://thejigglingpig.com',

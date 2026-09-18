@@ -31,6 +31,7 @@ mock('../dist/config', { config: { bcrypt: { saltRounds: 1 }, square: { location
 mock('../dist/utils/logger', { logger: { info() {}, warn() {}, error() {}, debug() {} } });
 mock('../dist/services/paymentGateway', gateway);
 mock('../dist/services/expoPushNotifications', { enqueueStaffOrderPush: async () => {} });
+mock('../dist/services/staffOrderNotifications', { enqueuePaidStaffOrderNotificationsTx: async () => {} });
 mock('../dist/modules/cloudprnt/cloudprnt.service', { enqueueCapturedOrderKitchenTickets: async () => {} });
 mock('../dist/modules/kiosk/kiosk.middleware', { hashKioskToken: value => value, invalidateKioskDeviceCache() {} });
 mock('../dist/modules/orders/orders.service', {

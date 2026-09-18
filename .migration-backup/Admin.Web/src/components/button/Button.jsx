@@ -11,7 +11,7 @@ const Button = ({ color, size, className, outline, disabled, ...props }) => {
     [`${className}`]: className,
   });
   return (
-    <button className={buttonClass} {...props}>
+    <button className={buttonClass} disabled={disabled} {...props}>
       {props.children}
     </button>
   );
