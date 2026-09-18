@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import type { SquareGooglePayInstance, SquareWalletInstance, pickupWalletRequest } from './square-wallets';
 
 // ─── Square Web Payments SDK types ───────────────────────────────────────────
 
@@ -14,6 +15,9 @@ declare global {
 
 export interface SquarePaymentsInstance {
   card: (options?: Record<string, unknown>) => Promise<SquareCardInstance>;
+  paymentRequest: (options: ReturnType<typeof pickupWalletRequest>) => object;
+  applePay: (request: object) => Promise<SquareWalletInstance>;
+  googlePay: (request: object) => Promise<SquareGooglePayInstance>;
 }
 
 export interface SquareCardInstance {
@@ -34,6 +38,8 @@ export interface UseSquarePaymentsOptions {
 }
 
 export interface UseSquarePaymentsResult {
+  /** Shared SDK instance; wallet initialization is independent of the card form. */
+  payments: SquarePaymentsInstance | null;
   /** True once the card form is attached and ready to tokenize. */
   ready: boolean;
   /** Human-readable configuration / load error, empty when OK. */
@@ -52,6 +58,7 @@ export function useSquarePayments(opts: UseSquarePaymentsOptions): UseSquarePaym
   const cardRef = useRef<SquareCardInstance | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
+  const [paymentsInstance, setPaymentsInstance] = useState<SquarePaymentsInstance | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -87,17 +94,19 @@ export function useSquarePayments(opts: UseSquarePaymentsOptions): UseSquarePaym
       : 'https://sandbox.web.squarecdn.com/v1/square.js';
 
     let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    const onScriptError = () => {
+      if (!cancelled) setError('Failed to load the Square payment library. Check your network connection or any content blockers and try again.');
+    };
 
     let script = document.querySelector<HTMLScriptElement>(`script[src="${scriptUrl}"]`);
     if (!script) {
       script = document.createElement('script');
       script.src = scriptUrl;
       script.async = true;
-      script.addEventListener('error', () => {
-        if (!cancelled) setError('Failed to load the Square payment library. Check your network connection or any content blockers and try again.');
-      });
       document.head.appendChild(script);
     }
+    script.addEventListener('error', onScriptError);
 
     let card: SquareCardInstance | null = null;
     let attempts = 0;
@@ -110,13 +119,23 @@ export function useSquarePayments(opts: UseSquarePaymentsOptions): UseSquarePaym
           setError('The Square payment library did not load in time. Please refresh the page and try again.');
           return;
         }
-        setTimeout(initCard, 200);
+        retryTimer = setTimeout(initCard, 200);
         return;
       }
       try {
         const payments = await window.Square.payments(appId, locId);
+        if (cancelled) return;
+        setPaymentsInstance(payments);
         card = await payments.card();
+        if (cancelled) {
+          await card.destroy();
+          return;
+        }
         await card.attach(containerSelector);
+        if (cancelled) {
+          await card.destroy();
+          return;
+        }
         if (!cancelled) {
           cardRef.current = card;
           setReady(true);
@@ -139,8 +158,12 @@ export function useSquarePayments(opts: UseSquarePaymentsOptions): UseSquarePaym
 
     return () => {
       cancelled = true;
+      clearTimeout(retryTimer);
+      el.removeEventListener('load', initCard);
+      el.removeEventListener('error', onScriptError);
       card?.destroy().catch(() => {});
       cardRef.current = null;
+      setPaymentsInstance(null);
       setReady(false);
     };
   }, [enabled, applicationId, locationId, environment, containerSelector]);
@@ -155,5 +178,5 @@ export function useSquarePayments(opts: UseSquarePaymentsOptions): UseSquarePaym
     return result.token;
   };
 
-  return { ready, error, tokenize };
+  return { ready, error, tokenize, payments: paymentsInstance };
 }

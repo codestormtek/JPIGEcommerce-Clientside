@@ -1134,6 +1134,52 @@ body:has(.jp-pickup-root) {
   background: var(--jp-surface-2);
 }
 
+.jp-wallets {
+  min-width: 0;
+  margin: 24px 0;
+  padding: 0;
+  border: 0;
+}
+
+.jp-shell .jp-wallets legend {
+  margin-bottom: 12px;
+  color: var(--jp-cream);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.jp-shell .jp-apple-pay {
+  display: block;
+  width: 100%;
+  height: 48px;
+  margin-bottom: 12px;
+  -webkit-appearance: -apple-pay-button;
+  -apple-pay-button-type: buy;
+  -apple-pay-button-style: white;
+}
+
+.jp-google-pay {
+  min-height: 48px;
+}
+
+.jp-wallets:disabled .jp-google-pay,
+.jp-wallets:disabled .jp-apple-pay {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.jp-shell .jp-wallet-note {
+  margin: 12px 0 0;
+  color: var(--jp-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.jp-shell .jp-card-heading {
+  margin: 20px 0 12px;
+  font-size: 24px;
+}
+
 .jp-order-summary span {
   display: flex;
   justify-content: space-between;

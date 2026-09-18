@@ -25,6 +25,8 @@ import {
 } from "@/lib/menu";
 import { getPickupSmsOptIn } from "@/lib/pickup-order";
 import { useSquarePayments } from "@/lib/useSquarePayments";
+import { useSquareWallets } from "@/lib/useSquareWallets";
+import type { PickupPaymentMethod } from "@/lib/square-wallets";
 import PickupDetails from "@/components/pickup/PickupDetails";
 import PickupSuggestions from "@/components/pickup/PickupSuggestions";
 import PickupStatus from "@/components/pickup/PickupStatus";
@@ -154,6 +156,7 @@ export default function PickupPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const fulfillmentPollInFlight = useRef(false);
   const requestId = useRef<string | null>(null);
+  const paymentInFlight = useRef(false);
   const stageRef = useRef<Stage>(stage);
   const cartRef = useRef<KioskCartLine[]>(cart);
   const configRef = useRef<PickupConfig | null>(config);
@@ -291,6 +294,13 @@ export default function PickupPage() {
   );
   const tax = config?.taxRatePercent ? Math.round(subtotal * config.taxRatePercent) / 100 : 0;
   const displayTotal = subtotal + tax;
+  const totalCents = Math.round(displayTotal * 100);
+  const wallets = useSquareWallets({
+    enabled: stage === "payment" && Boolean(config?.cardEnabled),
+    payments: square.payments,
+    totalCents,
+    googleSelector: "#pickup-google-pay",
+  });
 
   const add = (product: KioskProduct, sides?: KioskSideChoice[]) => {
     const item = preferredMenuItem(product);
@@ -539,12 +549,22 @@ export default function PickupPage() {
     setStage("review");
   };
 
-  const submit = async () => {
-    if (!config || !square.ready || busy) return;
+  const submit = async (method: PickupPaymentMethod = "card") => {
+    const ready = method === "card" ? square.ready : wallets[method];
+    if (!config || stage !== "payment" || !ready || busy || paymentInFlight.current) return;
+    if (requestId.current && !canReplay) {
+      setRecoveryKind("payment");
+      setStage("confirming");
+      return;
+    }
+    // A synchronous guard prevents card/wallet clicks in the same render
+    // from producing concurrent tokens or submissions.
+    paymentInFlight.current = true;
     setBusy(true);
     setError("");
     try {
-      const squareNonce = await square.tokenize();
+      const squareNonce = method === "card" ? await square.tokenize() : await wallets.tokenize(method);
+      if (!squareNonce) return; // Buyer closed the wallet; no server attempt.
       if (!requestId.current) {
         const nextRequestId = crypto.randomUUID();
         // This durable lock is intentionally written before the POST. It
@@ -552,9 +572,10 @@ export default function PickupPage() {
         savePendingAttempt({ requestId: nextRequestId });
         requestId.current = nextRequestId;
       }
+      setCanReplay(false);
       const placed = responseData(await apiPost<PickupResult | { data: PickupResult }>("/pickup/orders", {
         clientRequestId: requestId.current,
-        expectedTotalCents: Math.round(displayTotal * 100),
+        expectedTotalCents: totalCents,
         lines: cart.map(line => ({
           productItemId: line.item.id,
           qty: line.qty,
@@ -583,7 +604,7 @@ export default function PickupPage() {
         clearPendingAttempt();
         requestId.current = null;
         setRecoveryKind(null);
-        setError("Square did not approve this payment. Please use another card.");
+        setError("Square did not approve this payment. Please try another payment method.");
       } else {
         setRecoveryKind("payment");
         setStage("confirming");
@@ -620,6 +641,7 @@ export default function PickupPage() {
         setStage("confirming");
       }
     } finally {
+      paymentInFlight.current = false;
       setBusy(false);
     }
   };
@@ -1026,10 +1048,35 @@ export default function PickupPage() {
         ) : (
           <>
             <div className="jp-order-summary">{orderItems}<span>Order total <b>{formatMoney(displayTotal)}</b></span></div>
+            <fieldset className="jp-wallets" disabled={busy} aria-busy={busy}>
+              <legend>Express payment</legend>
+              {wallets.applePay && (
+                <button
+                  type="button"
+                  className="jp-apple-pay"
+                  aria-label={`Pay ${formatMoney(displayTotal)} with Apple Pay`}
+                  onClick={() => void submit("applePay")}
+                />
+              )}
+              <div
+                id="pickup-google-pay"
+                className="jp-google-pay"
+                hidden={!wallets.googlePay}
+                onClick={() => void submit("googlePay")}
+              />
+              <p className="jp-wallet-note" role="status">
+                {busy ? "Confirming securely. Please do not start another payment."
+                  : wallets.loading ? "Checking available wallets…"
+                  : wallets.applePay || wallets.googlePay
+                    ? "Use a wallet above, or pay by card below."
+                    : "Apple Pay and Google Pay are not available here. You can pay by card below."}
+              </p>
+            </fieldset>
+            <h2 className="jp-card-heading">Pay by card</h2>
             <div id="pickup-square-card" className="jp-square" />
             {square.error && <p className="jp-alert" role="alert">{square.error}</p>}
             <button disabled={!square.ready || busy} className="jp-primary" onClick={() => void submit()}>{busy ? "Confirming securely…" : `Pay ${formatMoney(displayTotal)}`}</button>
-            {error && requestId.current && <button disabled={busy} className="jp-ghost" onClick={() => void submit()}>Safely check this payment again</button>}
+            {error && requestId.current && <button disabled={busy} className="jp-ghost" onClick={() => void recoverPersistedAttempt()}>Safely check this payment again</button>}
             <p className="jp-safe">Payments are processed by Square. Card details never touch our grill.</p>
           </>
         )}

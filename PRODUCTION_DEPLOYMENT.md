@@ -101,3 +101,67 @@ The profile callback remains `https://api.thejigglingpig.com/webhooks/telnyx/sms
 Do not enable the feature before the additive pickup-SMS migration is applied
 and a controlled signed-webhook test has passed. Development never sends live
 pickup SMS.
+
+### Square web-wallet production setup
+
+The storefront contains Square's current public Apple Pay domain-association
+file at:
+
+```text
+artifacts/jiggling-pig/public/.well-known/apple-developer-merchantid-domain-association
+```
+
+Next.js serves that file without an application route. Deploy the storefront to
+Render before asking Square to validate a domain, then confirm each checkout
+hostname returns the unmodified, extensionless file over HTTPS with a `200`
+response:
+
+```sh
+curl --fail --location \
+  https://thejigglingpig.com/.well-known/apple-developer-merchantid-domain-association
+curl --fail --location \
+  https://www.thejigglingpig.com/.well-known/apple-developer-merchantid-domain-association
+```
+
+Register only hostnames that actually serve a page which initializes Apple Pay.
+If checkout can be reached on both `thejigglingpig.com` and
+`www.thejigglingpig.com`, validate and register both; do not treat one hostname
+as covering the other. Confirm both custom domains and their TLS certificates
+are active on the Render storefront first. This setup is separate from the
+Render API service and from Replit previews.
+
+For each actual production checkout hostname:
+
+1. Open the [Square Developer Console](https://developer.squareup.com/apps) and
+   select the application used by the storefront's Web Payments SDK integration.
+2. Switch the application to **Production** mode.
+3. Select **Apple Pay** in the left pane.
+4. Choose **Add Domain** and enter the hostname exactly as served (no scheme or
+   path), then follow Square's validation instructions.
+5. Confirm Square reports the domain as enabled before exposing Apple Pay at
+   checkout. Registration is an operator action; deployment does not perform it.
+
+Production checkout must use `https://web.squarecdn.com/v1/square.js` and the
+selected application's production application ID and production location ID.
+Keep secret payment credentials on the API service; do not add them to the
+storefront or this file. Square recommends buyer verification/SCA for all
+customer-initiated transactions, including digital wallets.
+
+Google Pay does not use the Apple domain-association file, and Square's Web
+Payments Google Pay guide does not specify a separate Square domain-registration
+step. It does require HTTPS and a supported browser (Chrome, Firefox, Safari,
+Edge, Opera, or UCWeb). Before enabling it in production, use the production
+Square SDK URL and production application/location IDs, comply with the
+[Google Pay API Terms of Service](https://payments.developers.google.com/terms/sellertos),
+[Acceptable Use Policy](https://payments.developers.google.com/terms/aup), and
+[brand guidelines](https://developers.google.com/pay/api/web/guides/brand-guidelines),
+and verify the storefront's secure-context and Content Security Policy setup.
+WebViews require the additional configuration described by Square rather than
+being assumed to work like a normal browser.
+
+References:
+
+- [Square Apple Pay for Web Payments](https://developer.squareup.com/docs/web-payments/apple-pay)
+- [Square Apple Pay domain API reference](https://developer.squareup.com/reference/square/apple-pay-api/register-domain)
+- [Square Google Pay for Web Payments](https://developer.squareup.com/docs/web-payments/google-pay)
+- [Square Web Payments security requirements](https://developer.squareup.com/docs/web-payments/overview)
