@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { normalizePhone } from '../../lib/phone';
+import { isValidTimeZone, localDateTimeToUtc } from './pickupSchedule';
 
 const lineSchema = z.object({
   productItemId: z.string().min(1),
@@ -22,6 +23,7 @@ export const pickupCheckoutSchema = z.object({
   // not the signed-in user's global marketing/SMS preference.
   smsOptIn: z.boolean().optional().default(false),
   specialInstructions: z.string().trim().max(500).optional(),
+  pickupAt: z.string().datetime({ offset: true }).optional(),
   squareNonce: z.string().min(1, 'A card payment is required'),
   source: z.enum(['remote', 'event_qr']).optional(),
   sourceLinkSlug: z.string().trim().toLowerCase().max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
@@ -40,6 +42,14 @@ export const pickupConfigSchema = z.object({
   streetAddress: z.string().trim().max(300),
   pickupInstructions: z.string().trim().max(1000).optional(),
   asapWaitMinutes: z.number().int().min(1).max(240),
+  schedulingEnabled: z.boolean().optional().default(false),
+  eventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().default(''),
+  opensAt: z.string().regex(/^\d{2}:\d{2}$/).optional().default(''),
+  shutsDownAt: z.string().regex(/^\d{2}:\d{2}$/).optional().default(''),
+  timezone: z.string().trim().max(100).optional().default('America/New_York'),
+  slotIntervalMinutes: z.number().int().min(5).max(60).optional().default(15),
+  minimumPrepMinutes: z.number().int().min(1).max(240).optional().default(15),
+  reminderLeadMinutes: z.number().int().min(0).max(240).optional().default(15),
   // Store this explicitly with the event, rather than trusting a browser total.
   taxRatePercent: z.number().min(0).max(25),
 }).superRefine((value, ctx) => {
@@ -48,6 +58,30 @@ export const pickupConfigSchema = z.object({
   }
   if (value.isOrderingOpen && !value.streetAddress) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['streetAddress'], message: 'A pickup street address is required when ordering is open.' });
+  }
+  if (value.schedulingEnabled) {
+    for (const [key, message] of [
+      ['eventDate', 'An event date is required for scheduled pickup.'],
+      ['opensAt', 'An opening time is required for scheduled pickup.'],
+      ['shutsDownAt', 'A shutdown time is required for scheduled pickup.'],
+      ['timezone', 'A timezone is required for scheduled pickup.'],
+    ] as const) {
+      if (!value[key]) ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message });
+    }
+    if (value.timezone && !isValidTimeZone(value.timezone)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['timezone'], message: 'Enter a valid IANA timezone, such as America/New_York.' });
+    }
+    const opens = localDateTimeToUtc(value.eventDate, value.opensAt, value.timezone);
+    const shuts = localDateTimeToUtc(value.eventDate, value.shutsDownAt, value.timezone);
+    if (value.eventDate && value.opensAt && value.timezone && !opens) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['opensAt'], message: 'Opening date/time does not exist in this timezone.' });
+    }
+    if (value.eventDate && value.shutsDownAt && value.timezone && !shuts) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['shutsDownAt'], message: 'Shutdown date/time does not exist in this timezone.' });
+    }
+    if (opens && shuts && shuts.getTime() - opens.getTime() <= 30 * 60_000) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['shutsDownAt'], message: 'Shutdown must be more than 30 minutes after opening.' });
+    }
   }
 });
 

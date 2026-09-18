@@ -135,6 +135,41 @@ not fall back to direct SMS because that could duplicate an accepted message.
 Remote-pickup staff SMS has no legacy fallback. Nonproduction and recipients
 that are inactive or STOP-suppressed cannot use the admin test-send route.
 
+### Scheduled pickup and preparation reminders
+
+Apply `20260918120000_scheduled_pickup_and_reminders` **before** deploying the
+API, storefront, admin, or staff mobile builds that expose scheduled pickup.
+The additive migration stores each order's selected UTC pickup instant, event
+timezone, and preparation-reminder lead snapshot. Do not deploy the generated
+Prisma client ahead of this migration: ordinary order reads include new scalar
+columns. The migration is intentionally not applied by development startup.
+
+Scheduling is explicitly opt-in per event in **Admin → Pickup**. Existing event
+configuration remains ASAP until an administrator enables scheduling and saves
+a valid event date, opening time, shutdown time, IANA timezone, slot interval,
+minimum preparation time, and preparation-alert lead. The API always reserves
+30 minutes between the final offered pickup slot and shutdown and revalidates
+the selected slot before creating any local payment reservation or contacting
+Square. When no valid slots remain, public ordering is closed.
+
+A winning paid capture snapshots and schedules preparation reminders; repeated
+payment callbacks cannot duplicate them. Email/SMS reminders use the same
+production readiness flags and recipients as paid-order alerts. Phone-app
+preparation push is queued independently. Workers skip reminders for canceled,
+refunded, ready, completed, or picked-up orders, quarantine uncertain provider
+outcomes, and never send in nonproduction. Enabling scheduling does not backfill
+reminders for old orders.
+
+Deploy in this order:
+
+1. Confirm the external PostgreSQL target and apply the additive migration.
+2. Deploy the Render API and verify its health.
+3. Deploy the Cloudflare admin and storefront.
+4. Publish the updated installable staff app if phone queue/push pickup-time
+   display is required; Expo Go does not provide production background push.
+5. Configure one controlled future event while ordering is closed, review the
+   generated slots and 30-minute shutdown boundary, then open ordering.
+
 ### Square web-wallet production setup
 
 The storefront contains Square's current public Apple Pay domain-association

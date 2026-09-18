@@ -101,6 +101,9 @@ export async function placeOrder(
     remotePickupRequestId?: string;
     fulfillmentType?: string;
     eventName?: string;
+    requestedFulfillmentAt?: Date;
+    requestedFulfillmentTimezone?: string;
+    preparationReminderLeadMinutes?: number;
     expectedTotalCents?: number;
   },
   taxTotal = 0,
@@ -271,6 +274,9 @@ export async function placeOrder(
         inventoryReservationJson,
         fulfillmentType: input.fulfillmentType,
         eventName: input.eventName,
+        requestedFulfillmentAt: input.requestedFulfillmentAt,
+        requestedFulfillmentTimezone: input.requestedFulfillmentTimezone,
+        preparationReminderLeadMinutes: input.preparationReminderLeadMinutes,
         specialInstructions: input.specialInstructions,
         subtotal,
         discountTotal,

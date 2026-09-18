@@ -42,12 +42,19 @@ type PickupConfig = {
   smsEnabled?: boolean | null;
   cardEnabled: boolean; applicationId: string | null; locationId: string | null; environment: string;
   menu: KioskMenu; taxRatePercent?: number;
+  schedulingEnabled?: boolean;
+  eventDate?: string; opensAt?: string; shutsDownAt?: string; timezone?: string;
+  slotIntervalMinutes?: number; minimumPrepMinutes?: number; reminderLeadMinutes?: number;
+  shutdownCutoffMinutes?: number;
+  availablePickupSlots?: { value: string; label: string }[];
 };
 type PickupResult = {
   orderNumber: string; capability: string; paymentStatus: "paid" | "pending" | "canceled";
   receiptUrl: string | null; status: string; grandTotal: number; currency: string;
   items: { name: string; qty: number; sides: string | null; lineTotal: number }[];
   canReplay?: boolean;
+  requestedFulfillmentAt?: string | null;
+  requestedFulfillmentTimezone?: string | null;
 };
 type Stage = "menu" | "review" | "payment" | "confirming" | "complete";
 
@@ -135,6 +142,7 @@ export default function PickupPage() {
   );
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [pickupAt, setPickupAt] = useState("");
   const [smsOptIn, setSmsOptIn] = useState(false);
   const [sideProduct, setSideProduct] = useState<KioskProduct | null>(null);
   const [chosenSides, setChosenSides] = useState<KioskSideChoice[]>([]);
@@ -177,6 +185,16 @@ export default function PickupPage() {
   useEffect(() => {
     if (config?.smsEnabled !== true) setSmsOptIn(false);
   }, [config?.smsEnabled]);
+
+  useEffect(() => {
+    if (!config?.schedulingEnabled) {
+      setPickupAt("");
+      return;
+    }
+    if (pickupAt && !(config.availablePickupSlots ?? []).some((slot) => slot.value === pickupAt)) {
+      setPickupAt("");
+    }
+  }, [config?.schedulingEnabled, config?.availablePickupSlots, pickupAt]);
 
   const square = useSquarePayments({
     enabled: stage === "payment" && Boolean(config?.cardEnabled),
@@ -552,6 +570,11 @@ export default function PickupPage() {
   const submit = async (method: PickupPaymentMethod = "card") => {
     const ready = method === "card" ? square.ready : wallets[method];
     if (!config || stage !== "payment" || !ready || busy || paymentInFlight.current) return;
+    if (config.schedulingEnabled && !(config.availablePickupSlots ?? []).some((slot) => slot.value === pickupAt)) {
+      setError("Choose an available pickup time before paying.");
+      setStage("review");
+      return;
+    }
     if (requestId.current && !canReplay) {
       setRecoveryKind("payment");
       setStage("confirming");
@@ -563,6 +586,20 @@ export default function PickupPage() {
     setBusy(true);
     setError("");
     try {
+      const latestConfig = await loadPickupConfig(true, true);
+      if (!latestConfig.isOrderingOpen) {
+        setError("Pickup ordering is now closed. No payment was attempted.");
+        setStage("menu");
+        return;
+      }
+      if (latestConfig.schedulingEnabled) {
+        if (!latestConfig.isOrderingOpen || !(latestConfig.availablePickupSlots ?? []).some(slot => slot.value === pickupAt)) {
+          setPickupAt("");
+          setError("That pickup time is no longer available. Choose another time before paying.");
+          setStage("review");
+          return;
+        }
+      }
       const squareNonce = method === "card" ? await square.tokenize() : await wallets.tokenize(method);
       if (!squareNonce) return; // Buyer closed the wallet; no server attempt.
       if (!requestId.current) {
@@ -583,7 +620,8 @@ export default function PickupPage() {
         })),
         customerName: name,
         customerPhone: phone,
-        smsOptIn: getPickupSmsOptIn(config.smsEnabled, smsOptIn),
+        smsOptIn: getPickupSmsOptIn(latestConfig.smsEnabled, smsOptIn),
+        pickupAt: latestConfig.schedulingEnabled ? pickupAt : undefined,
         squareNonce,
         source: searchParams.get("pickupSource") === "event_qr" ? "event_qr" : "remote",
         sourceLinkSlug: searchParams.get("pickupSourceLink") ?? undefined,
@@ -661,6 +699,7 @@ export default function PickupPage() {
     setError("");
     setName("");
     setPhone("");
+    setPickupAt("");
     setSmsOptIn(false);
     setCart([]);
     setSideProduct(null);
@@ -715,12 +754,30 @@ export default function PickupPage() {
           ))}
           <hr />
           <div className="jp-total"><span>TOTAL PAID</span><b>{formatMoney(result.grandTotal)}</b></div>
+          {result.requestedFulfillmentAt && (
+            <div className="jp-total">
+              <span>PICKUP TIME</span>
+              <b>{new Intl.DateTimeFormat("en-US", {
+                timeZone: result.requestedFulfillmentTimezone || config.timezone,
+                weekday: "short", month: "short", day: "numeric",
+                hour: "numeric", minute: "2-digit", timeZoneName: "short",
+              }).format(new Date(result.requestedFulfillmentAt))}</b>
+            </div>
+          )}
         </section>
         <PickupDetails
           eventName={config.eventName}
           streetAddress={config.streetAddress}
           asapWaitMinutes={config.asapWaitMinutes}
           pickupInstructions={config.pickupInstructions}
+          scheduled={config.schedulingEnabled}
+          selectedPickupLabel={result.requestedFulfillmentAt
+            ? new Intl.DateTimeFormat("en-US", {
+              timeZone: result.requestedFulfillmentTimezone || config.timezone,
+              weekday: "short", month: "short", day: "numeric",
+              hour: "numeric", minute: "2-digit", timeZoneName: "short",
+            }).format(new Date(result.requestedFulfillmentAt))
+            : null}
         />
         <PickupStatus
           status={result.status}
@@ -790,8 +847,10 @@ export default function PickupPage() {
         <p className="jp-kicker">The Jiggling Pig</p>
         <h1>The pit is<br /><em>resting.</em></h1>
         <div className="jp-closed-card">
-          <strong>ASAP PICKUP IS CLOSED</strong>
-          <p>We&apos;re not taking roadside orders right now. Check back when smoke is in the air.</p>
+          <strong>{config.schedulingEnabled ? "SCHEDULED PICKUP IS CLOSED" : "ASAP PICKUP IS CLOSED"}</strong>
+          <p>{config.schedulingEnabled
+            ? "There are no pickup times remaining for this event."
+            : "We’re not taking roadside orders right now. Check back when smoke is in the air."}</p>
         </div>
         <small>{config.eventName} · {config.streetAddress}</small>
       </main>
@@ -859,6 +918,7 @@ export default function PickupPage() {
         streetAddress={config.streetAddress}
         asapWaitMinutes={config.asapWaitMinutes}
         pickupInstructions={config.pickupInstructions}
+        scheduled={config.schedulingEnabled}
       />
       <nav className="jp-category-nav" aria-label="Menu sections">
         <button
@@ -1016,7 +1076,25 @@ export default function PickupPage() {
               streetAddress={config.streetAddress}
               asapWaitMinutes={config.asapWaitMinutes}
               pickupInstructions={config.pickupInstructions}
+              scheduled={config.schedulingEnabled}
             />
+            {config.schedulingEnabled && (
+              <label>
+                Pickup time
+                <select
+                  required
+                  value={pickupAt}
+                  onChange={event => setPickupAt(event.target.value)}
+                  data-testid="select-pickup-time"
+                >
+                  <option value="">Choose a pickup time</option>
+                  {(config.availablePickupSlots ?? []).map(slot => (
+                    <option key={slot.value} value={slot.value}>{slot.label}</option>
+                  ))}
+                </select>
+                <small>Available times include preparation time and end 30 minutes before shutdown.</small>
+              </label>
+            )}
             <div className="jp-order-summary">
               {orderItems}
               <span>{cartCount} item{cartCount === 1 ? "" : "s"} <b>{formatMoney(displayTotal)}</b></span>
@@ -1048,6 +1126,12 @@ export default function PickupPage() {
         ) : (
           <>
             <div className="jp-order-summary">{orderItems}<span>Order total <b>{formatMoney(displayTotal)}</b></span></div>
+            {pickupAt && (
+              <p className="jp-pickup-time-review">
+                <strong>Pickup:</strong>{" "}
+                {(config.availablePickupSlots ?? []).find(slot => slot.value === pickupAt)?.label}
+              </p>
+            )}
             <fieldset className="jp-wallets" disabled={busy} aria-busy={busy}>
               <legend>Express payment</legend>
               {wallets.applePay && (

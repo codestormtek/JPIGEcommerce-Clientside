@@ -152,6 +152,38 @@ test('pickup instructions persist through the existing site setting and return t
   assert.equal((await getAdminPickupConfig()).pickupInstructions, 'Collect orders at the marked pickup table.');
 });
 
+test('scheduled checkout rejects a stale/nonexistent slot before order reservation or Square', async () => {
+  const previous = storedPickupConfig;
+  storedPickupConfig = {
+    ...previous,
+    schedulingEnabled: true,
+    eventDate: '2030-06-12',
+    opensAt: '10:00',
+    shutsDownAt: '12:00',
+    timezone: 'America/New_York',
+    slotIntervalMinutes: 15,
+    minimumPrepMinutes: 15,
+    reminderLeadMinutes: 20,
+  };
+  placedInput = null;
+  let squareCalls = 0;
+  squareCreate = async () => {
+    squareCalls += 1;
+    return { paymentId: 'must-not-run', status: 'FAILED' };
+  };
+  await assert.rejects(
+    () => createPickupOrder({
+      ...input,
+      clientRequestId: '8083c231-4181-4f4b-8b23-1e92fa6d4899',
+      pickupAt: '2030-06-12T15:45:00.000Z',
+    }),
+    /no longer available/,
+  );
+  assert.equal(placedInput, null);
+  assert.equal(squareCalls, 0);
+  storedPickupConfig = previous;
+});
+
 test('pickup order eligibility follows the kiosk menu, not a legacy stored allowlist', async () => {
   restoreCalls = 0;
   placedInput = null;

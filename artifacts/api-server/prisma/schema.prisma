@@ -515,6 +515,8 @@ model ShopOrder {
   kioskDevice            KioskDevice?    @relation(fields: [kioskDeviceId], references: [id])
   fulfillmentType        String?
   requestedFulfillmentAt DateTime?
+  requestedFulfillmentTimezone String?
+  preparationReminderLeadMinutes Int?
   eventName              String?
   headcount              Int?
   specialInstructions    String?

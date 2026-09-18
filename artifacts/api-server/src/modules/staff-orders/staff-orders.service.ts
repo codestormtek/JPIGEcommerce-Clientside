@@ -62,6 +62,7 @@ function orderDto(order: any) {
     channelLabel: order.orderType === 'event_qr' ? 'Event QR'
       : order.orderType === 'remote_pickup' ? 'Remote pickup' : 'Kiosk',
     pickupAt: order.requestedFulfillmentAt,
+    pickupTimezone: order.requestedFulfillmentTimezone,
     locationLabel: order.eventName,
     customerName,
     customerPhone: billing?.phone ?? null,

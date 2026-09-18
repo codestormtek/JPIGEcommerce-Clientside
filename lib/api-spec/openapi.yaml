@@ -443,6 +443,8 @@ components:
         status: { $ref: "#/components/schemas/StaffOrderStatus" }
         databaseStatus: { type: string }
         orderDate: { type: string, format: date-time }
+        pickupAt: { type: string, format: date-time, nullable: true }
+        pickupTimezone: { type: string, nullable: true }
         specialInstructions: { type: string, nullable: true }
         total: { $ref: "#/components/schemas/Money" }
         items:

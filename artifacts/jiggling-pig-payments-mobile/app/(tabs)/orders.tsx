@@ -158,6 +158,14 @@ export default function OrdersScreen() {
           <Text style={[styles.orderTime, { color: colors.mutedForeground, marginTop: 4 }]}>
             {new Date(item.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
+          {item.pickupAt && (
+            <Text style={[styles.orderTime, { color: colors.primary, marginTop: 4, fontFamily: 'Barlow_700Bold' }]}>
+              PICKUP {new Date(item.pickupAt).toLocaleString([], {
+                timeZone: item.pickupTimezone || undefined,
+                weekday: 'short', hour: 'numeric', minute: '2-digit',
+              })}
+            </Text>
+          )}
         </View>
         <Ionicons name="chevron-forward" size={24} color={colors.icon} style={styles.chevron} />
       </Pressable>

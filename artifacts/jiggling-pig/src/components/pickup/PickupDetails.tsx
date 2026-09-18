@@ -5,6 +5,8 @@ export interface PickupDetailsProps {
   streetAddress?: string | null;
   asapWaitMinutes?: number | null;
   pickupInstructions?: string | null;
+  scheduled?: boolean;
+  selectedPickupLabel?: string | null;
 }
 
 export function getPickupMapsUrl(streetAddress?: string | null): string | null {
@@ -19,12 +21,14 @@ export default function PickupDetails({
   streetAddress,
   asapWaitMinutes,
   pickupInstructions,
+  scheduled = false,
+  selectedPickupLabel,
 }: PickupDetailsProps) {
   const name = eventName?.trim();
   const address = streetAddress?.trim();
   const instructions = pickupInstructions?.trim();
   const mapsUrl = getPickupMapsUrl(address);
-  const hasWait = typeof asapWaitMinutes === "number" && asapWaitMinutes > 0;
+  const hasWait = !scheduled && typeof asapWaitMinutes === "number" && asapWaitMinutes > 0;
 
   if (!name && !address && !hasWait && !instructions) return null;
 
@@ -32,7 +36,7 @@ export default function PickupDetails({
     <section className="jp-pickup-details" aria-labelledby="pickup-details-title">
       <div className="jp-pickup-details-heading">
         <p className="jp-kicker" id="pickup-details-title">Pickup details</p>
-        <span>ASAP pickup</span>
+        <span>{scheduled ? "Scheduled pickup" : "ASAP pickup"}</span>
       </div>
       <dl>
         {name && (
@@ -45,6 +49,12 @@ export default function PickupDetails({
           <div>
             <dt>Estimated wait</dt>
             <dd>About {asapWaitMinutes} minutes</dd>
+          </div>
+        )}
+        {scheduled && selectedPickupLabel && (
+          <div>
+            <dt>Pickup time</dt>
+            <dd>{selectedPickupLabel}</dd>
           </div>
         )}
         {address && (

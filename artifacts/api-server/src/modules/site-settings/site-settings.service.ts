@@ -67,7 +67,7 @@ const DEFAULT_SETTINGS = [
   { settingKey: 'active_payment_gateway', settingValue: 'stripe', label: 'Active Payment Gateway', category: 'payments' },
   { settingKey: 'kiosk_order_inactivity_timeout_seconds', settingValue: '120', label: 'Kiosk Order Timeout (seconds)', category: 'kiosk' },
   { settingKey: 'kiosk_order_inactivity_prompt_seconds', settingValue: '30', label: 'Kiosk Timeout Warning (seconds before reset)', category: 'kiosk' },
-  { settingKey: 'pickup_event_config', settingValue: JSON.stringify({ isOrderingOpen: false, eventName: '', streetAddress: '', asapWaitMinutes: 20, taxRatePercent: 0 }), label: 'Phone Pickup Event Configuration', category: 'pickup' },
+  { settingKey: 'pickup_event_config', settingValue: JSON.stringify({ isOrderingOpen: false, eventName: '', streetAddress: '', asapWaitMinutes: 20, taxRatePercent: 0, schedulingEnabled: false, eventDate: '', opensAt: '', shutsDownAt: '', timezone: 'America/New_York', slotIntervalMinutes: 15, minimumPrepMinutes: 15, reminderLeadMinutes: 15 }), label: 'Phone Pickup Event Configuration', category: 'pickup' },
   // This is the verified deployed application origin, not a runtime inference.
   // Admins can change it to their stable custom domain before issuing new QR codes.
   { settingKey: 'smart_links_config', settingValue: JSON.stringify({ canonicalOrigin: 'https://jpig-ecommerce-clientside.replit.app', allowedOrigins: [] }), label: 'Smart Links canonical origin and allowed destinations', category: 'smart_links' },

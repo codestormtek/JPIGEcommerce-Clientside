@@ -202,6 +202,19 @@ export default function OrderDetailScreen() {
           </Text>
         </View>
 
+        {order.pickupAt && (
+          <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.primary, borderWidth: 2 }]}>
+            <Text style={[styles.sectionTitle, { color: colors.body }]}>SCHEDULED PICKUP</Text>
+            <Text style={[styles.customerName, { color: colors.primary }]}>
+              {new Date(order.pickupAt).toLocaleString([], {
+                timeZone: order.pickupTimezone || undefined,
+                weekday: 'long', month: 'short', day: 'numeric',
+                hour: 'numeric', minute: '2-digit',
+              })}
+            </Text>
+          </View>
+        )}
+
         {(order.customerName || order.customerPhone || order.customerEmail) && (
           <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.sectionTitle, { color: colors.body }]}>CUSTOMER</Text>

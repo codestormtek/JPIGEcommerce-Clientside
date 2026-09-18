@@ -336,7 +336,9 @@ const AdminOrderNotifications = () => {
                             <td className="ps-4">{d.createdAt ? new Date(d.createdAt).toLocaleString() : ""}</td>
                             <td>
                               <div>{d.orderNumber}</div>
-                              <div className="small text-soft">{d.source}</div>
+                              <div className="small text-soft">
+                                {d.source} · {d.eventType === "preparation_due" ? "prep reminder" : "paid order"}
+                              </div>
                             </td>
                             <td>{d.channel}</td>
                             <td>{d.recipient}</td>

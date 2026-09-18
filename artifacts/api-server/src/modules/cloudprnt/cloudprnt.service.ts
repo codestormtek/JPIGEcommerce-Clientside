@@ -166,6 +166,7 @@ function buildOrderTicket(order: {
   kioskOrderNumber: string | null;
   orderType: string;
   requestedFulfillmentAt: Date | null;
+  requestedFulfillmentTimezone: string | null;
   eventName: string | null;
   specialInstructions: string | null;
   addresses: Array<{ addressType: string; fullName: string | null }>;
@@ -188,7 +189,11 @@ function buildOrderTicket(order: {
     `ORDER: ${ticketOrderNumber(order)}`,
     `CHANNEL: ${channel}`,
     customerName ? `NAME: ${cleanTicketLine(customerName)}` : null,
-    order.requestedFulfillmentAt ? `PICKUP: ${order.requestedFulfillmentAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : 'PICKUP: ASAP',
+    order.requestedFulfillmentAt ? `PICKUP: ${order.requestedFulfillmentAt.toLocaleString('en-US', {
+      timeZone: order.requestedFulfillmentTimezone ?? 'America/New_York',
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+    })}` : 'PICKUP: ASAP',
     order.eventName ? `LOCATION: ${cleanTicketLine(order.eventName)}` : null,
     '--------------------------------',
     ...order.lines.flatMap((line) => {
@@ -205,7 +210,7 @@ function buildOrderTicket(order: {
     order.specialInstructions ? '--------------------------------' : null,
     order.specialInstructions ? `NOTE: ${cleanTicketLine(order.specialInstructions)}` : null,
     '',
-    'PAID — PREPARE FOR PICKUP',
+    order.requestedFulfillmentAt ? 'PAID — SCHEDULED PICKUP' : 'PAID — PREPARE FOR PICKUP',
     '\n\n\n',
   ].filter((value): value is string => Boolean(value));
   return lines.join('\n');

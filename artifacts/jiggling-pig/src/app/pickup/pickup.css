@@ -1238,7 +1238,8 @@ body:has(.jp-pickup-root) {
   text-transform: uppercase;
 }
 
-.jp-check-panel input {
+.jp-check-panel input,
+.jp-check-panel select {
   display: block;
   width: 100%;
   margin-top: 0.45rem;
@@ -1248,6 +1249,36 @@ body:has(.jp-pickup-root) {
   background: var(--jp-surface);
   color: var(--jp-cream);
   font-size: 1rem;
+}
+
+.jp-check-panel select {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 0.45rem;
+  padding: 0.9rem;
+  border: 1px solid var(--jp-line);
+  border-radius: 9px;
+  background: var(--jp-surface);
+  color: var(--jp-cream);
+  font-size: 1rem;
+}
+
+.jp-check-panel label > small {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--jp-muted);
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 1.4;
+  text-transform: none;
+}
+
+.jp-pickup-time-review {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--jp-gold);
+  border-radius: 9px;
+  color: var(--jp-cream);
 }
 
 .jp-check-panel label.jp-sms-optin {

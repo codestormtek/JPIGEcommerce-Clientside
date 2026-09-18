@@ -42,6 +42,14 @@ const PickupSettings = () => {
         pickupInstructions: settings.pickupInstructions || "",
         asapWaitMinutes: Number(settings.asapWaitMinutes),
         taxRatePercent: Number(settings.taxRatePercent),
+        schedulingEnabled: Boolean(settings.schedulingEnabled),
+        eventDate: settings.eventDate || "",
+        opensAt: settings.opensAt || "",
+        shutsDownAt: settings.shutsDownAt || "",
+        timezone: settings.timezone || "America/New_York",
+        slotIntervalMinutes: Number(settings.slotIntervalMinutes || 15),
+        minimumPrepMinutes: Number(settings.minimumPrepMinutes || 15),
+        reminderLeadMinutes: Number(settings.reminderLeadMinutes ?? 15),
       });
       setSettings(response?.data ?? settings);
       setSuccess("Pickup settings saved.");
@@ -116,6 +124,52 @@ const PickupSettings = () => {
                     <Col md="4">
                       <label className="form-label" htmlFor="pickup-tax">Sales tax rate (%)</label>
                       <input id="pickup-tax" className="form-control" type="number" min="0" max="25" step="0.001" required value={settings.taxRatePercent} onChange={(event) => update("taxRatePercent", Number(event.target.value))} />
+                    </Col>
+                    <Col md="12">
+                      <div className="border rounded p-3 mt-2">
+                        <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                          <div>
+                            <h6 className="mb-1">Scheduled pickup times</h6>
+                            <p className="text-soft mb-0">Customers choose a pickup slot. The final slot is always at least 30 minutes before shutdown.</p>
+                          </div>
+                          <div className="custom-control custom-switch flex-shrink-0">
+                            <input id="pickup-scheduling" type="checkbox" className="custom-control-input" checked={Boolean(settings.schedulingEnabled)} onChange={(event) => update("schedulingEnabled", event.target.checked)} />
+                            <label className="custom-control-label fw-medium" htmlFor="pickup-scheduling">Enable scheduling</label>
+                          </div>
+                        </div>
+                        <Row className="g-3">
+                          <Col md="4">
+                            <label className="form-label" htmlFor="pickup-event-date">Event date</label>
+                            <input id="pickup-event-date" className="form-control" type="date" required={Boolean(settings.schedulingEnabled)} disabled={!settings.schedulingEnabled} value={settings.eventDate || ""} onChange={(event) => update("eventDate", event.target.value)} />
+                          </Col>
+                          <Col md="4">
+                            <label className="form-label" htmlFor="pickup-opens">Opens</label>
+                            <input id="pickup-opens" className="form-control" type="time" required={Boolean(settings.schedulingEnabled)} disabled={!settings.schedulingEnabled} value={settings.opensAt || ""} onChange={(event) => update("opensAt", event.target.value)} />
+                          </Col>
+                          <Col md="4">
+                            <label className="form-label" htmlFor="pickup-shutdown">Shutdown</label>
+                            <input id="pickup-shutdown" className="form-control" type="time" required={Boolean(settings.schedulingEnabled)} disabled={!settings.schedulingEnabled} value={settings.shutsDownAt || ""} onChange={(event) => update("shutsDownAt", event.target.value)} />
+                          </Col>
+                          <Col md="6">
+                            <label className="form-label" htmlFor="pickup-timezone">Event timezone</label>
+                            <input id="pickup-timezone" className="form-control" required={Boolean(settings.schedulingEnabled)} disabled={!settings.schedulingEnabled} placeholder="America/New_York" value={settings.timezone || "America/New_York"} onChange={(event) => update("timezone", event.target.value)} />
+                            <small className="text-soft">Use an IANA timezone such as America/New_York.</small>
+                          </Col>
+                          <Col md="2">
+                            <label className="form-label" htmlFor="pickup-interval">Slot interval</label>
+                            <input id="pickup-interval" className="form-control" type="number" min="5" max="60" required disabled={!settings.schedulingEnabled} value={settings.slotIntervalMinutes || 15} onChange={(event) => update("slotIntervalMinutes", Number(event.target.value))} />
+                          </Col>
+                          <Col md="2">
+                            <label className="form-label" htmlFor="pickup-min-prep">Minimum prep</label>
+                            <input id="pickup-min-prep" className="form-control" type="number" min="1" max="240" required disabled={!settings.schedulingEnabled} value={settings.minimumPrepMinutes || 15} onChange={(event) => update("minimumPrepMinutes", Number(event.target.value))} />
+                          </Col>
+                          <Col md="2">
+                            <label className="form-label" htmlFor="pickup-reminder">Prep alert lead</label>
+                            <input id="pickup-reminder" className="form-control" type="number" min="0" max="240" required disabled={!settings.schedulingEnabled} value={settings.reminderLeadMinutes ?? 15} onChange={(event) => update("reminderLeadMinutes", Number(event.target.value))} />
+                          </Col>
+                        </Row>
+                        <small className="text-soft d-block mt-2">Times are in minutes. Orders receive a durable staff preparation alert before their selected pickup time.</small>
+                      </div>
                     </Col>
                   </Row>
                 </div>

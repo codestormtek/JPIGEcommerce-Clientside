@@ -6,6 +6,7 @@ import { isSmsSuppressed } from '../lib/smsSuppression';
 import { logger } from '../utils/logger';
 import type { Prisma } from '@prisma/client';
 import { normalizePhone } from '../lib/phone';
+import { formatPickupTime } from '../modules/pickup/pickupSchedule';
 
 export type StaffOrderSource = 'kiosk' | 'remote_pickup';
 const EVENT = 'payment_captured';
@@ -28,29 +29,37 @@ function content(input: {
   kioskOrderNumber: string | null;
   grandTotal: unknown;
   currency: string;
+  requestedFulfillmentAt: Date | null;
+  requestedFulfillmentTimezone: string | null;
   lines: Array<{
     productNameSnapshot: string;
     qty: number;
     sideSelectionsText: string | null;
     lineTotal: unknown;
   }>;
-}, source: StaffOrderSource) {
+}, source: StaffOrderSource, eventType = EVENT) {
   const orderNumber = paidOrderNumber(input);
-  const label = source === 'kiosk' ? 'Paid kiosk order' : 'Paid remote pickup order';
+  const preparing = eventType === 'preparation_due';
+  const label = preparing
+    ? 'Start preparing pickup order'
+    : source === 'kiosk' ? 'Paid kiosk order' : 'Paid remote pickup order';
   const count = input.lines.reduce((sum, line) => sum + line.qty, 0);
   const total = `${input.currency} ${Number(input.grandTotal).toFixed(2)}`;
   // The legacy admin currently exposes an order queue, not a stable detail
   // route. Link to that known route rather than inventing a dead deep link.
   const link = `${config.staffOrderNotifications.adminUrl.replace(/\/$/, '')}/orders`;
+  const pickup = input.requestedFulfillmentAt && input.requestedFulfillmentTimezone
+    ? formatPickupTime(input.requestedFulfillmentAt, input.requestedFulfillmentTimezone)
+    : null;
   const subject = `${label} — ${orderNumber}`;
   // SMS intentionally excludes customer names, phones, email, and item details
   // because staff phones may show this text on a lock screen.
-  const smsText = `${label} ${orderNumber}. ${count} item${count === 1 ? '' : 's'}, ${total}. Open ${link}`;
+  const smsText = `${label} ${orderNumber}.${pickup ? ` Pickup ${pickup}.` : ''} ${count} item${count === 1 ? '' : 's'}, ${total}. Open ${link}`;
   const emailLines = input.lines.map((line) => {
     const sides = line.sideSelectionsText?.trim() ? ` — Sides: ${line.sideSelectionsText.trim()}` : '';
     return `${line.qty} × ${line.productNameSnapshot}${sides} — ${input.currency} ${Number(line.lineTotal).toFixed(2)}`;
   });
-  const emailText = `${label} — ${orderNumber}\n\n${emailLines.join('\n')}\n\nTotal: ${total}\nOpen order queue: ${link}`;
+  const emailText = `${label} — ${orderNumber}\n${pickup ? `Pickup: ${pickup}\n` : ''}\n${emailLines.join('\n')}\n\nTotal: ${total}\nOpen order queue: ${link}`;
   const lineRows = input.lines.map((line) => {
     const sides = line.sideSelectionsText?.trim()
       ? `<div style="color:#666;font-size:13px">Sides: ${escapeHtml(line.sideSelectionsText.trim())}</div>`
@@ -60,6 +69,7 @@ function content(input: {
   }).join('');
   const bodyHtml = `<!doctype html><html><body style="font-family:Arial,sans-serif">`
     + `<h2>${escapeHtml(label)}</h2><p><strong>${escapeHtml(orderNumber)}</strong></p>`
+    + (pickup ? `<p><strong>Pickup: ${escapeHtml(pickup)}</strong></p>` : '')
     + `<table style="width:100%;border-collapse:collapse">${lineRows}</table>`
     + `<p style="text-align:right"><strong>Total: ${escapeHtml(total)}</strong></p>`
     + `<p><a href="${escapeHtml(link)}">Open order in admin</a></p></body></html>`;
@@ -94,13 +104,14 @@ export async function enqueuePaidStaffOrderNotificationsTx(
   source: StaffOrderSource,
 ): Promise<boolean> {
   const ready = channelReadiness();
-  if (!ready.email && !ready.sms) return false;
   await tx.$executeRawUnsafe('SAVEPOINT staff_order_notification_enqueue');
   try {
     const order = await tx.shopOrder.findUnique({
       where: { id: orderId },
       select: {
-        id: true, kioskOrderNumber: true, grandTotal: true, currency: true,
+        id: true, kioskOrderNumber: true, grandTotal: true, currency: true, orderType: true,
+        requestedFulfillmentAt: true, requestedFulfillmentTimezone: true,
+        preparationReminderLeadMinutes: true,
         orderStatus: { select: { status: true } },
         payments: { select: { status: true } },
         lines: {
@@ -121,12 +132,23 @@ export async function enqueuePaidStaffOrderNotificationsTx(
       return false;
     }
     const message = content(order, source);
+    const reminderDue = source === 'remote_pickup' && order.requestedFulfillmentAt
+      ? new Date(order.requestedFulfillmentAt.getTime()
+        - (order.preparationReminderLeadMinutes ?? 15) * 60_000)
+      : null;
+    const reminder = reminderDue ? content(order, source, 'preparation_due') : null;
     const rows: Array<Record<string, unknown>> = [];
     if (ready.email) {
       rows.push({
         orderId, orderNumber: message.orderNumber, eventType: EVENT, source,
         channel: 'email', recipient: config.store.adminEmail,
         subject: message.subject, bodyHtml: message.bodyHtml, bodyText: message.emailText,
+      });
+      if (reminder && reminderDue) rows.push({
+        orderId, orderNumber: reminder.orderNumber, eventType: 'preparation_due', source,
+        channel: 'email', recipient: config.store.adminEmail,
+        subject: reminder.subject, bodyHtml: reminder.bodyHtml, bodyText: reminder.emailText,
+        nextAttemptAt: reminderDue,
       });
     }
     if (ready.sms) {
@@ -144,10 +166,23 @@ export async function enqueuePaidStaffOrderNotificationsTx(
           channel: 'sms', recipient: phoneNumber, recipientId: recipient.id,
           bodyText: message.smsText,
         });
+        if (reminder && reminderDue) rows.push({
+          orderId, orderNumber: reminder.orderNumber, eventType: 'preparation_due', source,
+          channel: 'sms', recipient: phoneNumber, recipientId: recipient.id,
+          bodyText: reminder.smsText, nextAttemptAt: reminderDue,
+        });
       }
     }
     if (rows.length) {
       await tx.staffOrderDelivery.createMany({ data: rows as any, skipDuplicates: true });
+    }
+    if (reminderDue) {
+      const eventType = order.orderType === 'event_qr'
+        ? 'event_qr_order_prepare_due' : 'remote_pickup_order_prepare_due';
+      await tx.pushNotificationEvent.createMany({
+        data: [{ orderId, eventType, audience: 'kitchen', nextAttemptAt: reminderDue }],
+        skipDuplicates: true,
+      });
     }
     await tx.$executeRawUnsafe('RELEASE SAVEPOINT staff_order_notification_enqueue');
     return rows.length > 0;
@@ -181,10 +216,18 @@ async function processOne(id: string): Promise<void> {
   if (!row) return;
   const paid = row.order.payments.some((payment) => payment.status === 'captured');
   const closed = ['cancelled', 'canceled'].includes(row.order.orderStatus.status);
-  if (!paid || closed) {
+  const reminderClosed = row.eventType === 'preparation_due'
+    && (
+      row.order.payments.some((payment) => ['refunded', 'partially_refunded'].includes(payment.status))
+      || ['ready_to_ship', 'completed', 'picked_up', 'delivered'].includes(row.order.orderStatus.status)
+      || (row.order.requestedFulfillmentAt !== null
+        && row.order.requestedFulfillmentAt.getTime() <= Date.now())
+    );
+  if (!paid || closed || reminderClosed) {
     await prisma.staffOrderDelivery.update({
       where: { id },
-      data: { status: 'suppressed', lastError: closed ? 'Order was canceled before send' : 'Payment is no longer captured' },
+      data: { status: 'suppressed', lastError: closed ? 'Order was canceled before send'
+        : reminderClosed ? 'Preparation reminder is no longer actionable' : 'Payment is no longer captured' },
     });
     return;
   }
@@ -365,7 +408,7 @@ export async function recentStaffOrderDeliveries() {
       orderBy: { createdAt: 'desc' },
       take: 50,
       select: {
-        id: true, orderNumber: true, source: true, channel: true, recipient: true,
+        id: true, orderNumber: true, eventType: true, source: true, channel: true, recipient: true,
         status: true, attempts: true, lastError: true, createdAt: true, sentAt: true,
       },
     });

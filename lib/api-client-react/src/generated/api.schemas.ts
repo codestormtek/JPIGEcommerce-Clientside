@@ -144,6 +144,10 @@ export interface StaffOrder {
   databaseStatus: string;
   orderDate: string;
   /** @nullable */
+  pickupAt?: string | null;
+  /** @nullable */
+  pickupTimezone?: string | null;
+  /** @nullable */
   specialInstructions: string | null;
   total: Money;
   items: StaffOrderLine[];

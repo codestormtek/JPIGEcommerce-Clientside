@@ -34,7 +34,12 @@ const order = {
   }],
   payments: [{ status: 'captured' }],
   orderStatus: { status: 'pending' },
+  orderType: 'kiosk',
+  requestedFulfillmentAt: null,
+  requestedFulfillmentTimezone: null,
+  preparationReminderLeadMinutes: null,
 };
+const pushEvents = [];
 let failCreate = false;
 const savepointCommands = [];
 
@@ -84,6 +89,15 @@ const prisma = {
       return row ? { ...row, order } : null;
     },
     update: async ({ where, data }) => Object.assign(rows.get(where.id), data),
+  },
+  pushNotificationEvent: {
+    createMany: async ({ data }) => {
+      for (const candidate of data) {
+        if (!pushEvents.some(event => event.orderId === candidate.orderId && event.eventType === candidate.eventType)) {
+          pushEvents.push(candidate);
+        }
+      }
+    },
   },
   $executeRawUnsafe: async command => { savepointCommands.push(command); },
   $queryRaw: async () => [{ ready: true }],
@@ -137,6 +151,29 @@ test('missing outbox rolls back only the savepoint and returns to payment transa
   failCreate = false;
 });
 
+test('scheduled pickup snapshots one preparation reminder per channel and app audience', async () => {
+  const originalId = order.id;
+  order.id = 'scheduled-order';
+  order.orderType = 'remote_pickup';
+  order.requestedFulfillmentAt = new Date('2030-06-12T18:00:00.000Z');
+  order.requestedFulfillmentTimezone = 'America/New_York';
+  order.preparationReminderLeadMinutes = 20;
+  await service.enqueuePaidStaffOrderNotificationsTx(prisma, order.id, 'remote_pickup');
+  await service.enqueuePaidStaffOrderNotificationsTx(prisma, order.id, 'remote_pickup');
+  const reminders = [...rows.values()].filter(row =>
+    row.orderId === order.id && row.eventType === 'preparation_due');
+  assert.equal(reminders.length, 2);
+  assert.ok(reminders.every(row => row.nextAttemptAt.toISOString() === '2030-06-12T17:40:00.000Z'));
+  assert.ok(reminders.every(row => /Pickup/.test(row.bodyText)));
+  assert.equal(pushEvents.filter(event => event.orderId === order.id).length, 1);
+  assert.equal(pushEvents.find(event => event.orderId === order.id).nextAttemptAt.toISOString(), '2030-06-12T17:40:00.000Z');
+  order.id = originalId;
+  order.orderType = 'kiosk';
+  order.requestedFulfillmentAt = null;
+  order.requestedFulfillmentTimezone = null;
+  order.preparationReminderLeadMinutes = null;
+});
+
 test('pending and canceled orders never enqueue, and a late duplicate stays deduped', async () => {
   const before = rows.size;
   order.payments[0].status = 'pending';
@@ -172,6 +209,17 @@ test('worker suppresses an alert when payment/order is no longer paid and open',
   assert.equal(email.status, 'suppressed');
   assert.match(email.lastError, /canceled/);
   order.orderStatus.status = 'pending';
+});
+
+test('worker suppresses a preparation reminder after refund or ready status', async () => {
+  const reminder = [...rows.values()].find(row => row.eventType === 'preparation_due');
+  reminder.status = 'queued';
+  reminder.nextAttemptAt = new Date(0);
+  order.payments[0].status = 'partially_refunded';
+  await service.processStaffOrderNotifications();
+  assert.equal(reminder.status, 'suppressed');
+  assert.match(reminder.lastError, /no longer actionable/);
+  order.payments[0].status = 'captured';
 });
 
 test('nonproduction gate performs no provider work', async () => {

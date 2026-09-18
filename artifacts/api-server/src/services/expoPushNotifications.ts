@@ -5,7 +5,8 @@ import { logger } from '../utils/logger';
 export type StaffPushEventType =
   | 'kiosk_order_captured' | 'kiosk_order_ready'
   | 'event_qr_order_captured' | 'event_qr_order_ready'
-  | 'remote_pickup_order_captured' | 'remote_pickup_order_ready';
+  | 'remote_pickup_order_captured' | 'remote_pickup_order_ready'
+  | 'event_qr_order_prepare_due' | 'remote_pickup_order_prepare_due';
 const MAX_ATTEMPTS = 6;
 const LEASE_MS = 60_000;
 const RECEIPT_DELAY_MS = 20_000;
@@ -18,6 +19,8 @@ const eventConfig: Record<StaffPushEventType, { audience: 'kitchen' | 'cashier';
   event_qr_order_ready: { audience: 'cashier', title: 'Event QR order ready' },
   remote_pickup_order_captured: { audience: 'kitchen', title: 'New remote pickup' },
   remote_pickup_order_ready: { audience: 'cashier', title: 'Remote pickup ready' },
+  event_qr_order_prepare_due: { audience: 'kitchen', title: 'Start preparing pickup' },
+  remote_pickup_order_prepare_due: { audience: 'kitchen', title: 'Start preparing pickup' },
 };
 
 const retryAt = (attempt: number) => new Date(Date.now() + Math.min(15 * 60_000, 5_000 * 2 ** Math.min(attempt, 7)));
@@ -140,9 +143,37 @@ async function claimDeliveries(eventId: string) {
 async function deliverEvent(eventId: string) {
   const event = await prisma.pushNotificationEvent.findUnique({
     where: { id: eventId },
-    include: { order: { select: { id: true, kioskOrderNumber: true, lines: { select: { qty: true } } } } },
+    include: { order: { select: {
+      id: true, kioskOrderNumber: true, requestedFulfillmentAt: true,
+      requestedFulfillmentTimezone: true,
+      orderStatus: { select: { status: true } },
+      payments: { select: { status: true } },
+      lines: { select: { qty: true } },
+    } } },
   });
   if (!event) return;
+  const preparationReminder = event.eventType.endsWith('_order_prepare_due');
+  const reminderNoLongerActionable = preparationReminder && (
+    process.env.NODE_ENV !== 'production'
+    || !event.order.payments.some((payment) => payment.status === 'captured')
+    || event.order.payments.some((payment) => ['refunded', 'partially_refunded'].includes(payment.status))
+    || ['cancelled', 'canceled', 'ready_to_ship', 'completed', 'picked_up', 'delivered']
+      .includes(event.order.orderStatus.status)
+    || (event.order.requestedFulfillmentAt !== null
+      && event.order.requestedFulfillmentAt.getTime() <= Date.now())
+  );
+  if (reminderNoLongerActionable) {
+    await prisma.pushNotificationEvent.update({
+      where: { id: event.id },
+      data: {
+        status: 'suppressed', completedAt: new Date(), leaseExpiresAt: null,
+        lastError: process.env.NODE_ENV !== 'production'
+          ? 'Preparation reminders are disabled outside production'
+          : 'Preparation reminder is no longer actionable',
+      },
+    });
+    return;
+  }
   let existing = await prisma.pushNotificationDelivery.count({ where: { eventId } });
   if (!existing) {
     const tokens = await prisma.expoPushToken.findMany({
@@ -159,7 +190,12 @@ async function deliverEvent(eventId: string) {
   if (!deliveries.length) return refreshEvent(eventId);
   const itemCount = event.order.lines.reduce((total, line) => total + line.qty, 0);
   const orderNumber = event.order.kioskOrderNumber ?? `ORD-${event.order.id.slice(0, 8).toUpperCase()}`;
-  const body = `${orderNumber} · ${itemCount} item${itemCount === 1 ? '' : 's'}`;
+  const pickup = event.order.requestedFulfillmentAt
+    ? event.order.requestedFulfillmentAt.toLocaleString('en-US', {
+      timeZone: event.order.requestedFulfillmentTimezone ?? 'America/New_York',
+      weekday: 'short', hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+    }) : null;
+  const body = `${orderNumber} · ${itemCount} item${itemCount === 1 ? '' : 's'}${pickup ? ` · pickup ${pickup}` : ''}`;
   try {
     const response = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST', headers: expoHeaders(),

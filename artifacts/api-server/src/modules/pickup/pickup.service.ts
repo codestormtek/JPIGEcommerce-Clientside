@@ -17,6 +17,7 @@ import * as settingsRepo from '../site-settings/site-settings.repository';
 import type { PickupCheckoutInput, PickupConfigInput } from './pickup.schema';
 import { enqueuePickupSmsEventTx } from './pickupSms';
 import { enqueuePaidStaffOrderNotificationsTx } from '../../services/staffOrderNotifications';
+import { assertValidPickupSelection, availablePickupSlots } from './pickupSchedule';
 
 const PICKUP_SETTING_KEY = 'pickup_event_config';
 const PICKUP_SYSTEM_EMAIL = 'pickup-orders@jigglingpig.local';
@@ -69,6 +70,14 @@ const defaultConfig: PickupConfigInput = {
   pickupInstructions: '',
   asapWaitMinutes: 20,
   taxRatePercent: 0,
+  schedulingEnabled: false,
+  eventDate: '',
+  opensAt: '',
+  shutsDownAt: '',
+  timezone: 'America/New_York',
+  slotIntervalMinutes: 15,
+  minimumPrepMinutes: 15,
+  reminderLeadMinutes: 15,
 };
 
 function parseConfig(raw?: string): PickupConfigInput {
@@ -86,6 +95,18 @@ function parseConfig(raw?: string): PickupConfigInput {
       taxRatePercent: typeof candidate.taxRatePercent === 'number' && Number.isFinite(candidate.taxRatePercent)
         ? Math.min(25, Math.max(0, candidate.taxRatePercent))
         : 0,
+      schedulingEnabled: candidate.schedulingEnabled === true,
+      eventDate: typeof candidate.eventDate === 'string' ? candidate.eventDate : '',
+      opensAt: typeof candidate.opensAt === 'string' ? candidate.opensAt : '',
+      shutsDownAt: typeof candidate.shutsDownAt === 'string' ? candidate.shutsDownAt : '',
+      timezone: typeof candidate.timezone === 'string' && candidate.timezone.trim()
+        ? candidate.timezone.trim() : 'America/New_York',
+      slotIntervalMinutes: Number.isInteger(candidate.slotIntervalMinutes)
+        ? Math.min(60, Math.max(5, candidate.slotIntervalMinutes!)) : 15,
+      minimumPrepMinutes: Number.isInteger(candidate.minimumPrepMinutes)
+        ? Math.min(240, Math.max(1, candidate.minimumPrepMinutes!)) : 15,
+      reminderLeadMinutes: Number.isInteger(candidate.reminderLeadMinutes)
+        ? Math.min(240, Math.max(0, candidate.reminderLeadMinutes!)) : 15,
     };
   } catch {
     // An invalid saved configuration must never inadvertently accept orders.
@@ -99,13 +120,24 @@ async function loadConfig(): Promise<PickupConfigInput> {
 }
 
 function publicConfig(configured: PickupConfigInput, menu: Awaited<ReturnType<typeof getKioskMenu>>) {
+  const slots = availablePickupSlots(configured);
   return {
-    isOrderingOpen: configured.isOrderingOpen,
+    isOrderingOpen: configured.isOrderingOpen && (!configured.schedulingEnabled || slots.length > 0),
     eventName: configured.eventName,
     streetAddress: configured.streetAddress,
     pickupInstructions: configured.pickupInstructions,
     asapWaitMinutes: configured.asapWaitMinutes,
     taxRatePercent: configured.taxRatePercent,
+    schedulingEnabled: configured.schedulingEnabled,
+    eventDate: configured.eventDate,
+    opensAt: configured.opensAt,
+    shutsDownAt: configured.shutsDownAt,
+    timezone: configured.timezone,
+    slotIntervalMinutes: configured.slotIntervalMinutes,
+    minimumPrepMinutes: configured.minimumPrepMinutes,
+    reminderLeadMinutes: configured.reminderLeadMinutes,
+    shutdownCutoffMinutes: 30,
+    availablePickupSlots: slots,
     cardEnabled: Boolean(config.square.accessToken && config.square.applicationId && config.square.locationId),
     applicationId: config.square.applicationId || null,
     locationId: config.square.locationId || null,
@@ -141,6 +173,14 @@ export async function updatePickupConfig(input: PickupConfigInput) {
     pickupInstructions: input.pickupInstructions?.trim() || '',
     asapWaitMinutes: input.asapWaitMinutes,
     taxRatePercent: input.taxRatePercent,
+    schedulingEnabled: input.schedulingEnabled,
+    eventDate: input.eventDate,
+    opensAt: input.opensAt,
+    shutsDownAt: input.shutsDownAt,
+    timezone: input.timezone,
+    slotIntervalMinutes: input.slotIntervalMinutes,
+    minimumPrepMinutes: input.minimumPrepMinutes,
+    reminderLeadMinutes: input.reminderLeadMinutes,
   });
   const existing = await settingsRepo.findByKey(PICKUP_SETTING_KEY);
   if (existing) {
@@ -283,6 +323,8 @@ type PickupOrder = {
   id: string; grandTotal: unknown; currency: string; kioskOrderNumber: string | null;
   orderStatus: { status: string }; lines: Array<{ productNameSnapshot: string; qty: number; lineTotal: unknown; sideSelectionsText: string | null }>;
   payments: Array<{ id: string; status: string; providerTxnId: string | null; createdAt: Date; capturedAt: Date | null }>;
+  requestedFulfillmentAt: Date | null;
+  requestedFulfillmentTimezone: string | null;
 };
 
 async function findPickupOrder(requestId: string): Promise<PickupOrder | null> {
@@ -456,6 +498,8 @@ function present(order: PickupOrder, paymentStatus: 'paid' | 'pending' | 'cancel
       sides: line.sideSelectionsText,
       lineTotal: Number(line.lineTotal),
     })),
+    requestedFulfillmentAt: order.requestedFulfillmentAt?.toISOString() ?? null,
+    requestedFulfillmentTimezone: order.requestedFulfillmentTimezone,
   };
 }
 
@@ -489,7 +533,8 @@ export async function createPickupOrder(input: PickupCheckoutInput) {
   }
 
   const [configured, menu] = await Promise.all([loadConfig(), getKioskMenu()]);
-  if (!configured.isOrderingOpen) throw ApiError.unprocessable('ASAP pickup ordering is currently closed.');
+  if (!configured.isOrderingOpen) throw ApiError.unprocessable('Pickup ordering is currently closed.');
+  const requestedPickupAt = assertValidPickupSelection(configured, input.pickupAt);
   if (!config.square.accessToken || !config.square.applicationId || !config.square.locationId) {
     throw ApiError.unprocessable('Card payments are not configured for pickup ordering.');
   }
@@ -518,9 +563,16 @@ export async function createPickupOrder(input: PickupCheckoutInput) {
       eventName: configured.eventName,
       remotePickupRequestId: input.clientRequestId,
       specialInstructions: input.specialInstructions,
-        smsOptIn: input.smsOptIn === true && config.env === 'production' && config.pickupSms.enabled,
+      requestedFulfillmentAt: requestedPickupAt ?? undefined,
+      requestedFulfillmentTimezone: requestedPickupAt ? configured.timezone : undefined,
+      preparationReminderLeadMinutes: requestedPickupAt ? configured.reminderLeadMinutes : undefined,
+      smsOptIn: input.smsOptIn === true && config.env === 'production' && config.pickupSms.enabled,
       expectedTotalCents: input.expectedTotalCents,
-    } as unknown as CheckoutInput & { orderType: string; fulfillmentType: string; eventName: string; remotePickupRequestId: string }, 0, 0, {
+    } as unknown as CheckoutInput & {
+      orderType: string; fulfillmentType: string; eventName: string; remotePickupRequestId: string;
+      requestedFulfillmentAt?: Date; requestedFulfillmentTimezone?: string;
+      preparationReminderLeadMinutes?: number;
+    }, 0, 0, {
       provider: 'square',
     }, configured.taxRatePercent) as unknown as PickupOrder;
   } catch (error: any) {
